@@ -1,0 +1,46 @@
+# The west manifest file for Pinnacle 100.
+#
+# The per-installation west configuration file, .west/config, sets the
+# path to the project containing this file in the [manifest] section's
+# "path" variable.
+#
+# You are free to create your own manifest files and put them in any
+# repository you want, to create your own custom Zephyr installations.
+# For example, you could create a manifest file in your own out of
+# tree application directory, which would pull this zephyr repository
+# in as an ordinary project.
+#
+# You can pass your manifest repositories to west init when creating a
+# new Zephyr installation. See the west documentation for more
+# information.
+
+manifest:
+  remotes:
+    - name: LairdCP
+      url-base: https://github.com/LairdCP
+    - name: LairdInternal
+      url-base: git@git.devops.rfpros.com:/cp_cellular
+    - name: zephyrproject
+      url-base: https://github.com/zephyrproject-rtos
+
+  # Please add items below based on alphabetical order
+  # Many of these dependencies we taken from the default Zephyr west manifest.
+  # These dependencies may need updating if new features are added to the firmware.
+  projects:
+    - name: zephyr
+      repo-path: zephyr.git
+      west-commands: scripts/west-commands.yml
+      revision: laird/hl7800
+      remote: LairdInternal
+    - name: lairdconnectivityhal
+      repo-path: zephyr-hal-lairdconnectivity.git
+      path: zephyr/ext/hal/lairdconnectivity
+      revision: 1c357f06c6f79515930743e94a94855dd997c679
+      remote: LairdInternal
+    - name: pinnacle_100_boards
+      path: zephyr/boards/arm
+      revision: master
+      remote: LairdInternal
+
+  self:
+    path: oob_demo

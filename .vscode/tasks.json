@@ -1,0 +1,65 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "windows": {
+    "options": {
+      "shell": {
+        "executable": "cmd.exe",
+        "args": ["/d", "/c"]
+      }
+    }
+  },
+  "tasks": [
+    {
+      "label": "build",
+      "type": "shell",
+      // Linux based command is not tested
+      "command": "west build -b pinnacle_100_dvk -d build oob_demo",
+      "windows": {
+        "command": "west build -b pinnacle_100_dvk -d ${workspaceRoot}\\build ${workspaceRoot}\\oob_demo"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "re-build",
+      "type": "shell",
+      // Linux based command is not tested
+      "command": "west build -p -b pinnacle_100_dvk -d build oob_demo",
+      "windows": {
+        "command": "west build -p -b pinnacle_100_dvk -d ${workspaceRoot}\\build ${workspaceRoot}\\oob_demo"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "flash application",
+      "type": "shell",
+      // Linux based command is not tested
+      "command": "west flash -d build && nrfjprog -f NRF52 --reset",
+      "windows": {
+        "command": "west flash -d ${workspaceRoot}\\build && nrfjprog -f NRF52 --reset"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      // Linux based command is not tested
+      "command": "west build -t clean -d build",
+      "windows": {
+        "command": "west build -t clean -d ${workspaceRoot}\\build"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "pristine",
+      "type": "shell",
+      // Linux based command is not tested
+      "command": "west build -t pristine -d build",
+      "windows": {
+        "command": "west build -t pristine -d ${workspaceRoot}\\build"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

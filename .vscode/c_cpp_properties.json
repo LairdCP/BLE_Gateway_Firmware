@@ -1,0 +1,33 @@
+{
+    "configurations": [
+        {
+            "name": "CConfig",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/../zephyr/include/zephyr",
+                "${workspaceFolder}/../zephyr/include",
+                "${workspaceFolder}/../zephyr/arch/arm/include",
+                "${workspaceFolder}/../zephyr/samples/bluetooth",
+                "${workspaceFolder}/../zephyr/ext/hal/nordic/nrfx/mdk",
+                "${workspaceFolder}/build/zephyr/include/generated",
+                "${workspaceFolder}/oob_demo/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "__GNUC__"
+            ],
+            "cStandard": "c89",
+            "cppStandard": "c++98",
+            "intelliSenseMode": "msvc-x64"
+        }
+    ],
+    "version": 4
+}

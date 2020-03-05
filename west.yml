@@ -35,7 +35,7 @@ manifest:
     - name: lairdconnectivityhal
       repo-path: zephyr-hal-lairdconnectivity.git
       path: zephyr/ext/hal/lairdconnectivity
-      revision: 1c357f06c6f79515930743e94a94855dd997c679
+      revision: master
       remote: LairdInternal
     - name: pinnacle_100_boards
       path: zephyr/boards/arm

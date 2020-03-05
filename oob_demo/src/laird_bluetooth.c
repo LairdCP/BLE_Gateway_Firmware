@@ -48,6 +48,15 @@ ssize_t lbt_read_string(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 				 MIN(strlen(value), max_str_length));
 }
 
+ssize_t lbt_read_string_no_max_size(struct bt_conn *conn,
+			const struct bt_gatt_attr *attr, void *buf, u16_t len,
+			u16_t offset)
+{
+	const char *value = attr->user_data;
+	return bt_gatt_attr_read(conn, attr, buf, len, offset, value,
+				 strlen(value));
+}
+
 ssize_t lbt_write_string(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 			 const void *buf, u16_t len, u16_t offset, u8_t flags,
 			 u16_t max_str_length)

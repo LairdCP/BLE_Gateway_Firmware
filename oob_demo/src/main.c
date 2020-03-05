@@ -27,7 +27,9 @@ LOG_MODULE_REGISTER(oob_main);
 #include "ble_cellular_service.h"
 #include "ble_aws_service.h"
 #include "ble_sensor_service.h"
+#include "ble_power_service.h"
 #include "dis.h"
+#include "bootloader.h"
 
 #define MAIN_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define MAIN_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
@@ -584,6 +586,14 @@ void main(void)
 
 	bss_init();
 	bss_assign_connection_handler_getter(oob_ble_get_central_connection);
+
+	/* Setup the power service */
+	power_svc_init();
+	power_svc_assign_connection_handler_getter(
+		oob_ble_get_central_connection);
+	power_init();
+
+	bootloader_init();
 
 	rc = aws_svc_init(lteInfo->IMEI);
 	if (rc != 0) {

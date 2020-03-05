@@ -59,6 +59,14 @@ ssize_t lbt_read_string(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 			void *buf, u16_t len, u16_t offset,
 			u16_t max_str_length);
 
+/**
+ *  @brief Helper function for reading a string characteristic from
+ * the Bluetooth stack (size of full attribute will be used).
+ */
+ssize_t lbt_read_string_no_max_size(struct bt_conn *conn,
+			const struct bt_gatt_attr *attr, void *buf, u16_t len,
+			u16_t offset);
+
 /** 
  * @brief Helper function for writing a string characteristic from the 
  * Bluetooth stack.

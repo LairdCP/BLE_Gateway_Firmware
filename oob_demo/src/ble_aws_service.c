@@ -18,13 +18,12 @@ LOG_MODULE_REGISTER(oob_aws_svc);
 #include "nv.h"
 #include "aws.h"
 #include "laird_bluetooth.h"
+#include "oob_common.h"
 
 #define AWS_SVC_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define AWS_SVC_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
 #define AWS_SVC_LOG_INF(...) LOG_INF(__VA_ARGS__)
 #define AWS_SVC_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
-
-#define SHA256_SIZE 32
 
 enum { SAVE_SETTINGS = 1, CLEAR_SETTINGS };
 

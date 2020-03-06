@@ -6,9 +6,12 @@
  */
 
 #include <logging/log.h>
+#include <logging/log_output.h>
+#include <logging/log_ctrl.h>
 #define LOG_LEVEL LOG_LEVEL_INF
 LOG_MODULE_REGISTER(oob_power);
 
+#define POWER_LOG_INF(...) LOG_INF(__VA_ARGS__)
 #define POWER_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 
 //=============================================================================
@@ -21,6 +24,9 @@ LOG_MODULE_REGISTER(oob_power);
 #include <gpio.h>
 #include <hal/nrf_saadc.h>
 #include <adc.h>
+#ifdef CONFIG_REBOOT
+#include <misc/reboot.h>
+#endif
 #include "power.h"
 #include "ble_power_service.h"
 
@@ -42,6 +48,7 @@ LOG_MODULE_REGISTER(oob_power);
 #define ADC_GAIN_FACTOR_HALF		0.5
 #define MEASURE_STATUS_ENABLE		1
 #define MEASURE_STATUS_DISABLE		0
+#define GPREGRET_BOOTLOADER_VALUE	0xb1
 
 //=============================================================================
 // Local Data Definitions
@@ -120,6 +127,20 @@ void power_mode_set(bool enable)
 		power_run();
 	}
 }
+
+#ifdef CONFIG_REBOOT
+void power_reboot_module(u8_t type)
+{
+	/* Log panic will cause all buffered logs to be output */
+	LOG_INF("Rebooting module%s...", (type == REBOOT_TYPE_BOOTLOADER ?
+		" into UART bootloader" : ""));
+	log_panic();
+
+	/* And reboot the module */
+	sys_reboot((type == REBOOT_TYPE_BOOTLOADER ?
+		    GPREGRET_BOOTLOADER_VALUE : 0));
+}
+#endif
 
 //=============================================================================
 // Local Function Definitions

@@ -28,6 +28,7 @@ LOG_MODULE_REGISTER(oob_main);
 #include "ble_aws_service.h"
 #include "ble_sensor_service.h"
 #include "ble_power_service.h"
+#include "power.h"
 #include "dis.h"
 #include "bootloader.h"
 
@@ -539,6 +540,30 @@ static int shell_decommission(const struct shell *shell, size_t argc,
 
 	return 0;
 }
+
+#ifdef CONFIG_REBOOT
+static int shell_reboot(const struct shell *shell, size_t argc,
+			      char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+
+	power_reboot_module(REBOOT_TYPE_NORMAL);
+
+	return 0;
+}
+
+static int shell_bootloader(const struct shell *shell, size_t argc,
+			      char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+
+	power_reboot_module(REBOOT_TYPE_BOOTLOADER);
+
+	return 0;
+}
+#endif /* CONFIG_REBOOT */
 #endif /* CONFIG_SHELL */
 
 void main(void)
@@ -636,6 +661,14 @@ SHELL_STATIC_SUBCMD_SET_CREATE(oob_cmds,
 			       SHELL_CMD(reset, NULL,
 					 "Factory reset (decommission) device",
 					 shell_decommission),
+#ifdef CONFIG_REBOOT
+			       SHELL_CMD(reboot, NULL,
+					 "Reboot module",
+					 shell_reboot),
+			       SHELL_CMD(bootloader, NULL,
+					 "Boot to UART bootloader",
+					 shell_bootloader),
+#endif
 			       SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 SHELL_CMD_REGISTER(oob, &oob_cmds, "OOB Demo commands", NULL);

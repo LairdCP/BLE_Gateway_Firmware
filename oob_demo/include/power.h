@@ -23,6 +23,10 @@
 /* Measurement time between readings */
 #define POWER_TIMER_PERIOD		K_MSEC(15000)
 
+/* Reboot types */
+#define REBOOT_TYPE_NORMAL		0
+#define REBOOT_TYPE_BOOTLOADER		1
+
 //=============================================================================
 // Global Function Prototypes
 //=============================================================================
@@ -37,5 +41,13 @@ void power_init(void);
  * @param true to enable, false to disable
  */
 void power_mode_set(bool enable);
+
+#ifdef CONFIG_REBOOT
+/**
+ * @brief Reboots the module
+ * @param 0 = normal reboot, 1 = stay in UART bootloader
+ */
+void power_reboot_module(u8_t type);
+#endif
 
 #endif /* POWER_H */

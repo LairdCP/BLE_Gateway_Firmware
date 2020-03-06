@@ -28,6 +28,8 @@ LOG_MODULE_REGISTER(oob_power_svc);
 			 0x55, 0xd7, 0xf3, LSB_16(_x_), MSB_16(_x_), 0x1c, 0xdc)
 static struct bt_uuid_128 POWER_SVC_UUID = POWER_SVC_BASE_UUID_128(0x0000);
 static struct bt_uuid_128 VOLTAGE_UUID = POWER_SVC_BASE_UUID_128(0x0001);
+static struct bt_uuid_128 REBOOT_UUID = POWER_SVC_BASE_UUID_128(0x0002);
+
 
 struct ble_power_voltage {
 	u8_t voltage_int;
@@ -36,6 +38,9 @@ struct ble_power_voltage {
 
 struct ble_power_service {
 	struct ble_power_voltage voltage;
+#ifdef CONFIG_REBOOT
+	u8_t reboot;
+#endif
 
 	u16_t voltage_index;
 };
@@ -54,6 +59,11 @@ static void voltage_ccc_handler(const struct bt_gatt_attr *attr, u16_t value)
 	power_mode_set(ccc.voltage.notify);
 }
 
+#ifdef CONFIG_REBOOT
+static ssize_t write_power_reboot(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			 const void *buf, u16_t len, u16_t offset, u8_t flags);
+#endif
+
 /* Power Service Declaration */
 static struct bt_gatt_attr power_attrs[] = {
 	BT_GATT_PRIMARY_SERVICE(&POWER_SVC_UUID),
@@ -61,6 +71,12 @@ static struct bt_gatt_attr power_attrs[] = {
 		&VOLTAGE_UUID.uuid, BT_GATT_CHRC_NOTIFY,
 		BT_GATT_PERM_NONE, NULL, NULL, &bps.voltage),
 	LBT_GATT_CCC(voltage)
+#ifdef CONFIG_REBOOT
+	,
+	BT_GATT_CHARACTERISTIC(
+		&REBOOT_UUID.uuid, BT_GATT_CHRC_WRITE,
+		BT_GATT_PERM_WRITE, NULL, write_power_reboot, &bps.reboot),
+#endif
 };
 
 static struct bt_gatt_service power_svc = BT_GATT_SERVICE(power_attrs);
@@ -94,6 +110,18 @@ void power_svc_set_voltage(u8_t integer, u8_t decimal)
 	power_svc_notify(ccc.voltage.notify, bps.voltage_index,
 			 sizeof(bps.voltage));
 }
+
+#ifdef CONFIG_REBOOT
+static ssize_t write_power_reboot(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			 const void *buf, u16_t len, u16_t offset, u8_t flags)
+{
+	ssize_t length = lbt_write_u8(conn, attr, buf, len, offset, flags);
+	if (length > 0) {
+		power_reboot_module(bps.reboot);
+	}
+	return length;
+}
+#endif
 
 void power_svc_init()
 {

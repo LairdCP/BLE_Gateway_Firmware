@@ -1,13 +1,13 @@
 /* main.c - Application main entry point
  *
- * Copyright (c) 2019 Laird Connectivity
+ * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(oob_main);
+LOG_MODULE_REGISTER(mg100_main);
 
 #include <stdio.h>
 #include <zephyr/types.h>
@@ -18,9 +18,9 @@ LOG_MODULE_REGISTER(oob_main);
 #include <shell/shell.h>
 #include <shell/shell_uart.h>
 
-#include "oob_common.h"
+#include "mg100_common.h"
 #include "led.h"
-#include "oob_ble.h"
+#include "mg100_ble.h"
 #include "lte.h"
 #include "aws.h"
 #include "nv.h"
@@ -165,7 +165,7 @@ static void appStateAwsSendSensorData(void)
 		return;
 	}
 
-	setAwsStatusWrapper(oob_ble_get_central_connection(),
+	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_CONNECTED);
 
 	int take =
@@ -234,7 +234,7 @@ static void appStateAwsConnect(void)
 	if (awsConnect() != 0) {
 		MAIN_LOG_ERR("Could not connect to aws, retrying in %d seconds",
 			     RETRY_AWS_ACTION_TIMEOUT_SECONDS);
-		setAwsStatusWrapper(oob_ble_get_central_connection(),
+		setAwsStatusWrapper(mg100_ble_get_central_connection(),
 				    AWS_STATUS_CONNECTION_ERR);
 		/* wait some time before trying again */
 		k_sleep(K_SECONDS(RETRY_AWS_ACTION_TIMEOUT_SECONDS));
@@ -245,7 +245,7 @@ static void appStateAwsConnect(void)
 	commissioned = true;
 	allowCommissioning = false;
 
-	setAwsStatusWrapper(oob_ble_get_central_connection(),
+	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_CONNECTING);
 
 	if (initShadow) {
@@ -266,7 +266,7 @@ static bool areCertsSet(void)
 static void appStateAwsDisconnect(void)
 {
 	MAIN_LOG_DBG("AWS disconnect state");
-	setAwsStatusWrapper(oob_ble_get_central_connection(),
+	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_DISCONNECTED);
 	stopSendDataTimer();
 	awsDisconnect();
@@ -315,7 +315,7 @@ static void appStateWaitForLte(void)
 {
 	MAIN_LOG_DBG("Wait for LTE state");
 
-	setAwsStatusWrapper(oob_ble_get_central_connection(),
+	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_DISCONNECTED);
 
 	if (!lteIsReady()) {
@@ -355,7 +355,7 @@ static void appStateCommissionDevice(void)
 {
 	MAIN_LOG_DBG("Commission device state");
 	printk("\n\nWaiting to commission device\n\n");
-	setAwsStatusWrapper(oob_ble_get_central_connection(),
+	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_NOT_PROVISIONED);
 	allowCommissioning = true;
 
@@ -604,18 +604,18 @@ void main(void)
 	/* Start up BLE portion of the demo */
 	cell_svc_init();
 	cell_svc_assign_connection_handler_getter(
-		oob_ble_get_central_connection);
+		mg100_ble_get_central_connection);
 	cell_svc_set_imei(lteInfo->IMEI);
 	cell_svc_set_fw_ver(lteInfo->radio_version);
 	cell_svc_set_iccid(lteInfo->ICCID);
 
 	bss_init();
-	bss_assign_connection_handler_getter(oob_ble_get_central_connection);
+	bss_assign_connection_handler_getter(mg100_ble_get_central_connection);
 
 	/* Setup the power service */
 	power_svc_init();
 	power_svc_assign_connection_handler_getter(
-		oob_ble_get_central_connection);
+		mg100_ble_get_central_connection);
 	power_init();
 
 	bootloader_init();
@@ -632,8 +632,8 @@ void main(void)
 		aws_svc_set_status(NULL, AWS_STATUS_NOT_PROVISIONED);
 	}
 
-	oob_ble_initialise(lteInfo->IMEI);
-	oob_ble_set_callback(SensorUpdated);
+	mg100_ble_initialise(lteInfo->IMEI);
+	mg100_ble_set_callback(SensorUpdated);
 
 	appReady = true;
 	printk("\n!!!!!!!! App is ready! !!!!!!!!\n");
@@ -653,7 +653,7 @@ exit:
 }
 
 #ifdef CONFIG_SHELL
-SHELL_STATIC_SUBCMD_SET_CREATE(oob_cmds,
+SHELL_STATIC_SUBCMD_SET_CREATE(mg100_cmds,
 			       SHELL_CMD_ARG(set_cert, NULL, "Set device cert",
 					     shell_set_aws_device_cert, 2, 0),
 			       SHELL_CMD_ARG(set_key, NULL, "Set device key",
@@ -671,7 +671,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(oob_cmds,
 #endif
 			       SHELL_SUBCMD_SET_END /* Array terminated. */
 );
-SHELL_CMD_REGISTER(oob, &oob_cmds, "OOB Demo commands", NULL);
+SHELL_CMD_REGISTER(mg100, &mg100_cmds, "MG100 commands", NULL);
 
 static int shell_send_at_cmd(const struct shell *shell, size_t argc,
 			     char **argv)

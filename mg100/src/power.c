@@ -9,7 +9,7 @@
 #include <logging/log_output.h>
 #include <logging/log_ctrl.h>
 #define LOG_LEVEL LOG_LEVEL_INF
-LOG_MODULE_REGISTER(oob_power);
+LOG_MODULE_REGISTER(mg100_power);
 
 #define POWER_LOG_INF(...) LOG_INF(__VA_ARGS__)
 #define POWER_LOG_ERR(...) LOG_ERR(__VA_ARGS__)

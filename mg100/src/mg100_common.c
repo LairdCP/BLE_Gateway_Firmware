@@ -1,4 +1,4 @@
-/* oob_common.c -
+/* mg100_common.c -
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -7,9 +7,9 @@
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(oob_common);
+LOG_MODULE_REGISTER(mg100_common);
 
-#include "oob_common.h"
+#include "mg100_common.h"
 
 void strncpy_replace_underscore_with_space(char *restrict s1,
 					   const char *restrict s2, size_t size)

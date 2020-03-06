@@ -1,13 +1,13 @@
 /* lte.c - LTE management
  *
- * Copyright (c) 2019 Laird Connectivity
+ * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(oob_lte);
+LOG_MODULE_REGISTER(mg100_lte);
 
 #include <zephyr.h>
 #include <net/net_if.h>
@@ -20,7 +20,7 @@ LOG_MODULE_REGISTER(oob_lte);
 #include <drivers/modem/hl7800.h>
 #include "ble_cellular_service.h"
 #include "led.h"
-#include "oob_common.h"
+#include "mg100_common.h"
 
 #include "lte.h"
 

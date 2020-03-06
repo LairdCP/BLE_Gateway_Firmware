@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Laird Connectivity
+ * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -48,7 +48,7 @@ static const unsigned char aws_root_ca[] =
 
 #define APP_MQTT_BUFFER_SIZE 128
 
-#define DEFAULT_MQTT_CLIENTID "pinnacle100_oob"
+#define DEFAULT_MQTT_CLIENTID "mg100"
 
 #define SHADOW_STATE_NULL "{\"state\":null}"
 

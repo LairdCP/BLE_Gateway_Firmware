@@ -7,13 +7,13 @@
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(oob_power_svc);
+LOG_MODULE_REGISTER(mg100_power_svc);
 
 #include <bluetooth/uuid.h>
 #include <bluetooth/gatt.h>
 #include <bluetooth/bluetooth.h>
 
-#include "oob_common.h"
+#include "mg100_common.h"
 #include "laird_bluetooth.h"
 #include "ble_power_service.h"
 #include "power.h"

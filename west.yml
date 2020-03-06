@@ -43,4 +43,4 @@ manifest:
       remote: LairdInternal
 
   self:
-    path: oob_demo
+    path: mg100

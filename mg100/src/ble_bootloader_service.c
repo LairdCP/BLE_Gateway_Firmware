@@ -13,7 +13,7 @@ LOG_MODULE_REGISTER(ble_bootloader_service);
 #include <bluetooth/gatt.h>
 #include <bluetooth/bluetooth.h>
 
-#include "oob_common.h"
+#include "mg100_common.h"
 #include "laird_bluetooth.h"
 #include "ble_bootloader_service.h"
 #include "Bootloader_External_Settings.h"

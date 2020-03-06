@@ -1,13 +1,13 @@
-/* oob_ble.c - BLE portion for out of box demo
+/* mg100_ble.c - BLE portion for the MG100 product
  *
- * Copyright (c) 2019 Laird Connectivity
+ * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(oob_ble);
+LOG_MODULE_REGISTER(mg100_ble);
 
 #include <zephyr.h>
 #include <zephyr/types.h>
@@ -16,8 +16,8 @@ LOG_MODULE_REGISTER(oob_ble);
 #include <bluetooth/uuid.h>
 #include <version.h>
 
-#include "oob_common.h"
-#include "oob_ble.h"
+#include "mg100_common.h"
+#include "mg100_ble.h"
 #include "ble_cellular_service.h"
 #include "ble_sensor_service.h"
 #include "laird_utility_macros.h"
@@ -661,11 +661,11 @@ static void set_ble_state(enum ble_state state)
 	}
 }
 
-/* Function for initialising the BLE portion of the OOB demo */
-void oob_ble_initialise(const char *imei)
+/* Function for initialising the BLE portion of the MG100 product */
+void mg100_ble_initialise(const char *imei)
 {
 	int err;
-	char devName[sizeof("Pinnacle 100 OOB-1234567")];
+	char devName[sizeof("MG100-1234567")];
 	int devNameEnd;
 	int imeiEnd;
 
@@ -699,12 +699,12 @@ void oob_ble_initialise(const char *imei)
 }
 
 /* Function for setting the sensor read callback function */
-void oob_ble_set_callback(sensor_updated_function_t func)
+void mg100_ble_set_callback(sensor_updated_function_t func)
 {
 	SensorCallbackFunction = func;
 }
 
-struct bt_conn *oob_ble_get_central_connection(void)
+struct bt_conn *mg100_ble_get_central_connection(void)
 {
 	return central_conn;
 }

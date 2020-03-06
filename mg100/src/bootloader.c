@@ -7,7 +7,7 @@
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_INF
-LOG_MODULE_REGISTER(oob_bootloader);
+LOG_MODULE_REGISTER(mg100_bootloader);
 
 #define BOOTLOADER_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 

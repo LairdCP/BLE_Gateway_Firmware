@@ -1,13 +1,13 @@
 /* ble_aws_service.c - BLE AWS Service
  *
- * Copyright (c) 2019 Laird Connectivity
+ * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(oob_aws_svc);
+LOG_MODULE_REGISTER(mg100_aws_svc);
 
 #include <errno.h>
 #include <bluetooth/uuid.h>
@@ -18,7 +18,7 @@ LOG_MODULE_REGISTER(oob_aws_svc);
 #include "nv.h"
 #include "aws.h"
 #include "laird_bluetooth.h"
-#include "oob_common.h"
+#include "mg100_common.h"
 
 #define AWS_SVC_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define AWS_SVC_LOG_WRN(...) LOG_WRN(__VA_ARGS__)

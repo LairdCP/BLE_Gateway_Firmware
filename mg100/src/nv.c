@@ -1,13 +1,13 @@
 /* nv.c - Non-volitile storage for the app
  *
- * Copyright (c) 2019 Laird Connectivity
+ * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(oob_nv);
+LOG_MODULE_REGISTER(mg100_nv);
 
 #include <zephyr.h>
 #include <device.h>

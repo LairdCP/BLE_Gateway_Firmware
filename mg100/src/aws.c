@@ -1,20 +1,20 @@
 /* aws.c - AWS APIs
  *
- * Copyright (c) 2019 Laird Connectivity
+ * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(oob_aws);
+LOG_MODULE_REGISTER(mg100_aws);
 
 #include <mbedtls/ssl.h>
 #include <net/socket.h>
 #include <net/mqtt.h>
 #include <stdio.h>
 
-#include "oob_common.h"
+#include "mg100_common.h"
 #include "aws.h"
 
 #ifndef CONFIG_MQTT_LIB_TLS

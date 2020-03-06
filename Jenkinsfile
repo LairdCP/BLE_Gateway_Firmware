@@ -18,10 +18,10 @@ pipeline {
     }
     environment {
         BUILD_DIR = "build"
-        APP_SOURCE = "oob_demo\\oob_demo"
+        APP_SOURCE = "mg100_firmware\\mg100"
         BUILD_RESULT_HEX_FILE = "${env.BUILD_DIR}\\zephyr\\zephyr.hex"
-        VERSION_INFO_FILE_PATH = "oob_demo/oob_demo/include/oob_common.h"
-        FINAL_RESULT_NAME = "oob_demo"
+        VERSION_INFO_FILE_PATH = "mg100_firmware/mg100/include/mg100_common.h"
+        FINAL_RESULT_NAME = "mg100_demo"
     }
     stages {
         stage('West init') {
@@ -37,7 +37,7 @@ pipeline {
         }
         stage('Build') {
             steps{
-                bat "west build -b pinnacle_100_dvk -d ${env.BUILD_DIR} ${env.APP_SOURCE} -- -D BOARD_ROOT=%cd%\\oob_demo"
+                bat "west build -b pinnacle_100_dvk -d ${env.BUILD_DIR} ${env.APP_SOURCE} -- -D BOARD_ROOT=%cd%\\mg100"
             }
         }
         stage('Package') {

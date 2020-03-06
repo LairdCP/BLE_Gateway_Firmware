@@ -16,7 +16,7 @@
                 "${workspaceFolder}/../zephyr/samples/bluetooth",
                 "${workspaceFolder}/../zephyr/ext/hal/nordic/nrfx/mdk",
                 "${workspaceFolder}/build/zephyr/include/generated",
-                "${workspaceFolder}/oob_demo/include"
+                "${workspaceFolder}/mg100/include"
             ],
             "defines": [
                 "_DEBUG",

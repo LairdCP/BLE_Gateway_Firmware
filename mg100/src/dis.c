@@ -36,7 +36,7 @@ static struct bt_uuid_16 FIRMWARE_REVISION_UUID = BT_UUID_INIT_16(0x2a26);
 static struct bt_uuid_16 SOFTWARE_REVISION_UUID = BT_UUID_INIT_16(0x2a28);
 static struct bt_uuid_16 MANUFACTURER_NAME_UUID = BT_UUID_INIT_16(0x2a29);
 
-static const char MODEL_NUMBER[] = "Pinnacle 100";
+static const char MODEL_NUMBER[] = "MG100";
 static const char SOFTWARE_REVISION[] = APP_VERSION_STRING;
 static const char MANUFACTURER_NAME[] = "Laird Connectivity";
 

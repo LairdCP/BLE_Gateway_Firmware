@@ -43,10 +43,12 @@ static const unsigned char aws_root_ca[] =
 
 #define APP_SLEEP_MSECS 500
 
+#define PUBLISH_TIMEOUT_TICKS K_SECONDS(5)
+
 #define DNS_RETRIES 1
 #define APP_CONNECT_TRIES 1
 
-#define APP_MQTT_BUFFER_SIZE 128
+#define APP_MQTT_BUFFER_SIZE 1024
 
 #define DEFAULT_MQTT_CLIENTID "mg100"
 
@@ -61,8 +63,10 @@ static const unsigned char aws_root_ca[] =
 #define SHADOW_RADIO_RSSI "\"radio_rssi\":"
 #define SHADOW_RADIO_SINR "\"radio_sinr\":"
 
-#define AWS_RX_THREAD_STACK_SIZE 1024
-#define AWS_RX_THREAD_PRIORITY K_PRIO_COOP(1)
+#define AWS_RX_THREAD_STACK_SIZE 4096
+#define AWS_RX_THREAD_PRIORITY K_PRIO_COOP(15)
+
+#define GATEWAY_TOPIC NULL
 
 struct shadow_persistent_values {
 	const char *firmware_version;
@@ -112,19 +116,21 @@ void awsSetRootCa(const char *cred);
 void awsSetEndpoint(const char *ep);
 void awsSetClientId(const char *id);
 int awsGetServerAddr(void);
-int awsConnect();
+int awsConnect(void);
 bool awsConnected(void);
 void awsDisconnect(void);
 int awsKeepAlive(void);
-int awsSendData(char *data);
-int awsPublishShadowPersistentData();
+int awsSendData(char *data, u8_t *topic);
+int awsPublishShadowPersistentData(void);
 int awsSetShadowKernelVersion(const char *version);
 int awsSetShadowIMEI(const char *imei);
 int awsSetShadowICCID(const char *iccid);
 int awsSetShadowRadioSerialNumber(const char *sn);
 int awsSetShadowRadioFirmwareVersion(const char *version);
 int awsSetShadowAppFirmwareVersion(const char *version);
-int awsPublishSensorData(float temperature, float humidity, int pressure,
-			 int radioRssi, int radioSinr);
+int awsPublishBl654SensorData(float temperature, float humidity,
+			      float pressure);
+int awsPublishPinnacleData(int radioRssi, int radioSinr);
+int awsSubscribe(void);
 
 #endif /* __AWS_H__ */

@@ -31,14 +31,14 @@ LOG_MODULE_REGISTER(mg100_main);
 #include "power.h"
 #include "dis.h"
 #include "bootloader.h"
+#include "Framework.h"
+#include "SensorTask.h"
+#include "SensorBt510.h"
 
 #define MAIN_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define MAIN_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
 #define MAIN_LOG_INF(...) LOG_INF(__VA_ARGS__)
 #define MAIN_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
-
-/* This is a callback function which is called when the send data timer has expired */
-static void SendDataTimerExpired(struct k_timer *dummy);
 
 static void appStateAwsSendSensorData(void);
 static void appStateAwsInitShadow(void);
@@ -47,92 +47,88 @@ static void appStateAwsDisconnect(void);
 static void appStateAwsResolveServer(void);
 static void appStateWaitForLte(void);
 static void appStateCommissionDevice(void);
-static void appStateWaitForSensorData(void);
+static void appStateWaitForModemDisconnect(void);
 
 static void setAwsStatusWrapper(struct bt_conn *conn, enum aws_status status);
 
-K_TIMER_DEFINE(SendDataTimer, SendDataTimerExpired, NULL);
-K_SEM_DEFINE(send_data_sem, 0, 1);
-K_MUTEX_DEFINE(sensor_data_lock);
+static void initializeAwsMsgReceiver(void);
+static void awsMsgHandler(void);
+static void generateBt510shadowRequestMsg(void);
+static void blinkLedForDataSend(void);
+
 K_SEM_DEFINE(lte_ready_sem, 0, 1);
 K_SEM_DEFINE(rx_cert_sem, 0, 1);
 
 static float temperatureReading = 0;
 static float humidityReading = 0;
-static u32_t pressureReading = 0;
+static float pressureReading = 0;
 static bool initShadow = true;
-static bool sendSensorDataAsap = true;
 static bool resolveAwsServer = true;
 
 static bool bUpdatedTemperature = false;
 static bool bUpdatedHumidity = false;
 static bool bUpdatedPressure = false;
 
+static bool subscribed;
 static bool commissioned;
 static bool allowCommissioning = false;
 static bool appReady = false;
 static bool devCertSet;
 static bool devKeySet;
 
-static app_state_function_t appState;
+static volatile app_state_function_t appState;
 struct lte_status *lteInfo;
 
-/* Turn the LED off for 1 second when data is sent.
- * This pattern assumes LED is already on an will be turned back on by the 
- * pattern complete callback.
- */
-static const struct led_blink_pattern LED_BLIP_PATTERN = { .on_time = K_MSEC(1),
-							   .off_time =
-								   K_SECONDS(1),
-							   .repeat_count = 1 };
+static FwkMsgReceiver_t awsMsgReceiver;
 
-static void startSendDataTimer(void)
-{
-	/* Start the recurring data sending timer */
-	k_timer_start(&SendDataTimer, K_SECONDS(DATA_SEND_TIME_SECONDS),
-		      K_SECONDS(DATA_SEND_TIME_SECONDS));
-}
+K_MSGQ_DEFINE(sensorQ, FWK_QUEUE_ENTRY_SIZE, 16, FWK_QUEUE_ALIGNMENT);
 
-static void stopSendDataTimer(void)
-{
-	k_timer_stop(&SendDataTimer);
-}
-
-/* This is a callback function which is called when the send data timer has expired */
-static void SendDataTimerExpired(struct k_timer *dummy)
-{
-	if (bUpdatedTemperature && bUpdatedHumidity && bUpdatedPressure) {
-		bUpdatedTemperature = false;
-		bUpdatedHumidity = false;
-		bUpdatedPressure = false;
-		// All sensor readings have been received
-		k_sem_give(&send_data_sem);
-	}
-}
+static u64_t linkUpTime = 0;
+static u32_t linkUpDelta;
 
 /* This is a callback function which receives sensor readings */
 static void SensorUpdated(u8_t sensor, s32_t reading)
 {
-	k_mutex_lock(&sensor_data_lock, K_FOREVER);
+	static u64_t bmeEventTime = 0;
+	/* On init send first data immediately. */
+	static u32_t delta = BL654_SENSOR_SEND_TO_AWS_RATE_TICKS;
+
 	if (sensor == SENSOR_TYPE_TEMPERATURE) {
-		// Divide by 100 to get xx.xxC format
+		/* Divide by 100 to get xx.xxC format */
 		temperatureReading = reading / 100.0;
 		bUpdatedTemperature = true;
 	} else if (sensor == SENSOR_TYPE_HUMIDITY) {
-		// Divide by 100 to get xx.xx% format
+		/* Divide by 100 to get xx.xx% format */
 		humidityReading = reading / 100.0;
 		bUpdatedHumidity = true;
 	} else if (sensor == SENSOR_TYPE_PRESSURE) {
-		// Divide by 10 to get x.xPa format
-		pressureReading = reading / 10;
+		/* Divide by 10 to get x.xPa format */
+		pressureReading = reading / 10.0;
 		bUpdatedPressure = true;
 	}
-	k_mutex_unlock(&sensor_data_lock);
-	if (sendSensorDataAsap && bUpdatedTemperature && bUpdatedHumidity &&
-	    bUpdatedPressure) {
-		sendSensorDataAsap = false;
-		k_sem_give(&send_data_sem);
-		startSendDataTimer();
+
+	delta += k_uptime_delta_32(&bmeEventTime);
+	if (delta < BL654_SENSOR_SEND_TO_AWS_RATE_TICKS) {
+		return;
+	}
+
+	if (bUpdatedTemperature && bUpdatedHumidity && bUpdatedPressure) {
+		BL654SensorMsg_t *pMsg =
+			(BL654SensorMsg_t *)BufferPool_TryToTake(
+				sizeof(BL654SensorMsg_t));
+		if (pMsg == NULL) {
+			return;
+		}
+		pMsg->header.msgCode = FMC_BL654_SENSOR_EVENT;
+		pMsg->header.rxId = FWK_ID_AWS;
+		pMsg->temperatureC = temperatureReading;
+		pMsg->humidityPercent = humidityReading;
+		pMsg->pressurePa = pressureReading;
+		FRAMEWORK_MSG_TRY_TO_SEND(pMsg);
+		bUpdatedTemperature = false;
+		bUpdatedHumidity = false;
+		bUpdatedPressure = false;
+		delta = 0;
 	}
 }
 
@@ -140,26 +136,27 @@ static void lteEvent(enum lte_event event)
 {
 	switch (event) {
 	case LTE_EVT_READY:
+		k_uptime_delta_32(&linkUpTime);
 		k_sem_give(&lte_ready_sem);
 		break;
 	case LTE_EVT_DISCONNECTED:
-		/* No need to trigger a reconnect.
-		*  If next sensor data TX fails we will reconnect. 
-		*/
+		if (awsConnected()) {
+			appState = appStateAwsDisconnect;
+		} else {
+			appState = appStateWaitForLte;
+		}
+		break;
+	default:
 		break;
 	}
 }
 
 static void appStateAwsSendSensorData(void)
 {
-	int rc = 0;
-
+	int rc;
 	MAIN_LOG_DBG("AWS send sensor data state");
 
-	/* If decommissioned then disconnect.
-	 * If disconnected then still go through the disconnect state so that the send
-	 * data timer is disabled.
-	 */
+	/* If decommissioned then disconnect. */
 	if (!commissioned || !awsConnected()) {
 		appState = appStateAwsDisconnect;
 		return;
@@ -168,27 +165,132 @@ static void appStateAwsSendSensorData(void)
 	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_CONNECTED);
 
-	int take =
-		k_sem_take(&send_data_sem, K_SECONDS(DATA_SEND_TIME_SECONDS));
-	if (take == 0) {
-		lteInfo = lteGetStatus();
-
-		k_mutex_lock(&sensor_data_lock, K_FOREVER);
-		MAIN_LOG_INF("Sending Sensor data t:%d, h:%d, p:%d...",
-			     (int)(temperatureReading * 100),
-			     (int)(humidityReading * 100), pressureReading);
-		rc = awsPublishSensorData(temperatureReading, humidityReading,
-					  pressureReading, lteInfo->rssi,
-					  lteInfo->sinr);
-		if (rc != 0) {
-			MAIN_LOG_ERR("Could not send sensor data (%d)", rc);
-			appState = appStateAwsDisconnect;
-		} else {
-			MAIN_LOG_INF("Data sent");
-			led_blink(GREEN_LED2, &LED_BLIP_PATTERN);
+	if (!BT510_USES_SINGLE_AWS_TOPIC) {
+		if (!subscribed) {
+			rc = awsSubscribe();
+			subscribed = (rc == 0);
 		}
 
-		k_mutex_unlock(&sensor_data_lock);
+		generateBt510shadowRequestMsg();
+	}
+
+	lteInfo = lteGetStatus();
+	rc = awsPublishPinnacleData(lteInfo->rssi, lteInfo->sinr);
+	if (rc == 0) {
+		blinkLedForDataSend();
+		awsMsgHandler();
+	}
+	LOG_INF("%u unsent messages", k_msgq_num_used_get(&sensorQ));
+
+	/* The purpose of this delay is to allow the UI (green LED) to be on
+	 * for a noticeable amount of time after data is sent. */
+	led_turn_on(GREEN_LED2);
+	k_sleep(SEND_DATA_TO_DISCONNECT_DELAY_TICKS);
+
+#if CONFIG_MODEM_HL7800_PSM
+	/* Disconnect from AWS now that the data has been sent. */
+	appState = appStateAwsDisconnect;
+#else
+	k_sleep(PSM_DISABLED_SEND_DATA_RATE_TICKS);
+#endif
+}
+
+/* The modem will periodically wake and sleep.
+ * After data is sent wait for the modem to go to sleep.
+ * Then wait for the modem to wakeup.
+ * (The modem controls the timing of sending the data.)
+ */
+static void appStateWaitForModemDisconnect(void)
+{
+	MAIN_LOG_DBG("Wait for Disconnect state");
+
+	while (lteIsReady()) {
+		k_sleep(WAIT_FOR_DISCONNECT_POLL_RATE_TICKS);
+	}
+
+	if (appState == appStateWaitForModemDisconnect) {
+		appState = appStateWaitForLte;
+	}
+}
+
+/* This function will throw away sensor data if it can't send it. */
+static void awsMsgHandler(void)
+{
+	int rc = 0;
+	FwkMsg_t *pMsg;
+
+	linkUpDelta = 0;
+
+	while (rc == 0) {
+#if CONFIG_MODEM_HL7800_PSM
+		/* Only send data if we have enough time to send it */
+		linkUpDelta += k_uptime_delta_32(&linkUpTime);
+		if (linkUpDelta >= PSM_ENABLED_SEND_DATA_WINDOW_TICKS) {
+			LOG_INF("Send data window closed");
+			return;
+		}
+#endif
+		/* Remove sensor/gateway data from queue and send it to cloud. */
+		rc = -EINVAL;
+		pMsg = NULL;
+		Framework_Receive(awsMsgReceiver.pQueue, &pMsg, K_NO_WAIT);
+		if (pMsg == NULL) {
+			return;
+		}
+
+		switch (pMsg->header.msgCode) {
+		case FMC_BL654_SENSOR_EVENT: {
+			BL654SensorMsg_t *pBmeMsg = (BL654SensorMsg_t *)pMsg;
+			rc = awsPublishBl654SensorData(pBmeMsg->temperatureC,
+						       pBmeMsg->humidityPercent,
+						       pBmeMsg->pressurePa);
+		} break;
+
+		case FMC_BT510_EVENT: {
+			JsonMsg_t *pJsonMsg = (JsonMsg_t *)pMsg;
+			rc = awsSendData(pJsonMsg->buffer,
+					 BT510_USES_SINGLE_AWS_TOPIC ?
+						 GATEWAY_TOPIC :
+						 pJsonMsg->topic);
+		} break;
+
+		case FMC_BT510_GATEWAY_OUT: {
+			JsonMsg_t *pJsonMsg = (JsonMsg_t *)pMsg;
+			rc = awsSendData(pJsonMsg->buffer, GATEWAY_TOPIC);
+		} break;
+
+		default:
+			break;
+		}
+		BufferPool_Free(pMsg);
+
+		if (rc != 0) {
+			MAIN_LOG_ERR("Could not send data (%d)", rc);
+		} else {
+			MAIN_LOG_INF("Data sent");
+			blinkLedForDataSend();
+		}
+	}
+}
+
+static void blinkLedForDataSend(void)
+{
+	led_turn_off(GREEN_LED2);
+	k_sleep(DATA_SEND_LED_OFF_TIME_TICKS);
+}
+
+/* Used to limit table generation to once per data interval. */
+static void generateBt510shadowRequestMsg(void)
+{
+	FwkMsg_t *pMsg = BufferPool_TryToTake(sizeof(FwkMsg_t));
+	if (pMsg != NULL) {
+		pMsg->header.msgCode = FMC_BT510_SHADOW_REQUEST;
+		pMsg->header.txId = FWK_ID_RESERVED;
+		pMsg->header.rxId = FWK_ID_SENSOR_TASK;
+		/* Try is used because the sensor task queue can be filled with ads. */
+		FRAMEWORK_MSG_TRY_TO_SEND(pMsg);
+		/* Allow sensor task to process message immediately (if system is idle). */
+		k_yield();
 	}
 }
 
@@ -210,16 +312,11 @@ static void appStateAwsInitShadow(void)
 	rc = awsPublishShadowPersistentData();
 	if (rc != 0) {
 		appState = appStateAwsDisconnect;
-		goto exit;
+	} else {
+		initShadow = false;
+		/* The shadow init is only sent once after the very first connect.*/
+		appState = appStateAwsSendSensorData; /* code */
 	}
-	initShadow = false;
-	/* The shadow init is only sent once after the very first connect.
-	*  we want to send the first sensor data ASAP after the shadow is inited
-	*/
-	sendSensorDataAsap = true;
-	appState = appStateAwsSendSensorData;
-exit:
-	return;
 }
 
 static void appStateAwsConnect(void)
@@ -232,12 +329,10 @@ static void appStateAwsConnect(void)
 	}
 
 	if (awsConnect() != 0) {
-		MAIN_LOG_ERR("Could not connect to aws, retrying in %d seconds",
-			     RETRY_AWS_ACTION_TIMEOUT_SECONDS);
+		MAIN_LOG_ERR("Could not connect to AWS");
 		setAwsStatusWrapper(mg100_ble_get_central_connection(),
 				    AWS_STATUS_CONNECTION_ERR);
-		/* wait some time before trying again */
-		k_sleep(K_SECONDS(RETRY_AWS_ACTION_TIMEOUT_SECONDS));
+		appState = appStateWaitForModemDisconnect;
 		return;
 	}
 
@@ -252,8 +347,6 @@ static void appStateAwsConnect(void)
 		/* Init the shadow once, the first time we connect */
 		appState = appStateAwsInitShadow;
 	} else {
-		/* after a connection we want to send the first sensor data ASAP */
-		sendSensorDataAsap = true;
 		appState = appStateAwsSendSensorData;
 	}
 }
@@ -268,26 +361,8 @@ static void appStateAwsDisconnect(void)
 	MAIN_LOG_DBG("AWS disconnect state");
 	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_DISCONNECTED);
-	stopSendDataTimer();
 	awsDisconnect();
-	appState = appStateWaitForSensorData;
-}
-
-/* On startup there is configuration data to send to AWS.
- * However, if there isn't sensor data to send then the connection will be
- * closed.  Wait for sensor data before re-opening connection.
- */
-static void appStateWaitForSensorData(void)
-{
-	MAIN_LOG_DBG("AWS Wait For Sensor Data state");
-
-	k_sem_take(&send_data_sem, K_FOREVER);
-
-	if (areCertsSet()) {
-		appState = appStateAwsConnect;
-	} else {
-		appState = appStateCommissionDevice;
-	}
+	appState = appStateWaitForModemDisconnect;
 }
 
 static void appStateAwsResolveServer(void)
@@ -300,11 +375,8 @@ static void appStateAwsResolveServer(void)
 	}
 
 	if (awsGetServerAddr() != 0) {
-		MAIN_LOG_ERR(
-			"Could not get server address, retrying in %d seconds",
-			RETRY_AWS_ACTION_TIMEOUT_SECONDS);
-		/* wait some time before trying again */
-		k_sleep(K_SECONDS(RETRY_AWS_ACTION_TIMEOUT_SECONDS));
+		MAIN_LOG_ERR("Could not get server address");
+		appState = appStateWaitForModemDisconnect;
 		return;
 	}
 	resolveAwsServer = false;
@@ -365,46 +437,6 @@ static void appStateCommissionDevice(void)
 	}
 }
 
-char *replaceWord(const char *s, const char *oldW, const char *newW, char *dest,
-		  int destSize)
-{
-	int i, cnt = 0;
-	int newWlen = strlen(newW);
-	int oldWlen = strlen(oldW);
-
-	/* Counting the number of times old word
-	*  occur in the string 
-	*/
-	for (i = 0; s[i] != '\0'; i++) {
-		if (strstr(&s[i], oldW) == &s[i]) {
-			cnt++;
-
-			/* Jumping to index after the old word. */
-			i += oldWlen - 1;
-		}
-	}
-
-	/* Make sure new string isn't too big */
-	if ((i + cnt * (newWlen - oldWlen) + 1) > destSize) {
-		return NULL;
-	}
-
-	i = 0;
-	while (*s) {
-		/* compare the substring with the result */
-		if (strstr(s, oldW) == s) {
-			strcpy(&dest[i], newW);
-			i += newWlen;
-			s += oldWlen;
-		} else {
-			dest[i++] = *s++;
-		}
-	}
-
-	dest[i] = '\0';
-	return dest;
-}
-
 static void decommission(void)
 {
 	nvStoreCommissioned(false);
@@ -430,25 +462,24 @@ static void awsSvcEvent(enum aws_svc_event event)
 	}
 }
 
-/* When data is sent the LED is turned off for 1 second and then turned back
- * on.
- */
-static void ledPatternCompleteCallback(void)
-{
-	led_turn_on(GREEN_LED2);
-}
-
 static void setAwsStatusWrapper(struct bt_conn *conn, enum aws_status status)
 {
 	aws_svc_set_status(conn, status);
 
 	if (status == AWS_STATUS_CONNECTED) {
-		if (!led_pattern_busy(GREEN_LED2)) {
-			led_turn_on(GREEN_LED2);
-		}
+		led_turn_on(GREEN_LED2);
 	} else {
 		led_turn_off(GREEN_LED2);
 	}
+}
+
+static void initializeAwsMsgReceiver(void)
+{
+	awsMsgReceiver.id = FWK_ID_AWS;
+	awsMsgReceiver.pQueue = &sensorQ;
+	awsMsgReceiver.rxBlockTicks = 0; /* unused */
+	awsMsgReceiver.pMsgDispatcher = NULL; /* unused */
+	Framework_RegisterReceiver(&awsMsgReceiver);
 }
 
 #ifdef CONFIG_SHELL
@@ -486,8 +517,8 @@ static int shellSetCert(enum CREDENTIAL_TYPE type, u8_t *cred)
 		return APP_ERR_CRED_TOO_LARGE;
 	}
 
-	replaceWord(cred, "\\n", "\n", newCred, expSize);
-	replaceWord(newCred, "\\s", " ", newCred, expSize);
+	replace_word(cred, "\\n", "\n", newCred, expSize);
+	replace_word(newCred, "\\s", " ", newCred, expSize);
 
 	rc = aws_svc_save_clear_settings(true);
 	if (rc < 0) {
@@ -542,8 +573,7 @@ static int shell_decommission(const struct shell *shell, size_t argc,
 }
 
 #ifdef CONFIG_REBOOT
-static int shell_reboot(const struct shell *shell, size_t argc,
-			      char **argv)
+static int shell_reboot(const struct shell *shell, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
@@ -553,8 +583,7 @@ static int shell_reboot(const struct shell *shell, size_t argc,
 	return 0;
 }
 
-static int shell_bootloader(const struct shell *shell, size_t argc,
-			      char **argv)
+static int shell_bootloader(const struct shell *shell, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
@@ -572,6 +601,10 @@ void main(void)
 
 	/* init LEDS */
 	led_init();
+
+	Framework_Initialize();
+	SensorTask_Initialize();
+	initializeAwsMsgReceiver();
 
 	/* Init NV storage */
 	rc = nvInit();
@@ -596,8 +629,6 @@ void main(void)
 	if (rc != 0) {
 		goto exit;
 	}
-	led_register_pattern_complete_function(GREEN_LED2,
-					       ledPatternCompleteCallback);
 
 	dis_initialize();
 
@@ -644,6 +675,8 @@ void main(void)
 		appState = appStateCommissionDevice;
 	}
 
+	print_thread_list();
+
 	while (true) {
 		appState();
 	}
@@ -653,23 +686,20 @@ exit:
 }
 
 #ifdef CONFIG_SHELL
-SHELL_STATIC_SUBCMD_SET_CREATE(mg100_cmds,
-			       SHELL_CMD_ARG(set_cert, NULL, "Set device cert",
-					     shell_set_aws_device_cert, 2, 0),
-			       SHELL_CMD_ARG(set_key, NULL, "Set device key",
-					     shell_set_aws_device_key, 2, 0),
-			       SHELL_CMD(reset, NULL,
-					 "Factory reset (decommission) device",
-					 shell_decommission),
+SHELL_STATIC_SUBCMD_SET_CREATE(
+	mg100_cmds,
+	SHELL_CMD_ARG(set_cert, NULL, "Set device cert",
+		      shell_set_aws_device_cert, 2, 0),
+	SHELL_CMD_ARG(set_key, NULL, "Set device key", shell_set_aws_device_key,
+		      2, 0),
+	SHELL_CMD(reset, NULL, "Factory reset (decommission) device",
+		  shell_decommission),
 #ifdef CONFIG_REBOOT
-			       SHELL_CMD(reboot, NULL,
-					 "Reboot module",
-					 shell_reboot),
-			       SHELL_CMD(bootloader, NULL,
-					 "Boot to UART bootloader",
-					 shell_bootloader),
+	SHELL_CMD(reboot, NULL, "Reboot module", shell_reboot),
+	SHELL_CMD(bootloader, NULL, "Boot to UART bootloader",
+		  shell_bootloader),
 #endif
-			       SHELL_SUBCMD_SET_END /* Array terminated. */
+	SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 SHELL_CMD_REGISTER(mg100, &mg100_cmds, "MG100 commands", NULL);
 
@@ -690,4 +720,43 @@ static int shell_send_at_cmd(const struct shell *shell, size_t argc,
 
 SHELL_CMD_REGISTER(at, NULL, "Send an AT command string to the HL7800",
 		   shell_send_at_cmd);
+
+static int print_thread_cmd(const struct shell *shell, size_t argc, char **argv)
+{
+	print_thread_list();
+	return 0;
+}
+
+SHELL_CMD_REGISTER(print_threads, NULL, "Print list of threads",
+		   print_thread_cmd);
 #endif /* CONFIG_SHELL */
+
+static void SoftwareReset(u32_t DelayMs)
+{
+#ifdef CONFIG_REBOOT
+	LOG_ERR("Software Reset in %d milliseconds", DelayMs);
+	k_sleep(K_MSEC(DelayMs));
+	power_reboot_module(REBOOT_TYPE_NORMAL);
+#endif
+}
+
+EXTERNED void Framework_AssertionHandler(char *file, int line)
+{
+	static atomic_t busy = ATOMIC_INIT(0);
+	/* prevent recursion (buffer alloc fail, ...) */
+	if (!busy) {
+		atomic_set(&busy, 1);
+		LOG_ERR("\r\n!---> Fwk Assertion <---! %s:%d\r\n", file, line);
+		LOG_ERR("Thread name: %s",
+			log_strdup(k_thread_name_get(k_current_get())));
+	}
+
+#if LAIRD_DEBUG
+	/* breakpoint location */
+	volatile bool wait = true;
+	while (wait)
+		;
+#endif
+
+	SoftwareReset(FWK_DEFAULT_RESET_DELAY_MS);
+}

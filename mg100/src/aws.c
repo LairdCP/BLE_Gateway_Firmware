@@ -13,8 +13,10 @@ LOG_MODULE_REGISTER(mg100_aws);
 #include <net/socket.h>
 #include <net/mqtt.h>
 #include <stdio.h>
+#include <kernel.h>
 
 #include "mg100_common.h"
+#include "Framework.h"
 #include "aws.h"
 
 #ifndef CONFIG_MQTT_LIB_TLS
@@ -29,10 +31,13 @@ LOG_MODULE_REGISTER(mg100_aws);
 #define AWS_LOG_INF(...) LOG_INF(__VA_ARGS__)
 #define AWS_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
 
+#define CONVERSION_MAX_STR_LEN 10
+
 K_THREAD_STACK_DEFINE(rxThreadStack, AWS_RX_THREAD_STACK_SIZE);
 static struct k_thread rxThread;
 
 K_SEM_DEFINE(connected_sem, 0, 1);
+K_SEM_DEFINE(send_ack_sem, 0, 1);
 
 /* Buffers for MQTT client. */
 static u8_t rx_buffer[APP_MQTT_BUFFER_SIZE];
@@ -61,6 +66,10 @@ static struct shadow_reported_struct shadow_persistent_data;
 
 static char *server_endpoint;
 static char *root_ca;
+
+static int subscription_handler(struct mqtt_client *const client,
+				size_t length);
+static void subscription_flush(struct mqtt_client *const client, size_t length);
 
 static int tls_init(const u8_t *cert, const u8_t *key)
 {
@@ -121,6 +130,7 @@ static void wait(int timeout)
 void mqtt_evt_handler(struct mqtt_client *const client,
 		      const struct mqtt_evt *evt)
 {
+	int rc;
 	switch (evt->type) {
 	case MQTT_EVT_CONNACK:
 		if (evt->result != 0) {
@@ -151,6 +161,7 @@ void mqtt_evt_handler(struct mqtt_client *const client,
 		AWS_LOG_INF("PUBACK packet id: %u",
 			    evt->param.puback.message_id);
 
+		k_sem_give(&send_ack_sem);
 		break;
 
 	case MQTT_EVT_PUBLISH:
@@ -159,14 +170,62 @@ void mqtt_evt_handler(struct mqtt_client *const client,
 			break;
 		}
 
-		AWS_LOG_INF("MQTT RXd ID: %d Topic: %s len: %d",
+		AWS_LOG_INF("MQTT RXd ID: %d\r\n \tTopic: %s len: %d",
 			    evt->param.publish.message_id,
 			    evt->param.publish.message.topic.topic.utf8,
 			    evt->param.publish.message.payload.len);
 
+		rc = subscription_handler(
+			client, evt->param.publish.message.payload.len);
+		if ((rc >= 0) &&
+		    (rc < evt->param.publish.message.payload.len)) {
+			subscription_flush(
+				client,
+				evt->param.publish.message.payload.len - rc);
+		}
 		break;
 	default:
 		break;
+	}
+}
+
+static int subscription_handler(struct mqtt_client *const client, size_t length)
+{
+	/* Leave room for null character to allow easy printing */
+	size_t max_str_len = JSON_IN_BUFFER_SIZE - 1;
+	if (length > max_str_len) {
+		return 0;
+	}
+
+	JsonGatewayInMsg_t *pMsg =
+		BufferPool_TryToTake(sizeof(JsonGatewayInMsg_t));
+	if (pMsg == NULL) {
+		return 0;
+	}
+	pMsg->header.msgCode = FMC_BT510_GATEWAY_IN;
+	pMsg->header.rxId = FWK_ID_SENSOR_TASK;
+
+	int rc = mqtt_read_publish_payload(client, pMsg->buffer, max_str_len);
+	if (rc > 0) {
+		if (JSON_LOG_MQTT_RX_DATA) {
+			print_json("MQTT Read data", rc, pMsg->buffer);
+		}
+		FRAMEWORK_MSG_SEND(pMsg);
+	} else {
+		BufferPool_Free(pMsg);
+	}
+	return rc;
+}
+
+static void subscription_flush(struct mqtt_client *const client, size_t length)
+{
+	LOG_ERR("Discarding %u", length);
+	char junk;
+	size_t i;
+	for (i = 0; i < length; i++) {
+		if (mqtt_read_publish_payload(client, &junk, 1) != 1) {
+			break;
+		}
 	}
 }
 
@@ -181,19 +240,39 @@ static char *get_mqtt_topic(void)
 	return topic;
 }
 
+static char *get_mqtt_subscribe_topic(void)
+{
+	static char topic[sizeof(
+		"$aws/things/deviceId-###############/shadow/update/accepted")];
+
+	snprintk(topic, sizeof(topic),
+		 "$aws/things/deviceId-%s/shadow/update/accepted",
+		 shadow_persistent_data.state.reported.IMEI);
+
+	return topic;
+}
+
 static int publish_string(struct mqtt_client *client, enum mqtt_qos qos,
-			  char *data)
+			  char *data, u8_t *topic)
 {
 	struct mqtt_publish_param param;
 
 	param.message.topic.qos = qos;
-	param.message.topic.topic.utf8 = (u8_t *)get_mqtt_topic();
+	param.message.topic.topic.utf8 = topic;
 	param.message.topic.topic.size = strlen(param.message.topic.topic.utf8);
 	param.message.payload.data = data;
 	param.message.payload.len = strlen(param.message.payload.data);
 	param.message_id = sys_rand32_get();
 	param.dup_flag = 0U;
 	param.retain_flag = 0U;
+
+#if JSON_LOG_TOPIC
+	print_json("Publish Topic", param.message.topic.topic.size,
+		   param.message.topic.topic.utf8);
+#endif
+
+	print_json("Publish string", param.message.payload.len,
+		   param.message.payload.data);
 
 	return mqtt_publish(client, &param);
 }
@@ -301,9 +380,11 @@ int awsInit(void)
 	server_endpoint = AWS_DEFAULT_ENDPOINT;
 	mqtt_client_id = DEFAULT_MQTT_CLIENTID;
 
-	k_thread_create(&rxThread, rxThreadStack,
-			K_THREAD_STACK_SIZEOF(rxThreadStack), awsRxThread, NULL,
-			NULL, NULL, AWS_RX_THREAD_PRIORITY, 0, K_NO_WAIT);
+	k_thread_name_set(k_thread_create(&rxThread, rxThreadStack,
+					  K_THREAD_STACK_SIZEOF(rxThreadStack),
+					  awsRxThread, NULL, NULL, NULL,
+					  AWS_RX_THREAD_PRIORITY, 0, K_NO_WAIT),
+			  "aws");
 
 	return 0;
 }
@@ -423,72 +504,122 @@ int awsSetShadowRadioSerialNumber(const char *sn)
 	return 0;
 }
 
-static int sendData(char *data)
+static int sendData(char *data, u8_t *topic)
 {
 	int rc;
 
-	rc = publish_string(&client_ctx, MQTT_QOS_0_AT_MOST_ONCE, data);
+	/* Wait until acknowledgement so that we don't close AWS 
+	 * connection too soon after sending data.
+	 */
+	k_sem_reset(&send_ack_sem);
+
+	rc = publish_string(&client_ctx, MQTT_QOS_1_AT_LEAST_ONCE, data, topic);
 	if (rc != 0) {
 		AWS_LOG_ERR("MQTT publish err (%d)", rc);
 		goto done;
 	}
 
+	if (k_sem_take(&send_ack_sem, PUBLISH_TIMEOUT_TICKS) != 0) {
+		AWS_LOG_ERR("Publish timeout");
+		return -EAGAIN;
+	}
 done:
 	return rc;
 }
 
-int awsSendData(char *data)
+int awsSendData(char *data, u8_t *topic)
 {
-	return sendData(data);
+	// If the topic is NULL, then publish to the gateway (MG100) topic.
+	// Otherwise, publish to a sensor topic.
+	if (topic == NULL) {
+		return sendData(data, get_mqtt_topic());
+	} else {
+		return sendData(data, topic);
+	}
 }
 
 int awsPublishShadowPersistentData()
 {
-	int rc;
+	int rc = -ENOMEM;
 	size_t buf_len;
 
 	buf_len = json_calc_encoded_len(shadow_descr, ARRAY_SIZE(shadow_descr),
 					&shadow_persistent_data);
-	char msg[buf_len];
+	char *msg = k_calloc(buf_len, sizeof(char));
+	if (msg == NULL) {
+		return rc;
+	}
 
 	rc = json_obj_encode_buf(shadow_descr, ARRAY_SIZE(shadow_descr),
-				 &shadow_persistent_data, msg, sizeof(msg));
+				 &shadow_persistent_data, msg, buf_len);
 	if (rc < 0) {
 		goto done;
 	}
 
 	/* Clear the shadow and start fresh */
-	rc = sendData(SHADOW_STATE_NULL);
+	rc = awsSendData(SHADOW_STATE_NULL, GATEWAY_TOPIC);
 	if (rc < 0) {
 		goto done;
 	}
 
-	rc = sendData(msg);
+	rc = awsSendData(msg, GATEWAY_TOPIC);
 	if (rc < 0) {
 		goto done;
 	}
 
 done:
+	k_free(msg);
 	return rc;
 }
 
-int awsPublishSensorData(float temperature, float humidity, int pressure,
-			 int radioRssi, int radioSinr)
+/* BL654 Sensor with BME280 */
+int awsPublishBl654SensorData(float temperature, float humidity, float pressure)
 {
 	char msg[strlen(SHADOW_REPORTED_START) + strlen(SHADOW_TEMPERATURE) +
-		 10 + strlen(SHADOW_HUMIDITY) + 10 + strlen(SHADOW_PRESSURE) +
-		 10 + strlen(SHADOW_RADIO_RSSI) + 10 +
-		 strlen(SHADOW_RADIO_SINR) + 10 + strlen(SHADOW_REPORTED_END)];
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_HUMIDITY) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_PRESSURE) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_REPORTED_END)];
 
-	snprintf(msg, sizeof(msg), "%s%s%.2f,%s%.2f,%s%d,%s%d,%s%d%s",
+	snprintf(msg, sizeof(msg), "%s%s%.2f,%s%.2f,%s%.1f%s",
 		 SHADOW_REPORTED_START, SHADOW_TEMPERATURE, temperature,
 		 SHADOW_HUMIDITY, humidity, SHADOW_PRESSURE, pressure,
+		 SHADOW_REPORTED_END);
+
+	return awsSendData(msg, GATEWAY_TOPIC);
+}
+
+int awsPublishPinnacleData(int radioRssi, int radioSinr)
+{
+	char msg[strlen(SHADOW_REPORTED_START) + strlen(SHADOW_RADIO_RSSI) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_RADIO_SINR) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_REPORTED_END)];
+
+	snprintf(msg, sizeof(msg), "%s%s%d,%s%d%s", SHADOW_REPORTED_START,
 		 SHADOW_RADIO_RSSI, radioRssi, SHADOW_RADIO_SINR, radioSinr,
 		 SHADOW_REPORTED_END);
-	return awsSendData(msg);
+
+	return awsSendData(msg, GATEWAY_TOPIC);
 }
 
 bool awsConnected(void)
 {
 	return connected;
+}
+
+int awsSubscribe(void)
+{
+	struct mqtt_topic mt;
+	mt.topic.utf8 = get_mqtt_subscribe_topic();
+	mt.topic.size = strlen(mt.topic.utf8);
+	mt.qos = MQTT_QOS_1_AT_LEAST_ONCE;
+	struct mqtt_subscription_list list = {
+		.list = &mt,
+		.list_count = 1,
+		.message_id = (u16_t)sys_rand32_get()
+	};
+	int rc = mqtt_subscribe(&client_ctx, &list);
+	if (rc != 0) {
+		AWS_LOG_ERR("Subscribe status %d", rc);
+	}
+	return rc;
 }

@@ -22,6 +22,10 @@ manifest:
       url-base: git@git.devops.rfpros.com:/cp_cellular
     - name: zephyrproject
       url-base: https://github.com/zephyrproject-rtos
+    - name: jsmnRepo
+      url-base: https://github.com/zserge
+    - name: prodEng
+      url-base: git@git.devops.rfpros.com:prod_eng
 
   # Please add items below based on alphabetical order
   # Many of these dependencies we taken from the default Zephyr west manifest.
@@ -30,17 +34,27 @@ manifest:
     - name: zephyr
       repo-path: zephyr.git
       west-commands: scripts/west-commands.yml
-      revision: laird/hl7800
+      revision: c0a5d5f1521e2a2710032ac71bffbe88f0b82cca
       remote: LairdInternal
     - name: lairdconnectivityhal
       repo-path: zephyr-hal-lairdconnectivity.git
       path: zephyr/ext/hal/lairdconnectivity
-      revision: master
+      revision: ae68879a75c1955000e2d7a810b066f40295a946
       remote: LairdInternal
-    - name: pinnacle_100_boards
+    - name: zephyr_boards
       path: zephyr/boards/arm
-      revision: master
-      remote: LairdInternal
+      revision: de9470f2516837cd17e9da7ac850455deb5c411f
+      remote: prodEng
+    - name: jsmn
+      repo-path: jsmn.git
+      path: modules/jsmn
+      revision: 7b6858a5855299d173c5ab2b46e611bf9961cbef
+      remote: jsmnRepo
+    - name: framework
+      repo-path: framework_zephyr.git
+      path: modules/framework
+      revision: 986809c6e5d629c3d163806823e02694d569b3b8
+      remote: prodEng
 
   self:
     path: mg100

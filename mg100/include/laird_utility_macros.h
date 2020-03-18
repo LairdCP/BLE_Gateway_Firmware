@@ -23,4 +23,10 @@
 		return #val;                                                   \
 	}
 
+/* For state function pointers */
+#define IF_RETURN_STRING(x, val)                                               \
+	if ((x) == val) {                                                      \
+		return #val;                                                   \
+	}
+
 #endif

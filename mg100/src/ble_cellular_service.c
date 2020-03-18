@@ -97,11 +97,9 @@ static ssize_t read_apn(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 
 static ssize_t update_apn_in_modem(ssize_t length)
 {
-	if (length > 0) {
-		s32_t status = mdm_hl7800_update_apn(bcs.apn.value);
-		if (status < 0) {
-			return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
-		}
+	s32_t status = mdm_hl7800_update_apn(bcs.apn.value);
+	if (status < 0) {
+		return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
 	}
 	return length;
 }
@@ -367,9 +365,9 @@ void cell_svc_init()
 {
 	bt_gatt_service_register(&cell_svc);
 
-	size_t gatt_size = (sizeof(cell_attrs)/sizeof(cell_attrs[0]));
-	bcs.apn_index = lbt_find_gatt_index(&APN_UUID.uuid, cell_attrs,
-					    gatt_size);
+	size_t gatt_size = (sizeof(cell_attrs) / sizeof(cell_attrs[0]));
+	bcs.apn_index =
+		lbt_find_gatt_index(&APN_UUID.uuid, cell_attrs, gatt_size);
 	bcs.apn_username_index = lbt_find_gatt_index(&APN_USERNAME_UUID.uuid,
 						     cell_attrs, gatt_size);
 	bcs.apn_password_index = lbt_find_gatt_index(&APN_PASSWORD_UUID.uuid,
@@ -378,14 +376,14 @@ void cell_svc_init()
 						      cell_attrs, gatt_size);
 	bcs.startup_state_index = lbt_find_gatt_index(&STARTUP_STATE_UUID.uuid,
 						      cell_attrs, gatt_size);
-	bcs.rssi_index = lbt_find_gatt_index(&RSSI_UUID.uuid, cell_attrs,
-					     gatt_size);
-	bcs.sinr_index = lbt_find_gatt_index(&SINR_UUID.uuid, cell_attrs,
-					     gatt_size);
+	bcs.rssi_index =
+		lbt_find_gatt_index(&RSSI_UUID.uuid, cell_attrs, gatt_size);
+	bcs.sinr_index =
+		lbt_find_gatt_index(&SINR_UUID.uuid, cell_attrs, gatt_size);
 	bcs.sleep_state_index = lbt_find_gatt_index(&SLEEP_STATE_UUID.uuid,
 						    cell_attrs, gatt_size);
-	bcs.rat_index = lbt_find_gatt_index(&RAT_UUID.uuid, cell_attrs,
-					    gatt_size);
-	bcs.iccid_index = lbt_find_gatt_index(&ICCID_UUID.uuid, cell_attrs,
-					      gatt_size);
+	bcs.rat_index =
+		lbt_find_gatt_index(&RAT_UUID.uuid, cell_attrs, gatt_size);
+	bcs.iccid_index =
+		lbt_find_gatt_index(&ICCID_UUID.uuid, cell_attrs, gatt_size);
 }

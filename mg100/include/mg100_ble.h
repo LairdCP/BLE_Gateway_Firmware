@@ -13,6 +13,7 @@
 #include <bluetooth/uuid.h>
 #include <bluetooth/gatt.h>
 #include <misc/byteorder.h>
+#include "Framework.h"
 
 /* Callback function for passing sensor data */
 typedef void (*sensor_updated_function_t)(u8_t sensor, s32_t reading);
@@ -24,5 +25,8 @@ void mg100_ble_initialise(const char *imei);
 void mg100_ble_set_callback(sensor_updated_function_t func);
 
 struct bt_conn *mg100_ble_get_central_connection(void);
+
+void bl654_sensor_adv_handler(const bt_addr_le_t *addr, s8_t rssi, u8_t type,
+			      Ad_t *ad);
 
 #endif /* __MG100_BLE_H__ */

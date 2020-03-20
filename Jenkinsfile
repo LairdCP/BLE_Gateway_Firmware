@@ -39,7 +39,7 @@ pipeline {
         ARTIFACT_DIR = "artifacts"
 
         // Prefix used to name final artifacts
-        ARTIFACT_PREFIX = "480-00052"
+        ARTIFACT_PREFIX = "MG100"
 
         // Final artifact files relative to workspace
         ARTIFACT_APP_HEX = "%WORKSPACE%\\%ARTIFACT_DIR%\\%ARTIFACT_PREFIX%-R%VERSION%.hex"

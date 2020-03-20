@@ -167,7 +167,7 @@ The Pinnacle 100 will report sensor data every 90 seconds. The user can select t
 
 ## LED behavior
 
-LED1 - LED4 are all on when the modem is booting.
+LED1 - LED3 are all on when the modem is booting.
 
 The Blue LED (LED1) will blink once a second when the Pinnacle is searching for a Bluetooth sensor. When it finds a sensor and successfully connects to it, the LED will stay on.
 

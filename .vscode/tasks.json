@@ -15,9 +15,9 @@
       "label": "build",
       "type": "shell",
       // Linux based command is not tested
-      "command": "west build -b pinnacle_100_dvk -d build mg100",
+      "command": "west build -b mg100 -d build mg100",
       "windows": {
-        "command": "west build -b pinnacle_100_dvk -d ${workspaceRoot}\\build ${workspaceRoot}\\mg100"
+        "command": "west build -b mg100 -d ${workspaceRoot}\\build ${workspaceRoot}\\mg100"
       },
       "problemMatcher": []
     },
@@ -25,9 +25,9 @@
       "label": "re-build",
       "type": "shell",
       // Linux based command is not tested
-      "command": "west build -p -b pinnacle_100_dvk -d build mg100",
+      "command": "west build -p -b mg100 -d build mg100",
       "windows": {
-        "command": "west build -p -b pinnacle_100_dvk -d ${workspaceRoot}\\build ${workspaceRoot}\\mg100"
+        "command": "west build -p -b mg100 -d ${workspaceRoot}\\build ${workspaceRoot}\\mg100"
       },
       "problemMatcher": []
     },

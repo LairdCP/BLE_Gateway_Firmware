@@ -184,12 +184,10 @@ static void bsp_led_init(void)
 	led_bind_device(BLUE_LED1, LED1_DEV);
 	led_bind_device(GREEN_LED2, LED2_DEV);
 	led_bind_device(RED_LED3, LED3_DEV);
-	led_bind_device(GREEN_LED4, LED4_DEV);
 
 	led_configure_pin(BLUE_LED1, LED1);
 	led_configure_pin(GREEN_LED2, LED2);
 	led_configure_pin(RED_LED3, LED3);
-	led_configure_pin(GREEN_LED4, LED4);
 }
 
 static void system_workq_led_timer_handler(struct k_work *item)

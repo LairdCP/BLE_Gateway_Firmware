@@ -1,16 +1,19 @@
-/* SensorBt510.c - Processes advertisements from the BT510 sensor.
+/**
+ * @file sensor_bt510.c
+ * @brief
  *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(SensorBt510);
+LOG_MODULE_REGISTER(sensor_bt510);
 
-//=============================================================================
-// Includes
-//=============================================================================
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 
 #include <string.h>
 #include <zephyr.h>
@@ -18,20 +21,21 @@ LOG_MODULE_REGISTER(SensorBt510);
 
 #include "laird_bluetooth.h"
 #include "mg100_common.h"
-#include "AdFind.h"
-#include "ShadowBuilder.h"
-#include "SensorBt510.h"
+#include "qrtc.h"
+#include "ad_find.h"
+#include "shadow_builder.h"
+#include "sensor_bt510.h"
 
-//=============================================================================
-// Local Constant, Macro and Type Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Constant, Macro and Type Definitions                                 */
+/******************************************************************************/
 
 #define MAX_KEY_STR_LEN 64
 #define MANGLED_NAME_MAX_STR_LEN                                               \
 	(BT510_SENSOR_NAME_MAX_SIZE + sizeof('-') + MAX_KEY_STR_LEN)
 #define MANGLED_NAME_MAX_SIZE (MANGLED_NAME_MAX_STR_LEN + 1)
 
-// The +2 is an estimate to account for the JSON array wrapper
+/* The +2 is an estimate to account for the JSON array wrapper */
 #define SENSOR_GATEWAY_SHADOW_SIZE                                             \
 	((BT510_SENSOR_TABLE_SIZE + 2) *                                       \
 	 sizeof("[\"abcdabcdabcd\", 4294967296, false],"))
@@ -46,9 +50,9 @@ BUILD_ASSERT_MSG(SENSOR_GATEWAY_SHADOW_SIZE <= JSON_OUT_BUFFER_SIZE,
 
 #define BT510_MAX_EVENT_ID 0xFFFF
 
-//
-// This is the format for the 1M PHY.
-//
+/*
+ * This is the format for the 1M PHY.
+ */
 #define BT510_MSD_AD_FIELD_LENGTH 0x1b
 #define BT510_MSD_AD_PAYLOAD_LENGTH (BT510_MSD_AD_FIELD_LENGTH - 1)
 BUILD_ASSERT_MSG(sizeof(Bt510AdEvent_t) == BT510_MSD_AD_PAYLOAD_LENGTH,
@@ -82,26 +86,21 @@ typedef struct SensorTableEntry {
 	Bt510Rsp_t rsp;
 	s8_t rssi;
 	u8_t lastRecordType;
-	u32_t epoch;
+	u32_t rxEpoch;
 	bool whitelisted;
 } SensorTable_t;
 
-//=============================================================================
-// Global Data Definitions
-//=============================================================================
-// NA
-
-//=============================================================================
-// Local Data Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Data Definitions                                                     */
+/******************************************************************************/
 static bool whitelistProcessed;
 static bool gatewayShadowNeedsUpdate;
 static size_t tableCount;
 static SensorTable_t sensorTable[BT510_SENSOR_TABLE_SIZE];
 
-//=============================================================================
-// Local Function Prototypes
-//=============================================================================
+/******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
 static void ClearTable(void);
 static AdHandle_t FindBt510Advertisement(u8_t *pAdv, size_t Length);
 static AdHandle_t FindBt510ScanResponse(u8_t *pAdv, size_t Length);
@@ -132,15 +131,15 @@ static void Whitelist(const char *pAddrString, bool NextState);
 
 static s32_t GetTemperature(SensorTable_t *pEntry);
 
-//=============================================================================
-// Global Function Definitions
-//=============================================================================
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
 void SensorBt510_Initialize(void)
 {
 	ClearTable();
 }
 
-/* If a new event has occurred then generate a message to send sensor event 
+/* If a new event has occurred then generate a message to send sensor event
  * data to AWS.
  */
 void SensorBt510_AdvertisementHandler(const bt_addr_le_t *pAddr, s8_t rssi,
@@ -149,19 +148,19 @@ void SensorBt510_AdvertisementHandler(const bt_addr_le_t *pAddr, s8_t rssi,
 {
 	ARG_UNUSED(type);
 
-	// Take name from scan response and use it to populate table.
+	/* Take name from scan response and use it to populate table. */
 	AdHandle_t rspHandle = FindBt510ScanResponse(pAd->data, pAd->len);
 	if (rspHandle.pPayload != NULL) {
 		AdHandle_t nameHandle = AdFind_Name(pAd->data, pAd->len);
 		if (nameHandle.pPayload != NULL) {
 			AddEntry(pAddr, &nameHandle, &rspHandle);
 		}
-		// If scan response data was received then there won't be event data
+		/* If scan response data was received then there won't be event data */
 		return;
 	}
 
-	// If sensor name/addr isn't in table of BT510 devices,
-	// then the data can't be used.
+	/* If sensor name/addr isn't in table of BT510 devices,
+	 * then the data can't be used. */
 	u32_t tableIndex = FindTableIndex(pAddr);
 	if (tableIndex < BT510_SENSOR_TABLE_SIZE) {
 		AdHandle_t adHandle =
@@ -199,9 +198,9 @@ void SensorBt510_GenerateGatewayShadow(void)
 	}
 }
 
-//=============================================================================
-// Local Function Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
 
 /* The purpose of the table is to keep track of the event id and
  * associate names with addresses.
@@ -227,6 +226,7 @@ static void AdEventHandler(AdHandle_t *pHandle, u8_t Rssi, u32_t Index)
 		memcpy(&sensorTable[Index].ad, pHandle->pPayload,
 		       sizeof(Bt510AdEvent_t));
 		sensorTable[Index].rssi = Rssi;
+		sensorTable[Index].rxEpoch = Qrtc_GetEpoch();
 
 		ShadowMaker(&sensorTable[Index]);
 	}
@@ -281,7 +281,7 @@ static void AddEntry(const bt_addr_le_t *pAddr, AdHandle_t *pNameHandle,
 		return;
 	}
 
-	// The first free entry will be used after entire table is searched.
+	/* The first free entry will be used after entire table is searched. */
 	bool add = false;
 	bool updateRsp = false;
 	bool updateName = false;
@@ -320,10 +320,11 @@ static void AddEntry(const bt_addr_le_t *pAddr, AdHandle_t *pNameHandle,
 		if (add) {
 			tableCount += 1;
 			gatewayShadowNeedsUpdate = true;
-			// The address is duplicated in the advertisement payload because
-			// some operating systems don't provide the Bluetooth address to
-			// the application.  The address is copied into the AD field
-			// because the two formats are the same.
+			/* The address is duplicated in the advertisement payload because
+			 * some operating systems don't provide the Bluetooth address to
+			 * the application.  The address is copied into the AD field
+			 * because the two formats are the same.
+			 */
 			memcpy(pEntry->ad.addr.val, pAddr->a.val,
 			       sizeof(bt_addr_t));
 			Bt510AddrToString(pEntry);
@@ -382,8 +383,8 @@ static bool NewEvent(u16_t Id, size_t Index)
 
 static void ShadowMaker(SensorTable_t *pEntry)
 {
-	// AWS will disconnect if data is sent for devices that have not
-	// been whitelisted.
+	/* AWS will disconnect if data is sent for devices that have not
+	 * been whitelisted. */
 	if (!BT510_USES_SINGLE_AWS_TOPIC) {
 		if (!pEntry->whitelisted) {
 			return;
@@ -403,7 +404,8 @@ static void ShadowMaker(SensorTable_t *pEntry)
 		ShadowBuilder_StartGroup(pMsg, "state");
 		ShadowBuilder_StartGroup(pMsg, "reported");
 		ShadowTemperatureHandler(pMsg, pEntry);
-		// Sending RSSI prevents an empty buffer when temperature isn't present.
+		/* Sending RSSI prevents an empty buffer when
+		 * temperature isn't present. */
 		ShadowBuilder_AddSigned32(pMsg, MangleKey(pEntry->name, "rssi"),
 					  pEntry->rssi);
 		ShadowBuilder_EndGroup(pMsg);
@@ -419,16 +421,18 @@ static void ShadowMaker(SensorTable_t *pEntry)
 	}
 	ShadowBuilder_Finalize(pMsg);
 
-	// The part of the topic that changes must match
-	// the format of the address field generated by ShadowGatewayMaker.
+	/* The part of the topic that changes must match
+	 * the format of the address field generated by ShadowGatewayMaker. */
 	snprintk(pMsg->topic, TOPIC_MAX_SIZE, "$aws/things/%s/shadow/update",
 		 pEntry->addrString);
 
 	FRAMEWORK_MSG_TRY_TO_SEND(pMsg);
 }
 
-// Create unique names for each key so that everything
-// can be sent to a single topic.
+/**
+ * @brief Create unique names for each key so that everything can be
+ * sent to a single topic.
+ */
 static char *MangleKey(const char *pName, const char *pKey)
 {
 #if BT510_USES_SINGLE_AWS_TOPIC
@@ -443,7 +447,7 @@ static char *MangleKey(const char *pName, const char *pKey)
 #endif
 }
 
-// Add the properties that are always included.
+/* Add the properties that are always included. */
 static void ShadowBasicHandler(JsonMsg_t *pMsg, SensorTable_t *pEntry)
 {
 	pEntry->updatedName = false;
@@ -456,8 +460,10 @@ static void ShadowBasicHandler(JsonMsg_t *pMsg, SensorTable_t *pEntry)
 	ShadowBuilder_AddUint32(pMsg, "resetCount", pEntry->ad.resetCount);
 }
 
-// Build JSON for items that are in the Scan Response
-// and don't change that often (when device is added to table).
+/**
+ * @brief Build JSON for items that are in the Scan Response
+ * and don't change that often (when device is added to table).
+ */
 static void ShadowRspHandler(JsonMsg_t *pMsg, SensorTable_t *pEntry)
 {
 	if (pEntry->updatedRsp) {
@@ -477,7 +483,7 @@ static void ShadowRspHandler(JsonMsg_t *pMsg, SensorTable_t *pEntry)
 	}
 }
 
-// Clears certain properties after they occur.
+/* Clears certain properties after they occur. */
 static void ShadowLastEventHandler(JsonMsg_t *pMsg, SensorTable_t *pEntry)
 {
 	if (pEntry->ad.recordType == pEntry->lastRecordType) {
@@ -506,9 +512,10 @@ static void ShadowLastEventHandler(JsonMsg_t *pMsg, SensorTable_t *pEntry)
 	}
 }
 
-// The generic data field is unsigned but the temperature is signed.
-// Get temperature from advertisement (assumes event contains temperature).
-// retval temperature in hundreths of degree C
+/* The generic data field is unsigned but the temperature is signed.
+ * Get temperature from advertisement (assumes event contains temperature).
+ * retval temperature in hundredths of degree C
+ */
 static s32_t GetTemperature(SensorTable_t *pEntry)
 {
 	return (s32_t)((s16_t)pEntry->ad.data);
@@ -518,8 +525,8 @@ static void ShadowTemperatureHandler(JsonMsg_t *pMsg, SensorTable_t *pEntry)
 {
 	s32_t temperature = GetTemperature(pEntry);
 	if (BT510_USES_SINGLE_AWS_TOPIC) {
-		// The desired format is degrees when publishing to a single topic
-		// because that is how the BL654 Sensor data is formatted.
+		/* The desired format is degrees when publishing to a single topic
+		 * because that is how the BL654 Sensor data is formatted. */
 		temperature /= 100;
 	}
 	switch (pEntry->ad.recordType) {
@@ -623,8 +630,8 @@ static void GatewayShadowMaker(void)
 
 	ShadowBuilder_Start(pMsg, SKIP_MEMSET);
 	ShadowBuilder_StartGroup(pMsg, "state");
-	// Setting the desired group to null lets the cloud know
-	// that its request was processed.
+	/* Setting the desired group to null lets the cloud know
+	 * that its request was processed. */
 	if (whitelistProcessed) {
 		whitelistProcessed = false;
 		ShadowBuilder_AddNull(pMsg, "desired");
@@ -637,7 +644,7 @@ static void GatewayShadowMaker(void)
 		SensorTable_t *p = &sensorTable[i];
 		if (p->inUse) {
 			ShadowBuilder_AddSensorTableArrayEntry(
-				pMsg, p->addrString, p->epoch, p->whitelisted);
+				pMsg, p->addrString, p->rxEpoch, p->whitelisted);
 		}
 	}
 	ShadowBuilder_EndArray(pMsg);
@@ -660,5 +667,3 @@ static void Whitelist(const char *pAddrString, bool NextState)
 		}
 	}
 }
-
-// end

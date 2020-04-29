@@ -1,35 +1,41 @@
-/*
+/**
+ * @file power.h
+ * @brief Controls power measurement system and software reset.
+ *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#ifndef POWER_H
-#define POWER_H
+#ifndef __POWER_H__
+#define __POWER_H__
 
-//=============================================================================
-// Includes
-//=============================================================================
-
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <zephyr/types.h>
 
-//=============================================================================
-// Board definitions
-//=============================================================================
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/******************************************************************************/
+/* Board definitions                                                          */
+/******************************************************************************/
 
 /* Port and pin number of the voltage measurement enabling functionality */
-#define MEASURE_ENABLE_PORT		DT_NORDIC_NRF_GPIO_0_LABEL
-#define MEASURE_ENABLE_PIN		28
+#define MEASURE_ENABLE_PORT DT_NORDIC_NRF_GPIO_0_LABEL
+#define MEASURE_ENABLE_PIN 28
 
 /* Measurement time between readings */
-#define POWER_TIMER_PERIOD		K_MSEC(15000)
+#define POWER_TIMER_PERIOD K_MSEC(15000)
 
 /* Reboot types */
-#define REBOOT_TYPE_NORMAL		0
-#define REBOOT_TYPE_BOOTLOADER		1
+#define REBOOT_TYPE_NORMAL 0
+#define REBOOT_TYPE_BOOTLOADER 1
 
-//=============================================================================
-// Global Function Prototypes
-//=============================================================================
+/******************************************************************************/
+/* Global Function Prototypes                                                 */
+/******************************************************************************/
 
 /**
  * @brief Init the power measuring system
@@ -50,4 +56,8 @@ void power_mode_set(bool enable);
 void power_reboot_module(u8_t type);
 #endif
 
-#endif /* POWER_H */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __POWER_H__ */

@@ -1,13 +1,13 @@
 /**
- * @file dis.h
- * @brief Device Information Service
+ * @file sensor_task.h
+ * @brief Message Framework task for handling sensor advertisements.
  *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#ifndef __DIS_H__
-#define __DIS_H__
+#ifndef SENSOR_TASK_H
+#define SENSOR_TASK_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,13 +17,12 @@ extern "C" {
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
 /**
- * @brief Reads Zephyr version and registers the service with the
- * Bluetooth stack.
+ * @brief Creates and registers framework task.
  */
-void dis_initialize(void);
+void SensorTask_Initialize(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __DIS_H__ */
+#endif

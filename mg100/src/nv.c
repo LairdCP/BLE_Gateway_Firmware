@@ -1,4 +1,6 @@
-/* nv.c - Non-volitile storage for the app
+/**
+ * @file nv.c
+ * @brief Non-volitile storage for the app
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -9,6 +11,15 @@
 #define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(mg100_nv);
 
+#define NV_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
+#define NV_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
+#define NV_LOG_INF(...) LOG_INF(__VA_ARGS__)
+#define NV_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
+
+
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <zephyr.h>
 #include <device.h>
 #include <flash.h>
@@ -16,11 +27,9 @@ LOG_MODULE_REGISTER(mg100_nv);
 
 #include "nv.h"
 
-#define NV_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
-#define NV_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
-#define NV_LOG_INF(...) LOG_INF(__VA_ARGS__)
-#define NV_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
-
+/******************************************************************************/
+/* Local Constant, Macro and Type Definitions                                 */
+/******************************************************************************/
 enum SETTING_ID {
 	SETTING_ID_COMMISSIONED,
 	SETTING_ID_DEV_CERT,
@@ -30,9 +39,15 @@ enum SETTING_ID {
 	SETTING_ID_AWS_ROOT_CA,
 };
 
+/******************************************************************************/
+/* Local Data Definitions                                                     */
+/******************************************************************************/
 static struct nvs_fs fs;
 static bool nvCommissioned;
 
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
 int nvReadCommissioned(bool *commissioned)
 {
 	int rc;

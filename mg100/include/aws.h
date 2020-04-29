@@ -1,19 +1,31 @@
-/*
+/**
+ * @file aws.h
+ * @brief Amazon Web Services API
+ *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
 #ifndef __AWS_H__
 #define __AWS_H__
 
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <json.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
 #define CA_TAG 1
 #define DEVICE_CERT_TAG 2
 
-/* AWS Root CA obtained from 
-*  https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html 
+/* AWS Root CA obtained from
+*  https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html
 */
 static const unsigned char aws_root_ca[] =
 	"-----BEGIN CERTIFICATE-----\n"
@@ -110,6 +122,9 @@ static const struct json_obj_descr shadow_descr[] = {
 			      shadow_state_reported_descr),
 };
 
+/******************************************************************************/
+/* Global Function Prototypes                                                 */
+/******************************************************************************/
 int awsInit(void);
 int awsSetCredentials(const u8_t *cert, const u8_t *key);
 void awsSetRootCa(const char *cred);
@@ -132,5 +147,9 @@ int awsPublishBl654SensorData(float temperature, float humidity,
 			      float pressure);
 int awsPublishPinnacleData(int radioRssi, int radioSinr);
 int awsSubscribe(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __AWS_H__ */

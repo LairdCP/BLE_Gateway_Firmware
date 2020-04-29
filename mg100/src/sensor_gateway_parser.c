@@ -1,17 +1,19 @@
-/* SensorGatewayParser.c - Use jsmn to parse JSON from AWS that controls
- * gateway functionality.
+/**
+ * @file sensor_gateway_parser.c
+ * @brief Uses jsmn to parse JSON from AWS that controls gateway functionality.
  *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_INF
-LOG_MODULE_REGISTER(SensorGatewayParser);
+LOG_MODULE_REGISTER(sensor_gateway_parser);
 
-//=============================================================================
-// Includes
-//=============================================================================
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,13 +21,12 @@ LOG_MODULE_REGISTER(SensorGatewayParser);
 
 #define JSMN_PARENT_LINKS
 #include "jsmn.h"
-#include "SensorBt510.h"
+#include "sensor_bt510.h"
 #include "Framework.h"
 
-//=============================================================================
-// Local Constant, Macro and Type Definitions
-//=============================================================================
-
+/******************************************************************************/
+/* Local Constant, Macro and Type Definitions                                 */
+/******************************************************************************/
 #define NUMBER_OF_JSMN_TOKENS 256
 
 #define CHILD_ARRAY_SIZE 3
@@ -35,13 +36,9 @@ LOG_MODULE_REGISTER(SensorGatewayParser);
 #define ARRAY_WLIST_INDEX 3
 #define JSMN_NO_CHILDREN 0
 
-//=============================================================================
-// Global Data Definitions
-//=============================================================================
-
-//=============================================================================
-// Local Data Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Data Definitions                                                     */
+/******************************************************************************/
 static jsmn_parser jsmn;
 static jsmntok_t tokens[NUMBER_OF_JSMN_TOKENS];
 static int tokensFound;
@@ -50,16 +47,16 @@ static int jsonIndex;
 static int sensorsFound;
 static int expectedSensors;
 
-//=============================================================================
-// Local Function Prototypes
-//=============================================================================
+/******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
 static void FindType(const char *pJson, const char *s, jsmntype_t Type,
 		     int Parent);
 static void ParseArray(const char *pJson);
 
-//=============================================================================
-// Global Function Definitions
-//=============================================================================
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
 void SensorGatewayParser_Run(char *pJson)
 {
 	jsmn_init(&jsmn);
@@ -70,12 +67,12 @@ void SensorGatewayParser_Run(char *pJson)
 				 NUMBER_OF_JSMN_TOKENS);
 	LOG_DBG("jsmn tokens required: %d", tokensFound);
 
-	// The first thing found should be the JSON object { }
-	// As long as the JSON index != 0, the parsing will continue.
+	/* The first thing found should be the JSON object { }
+	 * As long as the JSON index != 0, the parsing will continue. */
 	if (tokensFound > 1 && (tokens[0].type == JSMN_OBJECT)) {
 		jsonIndex = 1;
 		nextParent = 0;
-		// Now try to find {"state": { "desired": {"bt510": {"sensors":
+		/* Now try to find {"state": { "desired": {"bt510": {"sensors": */
 		FindType(pJson, "state", JSMN_OBJECT, nextParent);
 		FindType(pJson, "desired", JSMN_OBJECT, nextParent);
 		FindType(pJson, "bt510", JSMN_OBJECT, nextParent);
@@ -83,7 +80,7 @@ void SensorGatewayParser_Run(char *pJson)
 	}
 
 	if (jsonIndex != 0) {
-		// Backup one token to get the number of arrays (sensors).
+		/* Backup one token to get the number of arrays (sensors). */
 		expectedSensors = tokens[jsonIndex - 1].size;
 		if (expectedSensors > BT510_SENSOR_TABLE_SIZE) {
 			jsonIndex = 0;
@@ -93,12 +90,13 @@ void SensorGatewayParser_Run(char *pJson)
 	ParseArray(pJson);
 }
 
-//=============================================================================
-// Local Function Definitions
-//=============================================================================
-// This function updates the global index to the next token when an item + type
-// is found.  Otherwise, the index is set to zero.
-//
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
+/**
+ * @brief This function updates the global index to the next token when an
+ * item + type is found.  Otherwise, the index is set to zero.
+ */
 static void FindType(const char *pJson, const char *s, jsmntype_t Type,
 		     int Parent)
 {
@@ -106,7 +104,7 @@ static void FindType(const char *pJson, const char *s, jsmntype_t Type,
 		return;
 	}
 
-	// Analyze a pair of tokens of the form <string>, <type>
+	/* Analyze a pair of tokens of the form <string>, <type> */
 	size_t i = jsonIndex;
 	jsonIndex = 0;
 	for (; ((i + 1) < tokensFound); i++) {
@@ -125,9 +123,11 @@ static void FindType(const char *pJson, const char *s, jsmntype_t Type,
 	}
 }
 
-// Parse the elements in the anonymous array into a c-structure.
-// ["addrString", epoch, whitelist (boolean)]
-// The epoch isn't used.
+/**
+ * @brief Parse the elements in the anonymous array into a c-structure.
+ * ["addrString", epoch, whitelist (boolean)]
+ * The epoch isn't used.
+ */
 static void ParseArray(const char *pJson)
 {
 	if (jsonIndex == 0) {
@@ -158,7 +158,9 @@ static void ParseArray(const char *pJson)
 			strncpy(pMsg->sensors[sensorsFound].addrString,
 				&pJson[tokens[i + ARRAY_NAME_INDEX].start],
 				MAX(addrLength, BT510_ADDR_STR_LEN));
-			// The 't' in true is used to determine true/false.
+			/* The 't' in true is used to determine true/false.
+			 * This is safe because primitives are
+			 * numbers, true, false, and null. */
 			pMsg->sensors[sensorsFound].whitelist =
 				(pJson[tokens[i + ARRAY_WLIST_INDEX].start] ==
 				 't');
@@ -174,5 +176,3 @@ static void ParseArray(const char *pJson)
 
 	LOG_INF("Found %d sensors in desired list from AWS", sensorsFound);
 }
-
-// end

@@ -1,4 +1,7 @@
-/*
+/**
+ * @file ble_bootloader_service.h
+ * @brief
+ *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -6,17 +9,19 @@
 #ifndef __BLE_BOOTLOADER_SERVICE_H__
 #define __BLE_BOOTLOADER_SERVICE_H__
 
-//=============================================================================
-// Includes
-//=============================================================================
-
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <bluetooth/conn.h>
 #include <zephyr/types.h>
 
-//=============================================================================
-// Global Function Definitions
-//=============================================================================
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
 /**
  * @brief Initialise the bootloader service
  */
@@ -51,8 +56,12 @@ void bbs_set_bootloader_modem_update_last_fail_version(u16_t version);
 void bbs_set_bootloader_modem_update_last_fail_code(u8_t code);
 void bbs_set_bootloader_compression_errors(u8_t errors);
 void bbs_set_bootloader_compression_last_fail_code(u16_t code);
-void bbs_set_module_build_date(uint8_t *date);
-void bbs_set_firmware_build_date(uint8_t *date);
+void bbs_set_module_build_date(u8_t *date);
+void bbs_set_firmware_build_date(u8_t *date);
 void bbs_set_boot_verification(u8_t verification);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __BLE_BOOTLOADER_SERVICE_H__ */

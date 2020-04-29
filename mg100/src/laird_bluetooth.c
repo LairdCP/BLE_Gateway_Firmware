@@ -1,4 +1,6 @@
-/* laird_bluetooth.c - Common Bluetooth operations.
+/**
+ * @file laird_bluetooth.c
+ * @brief Common Bluetooth operations.
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -19,14 +21,14 @@ ssize_t lbt_read_u8(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 }
 
 ssize_t lbt_read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-		    void *buf, u16_t len, u16_t offset)
+		     void *buf, u16_t len, u16_t offset)
 {
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, attr->user_data,
 				 sizeof(u16_t));
 }
 
 ssize_t lbt_read_u32(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-		    void *buf, u16_t len, u16_t offset)
+		     void *buf, u16_t len, u16_t offset)
 {
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, attr->user_data,
 				 sizeof(u32_t));
@@ -49,8 +51,8 @@ ssize_t lbt_read_string(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 }
 
 ssize_t lbt_read_string_no_max_size(struct bt_conn *conn,
-			const struct bt_gatt_attr *attr, void *buf, u16_t len,
-			u16_t offset)
+				    const struct bt_gatt_attr *attr, void *buf,
+				    u16_t len, u16_t offset)
 {
 	const char *value = attr->user_data;
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, value,
@@ -95,8 +97,8 @@ u16_t lbt_find_gatt_index(struct bt_uuid *uuid, struct bt_gatt_attr *gatt,
 {
 	size_t i = 0;
 	while (i < size) {
-		if (memcmp(gatt[i].uuid, uuid,
-			   sizeof(struct bt_uuid_128)) == 0) {
+		if (memcmp(gatt[i].uuid, uuid, sizeof(struct bt_uuid_128)) ==
+		    0) {
 			return (u16_t)i;
 		}
 		++i;

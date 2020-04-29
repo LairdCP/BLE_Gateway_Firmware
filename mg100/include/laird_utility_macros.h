@@ -1,13 +1,21 @@
-/* laird_utility_macros.h
+/**
+ * @file laird_utility_macros.h
+ * @brief
  *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#ifndef __LAIRD_UTILITY_MACROS_H__
+#define __LAIRD_UTILITY_MACROS_H__
 
-#ifndef LAIRD_UTILITY_MACROS_H
-#define LAIRD_UTILITY_MACROS_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
 #define SWITCH_CASE_RETURN_STRING(val)                                         \
 	case val: {                                                            \
 		return #val;                                                   \
@@ -29,4 +37,8 @@
 		return #val;                                                   \
 	}
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* __LAIRD_UTILITY_MACROS_H__ */

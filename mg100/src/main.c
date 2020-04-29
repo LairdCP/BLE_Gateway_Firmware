@@ -1,4 +1,6 @@
-/* main.c - Application main entry point
+/**
+ * @file main.c
+ * @brief Application main entry point
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -9,6 +11,14 @@
 #define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(mg100_main);
 
+#define MAIN_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
+#define MAIN_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
+#define MAIN_LOG_INF(...) LOG_INF(__VA_ARGS__)
+#define MAIN_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
+
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <stdio.h>
 #include <zephyr/types.h>
 #include <stddef.h>
@@ -32,30 +42,12 @@ LOG_MODULE_REGISTER(mg100_main);
 #include "dis.h"
 #include "bootloader.h"
 #include "Framework.h"
-#include "SensorTask.h"
-#include "SensorBt510.h"
+#include "sensor_task.h"
+#include "sensor_bt510.h"
 
-#define MAIN_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
-#define MAIN_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
-#define MAIN_LOG_INF(...) LOG_INF(__VA_ARGS__)
-#define MAIN_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
-
-static void appStateAwsSendSensorData(void);
-static void appStateAwsInitShadow(void);
-static void appStateAwsConnect(void);
-static void appStateAwsDisconnect(void);
-static void appStateAwsResolveServer(void);
-static void appStateWaitForLte(void);
-static void appStateCommissionDevice(void);
-static void appStateWaitForModemDisconnect(void);
-
-static void setAwsStatusWrapper(struct bt_conn *conn, enum aws_status status);
-
-static void initializeAwsMsgReceiver(void);
-static void awsMsgHandler(void);
-static void generateBt510shadowRequestMsg(void);
-static void blinkLedForDataSend(void);
-
+/******************************************************************************/
+/* Local Data Definitions                                                     */
+/******************************************************************************/
 K_SEM_DEFINE(lte_ready_sem, 0, 1);
 K_SEM_DEFINE(rx_cert_sem, 0, 1);
 
@@ -86,8 +78,155 @@ K_MSGQ_DEFINE(sensorQ, FWK_QUEUE_ENTRY_SIZE, 16, FWK_QUEUE_ALIGNMENT);
 static u64_t linkUpTime = 0;
 static u32_t linkUpDelta;
 
+/******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
+static void appStateAwsSendSensorData(void);
+static void appStateAwsInitShadow(void);
+static void appStateAwsConnect(void);
+static void appStateAwsDisconnect(void);
+static void appStateAwsResolveServer(void);
+static void appStateWaitForLte(void);
+static void appStateCommissionDevice(void);
+static void appStateWaitForModemDisconnect(void);
+
+static void setAwsStatusWrapper(struct bt_conn *conn, enum aws_status status);
+
+static void initializeAwsMsgReceiver(void);
+static void awsMsgHandler(void);
+static void awsSvcEvent(enum aws_svc_event event);
+static int setAwsCredentials(void);
+static void generateBt510shadowRequestMsg(void);
+static void blinkLedForDataSend(void);
+static void sensorUpdated(u8_t sensor, s32_t reading);
+static void lteEvent(enum lte_event event);
+static void softwareReset(u32_t DelayMs);
+
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
+void main(void)
+{
+	int rc;
+
+	/* init LEDS */
+	led_init();
+
+	Framework_Initialize();
+	SensorTask_Initialize();
+	initializeAwsMsgReceiver();
+
+	/* Init NV storage */
+	rc = nvInit();
+	if (rc < 0) {
+		MAIN_LOG_ERR("NV init (%d)", rc);
+		goto exit;
+	}
+
+	nvReadCommissioned(&commissioned);
+
+	/* init LTE */
+	lteRegisterEventCallback(lteEvent);
+	rc = lteInit();
+	if (rc < 0) {
+		MAIN_LOG_ERR("LTE init (%d)", rc);
+		goto exit;
+	}
+	lteInfo = lteGetStatus();
+
+	/* init AWS */
+	rc = awsInit();
+	if (rc != 0) {
+		goto exit;
+	}
+
+	dis_initialize();
+
+	/* Start up BLE portion of the MG100 */
+	cell_svc_init();
+	cell_svc_assign_connection_handler_getter(
+		mg100_ble_get_central_connection);
+	cell_svc_set_imei(lteInfo->IMEI);
+	cell_svc_set_fw_ver(lteInfo->radio_version);
+	cell_svc_set_iccid(lteInfo->ICCID);
+	cell_svc_set_serial_number(lteInfo->serialNumber);
+
+	bss_init();
+	bss_assign_connection_handler_getter(mg100_ble_get_central_connection);
+
+	/* Setup the power service */
+	power_svc_init();
+	power_svc_assign_connection_handler_getter(
+		mg100_ble_get_central_connection);
+	power_init();
+
+	bootloader_init();
+
+	rc = aws_svc_init(lteInfo->IMEI);
+	if (rc != 0) {
+		goto exit;
+	}
+	aws_svc_set_event_callback(awsSvcEvent);
+	if (commissioned) {
+		aws_svc_set_status(NULL, AWS_STATUS_DISCONNECTED);
+
+	} else {
+		aws_svc_set_status(NULL, AWS_STATUS_NOT_PROVISIONED);
+	}
+
+	mg100_ble_initialise(lteInfo->IMEI);
+	mg100_ble_set_callback(sensorUpdated);
+
+	appReady = true;
+	printk("\n!!!!!!!! App is ready! !!!!!!!!\n");
+
+	if (commissioned && setAwsCredentials() == 0) {
+		appState = appStateWaitForLte;
+	} else {
+		appState = appStateCommissionDevice;
+	}
+
+	print_thread_list();
+
+	while (true) {
+		appState();
+	}
+exit:
+	MAIN_LOG_ERR("Exiting main thread");
+	return;
+}
+
+/******************************************************************************/
+/* Framework                                                                  */
+/******************************************************************************/
+EXTERNED void Framework_AssertionHandler(char *file, int line)
+{
+	static atomic_t busy = ATOMIC_INIT(0);
+	/* prevent recursion (buffer alloc fail, ...) */
+	if (!busy) {
+		atomic_set(&busy, 1);
+		LOG_ERR("\r\n!---> Fwk Assertion <---! %s:%d\r\n", file, line);
+		LOG_ERR("Thread name: %s",
+			log_strdup(k_thread_name_get(k_current_get())));
+	}
+
+#if LAIRD_DEBUG
+	/* breakpoint location */
+	volatile bool wait = true;
+	while (wait)
+		;
+#endif
+
+	softwareReset(FWK_DEFAULT_RESET_DELAY_MS);
+}
+
+
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
+
 /* This is a callback function which receives sensor readings */
-static void SensorUpdated(u8_t sensor, s32_t reading)
+static void sensorUpdated(u8_t sensor, s32_t reading)
 {
 	static u64_t bmeEventTime = 0;
 	/* On init send first data immediately. */
@@ -204,9 +343,11 @@ static void appStateWaitForModemDisconnect(void)
 {
 	MAIN_LOG_DBG("Wait for Disconnect state");
 
+#if CONFIG_MODEM_HL7800_PSM
 	while (lteIsReady()) {
 		k_sleep(WAIT_FOR_DISCONNECT_POLL_RATE_TICKS);
 	}
+#endif
 
 	if (appState == appStateWaitForModemDisconnect) {
 		appState = appStateWaitForLte;
@@ -482,6 +623,18 @@ static void initializeAwsMsgReceiver(void)
 	Framework_RegisterReceiver(&awsMsgReceiver);
 }
 
+static void softwareReset(u32_t DelayMs)
+{
+#ifdef CONFIG_REBOOT
+	LOG_ERR("Software Reset in %d milliseconds", DelayMs);
+	k_sleep(K_MSEC(DelayMs));
+	power_reboot_module(REBOOT_TYPE_NORMAL);
+#endif
+}
+
+/******************************************************************************/
+/* Shell                                                                      */
+/******************************************************************************/
 #ifdef CONFIG_SHELL
 static int shellSetCert(enum CREDENTIAL_TYPE type, u8_t *cred)
 {
@@ -595,95 +748,6 @@ static int shell_bootloader(const struct shell *shell, size_t argc, char **argv)
 #endif /* CONFIG_REBOOT */
 #endif /* CONFIG_SHELL */
 
-void main(void)
-{
-	int rc;
-
-	/* init LEDS */
-	led_init();
-
-	Framework_Initialize();
-	SensorTask_Initialize();
-	initializeAwsMsgReceiver();
-
-	/* Init NV storage */
-	rc = nvInit();
-	if (rc < 0) {
-		MAIN_LOG_ERR("NV init (%d)", rc);
-		goto exit;
-	}
-
-	nvReadCommissioned(&commissioned);
-
-	/* init LTE */
-	lteRegisterEventCallback(lteEvent);
-	rc = lteInit();
-	if (rc < 0) {
-		MAIN_LOG_ERR("LTE init (%d)", rc);
-		goto exit;
-	}
-	lteInfo = lteGetStatus();
-
-	/* init AWS */
-	rc = awsInit();
-	if (rc != 0) {
-		goto exit;
-	}
-
-	dis_initialize();
-
-	/* Start up BLE portion of the demo */
-	cell_svc_init();
-	cell_svc_assign_connection_handler_getter(
-		mg100_ble_get_central_connection);
-	cell_svc_set_imei(lteInfo->IMEI);
-	cell_svc_set_fw_ver(lteInfo->radio_version);
-	cell_svc_set_iccid(lteInfo->ICCID);
-
-	bss_init();
-	bss_assign_connection_handler_getter(mg100_ble_get_central_connection);
-
-	/* Setup the power service */
-	power_svc_init();
-	power_svc_assign_connection_handler_getter(
-		mg100_ble_get_central_connection);
-	power_init();
-
-	bootloader_init();
-
-	rc = aws_svc_init(lteInfo->IMEI);
-	if (rc != 0) {
-		goto exit;
-	}
-	aws_svc_set_event_callback(awsSvcEvent);
-	if (commissioned) {
-		aws_svc_set_status(NULL, AWS_STATUS_DISCONNECTED);
-
-	} else {
-		aws_svc_set_status(NULL, AWS_STATUS_NOT_PROVISIONED);
-	}
-
-	mg100_ble_initialise(lteInfo->IMEI);
-	mg100_ble_set_callback(SensorUpdated);
-
-	appReady = true;
-	printk("\n!!!!!!!! App is ready! !!!!!!!!\n");
-
-	if (commissioned && setAwsCredentials() == 0) {
-		appState = appStateWaitForLte;
-	} else {
-		appState = appStateCommissionDevice;
-	}
-
-	print_thread_list();
-
-	while (true) {
-		appState();
-	}
-exit:
-	MAIN_LOG_ERR("Exiting main thread");
-	return;
-}
 
 #ifdef CONFIG_SHELL
 SHELL_STATIC_SUBCMD_SET_CREATE(
@@ -730,33 +794,3 @@ static int print_thread_cmd(const struct shell *shell, size_t argc, char **argv)
 SHELL_CMD_REGISTER(print_threads, NULL, "Print list of threads",
 		   print_thread_cmd);
 #endif /* CONFIG_SHELL */
-
-static void SoftwareReset(u32_t DelayMs)
-{
-#ifdef CONFIG_REBOOT
-	LOG_ERR("Software Reset in %d milliseconds", DelayMs);
-	k_sleep(K_MSEC(DelayMs));
-	power_reboot_module(REBOOT_TYPE_NORMAL);
-#endif
-}
-
-EXTERNED void Framework_AssertionHandler(char *file, int line)
-{
-	static atomic_t busy = ATOMIC_INIT(0);
-	/* prevent recursion (buffer alloc fail, ...) */
-	if (!busy) {
-		atomic_set(&busy, 1);
-		LOG_ERR("\r\n!---> Fwk Assertion <---! %s:%d\r\n", file, line);
-		LOG_ERR("Thread name: %s",
-			log_strdup(k_thread_name_get(k_current_get())));
-	}
-
-#if LAIRD_DEBUG
-	/* breakpoint location */
-	volatile bool wait = true;
-	while (wait)
-		;
-#endif
-
-	SoftwareReset(FWK_DEFAULT_RESET_DELAY_MS);
-}

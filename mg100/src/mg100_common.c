@@ -1,4 +1,6 @@
-/* mg100_common.c -
+/**
+ * @file mg100_common.c
+ * @brief
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -9,8 +11,19 @@
 #define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(mg100_common);
 
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include "mg100_common.h"
 
+/******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
+static void print_thread_cb(const struct k_thread *thread, void *user_data);
+
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
 void strncpy_replace_underscore_with_space(char *restrict s1,
 					   const char *restrict s2, size_t size)
 {
@@ -35,7 +48,7 @@ char *replace_word(const char *s, const char *oldW, const char *newW,
 	int oldWlen = strlen(oldW);
 
 	/* Counting the number of times old word
-	*  occur in the string 
+	*  occur in the string
 	*/
 	for (i = 0; s[i] != '\0'; i++) {
 		if (strstr(&s[i], oldW) == &s[i]) {
@@ -72,21 +85,7 @@ char *strncat_max(char *d1, const char *s1, size_t max_str_len)
 {
 	size_t len = strlen(d1);
 	size_t n = (len < max_str_len) ? (max_str_len - len) : 0;
-	return strncat(d1, s1, n); // adds null-character (n+1)
-}
-
-static void print_thread_cb(const struct k_thread *thread, void *user_data)
-{
-	u32_t *pc = (u32_t *)user_data;
-	*pc += 1;
-	/* discard const qualifier */
-	struct k_thread *tid = (struct k_thread *)thread;
-	printk("%02u id: (0x%08x) priority: %3d name: '%s' ", *pc, (u32_t)tid,
-	       k_thread_priority_get(tid), log_strdup(k_thread_name_get(tid)));
-#if 0 /* not in this zephyr version. */
-	printk("state %s ", k_thread_state_str(tid));
-#endif
-	printk("\r\n");
+	return strncat(d1, s1, n); /* adds null-character (n+1) */
 }
 
 /* Requires CONFIG_THREAD_MONITOR and CONFIG_THREAD_NAME */
@@ -106,4 +105,21 @@ void print_json(const char *prefix, size_t size, const char *buffer)
 #if JSON_LOG_ENABLED
 	printk("%s size: %u data: %s\r\n", prefix, size, buffer);
 #endif
+}
+
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
+static void print_thread_cb(const struct k_thread *thread, void *user_data)
+{
+	u32_t *pc = (u32_t *)user_data;
+	*pc += 1;
+	/* discard const qualifier */
+	struct k_thread *tid = (struct k_thread *)thread;
+	printk("%02u id: (0x%08x) priority: %3d name: '%s' ", *pc, (u32_t)tid,
+	       k_thread_priority_get(tid), log_strdup(k_thread_name_get(tid)));
+#if 0 /* not in this zephyr version. */
+	printk("state %s ", k_thread_state_str(tid));
+#endif
+	printk("\r\n");
 }

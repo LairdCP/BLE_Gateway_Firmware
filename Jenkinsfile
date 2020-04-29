@@ -39,7 +39,7 @@ pipeline {
         ARTIFACT_DIR = "artifacts"
 
         // Prefix used to name final artifacts
-        ARTIFACT_PREFIX = "MG100"
+        ARTIFACT_PREFIX = "480-00070"
 
         // Final artifact files relative to workspace
         ARTIFACT_APP_HEX = "%WORKSPACE%\\%ARTIFACT_DIR%\\%ARTIFACT_PREFIX%-R%VERSION%.hex"
@@ -48,14 +48,23 @@ pipeline {
         ARTIFACT_PATTERN = "*.hex"
     }
     stages {
-        stage('Configure') {
+        stage('West Init') {
             steps {
                 // Clean the workspace
                 cleanWs()
 
                 // Init the repo
                 bat 'west init -m "%GIT_REPO%"'
-
+            }
+        }
+        stage('West Update') {
+            steps {
+                // Fetch all supporting repositories
+                bat "west update"
+            }
+        }
+        stage('Configure') {
+            steps {
                 // this block sets the VERSION env variable
                 script {
                     // Read in the version file
@@ -82,20 +91,17 @@ pipeline {
 
                     def full_revision = file_version_major[0] + "." + file_version_minor[0] + "." + file_version_patch[0]
 
+                    // Store timestamp of current build as EPOCH integer
+                    def timestamp = (currentBuild.startTimeInMillis / 1000).intValue()
+
                     // Set version env variable.
-                    // This also appends the build number to the 3 field version.
-                    // The resulting version will look like: major.minor.patch.build or 1.0.0.1
-                    env.VERSION = [full_revision, env.BUILD_NUMBER].join('.')
+                    // This also appends the current Unix time to the 3 field version.
+                    // The resulting version will look like: major.minor.patch.time or 1.0.0.1584604420
+                    env.VERSION = [full_revision, timestamp].join('.')
                 }
 
                 // set the Jenkins build name to the version name
                 buildName env.VERSION
-            }
-        }
-        stage('West Update') {
-            steps {
-                // Fetch all supporting repositories
-                bat "west update"
             }
         }
         stage('Upgrade Dependencies') {
@@ -109,7 +115,7 @@ pipeline {
         }
         stage('Build') {
             steps{
-                bat "west build -b pinnacle_100_dvk -d ${env.BUILD_DIR} ${env.APP_SOURCE}"
+                bat "west build -b mg100 -d ${env.BUILD_DIR} ${env.APP_SOURCE}"
             }
         }
         stage('Package') {

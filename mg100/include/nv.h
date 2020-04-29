@@ -1,17 +1,29 @@
-/*
+/**
+ * @file nv.h
+ * @brief Non-volatile storage
+ *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#ifndef __NV_H__
+#define __NV_H__
 
-#ifndef NV_H
-#define NV_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
 #define NV_FLASH_DEVICE DT_FLASH_DEV_NAME
 #define NV_FLASH_OFFSET DT_FLASH_AREA_STORAGE_OFFSET
 
 #define NUM_FLASH_SECTORS 4
 
+/******************************************************************************/
+/* Global Function Prototypes                                                 */
+/******************************************************************************/
 int nvInit(void);
 int nvReadCommissioned(bool *commissioned);
 int nvStoreCommissioned(bool commissioned);
@@ -31,4 +43,8 @@ int nvStoreAwsRootCa(u8_t *cert, u16_t size);
 int nvReadAwsRootCa(u8_t *cert, u16_t size);
 int nvDeleteAwsRootCa(void);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* __NV_H__ */

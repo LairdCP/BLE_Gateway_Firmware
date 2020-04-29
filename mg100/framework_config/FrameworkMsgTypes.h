@@ -1,32 +1,29 @@
-//=============================================================================
-//! @file FrameworkMessageTypes.h
-//!
-//! @brief Project specific message types are defined here.
-//!
-//! @copyright Copyright 2020 Laird
-//!            All Rights Reserved.
-//=============================================================================
-
-#ifndef FRAMEWORK_MSG_TYPES_H
-#define FRAMEWORK_MSG_TYPES_H
+/**
+ * @file FrameworkMessageTypes.h
+ * @brief Project specific message types are defined here.
+ *
+ * Copyright (c) 2020 Laird Connectivity
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#ifndef __FRAMEWORK_MSG_TYPES_H__
+#define __FRAMEWORK_MSG_TYPES_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//=============================================================================
-// Includes
-//=============================================================================
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <bluetooth/bluetooth.h>
 #include "FrameworkMsgConfiguration.h"
 
-//=============================================================================
-// Global Constants, Macros and Type Definitions
-//=============================================================================
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
 
-//
-// The size of the buffer pool messages limits framework message sizes.
-//
+/* The size of the buffer pool messages limits framework message sizes. */
 #ifndef BUFFER_POOL_MINSZ
 #define BUFFER_POOL_MINSZ 4
 #endif
@@ -47,9 +44,9 @@ extern "C" {
 	BUILD_ASSERT_MSG(sizeof(x) <= BUFFER_POOL_MAXSZ,                       \
 			 "Buffer Pool Max Message size is too small")
 
-//=============================================================================
-// Project Specific Message Types
-//=============================================================================
+/******************************************************************************/
+/* Project Specific Message Types                                             */
+/******************************************************************************/
 
 #define JSON_OUT_BUFFER_SIZE (640)
 #define JSON_IN_BUFFER_SIZE (3072)
@@ -70,7 +67,7 @@ typedef struct JsonGatewayInMsg {
 } JsonGatewayInMsg_t;
 CHECK_FWK_MSG_SIZE(JsonGatewayInMsg_t);
 
-// Zephyr currently doesn't support extended advertisements.
+/* Zephyr currently doesn't support extended advertisements. */
 #define MAX_AD_SIZE 31
 
 typedef struct Ad {
@@ -89,23 +86,13 @@ CHECK_FWK_MSG_SIZE(AdvMsg_t);
 
 typedef struct BL654SensorMsg {
 	FwkMsgHeader_t header;
-	float temperatureC; // xx.xxC format
-	float humidityPercent; // xx.xx% format
-	float pressurePa; // x.xPa format
+	float temperatureC; /* xx.xxC format */
+	float humidityPercent; /* xx.xx% format */
+	float pressurePa; /* x.xPa format */
 } BL654SensorMsg_t;
-
-//=============================================================================
-// Global Data Definitions
-//=============================================================================
-
-//=============================================================================
-// Global Function Prototypes
-//=============================================================================
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
-
-// end
+#endif /* __FRAMEWORK_MSG_TYPES_H__ */

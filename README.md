@@ -71,7 +71,7 @@ X                                X
 The following are required to use the Pinnacle 100 out of box demo:
 
 - An activated SIM card.  See [here](docs/revx-digikey-faq-v6.pdf) for instructions on activating the SIM card that came with your dev kit.
-- Pinnacle 100 DVK programmed with out of box demo firmware. Releases available [here!](https://github.com/LairdCP/Pinnacle_100_oob_demo/releases)
+- Pinnacle 100 DVK programmed with out of box demo firmware. Releases available [here!](https://github.com/LairdCP/MG100/releases)
 - Laird Pinnacle Connect app installed on a mobile device
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)
   - [iOS app](https://apps.apple.com/us/app/laird-pinnacle-connect/id1481075861?ls=1)
@@ -194,7 +194,7 @@ pip3 install -U west
 Once `west` is installed, clone this repository by:
 
 ```
-west init -m https://github.com/LairdCP/Pinnacle_100_oob_demo.git
+west init -m https://github.com/LairdCP/mg100_firmware.git
 west update
 ```
 
@@ -210,10 +210,10 @@ From the directory where you issued the `west init` and `west update` commands y
 
 ```
 # Windows
-west build -b pinnacle_100_dvk -d oob_demo\build oob_demo\oob_demo
+west build -b pinnacle_100_dvk -d mg100\build mg100_firmware\mg100
 
 # Linux and macOS
-west build -b pinnacle_100_dvk -d oob_demo/build oob_demo/oob_demo
+west build -b pinnacle_100_dvk -d mg100/build mg100_firmware/mg100
 ```
 
 ### BLE Profiles

@@ -1,4 +1,4 @@
-﻿# BLE Services and information used in the MG100 product
+﻿# BLE Services and information used in the MG100 Demo
 
 ## Advertisement
 
@@ -87,6 +87,7 @@ Characteristics:
 | Sleep State      | 43787c6a-9e84-4eb1-a669-70b6404da336 | read/notify       | One byte representing sleep state of driver (0 - Uninitialized, 1 - Asleep, 2 - Awake)                                                                                            |
 | RAT              | 43787c6b-9e84-4eb1-a669-70b6404da336 | read/write/notify | One byte for Radio Access Technology: 0 - CAT M1, 1 = CAT NB1                                                                                                                     |
 | ICCID            | 43787c6c-9e84-4eb1-a669-70b6404da336 | read              | 20-digit ASCII string                                                                                                                                                             |
+| Serial Number    | 43787c6d-9e84-4eb1-a669-70b6404da336 | read              | 14 character ASCII string                                                                                                                                                         |
 
 ## Power Profile
 

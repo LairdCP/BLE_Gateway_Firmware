@@ -1,12 +1,21 @@
-/*
+/**
+ * @file ble_aws_service.h
+ * @brief
+ *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
 #ifndef __BLE_AWS_SERVICE_H__
 #define __BLE_AWS_SERVICE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
 #define AWS_CLIENT_ID_MAX_LENGTH 32
 #define AWS_ENDPOINT_MAX_LENGTH 256
 #define AWS_ROOT_CA_MAX_LENGTH 2048
@@ -29,13 +38,15 @@ enum aws_svc_err {
 };
 
 enum aws_svc_event {
-    AWS_SVC_EVENT_SETTINGS_SAVED,
-    AWS_SVC_EVENT_SETTINGS_CLEARED,
+	AWS_SVC_EVENT_SETTINGS_SAVED,
+	AWS_SVC_EVENT_SETTINGS_CLEARED,
 };
 
+/******************************************************************************/
+/* Global Function Prototypes                                                 */
+/******************************************************************************/
 /**
  * @brief Callback function prototype for AWS service events
- * 
  */
 typedef void (*aws_svc_event_function_t)(enum aws_svc_event event);
 
@@ -54,10 +65,13 @@ int aws_svc_save_clear_settings(bool save);
 
 /**
  * @brief Set the AWS service callback
- * 
+ *
  * @param func Callback function
  */
 void aws_svc_set_event_callback(aws_svc_event_function_t func);
 
-
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* __BLE_AWS_SERVICE_H__ */

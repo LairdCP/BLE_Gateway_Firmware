@@ -1,12 +1,21 @@
-/*
+/**
+ * @file lte.h
+ * @brief
+ *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
 #ifndef __LTE_H__
 #define __LTE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
 enum lte_errors {
 	LTE_ERR_NONE = 0,
 	LTE_ERR_NO_IFACE = -1,
@@ -31,9 +40,16 @@ struct lte_status {
 /* Callback function for LTE events */
 typedef void (*lte_event_function_t)(enum lte_event event);
 
+/******************************************************************************/
+/* Global Function Prototypes                                                 */
+/******************************************************************************/
 void lteRegisterEventCallback(lte_event_function_t callback);
 int lteInit(void);
 bool lteIsReady(void);
 struct lte_status *lteGetStatus(void);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* __LTE_H__ */

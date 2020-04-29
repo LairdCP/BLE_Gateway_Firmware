@@ -1,4 +1,6 @@
-/* power.c - Voltage measurement control
+/**
+ * @file power.c
+ * @brief Voltage measurement control
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -14,9 +16,9 @@ LOG_MODULE_REGISTER(mg100_power);
 #define POWER_LOG_INF(...) LOG_INF(__VA_ARGS__)
 #define POWER_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 
-//=============================================================================
-// Includes
-//=============================================================================
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 
 #include <stdio.h>
 #include <zephyr/types.h>
@@ -30,37 +32,39 @@ LOG_MODULE_REGISTER(mg100_power);
 #include "power.h"
 #include "ble_power_service.h"
 
-//=============================================================================
-// Local Constant, Macro and Type Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Constant, Macro and Type Definitions                                 */
+/******************************************************************************/
 
-#define ADC_RESOLUTION			12
-#define ADC_ACQUISITION_TIME		ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 10)
-#define ADC_CHANNEL_ID			0
-#define ADC_SATURATION			2048
-#define ADC_LIMIT_VALUE			4095.0
-#define ADC_REFERENCE_VOLTAGE		0.6
-#define ADC_VOLTAGE_TOP_RESISTOR	14.1
-#define ADC_VOLTAGE_BOTTOM_RESISTOR	1.1
-#define ADC_DECIMAL_DIVISION_FACTOR	100.0 //Keeps to 2 decimal places
-#define ADC_GAIN_FACTOR_TWO		2.0
-#define ADC_GAIN_FACTOR_ONE		1.0
-#define ADC_GAIN_FACTOR_HALF		0.5
-#define MEASURE_STATUS_ENABLE		1
-#define MEASURE_STATUS_DISABLE		0
-#define GPREGRET_BOOTLOADER_VALUE	0xb1
+/* clang-format off */
+#define ADC_RESOLUTION               12
+#define ADC_ACQUISITION_TIME         ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 10)
+#define ADC_CHANNEL_ID               0
+#define ADC_SATURATION               2048
+#define ADC_LIMIT_VALUE              4095.0
+#define ADC_REFERENCE_VOLTAGE        0.6
+#define ADC_VOLTAGE_TOP_RESISTOR     14.1
+#define ADC_VOLTAGE_BOTTOM_RESISTOR  1.1
+#define ADC_DECIMAL_DIVISION_FACTOR  100.0 /* Keeps to 2 decimal places */
+#define ADC_GAIN_FACTOR_TWO          2.0
+#define ADC_GAIN_FACTOR_ONE          1.0
+#define ADC_GAIN_FACTOR_HALF         0.5
+#define MEASURE_STATUS_ENABLE        1
+#define MEASURE_STATUS_DISABLE       0
+#define GPREGRET_BOOTLOADER_VALUE    0xb1
+/* clang-format on */
 
-//=============================================================================
-// Local Data Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Data Definitions                                                     */
+/******************************************************************************/
 
-//NEED CONFIG_ADC_CONFIGURABLE_INPUTS
+/* NEED CONFIG_ADC_CONFIGURABLE_INPUTS */
 
 static struct adc_channel_cfg m_1st_channel_cfg = {
-	.reference        = ADC_REF_INTERNAL,
+	.reference = ADC_REF_INTERNAL,
 	.acquisition_time = ADC_ACQUISITION_TIME,
-	.channel_id       = ADC_CHANNEL_ID,
-	.input_positive   = NRF_SAADC_INPUT_AIN5
+	.channel_id = ADC_CHANNEL_ID,
+	.input_positive = NRF_SAADC_INPUT_AIN5
 };
 
 static s16_t m_sample_buffer;
@@ -69,9 +73,9 @@ static struct k_timer power_timer;
 static struct k_work power_work;
 static bool timer_enabled;
 
-//=============================================================================
-// Local Function Prototypes
-//=============================================================================
+/******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
 
 static void power_adc_to_voltage(s16_t adc, float scaling, u8_t *voltage_int,
 				 u8_t *voltage_dec);
@@ -81,9 +85,9 @@ static void power_run(void);
 static void system_workq_power_timer_handler(struct k_work *item);
 static void power_timer_callback(struct k_timer *timer_id);
 
-//=============================================================================
-// Global Function Definitions
-//=============================================================================
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
 
 void power_init(void)
 {
@@ -116,8 +120,7 @@ void power_mode_set(bool enable)
 	if (enable == true && timer_enabled == false) {
 		k_timer_start(&power_timer, POWER_TIMER_PERIOD,
 			      POWER_TIMER_PERIOD);
-	}
-	else if (enable == false && timer_enabled == true) {
+	} else if (enable == false && timer_enabled == true) {
 		k_timer_stop(&power_timer);
 	}
 	timer_enabled = enable;
@@ -132,30 +135,31 @@ void power_mode_set(bool enable)
 void power_reboot_module(u8_t type)
 {
 	/* Log panic will cause all buffered logs to be output */
-	LOG_INF("Rebooting module%s...", (type == REBOOT_TYPE_BOOTLOADER ?
-		" into UART bootloader" : ""));
+	LOG_INF("Rebooting module%s...",
+		(type == REBOOT_TYPE_BOOTLOADER ? " into UART bootloader" :
+						  ""));
 	log_panic();
 
 	/* And reboot the module */
-	sys_reboot((type == REBOOT_TYPE_BOOTLOADER ?
-		    GPREGRET_BOOTLOADER_VALUE : 0));
+	sys_reboot((type == REBOOT_TYPE_BOOTLOADER ? GPREGRET_BOOTLOADER_VALUE :
+						     0));
 }
 #endif
 
-//=============================================================================
-// Local Function Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
 
 static void power_adc_to_voltage(s16_t adc, float scaling, u8_t *voltage_int,
 				 u8_t *voltage_dec)
 {
 	float voltage = (float)adc / ADC_LIMIT_VALUE * ADC_REFERENCE_VOLTAGE *
-			ADC_VOLTAGE_TOP_RESISTOR / ADC_VOLTAGE_BOTTOM_RESISTOR
-			* scaling;
+			ADC_VOLTAGE_TOP_RESISTOR / ADC_VOLTAGE_BOTTOM_RESISTOR *
+			scaling;
 
 	*voltage_int = voltage;
 	*voltage_dec = ((voltage - (float)(*voltage_int)) *
-		       ADC_DECIMAL_DIVISION_FACTOR);
+			ADC_DECIMAL_DIVISION_FACTOR);
 }
 
 static bool power_measure_adc(struct device *adc_dev, enum adc_gain gain,
@@ -198,10 +202,10 @@ static void power_run(void)
 	(void)memset(&m_sample_buffer, 0, sizeof(m_sample_buffer));
 
 	const struct adc_sequence sequence = {
-		.channels    = BIT(ADC_CHANNEL_ID),
-		.buffer      = &m_sample_buffer,
+		.channels = BIT(ADC_CHANNEL_ID),
+		.buffer = &m_sample_buffer,
 		.buffer_size = sizeof(m_sample_buffer),
-		.resolution  = ADC_RESOLUTION,
+		.resolution = ADC_RESOLUTION,
 	};
 
 	/* Prevent other ADC uses */
@@ -218,11 +222,10 @@ static void power_run(void)
 	/* Measure voltage with 1/2 scaling which is suitable for higher
 	   voltage supplies */
 	power_measure_adc(adc_dev, ADC_GAIN_1_2, sequence);
-	power_adc_to_voltage(m_sample_buffer, ADC_GAIN_FACTOR_TWO,
-			     &voltage_int, &voltage_dec);
+	power_adc_to_voltage(m_sample_buffer, ADC_GAIN_FACTOR_TWO, &voltage_int,
+			     &voltage_dec);
 
-	if (m_sample_buffer >= ADC_SATURATION)
-	{
+	if (m_sample_buffer >= ADC_SATURATION) {
 		/* We have reached saturation point, do not try the next ADC
 		   scaling */
 		finished = true;
@@ -235,8 +238,7 @@ static void power_run(void)
 		power_adc_to_voltage(m_sample_buffer, ADC_GAIN_FACTOR_ONE,
 				     &voltage_int, &voltage_dec);
 
-		if (m_sample_buffer >= ADC_SATURATION)
-		{
+		if (m_sample_buffer >= ADC_SATURATION) {
 			/* We have reached saturation point, do not try the
 			   next ADC scaling */
 			finished = true;
@@ -267,13 +269,13 @@ static void system_workq_power_timer_handler(struct k_work *item)
 	power_run();
 }
 
-//=============================================================================
-// Interrupt Service Routines
-//=============================================================================
+/******************************************************************************/
+/* Interrupt Service Routines                                                 */
+/******************************************************************************/
 
 static void power_timer_callback(struct k_timer *timer_id)
 {
-	// Add item to system work queue so that it can be handled in task
-	// context because ADC cannot be used in interrupt context (mutex).
+	/* Add item to system work queue so that it can be handled in task
+	 * context because ADC cannot be used in interrupt context (mutex). */
 	k_work_submit(&power_work);
 }

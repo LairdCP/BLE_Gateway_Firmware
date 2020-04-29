@@ -1,17 +1,30 @@
-/*
+/**
+ * @file ble_cellular_service.h
+ * @brief
+ *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
 #ifndef __BLE_CELLULAR_SERVICE_H__
 #define __BLE_CELLULAR_SERVICE_H__
 
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <drivers/modem/hl7800.h>
 #include <bluetooth/conn.h>
 #include <zephyr/types.h>
 
-/** @param function that sensor service should use to get connection handle when
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/******************************************************************************/
+/* Global Function Prototypes                                                 */
+/******************************************************************************/
+/**
+ * @param function that sensor service should use to get connection handle when
  * determining if a value should by notified.
  */
 void cell_svc_assign_connection_handler_getter(
@@ -28,5 +41,10 @@ void cell_svc_set_sinr(int value);
 void cell_svc_set_fw_ver(const char *ver);
 void cell_svc_set_rat(u8_t value);
 void cell_svc_set_iccid(const char *value);
+void cell_svc_set_serial_number(const char *value);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* __BLE_CELLULAR_SERVICE_H__ */

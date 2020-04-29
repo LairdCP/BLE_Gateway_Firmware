@@ -1,22 +1,19 @@
-/* 
+/**
+ * @file sensor_bt510.h
+ * @brief Functions for parsing advertisements from BT510 sensor.
+ *
+ * Once configured the BT510 sends all state information in advertisements.
+ * This allows connectionless operation.
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#ifndef SENSOR_BT510_H_
-#define SENSOR_BT510_H_
+#ifndef __SENSOR_BT510_H__
+#define __SENSOR_BT510_H__
 
-/**
- * @brief Laird BT510 Sensor Advertisement Handler
- * 
- * Once configured the BT510 sends all state information in advertisements.
- * This allows connectionless operation.
- */
-
-/*=============================================================================
- * Includes
- *=============================================================================
- */
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <zephyr/types.h>
 #include <stdbool.h>
 #include <bluetooth/bluetooth.h>
@@ -27,19 +24,18 @@
 extern "C" {
 #endif
 
-//=============================================================================
-// Global Constants, Macros and Type Definitions
-//=============================================================================
-
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
 #define BT510_SENSOR_TABLE_SIZE 15
 
-// PSM mode doesn't easily support sending information from cloud.
-// When using a single topic BT510 temperature data is sent to the
-// Pinnacle (gateway) topic for any sensor in the table.
-//
-// When not using a single topic each sensor must be whitelisted before
-// it is allowed to send data to the cloud.
-//
+/* PSM mode doesn't easily support receiving information from cloud.
+ * When using a single topic BT510 temperature data is sent to the
+ * Pinnacle (gateway) topic for any sensor in the table.
+ *
+ * When not using a single topic each sensor must be whitelisted before
+ * it is allowed to send data to the cloud.
+ */
 #define BT510_USES_SINGLE_AWS_TOPIC 1
 
 #define BT510_ADDR_STR_SIZE 13
@@ -48,7 +44,7 @@ extern "C" {
 #define BT510_SENSOR_NAME_MAX_SIZE 12
 #define BT510_SENSOR_NAME_MAX_STR_LEN (BT510_SENSOR_NAME_MAX_SIZE - 1)
 
-// Format of the BT510 Manufacturer Specific Data using 1M PHY in Advertisement
+/* Format of the Manufacturer Specific Data using 1M PHY in Advertisement */
 struct Bt510AdEventTag {
 	u16_t companyId;
 	u16_t protocolId;
@@ -64,7 +60,7 @@ struct Bt510AdEventTag {
 } __packed;
 typedef struct Bt510AdEventTag Bt510AdEvent_t;
 
-// Format of the BT510 Manufacturer Specific Data using 1M PHY in Scan Response
+/* Format of the  Manufacturer Specific Data using 1M PHY in Scan Response */
 struct Bt510RspTag {
 	u16_t companyId;
 	u16_t protocolId;
@@ -86,7 +82,7 @@ typedef enum MAGNET_STATE { MAGNET_NEAR = 0, MAGNET_FAR } MagnetState_t;
 typedef enum SENSOR_EVENT {
 	SENSOR_EVENT_RESERVED = 0,
 	SENSOR_EVENT_TEMPERATURE = 1,
-	SENSOR_EVENT_MAGNET = 2, // or proximity
+	SENSOR_EVENT_MAGNET = 2, /* or proximity */
 	SENSOR_EVENT_MOVEMENT = 3,
 	SENSOR_EVENT_ALARM_HIGH_TEMP_1 = 4,
 	SENSOR_EVENT_ALARM_HIGH_TEMP_2 = 5,
@@ -120,31 +116,41 @@ typedef struct SensorWhitelistMsg {
 } SensorWhitelistMsg_t;
 CHECK_FWK_MSG_SIZE(SensorWhitelistMsg_t);
 
-//=============================================================================
-// Global Data Definitions
-//=============================================================================
-// NA
+/******************************************************************************/
+/* Global Function Prototypes                                                 */
+/******************************************************************************/
+/**
+ * @note Functions must be called from the same thread.
+ */
 
-//=============================================================================
-// Global Function Prototypes
-//=============================================================================
-// Functions must be called from the same thread.
-
+/**
+ * @brief Initializes sensor table.
+ */
 void SensorBt510_Initialize(void);
 
+/**
+ * @brief Advertisement parser
+ */
 void SensorBt510_AdvertisementHandler(const bt_addr_le_t *pAddr, s8_t rssi,
 				      u8_t type, Ad_t *pAd);
 
-// Only whitelisted sensors are allowed to send their data to the cloud.
+/**
+ * @brief Only whitelisted sensors are allowed to send their data to the cloud.
+ */
 void SensorBt510_ProcessWhitelistRequest(SensorWhitelistMsg_t *pMsg);
 
-// Generate BT510 portion of the shadow if the sensor table has changed.
+/**
+ * @brief Generate BT510 portion of the shadow if the sensor table has changed.
+ */
 void SensorBt510_GenerateGatewayShadow(void);
 
+/**
+ * @retval number of sensors in table.
+ */
 size_t SensorBt510_Count(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* __SENSOR_BT510_H__ */

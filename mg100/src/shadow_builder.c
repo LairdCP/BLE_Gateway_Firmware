@@ -1,24 +1,24 @@
-//=============================================================================
-//!
-//! @file "ShadowBuilder.c"
-//!
-//! @copyright Copyright 2020 Laird
-//!            All Rights Reserved.
-//=============================================================================
+/**
+ * @file shadow_builder.c
+ * @brief
+ *
+ * Copyright (c) 2020 Laird Connectivity
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-//=============================================================================
-// Includes
-//=============================================================================
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <string.h>
 
 #include "Framework.h"
-#include "ToString.h"
-#include "ShadowBuilder.h"
+#include "to_string.h"
+#include "shadow_builder.h"
 
-//=============================================================================
-// Local Constant, Macro and Type Definitions
-//=============================================================================
-
+/******************************************************************************/
+/* Local Constant, Macro and Type Definitions                                 */
+/******************************************************************************/
 #define JSON_APPEND_CHAR(c) JsonAppendChar(pJsonMsg, (u8_t)(c))
 
 #define JSON_APPEND_VALUE_STRING(s)                                            \
@@ -50,24 +50,20 @@
 
 #define JSON_APPEND_STRING(s) JsonAppendString(pJsonMsg, (s))
 
-//=============================================================================
-// Global Data Definitions
-//=============================================================================
-
-//=============================================================================
-// Local Data Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Data Definitions                                                     */
+/******************************************************************************/
 static char str[MAXIMUM_LENGTH_OF_TO_STRING_OUTPUT];
 
-//=============================================================================
-// Local Function Prototypes
-//=============================================================================
+/******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
 static void JsonAppendString(JsonMsg_t *pJsonMsg, const char *restrict pString);
 static void JsonAppendChar(JsonMsg_t *pJsonMsg, char Character);
 
-//=============================================================================
-// Global Function Definitions
-//=============================================================================
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
 void ShadowBuilder_Start(JsonMsg_t *pJsonMsg, bool ClearBuffer)
 {
 	FRAMEWORK_ASSERT(pJsonMsg != NULL);
@@ -125,13 +121,13 @@ void ShadowBuilder_AddPair(JsonMsg_t *pJsonMsg, const char *restrict pKey,
 	FRAMEWORK_ASSERT(pKey != NULL);
 	FRAMEWORK_ASSERT(pValue != NULL);
 	FRAMEWORK_ASSERT(strlen(pKey) > 0);
-	if (IsNotString) {
-		FRAMEWORK_ASSERT(strlen(pValue) > 0); // string can be null
+	if (IsNotString) { /* string alloed be empty */
+		FRAMEWORK_ASSERT(strlen(pValue) > 0);
 	}
 
 	JSON_APPEND_KEY(pKey);
 	if (IsNotString) {
-		JSON_APPEND_STRING(pValue); // us32_t, s32_t, float, ...
+		JSON_APPEND_STRING(pValue); /* us32_t, s32_t, float, ... */
 	} else {
 		JSON_APPEND_VALUE_STRING(pValue);
 	}
@@ -245,14 +241,14 @@ void ShadowBuilder_AddSensorTableArrayEntry(JsonMsg_t *pJsonMsg,
 	JSON_APPEND_CHAR(',');
 }
 
-//=============================================================================
-// Local Function Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
 static void JsonAppendChar(JsonMsg_t *pJsonMsg, char Character)
 {
 	if ((pJsonMsg->size) < JSON_OUT_BUFFER_SIZE - 1) {
 		pJsonMsg->buffer[pJsonMsg->size++] = Character;
-	} else { // buffer too small
+	} else { /* buffer too small */
 		FRAMEWORK_ASSERT(false);
 	}
 
@@ -264,7 +260,7 @@ static void JsonAppendString(JsonMsg_t *pJsonMsg, const char *restrict pString)
 	size_t length = strlen(pString);
 	size_t i = 0;
 	while (i < length && (pJsonMsg->size < JSON_OUT_BUFFER_SIZE - 1)) {
-		// Escape character handling
+		/* Escape character handling */
 		switch (pString[i]) {
 		case '"':
 		case '\\':
@@ -308,8 +304,6 @@ static void JsonAppendString(JsonMsg_t *pJsonMsg, const char *restrict pString)
 		}
 	}
 
-	FRAMEWORK_ASSERT(i == length); // buffer too small
+	FRAMEWORK_ASSERT(i == length); /* buffer too small */
 	FRAMEWORK_ASSERT(pJsonMsg->size < JSON_OUT_BUFFER_SIZE);
 }
-
-// end

@@ -1,18 +1,36 @@
-/*
+/**
+ * @file mg100_common.h
+ * @brief Configuration and utiilty functions for the MG100.
+ *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#ifndef __MG100_COMMON_H__
+#define __MG100_COMMON_H__
 
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <stdint.h>
 
-#define APP_VERSION_MAJOR 1
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/******************************************************************************/
+/* Application Firwware Version                                               */
+/******************************************************************************/
+#define APP_VERSION_MAJOR 2
 #define APP_VERSION_MINOR 0
 #define APP_VERSION_PATCH 0
 #define APP_VERSION_STRING                                                     \
 	STRINGIFY(APP_VERSION_MAJOR)                                           \
 	"." STRINGIFY(APP_VERSION_MINOR) "." STRINGIFY(APP_VERSION_PATCH)
 
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
 #define SCAN_FOR_BL654_SENSOR 1
 #define SCAN_FOR_BT510 1
 
@@ -24,7 +42,7 @@
  *
  * This is tied to CONFIG_MODEM_HL7800_PSM_PERIODIC_TAU
  * and CONFIG_MODEM_HL7800_PSM_ACTIVE_TIME.
- * It is adjusted for the time to bring the cell network up, connect to AWS, 
+ * It is adjusted for the time to bring the cell network up, connect to AWS,
  * and time to close the AWS connection.
  */
 #define PSM_ENABLED_SEND_DATA_WINDOW_TICKS K_SECONDS(12)
@@ -32,7 +50,7 @@
 #define PSM_DISABLED_SEND_DATA_RATE_TICKS K_SECONDS(30)
 
 /* Green LED is turned on when connected to AWS.
- * Green LED is turned off when data is sent. 
+ * Green LED is turned off when data is sent.
  */
 #define DATA_SEND_LED_OFF_TIME_TICKS K_MSEC(100)
 #define SEND_DATA_TO_DISCONNECT_DELAY_TICKS K_SECONDS(1)
@@ -68,6 +86,9 @@ enum APP_ERROR {
 
 typedef void (*app_state_function_t)(void);
 
+/******************************************************************************/
+/* Global Function Prototypes                                                 */
+/******************************************************************************/
 void strncpy_replace_underscore_with_space(char *restrict s1,
 					   const char *restrict s2,
 					   size_t size);
@@ -81,3 +102,9 @@ char *strncat_max(char *d1, const char *s1, size_t max_str_len);
 void print_thread_list(void);
 
 void print_json(const char *fmt, size_t size, const char *buffer);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __MG100_COMMON_H__ */

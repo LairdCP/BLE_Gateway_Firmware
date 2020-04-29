@@ -1,13 +1,14 @@
 /**
- * @file dis.h
- * @brief Device Information Service
+ * @file sensor_gateway_parser.h
+ * @brief Process subscription data from AWS that is used to
+ * enable/disable sending BT510 data to AWS.
  *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#ifndef __DIS_H__
-#define __DIS_H__
+#ifndef __SENSOR_GATEWAY_PARSER_H__
+#define __SENSOR_GATEWAY_PARSER_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,13 +18,13 @@ extern "C" {
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
 /**
- * @brief Reads Zephyr version and registers the service with the
- * Bluetooth stack.
+ * @brief Process JSON message from AWS.  Sends a message to sensor task to
+ * whitelist sensors.
  */
-void dis_initialize(void);
+void SensorGatewayParser_Run(char *pJson);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __DIS_H__ */
+#endif /* __SENSOR_GATEWAY_PARSER_H__ */

@@ -1,30 +1,33 @@
-//=============================================================================
-//!
-#define THIS_FILE "SensorTask"
-//!
-//! @copyright Copyright 2020 Laird
-//!            All Rights Reserved.
-//=============================================================================
+/**
+ * @file sensor_task.c
+ * @brief
+ *
+ * Copyright (c) 2020 Laird Connectivity
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(SensorTask);
+LOG_MODULE_REGISTER(sensor_task);
+#define FWK_FNAME "sensor_task"
 
-//=============================================================================
-// Includes
-//=============================================================================
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <string.h>
 
 #include "Framework.h"
 
 #include "mg100_common.h"
 #include "mg100_ble.h"
-#include "SensorBt510.h"
-#include "SensorGatewayParser.h"
-#include "SensorTask.h"
+#include "sensor_bt510.h"
+#include "sensor_gateway_parser.h"
+#include "sensor_task.h"
 
-//=============================================================================
-// Local Constant, Macro and Type Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Constant, Macro and Type Definitions                                 */
+/******************************************************************************/
 #ifndef SENSOR_TASK_PRIORITY
 #define SENSOR_TASK_PRIORITY K_PRIO_PREEMPT(1)
 #endif
@@ -50,13 +53,9 @@ typedef struct SensorTaskTag {
 
 } SensorTaskObj_t;
 
-//=============================================================================
-// Global Data Definitions
-//=============================================================================
-
-//=============================================================================
-// Local Data Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Data Definitions                                                     */
+/******************************************************************************/
 static SensorTaskObj_t sensorTaskObject;
 
 K_THREAD_STACK_DEFINE(sensorTaskStack, SENSOR_TASK_STACK_DEPTH);
@@ -64,9 +63,9 @@ K_THREAD_STACK_DEFINE(sensorTaskStack, SENSOR_TASK_STACK_DEPTH);
 K_MSGQ_DEFINE(sensorTaskQueue, FWK_QUEUE_ENTRY_SIZE, SENSOR_TASK_QUEUE_DEPTH,
 	      FWK_QUEUE_ALIGNMENT);
 
-//=============================================================================
-// Local Function Prototypes
-//=============================================================================
+/******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
 static void SensorTaskThread(void *pArg1, void *pArg2, void *pArg3);
 
 static DispatchResult_t AdvertisementMsgHandler(FwkMsgReceiver_t *pMsgRxer,
@@ -81,12 +80,12 @@ static DispatchResult_t GatewayShadowRequestHandler(FwkMsgReceiver_t *pMsgRxer,
 static DispatchResult_t WhitelistRequestHandler(FwkMsgReceiver_t *pMsgRxer,
 						FwkMsg_t *pMsg);
 
-//=============================================================================
-// Framework Message Dispatcher
-//=============================================================================
+/******************************************************************************/
+/* Framework Message Dispatcher                                               */
+/******************************************************************************/
 static FwkMsgHandler_t SensorTaskMsgDispatcher(FwkMsgCode_t MsgCode)
 {
-	// clang-format off
+	/* clang-format off */
 	switch (MsgCode) {
 	case FMC_INVALID:              return Framework_UnknownMsgHandler;
 	case FMC_ADV:                  return AdvertisementMsgHandler;
@@ -95,12 +94,12 @@ static FwkMsgHandler_t SensorTaskMsgDispatcher(FwkMsgCode_t MsgCode)
 	case FMC_WHITELIST_REQUEST:    return WhitelistRequestHandler;
 	default:                       return NULL;
 	}
-	// clang-format on
+	/* clang-format on */
 }
 
-//=============================================================================
-// Global Function Definitions
-//=============================================================================
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
 void SensorTask_Initialize(void)
 {
 	memset(&sensorTaskObject, 0, sizeof(SensorTaskObj_t));
@@ -121,12 +120,12 @@ void SensorTask_Initialize(void)
 				SensorTaskThread, &sensorTaskObject, NULL, NULL,
 				SENSOR_TASK_PRIORITY, 0, K_NO_WAIT);
 
-	k_thread_name_set(sensorTaskObject.msgTask.pTid, THIS_FILE);
+	k_thread_name_set(sensorTaskObject.msgTask.pTid, FWK_FNAME);
 }
 
-//=============================================================================
-// Local Function Definitions
-//=============================================================================
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
 static void SensorTaskThread(void *pArg1, void *pArg2, void *pArg3)
 {
 	SensorTaskObj_t *pObj = (SensorTaskObj_t *)pArg1;
@@ -179,5 +178,3 @@ static DispatchResult_t GatewayShadowRequestHandler(FwkMsgReceiver_t *pMsgRxer,
 	SensorBt510_GenerateGatewayShadow();
 	return DISPATCH_OK;
 }
-
-// end

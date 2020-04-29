@@ -1,4 +1,6 @@
-/* ble_aws_service.c - BLE AWS Service
+/**
+ * @file ble_aws_service.c
+ * @brief BLE AWS Service
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -9,6 +11,14 @@
 #define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(mg100_aws_svc);
 
+#define AWS_SVC_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
+#define AWS_SVC_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
+#define AWS_SVC_LOG_INF(...) LOG_INF(__VA_ARGS__)
+#define AWS_SVC_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
+
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
 #include <errno.h>
 #include <bluetooth/uuid.h>
 #include <bluetooth/gatt.h>
@@ -20,11 +30,9 @@ LOG_MODULE_REGISTER(mg100_aws_svc);
 #include "laird_bluetooth.h"
 #include "mg100_common.h"
 
-#define AWS_SVC_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
-#define AWS_SVC_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
-#define AWS_SVC_LOG_INF(...) LOG_INF(__VA_ARGS__)
-#define AWS_SVC_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
-
+/******************************************************************************/
+/* Local Constant, Macro and Type Definitions                                 */
+/******************************************************************************/
 enum { SAVE_SETTINGS = 1, CLEAR_SETTINGS };
 
 static struct bt_uuid_128 aws_svc_uuid =
@@ -59,6 +67,9 @@ static struct bt_uuid_128 aws_status_uuid =
 	BT_UUID_INIT_128(0xb5, 0xa9, 0x34, 0xf2, 0x59, 0x7c, 0xd7, 0xbc, 0x14,
 			 0x4a, 0xa9, 0x55, 0xf7, 0x03, 0x72, 0xae);
 
+/******************************************************************************/
+/* Local Data Definitions                                                     */
+/******************************************************************************/
 static char client_id_value[AWS_CLIENT_ID_MAX_LENGTH + 1];
 static char endpoint_value[AWS_ENDPOINT_MAX_LENGTH + 1];
 static char root_ca_value[AWS_ROOT_CA_MAX_LENGTH + 1];
@@ -82,6 +93,9 @@ static u16_t svc_status_index;
 
 static aws_svc_event_function_t eventCallbackFunc = NULL;
 
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
 static void onAwsSvcEvent(enum aws_svc_event event)
 {
 	if (eventCallbackFunc != NULL) {
@@ -228,7 +242,7 @@ static ssize_t write_credential(struct bt_conn *conn,
 
 	if (offset == 0) {
 		/* This was not a long write.
-        *  skip first 4 bytes of data (address offest) and adjust 
+        *  skip first 4 bytes of data (address offest) and adjust
         *  length by 4 bytes */
 		memcpy(value + offset + credOffset, data + 4, len - 4);
 		/* null terminate the value that was written */
@@ -319,7 +333,9 @@ static void status_cfg_changed(const struct bt_gatt_attr *attr, u16_t value)
 	status_notify = (value == BT_GATT_CCC_NOTIFY) ? 1 : 0;
 }
 
-/* AWS Service Declaration */
+/******************************************************************************/
+/* AWS Service Declaration                                                    */
+/******************************************************************************/
 static struct bt_gatt_attr aws_attrs[] = {
 	BT_GATT_PRIMARY_SERVICE(&aws_svc_uuid),
 	BT_GATT_CHARACTERISTIC(&aws_cliend_id_uuid.uuid,
@@ -356,6 +372,9 @@ static struct bt_gatt_attr aws_attrs[] = {
 
 static struct bt_gatt_service aws_svc = BT_GATT_SERVICE(aws_attrs);
 
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
 void aws_svc_set_client_id(const char *id)
 {
 	if (id) {
@@ -400,8 +419,8 @@ void aws_svc_set_status(struct bt_conn *conn, enum aws_status status)
 		status_value = status;
 	}
 	if ((conn != NULL) && status_notify && notify) {
-		bt_gatt_notify(conn, &aws_svc.attrs[svc_status_index],
-			       &status, sizeof(status));
+		bt_gatt_notify(conn, &aws_svc.attrs[svc_status_index], &status,
+			       sizeof(status));
 	}
 }
 
@@ -465,9 +484,9 @@ int aws_svc_init(const char *clientId)
 
 	bt_gatt_service_register(&aws_svc);
 
-	size_t gatt_size = (sizeof(aws_attrs)/sizeof(aws_attrs[0]));
-	svc_status_index = lbt_find_gatt_index(&aws_status_uuid.uuid,
-					       aws_attrs, gatt_size);
+	size_t gatt_size = (sizeof(aws_attrs) / sizeof(aws_attrs[0]));
+	svc_status_index = lbt_find_gatt_index(&aws_status_uuid.uuid, aws_attrs,
+					       gatt_size);
 
 	return AWS_SVC_ERR_NONE;
 }

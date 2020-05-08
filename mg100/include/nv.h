@@ -42,6 +42,20 @@ int nvDeleteAwsClientId(void);
 int nvStoreAwsRootCa(u8_t *cert, u16_t size);
 int nvReadAwsRootCa(u8_t *cert, u16_t size);
 int nvDeleteAwsRootCa(void);
+int nvReadBatteryLow(u16_t * batteryData);
+int nvReadBatteryAlarm(u16_t * batteryData);
+int nvReadBattery4(u16_t * batteryData);
+int nvReadBattery3(u16_t * batteryData);
+int nvReadBattery2(u16_t * batteryData);
+int nvReadBattery1(u16_t * batteryData);
+int nvReadBattery0(u16_t * batteryData);
+int nvStoreBatteryLow(u16_t * batteryData);
+int nvStoreBatteryAlarm(u16_t * batteryData);
+int nvStoreBattery4(u16_t * batteryData);
+int nvStoreBattery3(u16_t * batteryData);
+int nvStoreBattery2(u16_t * batteryData);
+int nvStoreBattery1(u16_t * batteryData);
+int nvStoreBattery0(u16_t * batteryData);
 
 #ifdef __cplusplus
 }

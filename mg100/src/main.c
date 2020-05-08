@@ -28,6 +28,7 @@ LOG_MODULE_REGISTER(mg100_main);
 #include <shell/shell.h>
 #include <shell/shell_uart.h>
 
+#include "battery.h"
 #include "mg100_common.h"
 #include "led.h"
 #include "mg100_ble.h"
@@ -154,11 +155,21 @@ void main(void)
 	bss_init();
 	bss_assign_connection_handler_getter(mg100_ble_get_central_connection);
 
+	power_init();
+	/* Initialize the battery managment sub-system.
+	 * NOTE: This must be executed after nvInit and
+	 * after power init.
+	 */
+	BatteryInit();
+
 	/* Setup the power service */
 	power_svc_init();
 	power_svc_assign_connection_handler_getter(
 		mg100_ble_get_central_connection);
-	power_init();
+
+
+
+
 
 	bootloader_init();
 

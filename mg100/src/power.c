@@ -29,8 +29,11 @@ LOG_MODULE_REGISTER(mg100_power);
 #ifdef CONFIG_REBOOT
 #include <misc/reboot.h>
 #endif
-#include "power.h"
+
+#include "battery.h"
 #include "ble_power_service.h"
+#include "power.h"
+
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -45,10 +48,10 @@ LOG_MODULE_REGISTER(mg100_power);
 #define ADC_REFERENCE_VOLTAGE        0.6
 #define ADC_VOLTAGE_TOP_RESISTOR     14.1
 #define ADC_VOLTAGE_BOTTOM_RESISTOR  1.1
-#define ADC_DECIMAL_DIVISION_FACTOR  100.0 /* Keeps to 2 decimal places */
 #define ADC_GAIN_FACTOR_TWO          2.0
 #define ADC_GAIN_FACTOR_ONE          1.0
 #define ADC_GAIN_FACTOR_HALF         0.5
+#define ADC_MV_PER_V                 1000
 #define MEASURE_STATUS_ENABLE        1
 #define MEASURE_STATUS_DISABLE       0
 #define GPREGRET_BOOTLOADER_VALUE    0xb1
@@ -64,7 +67,7 @@ static struct adc_channel_cfg m_1st_channel_cfg = {
 	.reference = ADC_REF_INTERNAL,
 	.acquisition_time = ADC_ACQUISITION_TIME,
 	.channel_id = ADC_CHANNEL_ID,
-	.input_positive = NRF_SAADC_INPUT_AIN5
+	.input_positive = NRF_SAADC_INPUT_AIN0
 };
 
 static s16_t m_sample_buffer;
@@ -77,8 +80,7 @@ static bool timer_enabled;
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
 
-static void power_adc_to_voltage(s16_t adc, float scaling, u8_t *voltage_int,
-				 u8_t *voltage_dec);
+static void power_adc_to_voltage(s16_t adc, float scaling, u16_t *voltage_mv);
 static bool power_measure_adc(struct device *adc_dev, enum adc_gain gain,
 			      const struct adc_sequence sequence);
 static void power_run(void);
@@ -150,16 +152,13 @@ void power_reboot_module(u8_t type)
 /* Local Function Definitions                                                 */
 /******************************************************************************/
 
-static void power_adc_to_voltage(s16_t adc, float scaling, u8_t *voltage_int,
-				 u8_t *voltage_dec)
+static void power_adc_to_voltage(s16_t adc, float scaling, u16_t *voltage_mv)
 {
 	float voltage = (float)adc / ADC_LIMIT_VALUE * ADC_REFERENCE_VOLTAGE *
 			ADC_VOLTAGE_TOP_RESISTOR / ADC_VOLTAGE_BOTTOM_RESISTOR *
 			scaling;
 
-	*voltage_int = voltage;
-	*voltage_dec = ((voltage - (float)(*voltage_int)) *
-			ADC_DECIMAL_DIVISION_FACTOR);
+	*voltage_mv = voltage * ADC_MV_PER_V;
 }
 
 static bool power_measure_adc(struct device *adc_dev, enum adc_gain gain,
@@ -188,8 +187,7 @@ static bool power_measure_adc(struct device *adc_dev, enum adc_gain gain,
 static void power_run(void)
 {
 	int ret;
-	u8_t voltage_int;
-	u8_t voltage_dec;
+	u16_t voltage_mv;
 	bool finished = false;
 
 	/* Find the ADC device */
@@ -222,8 +220,7 @@ static void power_run(void)
 	/* Measure voltage with 1/2 scaling which is suitable for higher
 	   voltage supplies */
 	power_measure_adc(adc_dev, ADC_GAIN_1_2, sequence);
-	power_adc_to_voltage(m_sample_buffer, ADC_GAIN_FACTOR_TWO, &voltage_int,
-			     &voltage_dec);
+	power_adc_to_voltage(m_sample_buffer, ADC_GAIN_FACTOR_TWO, &voltage_mv);
 
 	if (m_sample_buffer >= ADC_SATURATION) {
 		/* We have reached saturation point, do not try the next ADC
@@ -236,7 +233,7 @@ static void power_run(void)
 		   medium voltage supplies */
 		power_measure_adc(adc_dev, ADC_GAIN_1, sequence);
 		power_adc_to_voltage(m_sample_buffer, ADC_GAIN_FACTOR_ONE,
-				     &voltage_int, &voltage_dec);
+				     &voltage_mv);
 
 		if (m_sample_buffer >= ADC_SATURATION) {
 			/* We have reached saturation point, do not try the
@@ -250,7 +247,7 @@ static void power_run(void)
 		   low voltage supplies, such as 2xAA batteries */
 		power_measure_adc(adc_dev, ADC_GAIN_2, sequence);
 		power_adc_to_voltage(m_sample_buffer, ADC_GAIN_FACTOR_HALF,
-				     &voltage_int, &voltage_dec);
+				     &voltage_mv);
 	}
 
 	/* Disable the voltage monitoring FET */
@@ -261,7 +258,7 @@ static void power_run(void)
 		LOG_ERR("Error setting power GPIO");
 	}
 	k_mutex_unlock(&adc_mutex);
-	power_svc_set_voltage(voltage_int, voltage_dec);
+	BatteryCalculateRemainingCapacity(voltage_mv);
 }
 
 static void system_workq_power_timer_handler(struct k_work *item)

@@ -23,8 +23,8 @@ extern "C" {
 /******************************************************************************/
 
 /* Port and pin number of the voltage measurement enabling functionality */
-#define MEASURE_ENABLE_PORT DT_NORDIC_NRF_GPIO_0_LABEL
-#define MEASURE_ENABLE_PIN 28
+#define MEASURE_ENABLE_PORT DT_NORDIC_NRF_GPIO_1_LABEL
+#define MEASURE_ENABLE_PIN 10
 
 /* Measurement time between readings */
 #define POWER_TIMER_PERIOD K_MSEC(15000)

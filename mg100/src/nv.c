@@ -25,6 +25,7 @@ LOG_MODULE_REGISTER(mg100_nv);
 #include <flash.h>
 #include <nvs/nvs.h>
 
+#include "battery.h"
 #include "nv.h"
 
 /******************************************************************************/
@@ -37,6 +38,13 @@ enum SETTING_ID {
 	SETTING_ID_AWS_ENDPOINT,
 	SETTING_ID_AWS_CLIENT_ID,
 	SETTING_ID_AWS_ROOT_CA,
+	SETTING_ID_BATTERY_LOW,
+	SETTING_ID_BATTERY_ALARM,
+	SETTING_ID_BATTERY_4,
+	SETTING_ID_BATTERY_3,
+	SETTING_ID_BATTERY_2,
+	SETTING_ID_BATTERY_1,
+	SETTING_ID_BATTERY_0,
 };
 
 /******************************************************************************/
@@ -76,6 +84,7 @@ int nvStoreCommissioned(bool commissioned)
 
 int nvInit(void)
 {
+	u16_t batteryData = 0;
 	int rc = 0;
 	struct flash_pages_info info;
 
@@ -107,6 +116,83 @@ int nvInit(void)
 		rc = nvStoreCommissioned(false);
 		if (rc <= 0) {
 			NV_LOG_ERR("Could not write commissioned flag (%d)",
+				   rc);
+			goto exit;
+		}
+	}
+
+	batteryData = BatteryGetThresholds(BATTERY_IDX_4);
+	rc = nvReadBattery4(&batteryData);
+	if (rc <= 0) {
+		rc = nvStoreBattery4(&batteryData);
+		if (rc <= 0) {
+			NV_LOG_ERR("Could not write battery threshold 4 data (%d)",
+				   rc);
+			goto exit;
+		}
+	}
+
+	batteryData = BatteryGetThresholds(BATTERY_IDX_3);
+	rc = nvReadBattery3(&batteryData);
+	if (rc <= 0) {
+		rc = nvStoreBattery3(&batteryData);
+		if (rc <= 0) {
+			NV_LOG_ERR("Could not write battery threshold 3 data (%d)",
+				   rc);
+			goto exit;
+		}
+	}
+
+	batteryData = BatteryGetThresholds(BATTERY_IDX_2);
+	rc = nvReadBattery2(&batteryData);
+	if (rc <= 0) {
+		rc = nvStoreBattery2(&batteryData);
+		if (rc <= 0) {
+			NV_LOG_ERR("Could not write battery threshold 2 data (%d)",
+				   rc);
+			goto exit;
+		}
+	}
+
+	batteryData = BatteryGetThresholds(BATTERY_IDX_1);
+	rc = nvReadBattery1(&batteryData);
+	if (rc <= 0) {
+		rc = nvStoreBattery1(&batteryData);
+		if (rc <= 0) {
+			NV_LOG_ERR("Could not write battery threshold 1 data (%d)",
+				   rc);
+			goto exit;
+		}
+	}
+
+	batteryData = BatteryGetThresholds(BATTERY_IDX_0);
+	rc = nvReadBattery0(&batteryData);
+	if (rc <= 0) {
+		rc = nvStoreBattery0(&batteryData);
+		if (rc <= 0) {
+			NV_LOG_ERR("Could not write battery threshold 0 data (%d)",
+				   rc);
+			goto exit;
+		}
+	}
+
+	batteryData = BatteryGetThresholds(BATTERY_IDX_LOW);
+	rc = nvReadBatteryLow(&batteryData);
+	if (rc <= 0) {
+		rc = nvStoreBatteryLow(&batteryData);
+		if (rc <= 0) {
+			NV_LOG_ERR("Could not write battery low threshold data (%d)",
+				   rc);
+			goto exit;
+		}
+	}
+
+	batteryData = BatteryGetThresholds(BATTERY_IDX_ALARM);
+	rc = nvReadBatteryLow(&batteryData);
+	if (rc <= 0) {
+		rc = nvStoreBatteryAlarm(&batteryData);
+		if (rc <= 0) {
+			NV_LOG_ERR("Could not write battery low alarm data (%d)",
 				   rc);
 			goto exit;
 		}
@@ -189,4 +275,86 @@ int nvDeleteAwsClientId(void)
 int nvDeleteAwsRootCa(void)
 {
 	return nvs_delete(&fs, SETTING_ID_AWS_ROOT_CA);
+}
+
+int nvReadBatteryData(enum SETTING_ID id, u16_t * batteryData)
+{
+	int rc = -1;
+	if ((id <= SETTING_ID_BATTERY_LOW) && (id >= SETTING_ID_BATTERY_0))
+	{
+		rc = nvs_read(&fs, id, batteryData,
+		      sizeof(u16_t));
+	}
+
+	return rc;
+}
+
+int nvReadBatteryLow(u16_t * batteryData)
+{
+	return nvs_read(&fs, SETTING_ID_BATTERY_LOW, batteryData, sizeof(u16_t));
+}
+
+int nvReadBatteryAlarm(u16_t * batteryData)
+{
+	return nvs_read(&fs, SETTING_ID_BATTERY_ALARM, batteryData, sizeof(u16_t));
+}
+
+int nvReadBattery4(u16_t * batteryData)
+{
+	return nvs_read(&fs, SETTING_ID_BATTERY_4, batteryData, sizeof(u16_t));
+}
+
+int nvReadBattery3(u16_t * batteryData)
+{
+	return nvs_read(&fs, SETTING_ID_BATTERY_3, batteryData, sizeof(u16_t));
+}
+
+int nvReadBattery2(u16_t * batteryData)
+{
+	return nvs_read(&fs,SETTING_ID_BATTERY_2, batteryData, sizeof(u16_t));
+}
+
+int nvReadBattery1(u16_t * batteryData)
+{
+	return nvs_read(&fs, SETTING_ID_BATTERY_1, batteryData, sizeof(u16_t));
+}
+
+int nvReadBattery0(u16_t * batteryData)
+{
+	return nvs_read(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(u16_t));
+}
+
+int nvStoreBatteryLow(u16_t * batteryData)
+{
+	return nvs_write(&fs, SETTING_ID_BATTERY_LOW, batteryData, sizeof(u16_t));
+}
+
+int nvStoreBatteryAlarm(u16_t * batteryData)
+{
+	return nvs_write(&fs, SETTING_ID_BATTERY_ALARM, batteryData, sizeof(u16_t));
+}
+
+int nvStoreBattery4(u16_t * batteryData)
+{
+	return nvs_write(&fs, SETTING_ID_BATTERY_4, batteryData, sizeof(u16_t));
+}
+
+int nvStoreBattery3(u16_t * batteryData)
+{
+	return nvs_write(&fs, SETTING_ID_BATTERY_3, batteryData, sizeof(u16_t));
+}
+
+int nvStoreBattery2(u16_t * batteryData)
+{
+	return nvs_write(&fs,SETTING_ID_BATTERY_2, batteryData, sizeof(u16_t));
+}
+
+int nvStoreBattery1(u16_t * batteryData)
+{
+	return nvs_write(&fs, SETTING_ID_BATTERY_1, batteryData, sizeof(u16_t));
+}
+
+int nvStoreBattery0(u16_t * batteryData)
+{
+	return nvs_write(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(u16_t));
 }

@@ -30,7 +30,9 @@ void power_svc_assign_connection_handler_getter(
 	struct bt_conn *(*function)(void));
 
 void power_svc_init();
-void power_svc_set_voltage(u8_t integer, u8_t decimal);
+void power_svc_set_battery(u16_t voltage, u8_t capacity);
+void power_svc_set_chg_state(u8_t chgState);
+void power_svc_set_alarm_state(u8_t alarmState);
 
 #ifdef __cplusplus
 }

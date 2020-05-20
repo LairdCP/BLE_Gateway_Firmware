@@ -73,7 +73,7 @@ void BatteryInit();
  *
  * @param Voltage - the raw voltage in mV.
  *
- * @retval an enum value indicating the remaining battery capacity as a 
+ * @retval an enum value indicating the remaining battery capacity as a
  *          threshold value.
  */
 enum battery_status BatteryCalculateRemainingCapacity(u16_t Voltage);

@@ -17,11 +17,10 @@ LOG_MODULE_REGISTER(battery_task);
 #include <gpio.h>
 #include <sensor.h>
 
-#include "Battery.h"
-#include "ble_power_service.h"
+#include "battery.h"
+#include "ble_battery_service.h"
 #include "nv.h"
 #include "power.h"
-
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -46,7 +45,7 @@ LOG_MODULE_REGISTER(battery_task);
 
 #define BATTERY_NUM_READINGS 5
 
-/* vlaues used to indicate the charger state */
+/* values used to indicate the charger state */
 #define BATTERY_EXT_POWER_STATE     BIT(0)
 #define BATTERY_CHARGING_STATE      BIT(1)
 #define BATTERY_NOT_CHARGING_STATE  BIT(2)
@@ -73,9 +72,9 @@ LOG_MODULE_REGISTER(battery_task);
 /******************************************************************************/
 static enum battery_status batteryCapacity = BATTERY_STATUS_0;
 static u16_t batteryThresholds[BATTERY_IDX_MAX] = { BATTERY_THRESH_0, 
-                                                BATTERY_THRESH_1, 
-                                                BATTERY_THRESH_2, 
-                                                BATTERY_THRESH_3, 
+                                                BATTERY_THRESH_1,
+                                                BATTERY_THRESH_2,
+                                                BATTERY_THRESH_3,
                                                 BATTERY_THRESH_4,
                                                 BATTERY_THRESH_LOW,
                                                 BATTERY_THRESH_ALARM };
@@ -145,6 +144,7 @@ void BatteryInit()
     lastVoltageReadingIdx = 0;
     memset(previousVoltageReadings, 0, sizeof(u16_t) * BATTERY_NUM_READINGS);
 
+    /* initialize the battery thresholds from NVM */
 	nvReadBatteryLow(&batteryData);
 	BatterySetThresholds(BATTERY_IDX_LOW, batteryData);
 	nvReadBatteryAlarm(&batteryData);
@@ -160,6 +160,9 @@ void BatteryInit()
 	nvReadBattery0(&batteryData);
 	BatterySetThresholds(BATTERY_IDX_0, batteryData);
 
+    /* update values in the ble battery service */
+    battery_svc_update_data();
+
     /* start periodic ADC conversions */
     power_mode_set(true);
 
@@ -169,7 +172,6 @@ void BatteryInit()
 u8_t BatterySetThresholds(enum battery_thresh_idx Thresh, u16_t Value)
 {
     u8_t status = BATTERY_FAIL;
-    u16_t battData = 0;
 
     if (Thresh < BATTERY_IDX_MAX)
     {
@@ -177,53 +179,25 @@ u8_t BatterySetThresholds(enum battery_thresh_idx Thresh, u16_t Value)
         status = BATTERY_SUCCESS;
         switch(Thresh) {
         case BATTERY_IDX_LOW:
-            nvReadBatteryLow(&battData);
-            if (battData != Value)
-            {
-                nvStoreBatteryLow(&Value);
-            }
+            nvStoreBatteryLow(&Value);
             break;
         case BATTERY_IDX_ALARM:
-            nvReadBatteryAlarm(&battData);
-            if (battData != Value)
-            {
-                nvStoreBatteryAlarm(&Value);
-            }
+            nvStoreBatteryAlarm(&Value);
             break;
         case BATTERY_IDX_4:
-            nvReadBattery4(&battData);
-            if (battData != Value)
-            {
-                nvStoreBattery4(&Value);
-            }
+            nvStoreBattery4(&Value);
             break;
         case BATTERY_IDX_3:
-            nvReadBattery3(&battData);
-            if (battData != Value)
-            {
-                nvStoreBattery3(&Value);
-            }   
+            nvStoreBattery3(&Value);
             break;
         case BATTERY_IDX_2:
-            nvReadBattery2(&battData);
-            if (battData != Value)
-            {
-                nvStoreBattery2(&Value);
-            }
+            nvStoreBattery2(&Value);
             break;
         case BATTERY_IDX_1:
-            nvReadBattery1(&battData);
-            if (battData != Value)
-            {
-                nvStoreBattery1(&Value);
-            }
+            nvStoreBattery1(&Value);
             break;
         case BATTERY_IDX_0:
-            nvReadBattery0(&battData);
-            if (battData != Value)
-            {
-                nvStoreBattery0(&Value);
-            }
+            nvStoreBattery0(&Value);
             break;
         default:
             break;
@@ -261,8 +235,8 @@ u16_t BatteryCalculateRunningAvg(u16_t Voltage)
         lastVoltageReadingIdx = 0;
     }
 
-    /* calculate the average voltage of the last 
-       BATTERY_NUM_READINGS number of samples 
+    /* calculate the average voltage of the last
+       BATTERY_NUM_READINGS number of samples.
     */
     for (idx = 0; idx < BATTERY_NUM_READINGS; idx++)
     {
@@ -321,7 +295,7 @@ enum battery_status BatteryCalculateRemainingCapacity(u16_t Volts)
     {
         Temperature = BASE_TEMP;
     }
-    
+
     /* adjust the voltage based on the ambient temperature */
     vOffset = DetermineTempOffset(Temperature);
 
@@ -331,19 +305,22 @@ enum battery_status BatteryCalculateRemainingCapacity(u16_t Volts)
     batteryCapacity = CalculateRemainingCapacity(Voltage);
 
     /* send battery data notifications */
-    power_svc_set_battery(Voltage, batteryCapacity);
+    battery_svc_set_battery(Voltage, batteryCapacity);
 
-    /* send up a warning for low battery if necessary */
-    if (batteryCapacity <= batteryThresholds[BATTERY_IDX_ALARM])
+    /* send up a warning for low battery if the battery is below
+     *    the alarm threshold and not externally powered.
+     */
+    if ((batteryCapacity <= batteryThresholds[BATTERY_IDX_ALARM]) &&
+           ((BatteryGetChgState() & BATTERY_EXT_POWER_STATE) == 0))
     {
         batteryAlarmState = BATTERY_ALARM_ACTIVE;
-        power_svc_set_alarm_state(batteryAlarmState);
+        battery_svc_set_alarm_state(batteryAlarmState);
     }
-    else if (batteryCapacity > batteryThresholds[BATTERY_IDX_ALARM] &&
+    else if ((batteryCapacity > batteryThresholds[BATTERY_IDX_ALARM]) &&
                 (batteryAlarmState == BATTERY_ALARM_ACTIVE))
     {
         batteryAlarmState = BATTERY_ALARM_INACTIVE;
-        power_svc_set_alarm_state(batteryAlarmState);
+        battery_svc_set_alarm_state(batteryAlarmState);
     }
 
     return (batteryCapacity);
@@ -361,11 +338,11 @@ static void BatteryChgStateChanged(struct device *Dev,
 static void BatteryGpioInit()
 {
     /* configure the charging state gpio  */
-    k_work_init(&chgStateWork, ChgStateHandler);;
+    k_work_init(&chgStateWork, ChgStateHandler);
 	batteryChgStateDev = device_get_binding(CHG_STATE_PORT);
 	gpio_pin_configure(batteryChgStateDev, CHG_STATE_PIN,
 			   (GPIO_DIR_IN | GPIO_INT | GPIO_INT_EDGE | GPIO_INT_DOUBLE_EDGE |
-			    GPIO_PUD_PULL_UP | GPIO_INT_ACTIVE_LOW));
+			    GPIO_INT_ACTIVE_LOW));
 	gpio_init_callback(&batteryChgStateCb, BatteryChgStateChanged, BIT(CHG_STATE_PIN));
 	gpio_add_callback(batteryChgStateDev, &batteryChgStateCb);
 	gpio_pin_enable_callback(batteryChgStateDev, CHG_STATE_PIN);
@@ -374,7 +351,7 @@ static void BatteryGpioInit()
 	batteryPwrStateDev = device_get_binding(PWR_STATE_PORT);
 	gpio_pin_configure(batteryPwrStateDev, PWR_STATE_PIN,
 			   (GPIO_DIR_IN | GPIO_INT | GPIO_INT_EDGE | GPIO_INT_DOUBLE_EDGE |
-			    GPIO_PUD_PULL_UP | GPIO_INT_ACTIVE_LOW));
+			    GPIO_INT_ACTIVE_LOW));
 	gpio_init_callback(&batteryChgStateCb, BatteryChgStateChanged, BIT(PWR_STATE_PIN));
 	gpio_add_callback(batteryPwrStateDev, &batteryChgStateCb);
 	gpio_pin_enable_callback(batteryPwrStateDev, PWR_STATE_PIN);
@@ -395,7 +372,7 @@ static s16_t DetermineTempOffset(s32_t Temperature)
 static void ChgStateHandler(struct k_work *Item)
 {
     u8_t state = BatteryGetChgState();
-    power_svc_set_chg_state(state);
+    battery_svc_set_chg_state(state);
 
     return;
 }

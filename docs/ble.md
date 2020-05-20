@@ -94,22 +94,31 @@ Characteristics:
 ### UUID: dc1c0000-f3d7-559e-f24e-78fb67b2b7eb
 
 Characteristics:
+
 | Name                 | UUID                                 | Properties | Description                                                                                                                                                      |
 | -------------------- | ------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Power Supply Voltage      | dc1c0001-f3d7-559e-f24e-78fb67b2b7eb | notify     | This is no longer used on the MG100 |
-| Reboot                    | dc1c0002-f3d7-559e-f24e-78fb67b2b7eb | write      | One bytes. Writing to this will reboot the module, writing a value of 0x01 will stay in the UART bootloader, any other value will reboot to the user application |
-| Battery Voltage           | dc1c0003-f3d7-559e-f24e-78fb67b2b7eb | notify     | unsigned 16-bit value representing the voltage in millivolts
-| Battery Capacity          | dc1c0004-f3d7-559e-f24e-78fb67b2b7eb | read/notify | unsigned 8-bit value representing the remaining battery capacity (0 - 4).      |
-| Charging State            | dc1c0005-f3d7-559e-f24e-78fb67b2b7eb | read/notify | 8-bit bit field representing the charging state. Bit 0 = External Power State,
-Bit 1 = The battery is charging, Bit 2 = The battery is not charging, Bit 3 The battery is discharging.   |
-| Battery Low Threshold     | dc1c0006-f3d7-559e-f24e-78fb67b2b7eb | read/write     | unsigned 16-bit value representing the low battery threshold in millivolts. |
-| Battery Alarm Threshold   | dc1c0007-f3d7-559e-f24e-78fb67b2b7eb | read/write     | unsigned 16-bit value representing the low battery threshold in millivolts.           |
-| Battery Threshold 4       | dc1c0008-f3d7-559e-f24e-78fb67b2b7eb | read/write     | unsigned 16-bit value representing the highest threshold in millivolts for a 4-segment charging meter.       |
-| Battery Threshold 3       | dc1c0009-f3d7-559e-f24e-78fb67b2b7eb | read/write     | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.       |
-| Battery Threshold 2       | dc1c000a-f3d7-559e-f24e-78fb67b2b7eb | read/write     | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.       |
-| Battery Threshold 1       | dc1c000b-f3d7-559e-f24e-78fb67b2b7eb | read/write     | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.       |
-| Battery Threshold 0       | dc1c000c-f3d7-559e-f24e-78fb67b2b7eb | read/write     | unsigned 16-bit value representing the lowest threshold in millivolts for a 4-segment charging meter.       |
-| Battery Low Alarm         | dc1c000d-f3d7-559e-f24e-78fb67b2b7eb | notify         | unsigned 8-bit value indicating the low battery alarm state. 0 = no alarm, 1 = alarm.       |
+| Power supply voltage | dc1c0001-f3d7-559e-f24e-78fb67b2b7eb | notify     | Two bytes. Byte 0 is the integer part of the voltage and byte 1 is the decimal part of the voltage                                                               |
+| Reboot               | dc1c0002-f3d7-559e-f24e-78fb67b2b7eb | write      | One bytes. Writing to this will reboot the module, writing a value of 0x01 will stay in the UART bootloader, any other value will reboot to the user application |
+
+## Battery Profile
+
+### UUID: 6d4a06b0-9641-11ea-ab12-0800200c9a66
+
+Characteristics:
+| Name                 | UUID                                 | Properties | Description                                                                                                                                                      |
+| ----------------------- | ------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Battery Voltage         | 6d4a06b1-9641-11ea-ab12-0800200c9a66 | notify      | unsigned 16-bit value representing the voltage in millivolts
+| Battery Capacity        | 6d4a06b2-9641-11ea-ab12-0800200c9a66 | read/notify | unsigned 8-bit value representing the remaining battery capacity (0 - 4).       |
+| Charging State          | 6d4a06b3-9641-11ea-ab12-0800200c9a66 | read/notify | 8-bit bit field representing the charging state. Bit 0 = External Power State, Bit 1 = The battery is charging, Bit 2 = The battery is not charging, Bit 3 The battery is discharging.   |
+| Battery Low Threshold   | 6d4a06b4-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the low battery threshold in millivolts.  |
+| Battery Alarm Threshold | 6d4a06b5-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the low battery threshold in millivolts.  |
+| Battery Threshold 4     | 6d4a06b6-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the highest threshold in millivolts for a 4-segment charging meter.       |
+| Battery Threshold 3     | 6d4a06b7-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.       |
+| Battery Threshold 2     | 6d4a06b8-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.       |
+| Battery Threshold 1     | 6d4a06b9-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.       |
+| Battery Threshold 0     | 6d4a06ba-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the lowest threshold in millivolts for a 4-segment charging meter.  |
+| Battery Low Alarm       | 6d4a06bb-9641-11ea-ab12-0800200c9a66 | notify      | unsigned 8-bit value indicating the low battery alarm state. 0 = no alarm, 1 = alarm.       |
+
 ## Sensor Profile
 
 ### UUID: ab010000-5bab-471a-9074-a0ae3937c70c

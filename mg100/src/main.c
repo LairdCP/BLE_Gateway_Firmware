@@ -37,8 +37,10 @@ LOG_MODULE_REGISTER(mg100_main);
 #include "nv.h"
 #include "ble_cellular_service.h"
 #include "ble_aws_service.h"
-#include "ble_sensor_service.h"
+#include "ble_battery_service.h"
 #include "ble_power_service.h"
+#include "ble_sensor_service.h"
+
 #include "power.h"
 #include "dis.h"
 #include "bootloader.h"
@@ -155,20 +157,21 @@ void main(void)
 	bss_init();
 	bss_assign_connection_handler_getter(mg100_ble_get_central_connection);
 
-	power_init();
-	/* Initialize the battery managment sub-system.
-	 * NOTE: This must be executed after nvInit and
-	 * after power init.
-	 */
-	BatteryInit();
-
 	/* Setup the power service */
 	power_svc_init();
 	power_svc_assign_connection_handler_getter(
 		mg100_ble_get_central_connection);
 
+	/* Setup the battery service */
+	battery_svc_init();
+	battery_svc_assign_connection_handler_getter(
+		mg100_ble_get_central_connection);
 
-
+	/* Initialize the battery managment sub-system.
+	 * NOTE: This must be executed after nvInit.
+	 */
+	power_init();
+	BatteryInit();
 
 
 	bootloader_init();
@@ -235,7 +238,6 @@ EXTERNED void Framework_AssertionHandler(char *file, int line)
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-
 /* This is a callback function which receives sensor readings */
 static void sensorUpdated(u8_t sensor, s32_t reading)
 {

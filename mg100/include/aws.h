@@ -57,12 +57,11 @@ static const unsigned char aws_root_ca[] =
 
 #define PUBLISH_TIMEOUT_TICKS K_SECONDS(5)
 
-#define DNS_RETRIES 1
 #define APP_CONNECT_TRIES 1
 
 #define APP_MQTT_BUFFER_SIZE 1024
 
-#define DEFAULT_MQTT_CLIENTID "mg100"
+#define DEFAULT_MQTT_CLIENTID "pinnacle100_oob"
 
 #define SHADOW_STATE_NULL "{\"state\":null}"
 
@@ -79,6 +78,8 @@ static const unsigned char aws_root_ca[] =
 #define AWS_RX_THREAD_PRIORITY K_PRIO_COOP(15)
 
 #define GATEWAY_TOPIC NULL
+
+#define CLEAR_SHADOW_ON_STARTUP 0
 
 struct shadow_persistent_values {
 	const char *firmware_version;
@@ -146,7 +147,11 @@ int awsSetShadowAppFirmwareVersion(const char *version);
 int awsPublishBl654SensorData(float temperature, float humidity,
 			      float pressure);
 int awsPublishPinnacleData(int radioRssi, int radioSinr);
-int awsSubscribe(void);
+int awsSubscribe(u8_t *topic, u8_t subscribe);
+int awsGetShadow(void);
+int awsGetAcceptedSubscribe(void);
+int awsGetAcceptedUnsub(void);
+void awsGenerateGatewayTopics(const char *imei);
 
 #ifdef __cplusplus
 }

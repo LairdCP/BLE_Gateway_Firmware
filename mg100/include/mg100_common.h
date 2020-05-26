@@ -1,6 +1,6 @@
 /**
  * @file mg100_common.h
- * @brief Configuration and utiilty functions for the MG100.
+ * @brief Configuration and utility functions for the Out-of-Box demo.
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 /******************************************************************************/
-/* Application Firwware Version                                               */
+/* Application Firmware Version                                               */
 /******************************************************************************/
 #define APP_VERSION_MAJOR 2
 #define APP_VERSION_MINOR 0
@@ -31,38 +31,18 @@ extern "C" {
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-#define SCAN_FOR_BL654_SENSOR 1
-#define SCAN_FOR_BT510 1
-
-#define WAIT_FOR_DISCONNECT_POLL_RATE_TICKS K_SECONDS(1)
-
-#define BL654_SENSOR_SEND_TO_AWS_RATE_TICKS K_SECONDS(90)
-
-/* When using PSM the data rate is controlled by the modem.
- *
- * This is tied to CONFIG_MODEM_HL7800_PSM_PERIODIC_TAU
- * and CONFIG_MODEM_HL7800_PSM_ACTIVE_TIME.
- * It is adjusted for the time to bring the cell network up, connect to AWS,
- * and time to close the AWS connection.
- */
-#define PSM_ENABLED_SEND_DATA_WINDOW_TICKS K_SECONDS(12)
-
-#define PSM_DISABLED_SEND_DATA_RATE_TICKS K_SECONDS(30)
+#define WAIT_TIME_BEFORE_RETRY_TICKS K_SECONDS(10)
 
 /* Green LED is turned on when connected to AWS.
- * Green LED is turned off when data is sent.
+ * Green LED is flashed off when data is sent.
  */
-#define DATA_SEND_LED_OFF_TIME_TICKS K_MSEC(100)
-#define SEND_DATA_TO_DISCONNECT_DELAY_TICKS K_SECONDS(1)
+#define DATA_SEND_LED_ON_TIME_TICKS K_MSEC(60)
+#define DATA_SEND_LED_OFF_TIME_TICKS K_MSEC(30)
 
 #define DEFAULT_LED_ON_TIME_FOR_1_SECOND_BLINK K_MSEC(100)
 #define DEFAULT_LED_OFF_TIME_FOR_1_SECOND_BLINK K_MSEC(900)
 
 #define SHA256_SIZE 32
-
-#define JSON_LOG_ENABLED 1
-#define JSON_LOG_TOPIC 0
-#define JSON_LOG_MQTT_RX_DATA 1
 
 enum SENSOR_TYPES {
 	SENSOR_TYPE_TEMPERATURE = 0,

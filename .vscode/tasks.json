@@ -32,6 +32,18 @@
       "problemMatcher": []
     },
     {
+      "label": "build-lwm2m",
+      "type": "shell",
+      "command": "west build -b mg100 -d build mg100 -DCONF_FILE=prj.conf;overlay_lwm2m_dtls.conf",
+      "windows": {
+        "command": "west build -b mg100 -d ${workspaceRoot}\\build ${workspaceRoot}\\mg100 -- -DCONF_FILE=${workspaceRoot}\\mg100\\prj.conf;${workspaceRoot}\\mg100\\overlay_lwm2m_dtls.conf"
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
       "label": "flash application",
       "type": "shell",
       // Linux based command is not tested

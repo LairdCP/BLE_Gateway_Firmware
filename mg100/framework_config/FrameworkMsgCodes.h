@@ -15,29 +15,45 @@ extern "C" {
 #endif
 
 /******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
+#include "Framework.h"
+
+/******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-typedef enum FwkMsgCodeEnum {
-	/* Reserved by Framework (DO NOT DELETE) */
-	FMC_INVALID = 0,
-	FMC_PERIODIC,
-	FMC_SOFTWARE_RESET,
-	FMC_WATCHDOG_CHALLENGE,
-	FMC_WATCHDOG_RESPONSE,
-
-	/* Application Specific */
-	FMC_ADV,
-	FMC_BT510_EVENT,
+enum FwkMsgCodeEnum {
+	/* The first application specific message should be assigned the value
+	 * FMC_APPLICATION_SPECIFIC_START.  There are codes reserved by framework.
+	 */
+	FMC_ADV = FMC_APPLICATION_SPECIFIC_START,
+	FMC_SENSOR_PUBLISH,
 	FMC_BL654_SENSOR_EVENT,
-	FMC_BT510_GATEWAY_IN,
-	FMC_BT510_GATEWAY_OUT,
-	FMC_BT510_SHADOW_REQUEST,
+	FMC_GATEWAY_OUT,
+	FMC_SHADOW_REQUEST,
+	FMC_SHADOW_ACK,
 	FMC_WHITELIST_REQUEST,
+	FMC_CONFIG_REQUEST,
+	FMC_CONNECT_REQUEST,
+	FMC_START_DISCOVERY,
+	FMC_DISCOVERY_COMPLETE,
+	FMC_DISCOVERY_FAILED,
+	FMC_RESPONSE,
+	FMC_DISCONNECT,
+	FMC_SEND_RESET,
+	FMC_SUBSCRIBE,
+	FMC_SUBSCRIBE_ACK,
+	FMC_SENSOR_SHADOW_INIT,
+
+	FMC_AWS_CONNECTED,
+	FMC_AWS_DISCONNECTED,
+	FMC_AWS_GET_ACCEPTED_RECEIVED,
 
 	/* Last value (DO NOT DELETE) */
 	NUMBER_OF_FRAMEWORK_MSG_CODES
-} FwkMsgCode_t;
-
+};
+BUILD_ASSERT_MSG(sizeof(enum FwkMsgCodeEnum) <= sizeof(FwkMsgCode_t),
+		 "Too many message codes");
 
 #ifdef __cplusplus
 }

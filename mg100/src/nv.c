@@ -1,6 +1,6 @@
 /**
  * @file nv.c
- * @brief Non-volitile storage for the app
+ * @brief Non-volatile storage for the app
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -15,7 +15,6 @@ LOG_MODULE_REGISTER(mg100_nv);
 #define NV_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
 #define NV_LOG_INF(...) LOG_INF(__VA_ARGS__)
 #define NV_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
-
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -45,6 +44,7 @@ enum SETTING_ID {
 	SETTING_ID_BATTERY_2,
 	SETTING_ID_BATTERY_1,
 	SETTING_ID_BATTERY_0,
+	SETTING_ID_LWM2M_CONFIG
 };
 
 /******************************************************************************/
@@ -84,7 +84,6 @@ int nvStoreCommissioned(bool commissioned)
 
 int nvInit(void)
 {
-	u16_t batteryData = 0;
 	int rc = 0;
 	struct flash_pages_info info;
 
@@ -116,83 +115,6 @@ int nvInit(void)
 		rc = nvStoreCommissioned(false);
 		if (rc <= 0) {
 			NV_LOG_ERR("Could not write commissioned flag (%d)",
-				   rc);
-			goto exit;
-		}
-	}
-
-	batteryData = BatteryGetThresholds(BATTERY_IDX_4);
-	rc = nvReadBattery4(&batteryData);
-	if (rc <= 0) {
-		rc = nvStoreBattery4(&batteryData);
-		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery threshold 4 data (%d)",
-				   rc);
-			goto exit;
-		}
-	}
-
-	batteryData = BatteryGetThresholds(BATTERY_IDX_3);
-	rc = nvReadBattery3(&batteryData);
-	if (rc <= 0) {
-		rc = nvStoreBattery3(&batteryData);
-		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery threshold 3 data (%d)",
-				   rc);
-			goto exit;
-		}
-	}
-
-	batteryData = BatteryGetThresholds(BATTERY_IDX_2);
-	rc = nvReadBattery2(&batteryData);
-	if (rc <= 0) {
-		rc = nvStoreBattery2(&batteryData);
-		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery threshold 2 data (%d)",
-				   rc);
-			goto exit;
-		}
-	}
-
-	batteryData = BatteryGetThresholds(BATTERY_IDX_1);
-	rc = nvReadBattery1(&batteryData);
-	if (rc <= 0) {
-		rc = nvStoreBattery1(&batteryData);
-		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery threshold 1 data (%d)",
-				   rc);
-			goto exit;
-		}
-	}
-
-	batteryData = BatteryGetThresholds(BATTERY_IDX_0);
-	rc = nvReadBattery0(&batteryData);
-	if (rc <= 0) {
-		rc = nvStoreBattery0(&batteryData);
-		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery threshold 0 data (%d)",
-				   rc);
-			goto exit;
-		}
-	}
-
-	batteryData = BatteryGetThresholds(BATTERY_IDX_LOW);
-	rc = nvReadBatteryLow(&batteryData);
-	if (rc <= 0) {
-		rc = nvStoreBatteryLow(&batteryData);
-		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery low threshold data (%d)",
-				   rc);
-			goto exit;
-		}
-	}
-
-	batteryData = BatteryGetThresholds(BATTERY_IDX_ALARM);
-	rc = nvReadBatteryLow(&batteryData);
-	if (rc <= 0) {
-		rc = nvStoreBatteryAlarm(&batteryData);
-		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery low alarm data (%d)",
 				   rc);
 			goto exit;
 		}
@@ -357,4 +279,22 @@ int nvStoreBattery1(u16_t * batteryData)
 int nvStoreBattery0(u16_t * batteryData)
 {
 	return nvs_write(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(u16_t));
+}
+
+int nvInitLwm2mConfig(void *data, void *init_value, u16_t size)
+{
+	int rc = nvs_read(&fs, SETTING_ID_LWM2M_CONFIG, data, size);
+	if (rc != size) {
+		memcpy(data, init_value, size);
+		rc = nvs_write(&fs, SETTING_ID_LWM2M_CONFIG, data, size);
+		if (rc != size) {
+			NV_LOG_ERR("Error writing LWM2M config (%d)", rc);
+		}
+	}
+	return rc;
+}
+
+int nvWriteLwm2mConfig(void *data, u16_t size)
+{
+	return nvs_write(&fs, SETTING_ID_LWM2M_CONFIG, data, size);
 }

@@ -16,7 +16,9 @@ extern "C" {
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
-#include "Framework.h"
+#include "FrameworkIncludes.h"
+
+#include "sensor_log.h"
 
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
@@ -53,9 +55,9 @@ void ShadowBuilder_AddSigned32(JsonMsg_t *pJsonMsg, const char *restrict pKey,
 
 /**
  * @brief Adds a JSON pair to the message being built.  "<pKey>" : pValue
- * 
+ *
  * @param pKey
- * @param pValue  
+ * @param pValue
  * @param IsNotString is true when the value isn't a string.
  * This is used to properly format the output.
  * For example, "value:"string" or "value:1.
@@ -110,6 +112,18 @@ void ShadowBuilder_StartGroup(JsonMsg_t *pJsonMsg, const char *restrict pKey);
  * @brief Closes JSON group
  */
 void ShadowBuilder_EndGroup(JsonMsg_t *pJsonMsg);
+
+/**
+ * @brief Add a string to the buffer (without " ").
+ * @note This function disables escaping the quote character.
+ */
+void ShadowBuilder_AddString(JsonMsg_t *pJsonMsg, const char *restrict pKey,
+			     const char *restrict pStr);
+
+/**
+ * @brief Add an event log entry to the buffer.
+ */
+void ShadowBuilder_AddEventLogEntry(JsonMsg_t *pJsonMsg, SensorLogEvent_t *p);
 
 #ifdef __cplusplus
 }

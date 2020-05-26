@@ -26,7 +26,8 @@ LOG_MODULE_REGISTER(mg100_aws);
 #include <kernel.h>
 
 #include "mg100_common.h"
-#include "Framework.h"
+#include "sensor_gateway_parser.h"
+#include "dns.h"
 #include "aws.h"
 
 /******************************************************************************/
@@ -41,6 +42,13 @@ LOG_MODULE_REGISTER(mg100_aws);
 
 #define CONVERSION_MAX_STR_LEN 10
 
+struct topics {
+	u8_t update[CONFIG_TOPIC_MAX_SIZE];
+	u8_t update_delta[CONFIG_TOPIC_MAX_SIZE];
+	u8_t get[CONFIG_TOPIC_MAX_SIZE];
+	u8_t get_accepted[CONFIG_TOPIC_MAX_SIZE];
+};
+
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
@@ -53,6 +61,7 @@ K_SEM_DEFINE(send_ack_sem, 0, 1);
 /* Buffers for MQTT client. */
 static u8_t rx_buffer[APP_MQTT_BUFFER_SIZE];
 static u8_t tx_buffer[APP_MQTT_BUFFER_SIZE];
+static u8_t subscription_buffer[CONFIG_SHADOW_IN_MAX_SIZE];
 
 /* mqtt client id */
 static char *mqtt_client_id;
@@ -68,8 +77,7 @@ static int nfds;
 
 static bool connected = false;
 
-static struct addrinfo server_addr;
-struct addrinfo *saddr;
+static struct addrinfo *saddr;
 
 static sec_tag_t m_sec_tags[] = { APP_CA_CERT_TAG, APP_DEVICE_CERT_TAG };
 
@@ -77,6 +85,8 @@ static struct shadow_reported_struct shadow_persistent_data;
 
 static char *server_endpoint;
 static char *root_ca;
+
+static struct topics topics;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -86,19 +96,15 @@ static void prepare_fds(struct mqtt_client *client);
 static void clear_fds(void);
 static void wait(int timeout);
 static void mqtt_evt_handler(struct mqtt_client *const client,
-		      const struct mqtt_evt *evt);
-static int subscription_handler(struct mqtt_client *const client, size_t length);
+			     const struct mqtt_evt *evt);
+static int subscription_handler(struct mqtt_client *const client,
+				const struct mqtt_evt *evt);
 static void subscription_flush(struct mqtt_client *const client, size_t length);
-static char *get_mqtt_topic(void);
-static char *get_mqtt_subscribe_topic(void);
 static int publish_string(struct mqtt_client *client, enum mqtt_qos qos,
 			  char *data, u8_t *topic);
 static void client_init(struct mqtt_client *client);
 static int try_to_connect(struct mqtt_client *client);
 static void awsRxThread(void *arg1, void *arg2, void *arg3);
-static int subscription_handler(struct mqtt_client *const client,
-				size_t length);
-static void subscription_flush(struct mqtt_client *const client, size_t length);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -145,26 +151,12 @@ void awsSetRootCa(const char *cred)
 
 int awsGetServerAddr(void)
 {
-	int rc, dns_retries;
-
-	server_addr.ai_family = AF_INET;
-	server_addr.ai_socktype = SOCK_STREAM;
-	dns_retries = DNS_RETRIES;
-	do {
-		AWS_LOG_DBG("Get AWS server address");
-		rc = getaddrinfo(server_endpoint, SERVER_PORT_STR, &server_addr,
-				 &saddr);
-		if (rc != 0) {
-			AWS_LOG_ERR("Get AWS server addr (%d)", rc);
-			k_sleep(K_SECONDS(5));
-		}
-		dns_retries--;
-	} while (rc != 0 && dns_retries != 0);
-	if (rc != 0) {
-		AWS_LOG_ERR("Unable to resolve '%s'", server_endpoint);
-	}
-
-	return rc;
+	struct addrinfo hints = {
+		.ai_family = AF_INET,
+		.ai_socktype = SOCK_STREAM,
+	};
+	return dns_resolve_server_addr(server_endpoint, SERVER_PORT_STR, &hints,
+				       &saddr);
 }
 
 int awsConnect()
@@ -266,10 +258,50 @@ int awsSendData(char *data, u8_t *topic)
 	/* If the topic is NULL, then publish to the gateway (Pinnacle-100) topic.
 	 * Otherwise, publish to a sensor topic. */
 	if (topic == NULL) {
-		return sendData(data, get_mqtt_topic());
+		return sendData(data, topics.update);
 	} else {
 		return sendData(data, topic);
 	}
+}
+
+void awsGenerateGatewayTopics(const char *imei)
+{
+	snprintk(topics.update, sizeof(topics.update),
+		 "$aws/things/deviceId-%s/shadow/update", imei);
+
+	snprintk(topics.update_delta, sizeof(topics.update_delta),
+		 "$aws/things/deviceId-%s/shadow/update/delta", imei);
+
+	snprintk(topics.get_accepted, sizeof(topics.get_accepted),
+		 "$aws/things/deviceId-%s/shadow/get/accepted", imei);
+
+	snprintk(topics.get, sizeof(topics.get),
+		 "$aws/things/deviceId-%s/shadow/get", imei);
+}
+
+/* On power-up, get the shadow by sending a message to the /get topic */
+int awsGetAcceptedSubscribe(void)
+{
+	int rc = awsSubscribe(topics.get_accepted, true);
+	if (rc != 0) {
+		AWS_LOG_ERR("Unable to subscribe to /../get/accepted");
+	}
+	return rc;
+}
+
+int awsGetShadow(void)
+{
+	char msg[] = "{\"message\":\"Hello, from Laird Connectivity\"}";
+	int rc = sendData(msg, topics.get);
+	if (rc != 0) {
+		AWS_LOG_ERR("Unable to get shadow");
+	}
+	return rc;
+}
+
+int awsGetAcceptedUnsub(void)
+{
+	return awsSubscribe(topics.get_accepted, false);
 }
 
 int awsPublishShadowPersistentData()
@@ -290,11 +322,13 @@ int awsPublishShadowPersistentData()
 		goto done;
 	}
 
+#if CLEAR_SHADOW_ON_STARTUP
 	/* Clear the shadow and start fresh */
 	rc = awsSendData(SHADOW_STATE_NULL, GATEWAY_TOPIC);
 	if (rc < 0) {
 		goto done;
 	}
+#endif
 
 	rc = awsSendData(msg, GATEWAY_TOPIC);
 	if (rc < 0) {
@@ -340,20 +374,30 @@ bool awsConnected(void)
 	return connected;
 }
 
-int awsSubscribe(void)
+int awsSubscribe(u8_t *topic, u8_t subscribe)
 {
 	struct mqtt_topic mt;
-	mt.topic.utf8 = get_mqtt_subscribe_topic();
+	if (topic == NULL) {
+		mt.topic.utf8 = topics.update_delta;
+	} else {
+		mt.topic.utf8 = topic;
+	}
 	mt.topic.size = strlen(mt.topic.utf8);
 	mt.qos = MQTT_QOS_1_AT_LEAST_ONCE;
+	__ASSERT(mt.topic.size != 0, "Invalid topic");
 	struct mqtt_subscription_list list = {
 		.list = &mt,
 		.list_count = 1,
 		.message_id = (u16_t)sys_rand32_get()
 	};
-	int rc = mqtt_subscribe(&client_ctx, &list);
+	int rc = subscribe ? mqtt_subscribe(&client_ctx, &list) :
+			     mqtt_unsubscribe(&client_ctx, &list);
+	char *s = subscribe ? "Subscribed" : "Unsubscribed";
+	char *t = log_strdup(mt.topic.utf8);
 	if (rc != 0) {
-		AWS_LOG_ERR("Subscribe status %d", rc);
+		AWS_LOG_ERR("%s status %d to %s", s, rc, t);
+	} else {
+		AWS_LOG_DBG("%s to %s", s, t);
 	}
 	return rc;
 }
@@ -418,7 +462,7 @@ static void wait(int timeout)
 }
 
 static void mqtt_evt_handler(struct mqtt_client *const client,
-		      const struct mqtt_evt *evt)
+			     const struct mqtt_evt *evt)
 {
 	int rc;
 	switch (evt->type) {
@@ -460,13 +504,13 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 			break;
 		}
 
-		AWS_LOG_INF("MQTT RXd ID: %d\r\n \tTopic: %s len: %d",
-			    evt->param.publish.message_id,
-			    evt->param.publish.message.topic.topic.utf8,
-			    evt->param.publish.message.payload.len);
+		AWS_LOG_INF(
+			"MQTT RXd ID: %d\r\n \tTopic: %s len: %d",
+			evt->param.publish.message_id,
+			log_strdup(evt->param.publish.message.topic.topic.utf8),
+			evt->param.publish.message.payload.len);
 
-		rc = subscription_handler(
-			client, evt->param.publish.message.payload.len);
+		rc = subscription_handler(client, evt);
 		if ((rc >= 0) &&
 		    (rc < evt->param.publish.message.payload.len)) {
 			subscription_flush(
@@ -479,37 +523,46 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 	}
 }
 
-static int subscription_handler(struct mqtt_client *const client, size_t length)
+/* The timestamps can make the shadow size larger than 4K.
+ * This is too large to be allocated by malloc or the buffer pool.
+ * Therefore, messages are processed here.
+ */
+static int subscription_handler(struct mqtt_client *const client,
+				const struct mqtt_evt *evt)
 {
-	/* Leave room for null character to allow easy printing */
-	size_t max_str_len = JSON_IN_BUFFER_SIZE - 1;
-	if (length > max_str_len) {
+	u16_t id = evt->param.publish.message_id;
+	u32_t length = evt->param.publish.message.payload.len;
+	u8_t qos = evt->param.publish.message.topic.qos;
+	u8_t *topic = evt->param.publish.message.topic.topic.utf8;
+
+	/* Leave room for null to allow easy printing */
+	size_t size = length + 1;
+	if (size > CONFIG_SHADOW_IN_MAX_SIZE) {
 		return 0;
 	}
 
-	JsonGatewayInMsg_t *pMsg =
-		BufferPool_TryToTake(sizeof(JsonGatewayInMsg_t));
-	if (pMsg == NULL) {
-		return 0;
-	}
-	pMsg->header.msgCode = FMC_BT510_GATEWAY_IN;
-	pMsg->header.rxId = FWK_ID_SENSOR_TASK;
+	memset(subscription_buffer, 0, CONFIG_SHADOW_IN_MAX_SIZE);
+	int rc = mqtt_read_publish_payload(client, subscription_buffer, length);
+	if (rc == length) {
+#if JSON_LOG_MQTT_RX_DATA
+		print_json("MQTT Read data", rc, subscription_buffer);
+#endif
 
-	int rc = mqtt_read_publish_payload(client, pMsg->buffer, max_str_len);
-	if (rc > 0) {
-		if (JSON_LOG_MQTT_RX_DATA) {
-			print_json("MQTT Read data", rc, pMsg->buffer);
+		SensorGatewayParser(topic, subscription_buffer);
+
+		if (qos == MQTT_QOS_1_AT_LEAST_ONCE) {
+			struct mqtt_puback_param param = { .message_id = id };
+			(void)mqtt_publish_qos1_ack(client, &param);
+		} else if (qos == MQTT_QOS_2_EXACTLY_ONCE) {
+			AWS_LOG_ERR("QOS 2 not supported");
 		}
-		FRAMEWORK_MSG_SEND(pMsg);
-	} else {
-		BufferPool_Free(pMsg);
 	}
 	return rc;
 }
 
 static void subscription_flush(struct mqtt_client *const client, size_t length)
 {
-	LOG_ERR("Discarding %u", length);
+	LOG_ERR("Subscription Flush %u", length);
 	char junk;
 	size_t i;
 	for (i = 0; i < length; i++) {
@@ -517,29 +570,6 @@ static void subscription_flush(struct mqtt_client *const client, size_t length)
 			break;
 		}
 	}
-}
-
-static char *get_mqtt_topic(void)
-{
-	static char topic[sizeof(
-		"$aws/things/deviceId-###############/shadow/update")];
-
-	snprintk(topic, sizeof(topic), "$aws/things/deviceId-%s/shadow/update",
-		 shadow_persistent_data.state.reported.IMEI);
-
-	return topic;
-}
-
-static char *get_mqtt_subscribe_topic(void)
-{
-	static char topic[sizeof(
-		"$aws/things/deviceId-###############/shadow/update/accepted")];
-
-	snprintk(topic, sizeof(topic),
-		 "$aws/things/deviceId-%s/shadow/update/accepted",
-		 shadow_persistent_data.state.reported.IMEI);
-
-	return topic;
 }
 
 static int publish_string(struct mqtt_client *client, enum mqtt_qos qos,
@@ -556,13 +586,15 @@ static int publish_string(struct mqtt_client *client, enum mqtt_qos qos,
 	param.dup_flag = 0U;
 	param.retain_flag = 0U;
 
-#if JSON_LOG_TOPIC
+#if CONFIG_JSON_LOG_TOPIC
 	print_json("Publish Topic", param.message.topic.topic.size,
 		   param.message.topic.topic.utf8);
 #endif
 
+#if CONFIG_JSON_LOG_PUBLISH
 	print_json("Publish string", param.message.payload.len,
 		   param.message.payload.data);
+#endif
 
 	return mqtt_publish(client, &param);
 }
@@ -642,12 +674,8 @@ static void awsRxThread(void *arg1, void *arg2, void *arg3)
 {
 	while (true) {
 		if (connected) {
-			AWS_LOG_DBG("Waiting for MQTT RX data...");
 			/* Wait for socket RX data */
 			wait(K_FOREVER);
-
-			AWS_LOG_DBG("MQTT data RXd");
-
 			/* process MQTT RX data */
 			mqtt_input(&client_ctx);
 		} else {

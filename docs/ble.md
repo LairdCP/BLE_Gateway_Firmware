@@ -88,6 +88,8 @@ Characteristics:
 | RAT              | 43787c6b-9e84-4eb1-a669-70b6404da336 | read/write/notify | One byte for Radio Access Technology: 0 - CAT M1, 1 = CAT NB1                                                                                                                     |
 | ICCID            | 43787c6c-9e84-4eb1-a669-70b6404da336 | read              | 20-digit ASCII string                                                                                                                                                             |
 | Serial Number    | 43787c6d-9e84-4eb1-a669-70b6404da336 | read              | 14 character ASCII string                                                                                                                                                         |
+| Bands            | 43787c6e-9e84-4eb1-a669-70b6404da336 | read              | 20 character ASCII string representing LTE band configuration.  See section 5.19 of HL7800 AT command guide for more information.                                                 |
+| Active Bands     | 43787c6f-9e84-4eb1-a669-70b6404da336 | read/notify       | 20 character ASCII string representing the Active LTE band configuration.                                                                                                         |
 
 ## Power Profile
 
@@ -129,3 +131,18 @@ Characteristics:
 | ------------------------ | ------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sensor State             | ab010001-5bab-471a-9074-a0ae3937c70c | read/notify | One Byte. BME280 Sensor State: 0 - Finding device, 1 - Finding service, 2 - Finding Temperature Characteristic, 3 - Finding Humidity Characteristic, 4 - Finding pressure characteristic, 5 - Connected and Configured |
 | Sensor Bluetooth Address | ab010002-5bab-471a-9074-a0ae3937c70c | read/notify | String representation of address of connected BME280 sensor.                                                                                                                                                           |
+
+## LwM2M Client Configuration Profile
+
+This service is only available for the LwM2M example.
+
+### UUID: 07fd0000-d320-768c-364a-c405518f724c
+
+Characteristics:
+
+| Name                     | UUID                                 | Properties  | Description                                                                                  |
+| ------------------------ | ------------------------------------ | ----------- | -------------------------------------------------------------------------------------------- |
+| Generate                 | 07fd0001-d320-768c-364a-c405518f724c | write       | One Byte. Write zero to set to defaults.  Write non-zero to generate new PSK.                |
+| Client PSK               | 07fd0002-d320-768c-364a-c405518f724c | read        | 16 bytes.  Private shared key used to talk to Leshan server.                                 | 
+| Client ID                | 07fd0003-d320-768c-364a-c405518f724c | read/write  | Maximum of a 32 character string.  Unique ID associated with PSK.                            | 
+| Peer URL                 | 07fd0004-d320-768c-364a-c405518f724c | read/write  | Maximum of a 128 character string.  URL of Leshan server.                                    |

@@ -49,6 +49,8 @@ static struct bt_uuid_128 SLEEP_STATE_UUID = CELL_SVC_BASE_UUID_128(0x7c6a);
 static struct bt_uuid_128 RAT_UUID = CELL_SVC_BASE_UUID_128(0x7c6b);
 static struct bt_uuid_128 ICCID_UUID = CELL_SVC_BASE_UUID_128(0x7c6c);
 static struct bt_uuid_128 SERIAL_NUMBER_UUID = CELL_SVC_BASE_UUID_128(0x7c6d);
+static struct bt_uuid_128 BANDS_UUID = CELL_SVC_BASE_UUID_128(0x7c6e);
+static struct bt_uuid_128 ACTIVE_BANDS_UUID = CELL_SVC_BASE_UUID_128(0x7c6f);
 
 struct ble_cellular_service {
 	char imei_value[MDM_HL7800_IMEI_SIZE];
@@ -62,6 +64,8 @@ struct ble_cellular_service {
 	u8_t rat; /* radio access technology (CAT-M1 or NB1) */
 	u8_t iccid[MDM_HL7800_ICCID_SIZE];
 	char serial_number[MDM_HL7800_SERIAL_NUMBER_SIZE];
+	char bands[MDM_HL7800_LTE_BAND_STR_SIZE];
+	char active_bands[MDM_HL7800_LTE_BAND_STR_SIZE];
 
 	u16_t apn_index;
 	u16_t apn_username_index;
@@ -72,6 +76,7 @@ struct ble_cellular_service {
 	u16_t sinr_index;
 	u16_t sleep_state_index;
 	u16_t rat_index;
+	u16_t active_bands_index;
 };
 
 struct ccc_table {
@@ -84,6 +89,7 @@ struct ccc_table {
 	struct lbt_ccc_element sinr;
 	struct lbt_ccc_element sleep_state;
 	struct lbt_ccc_element rat;
+	struct lbt_ccc_element active_bands;
 };
 
 /******************************************************************************/
@@ -134,6 +140,10 @@ static void sleep_state_ccc_handler(const struct bt_gatt_attr *attr,
 				    u16_t value);
 static void rat_ccc_handler(const struct bt_gatt_attr *attr, u16_t value);
 static void cell_svc_notify(bool notify, u16_t index, u16_t length);
+static ssize_t read_bands(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			  void *buf, u16_t len, u16_t offset);
+static void active_bands_ccc_handler(const struct bt_gatt_attr *attr,
+				     u16_t value);
 
 /******************************************************************************/
 /* Cellular Service Declaration                                               */
@@ -194,7 +204,14 @@ static struct bt_gatt_attr cell_attrs[] = {
 			       BT_GATT_PERM_READ, read_iccid, NULL, bcs.iccid),
 	BT_GATT_CHARACTERISTIC(&SERIAL_NUMBER_UUID.uuid, BT_GATT_CHRC_READ,
 			       BT_GATT_PERM_READ, read_serial_number, NULL,
-			       bcs.serial_number)
+			       bcs.serial_number),
+	BT_GATT_CHARACTERISTIC(&BANDS_UUID.uuid, BT_GATT_CHRC_READ,
+			       BT_GATT_PERM_READ, read_bands, NULL, bcs.bands),
+	BT_GATT_CHARACTERISTIC(&ACTIVE_BANDS_UUID.uuid,
+			       BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
+			       BT_GATT_PERM_READ, read_bands, NULL,
+			       bcs.active_bands),
+	LBT_GATT_CCC(active_bands),
 };
 
 static struct bt_gatt_service cell_svc = BT_GATT_SERVICE(cell_attrs);
@@ -283,6 +300,18 @@ void cell_svc_set_serial_number(const char *value)
 	memcpy(bcs.serial_number, value, MDM_HL7800_SERIAL_NUMBER_STRLEN);
 }
 
+void cell_svc_set_bands(char *value)
+{
+	__ASSERT_NO_MSG(value != NULL);
+	memcpy(bcs.bands, value, MDM_HL7800_LTE_BAND_STRLEN);
+}
+
+void cell_svc_set_active_bands(char *value)
+{
+	__ASSERT_NO_MSG(value != NULL);
+	memcpy(bcs.active_bands, value, MDM_HL7800_LTE_BAND_STRLEN);
+}
+
 void cell_svc_init()
 {
 	bt_gatt_service_register(&cell_svc);
@@ -306,6 +335,9 @@ void cell_svc_init()
 						    cell_attrs, gatt_size);
 	bcs.rat_index =
 		lbt_find_gatt_index(&RAT_UUID.uuid, cell_attrs, gatt_size);
+
+	bcs.active_bands_index = lbt_find_gatt_index(&ACTIVE_BANDS_UUID.uuid,
+						     cell_attrs, gatt_size);
 }
 
 /******************************************************************************/
@@ -399,6 +431,13 @@ static ssize_t read_serial_number(struct bt_conn *conn,
 			       MDM_HL7800_SERIAL_NUMBER_STRLEN);
 }
 
+static ssize_t read_bands(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			  void *buf, u16_t len, u16_t offset)
+{
+	return lbt_read_string(conn, attr, buf, len, offset,
+			       MDM_HL7800_LTE_BAND_STRLEN);
+}
+
 static void apn_value_ccc_handler(const struct bt_gatt_attr *attr, u16_t value)
 {
 	ccc.apn_value.notify = IS_NOTIFIABLE(value);
@@ -447,6 +486,12 @@ static void sleep_state_ccc_handler(const struct bt_gatt_attr *attr,
 static void rat_ccc_handler(const struct bt_gatt_attr *attr, u16_t value)
 {
 	ccc.rat.notify = IS_NOTIFIABLE(value);
+}
+
+static void active_bands_ccc_handler(const struct bt_gatt_attr *attr,
+				     u16_t value)
+{
+	ccc.active_bands.notify = IS_NOTIFIABLE(value);
 }
 
 static void cell_svc_notify(bool notify, u16_t index, u16_t length)

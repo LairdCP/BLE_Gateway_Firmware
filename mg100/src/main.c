@@ -28,25 +28,36 @@ LOG_MODULE_REGISTER(mg100_main);
 #include <shell/shell.h>
 #include <shell/shell_uart.h>
 
-#include "battery.h"
 #include "mg100_common.h"
 #include "led.h"
 #include "mg100_ble.h"
 #include "lte.h"
 #include "aws.h"
+#include "battery.h"
 #include "nv.h"
 #include "ble_cellular_service.h"
 #include "ble_aws_service.h"
 #include "ble_battery_service.h"
-#include "ble_power_service.h"
 #include "ble_sensor_service.h"
-
+#include "ble_power_service.h"
 #include "power.h"
 #include "dis.h"
 #include "bootloader.h"
-#include "Framework.h"
+#include "FrameworkIncludes.h"
 #include "sensor_task.h"
-#include "sensor_bt510.h"
+#include "sensor_table.h"
+#include "laird_utility_macros.h"
+
+#ifdef CONFIG_LWM2M
+#include "lwm2m_client.h"
+#endif
+
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
+#ifndef CONFIG_USE_SINGLE_AWS_TOPIC
+#define CONFIG_USE_SINGLE_AWS_TOPIC 0
+#endif
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -59,27 +70,29 @@ static float humidityReading = 0;
 static float pressureReading = 0;
 static bool initShadow = true;
 static bool resolveAwsServer = true;
+static bool lteNeverConnected = true;
 
 static bool bUpdatedTemperature = false;
 static bool bUpdatedHumidity = false;
 static bool bUpdatedPressure = false;
 
-static bool subscribed;
+static bool gatewaySubscribed;
+static bool subscribedToGetAccepted;
+static bool getShadowProcessed;
 static bool commissioned;
 static bool allowCommissioning = false;
 static bool appReady = false;
 static bool devCertSet;
 static bool devKeySet;
 
-static volatile app_state_function_t appState;
+static app_state_function_t appState;
 struct lte_status *lteInfo;
 
 static FwkMsgReceiver_t awsMsgReceiver;
 
 K_MSGQ_DEFINE(sensorQ, FWK_QUEUE_ENTRY_SIZE, 16, FWK_QUEUE_ALIGNMENT);
 
-static u64_t linkUpTime = 0;
-static u32_t linkUpDelta;
+static struct led_blink_pattern dataSendLedPattern;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -91,19 +104,29 @@ static void appStateAwsDisconnect(void);
 static void appStateAwsResolveServer(void);
 static void appStateWaitForLte(void);
 static void appStateCommissionDevice(void);
-static void appStateWaitForModemDisconnect(void);
+static void appStateStartup(void);
+static void appStateLteConnectedAws(void);
+
+static void appSetNextState(app_state_function_t next);
+static const char *getAppStateString(app_state_function_t state);
 
 static void setAwsStatusWrapper(struct bt_conn *conn, enum aws_status status);
 
 static void initializeAwsMsgReceiver(void);
-static void awsMsgHandler(void);
+static void awsMsgHandler(s32_t *blinks);
 static void awsSvcEvent(enum aws_svc_event event);
 static int setAwsCredentials(void);
-static void generateBt510shadowRequestMsg(void);
-static void blinkLedForDataSend(void);
+static void generateShadowRequestMsg(void);
+static void ledPatternCompleteCallback(void);
 static void sensorUpdated(u8_t sensor, s32_t reading);
 static void lteEvent(enum lte_event event);
 static void softwareReset(u32_t DelayMs);
+
+#ifdef CONFIG_LWM2M
+static void appStateInitLwm2mClient(void);
+static void appStateLwm2m(void);
+static void lwm2mMsgHandler(void);
+#endif
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -145,7 +168,7 @@ void main(void)
 
 	dis_initialize();
 
-	/* Start up BLE portion of the MG100 */
+	/* Start up BLE portion of the demo */
 	cell_svc_init();
 	cell_svc_assign_connection_handler_getter(
 		mg100_ble_get_central_connection);
@@ -173,7 +196,6 @@ void main(void)
 	power_init();
 	BatteryInit();
 
-
 	bootloader_init();
 
 	rc = aws_svc_init(lteInfo->IMEI);
@@ -183,7 +205,6 @@ void main(void)
 	aws_svc_set_event_callback(awsSvcEvent);
 	if (commissioned) {
 		aws_svc_set_status(NULL, AWS_STATUS_DISCONNECTED);
-
 	} else {
 		aws_svc_set_status(NULL, AWS_STATUS_NOT_PROVISIONED);
 	}
@@ -194,11 +215,13 @@ void main(void)
 	appReady = true;
 	printk("\n!!!!!!!! App is ready! !!!!!!!!\n");
 
-	if (commissioned && setAwsCredentials() == 0) {
-		appState = appStateWaitForLte;
-	} else {
-		appState = appStateCommissionDevice;
-	}
+	appSetNextState(appStateStartup);
+
+	led_register_pattern_complete_function(GREEN_LED2,
+					       ledPatternCompleteCallback);
+	dataSendLedPattern.on_time = DATA_SEND_LED_ON_TIME_TICKS;
+	dataSendLedPattern.off_time = DATA_SEND_LED_OFF_TIME_TICKS;
+	dataSendLedPattern.repeat_count = 0;
 
 	print_thread_list();
 
@@ -219,31 +242,33 @@ EXTERNED void Framework_AssertionHandler(char *file, int line)
 	/* prevent recursion (buffer alloc fail, ...) */
 	if (!busy) {
 		atomic_set(&busy, 1);
-		LOG_ERR("\r\n!---> Fwk Assertion <---! %s:%d\r\n", file, line);
+		LOG_ERR("\r\n!---> Framework Assertion <---! %s:%d\r\n", file,
+			line);
 		LOG_ERR("Thread name: %s",
 			log_strdup(k_thread_name_get(k_current_get())));
 	}
 
-#if LAIRD_DEBUG
+#if CONFIG_LAIRD_CONNECTIVITY_DEBUG
 	/* breakpoint location */
 	volatile bool wait = true;
 	while (wait)
 		;
 #endif
 
-	softwareReset(FWK_DEFAULT_RESET_DELAY_MS);
+	softwareReset(CONFIG_FWK_RESET_DELAY_MS);
 }
-
 
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
+
 /* This is a callback function which receives sensor readings */
 static void sensorUpdated(u8_t sensor, s32_t reading)
 {
 	static u64_t bmeEventTime = 0;
 	/* On init send first data immediately. */
-	static u32_t delta = BL654_SENSOR_SEND_TO_AWS_RATE_TICKS;
+	static u32_t delta =
+		K_MSEC(CONFIG_BL654_SENSOR_SEND_TO_AWS_RATE_SECONDS);
 
 	if (sensor == SENSOR_TYPE_TEMPERATURE) {
 		/* Divide by 100 to get xx.xxC format */
@@ -260,7 +285,7 @@ static void sensorUpdated(u8_t sensor, s32_t reading)
 	}
 
 	delta += k_uptime_delta_32(&bmeEventTime);
-	if (delta < BL654_SENSOR_SEND_TO_AWS_RATE_TICKS) {
+	if (delta < K_MSEC(CONFIG_BL654_SENSOR_SEND_TO_AWS_RATE_SECONDS)) {
 		return;
 	}
 
@@ -276,7 +301,7 @@ static void sensorUpdated(u8_t sensor, s32_t reading)
 		pMsg->temperatureC = temperatureReading;
 		pMsg->humidityPercent = humidityReading;
 		pMsg->pressurePa = pressureReading;
-		FRAMEWORK_MSG_TRY_TO_SEND(pMsg);
+		FRAMEWORK_MSG_SEND(pMsg);
 		bUpdatedTemperature = false;
 		bUpdatedHumidity = false;
 		bUpdatedPressure = false;
@@ -288,15 +313,11 @@ static void lteEvent(enum lte_event event)
 {
 	switch (event) {
 	case LTE_EVT_READY:
-		k_uptime_delta_32(&linkUpTime);
+		lteNeverConnected = false;
 		k_sem_give(&lte_ready_sem);
 		break;
 	case LTE_EVT_DISCONNECTED:
-		if (awsConnected()) {
-			appState = appStateAwsDisconnect;
-		} else {
-			appState = appStateWaitForLte;
-		}
+		k_sem_reset(&lte_ready_sem);
 		break;
 	default:
 		break;
@@ -306,91 +327,125 @@ static void lteEvent(enum lte_event event)
 static void appStateAwsSendSensorData(void)
 {
 	int rc;
-	MAIN_LOG_DBG("AWS send sensor data state");
+	s32_t blinks = 0;
 
 	/* If decommissioned then disconnect. */
 	if (!commissioned || !awsConnected()) {
-		appState = appStateAwsDisconnect;
+		appSetNextState(appStateAwsDisconnect);
+		led_turn_off(GREEN_LED2);
 		return;
 	}
 
 	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_CONNECTED);
 
-	if (!BT510_USES_SINGLE_AWS_TOPIC) {
-		if (!subscribed) {
-			rc = awsSubscribe();
-			subscribed = (rc == 0);
+	if (!CONFIG_USE_SINGLE_AWS_TOPIC) {
+		if (!subscribedToGetAccepted) {
+			rc = awsGetAcceptedSubscribe();
+			if (rc == 0) {
+				subscribedToGetAccepted = true;
+			}
 		}
 
-		generateBt510shadowRequestMsg();
+		if (!getShadowProcessed) {
+			awsGetShadow();
+		}
+
+		if (getShadowProcessed && !gatewaySubscribed) {
+			rc = awsSubscribe(GATEWAY_TOPIC, true);
+			if (rc == 0) {
+				gatewaySubscribed = true;
+			}
+		}
+
+		if (getShadowProcessed && gatewaySubscribed) {
+			generateShadowRequestMsg();
+		}
 	}
 
-	lteInfo = lteGetStatus();
-	rc = awsPublishPinnacleData(lteInfo->rssi, lteInfo->sinr);
-	if (rc == 0) {
-		blinkLedForDataSend();
-		awsMsgHandler();
+	awsMsgHandler(&blinks);
+
+	/* Periodically sending the RSSI keeps AWS connection alive. */
+	if (blinks == 0) {
+		lteInfo = lteGetStatus();
+		rc = awsPublishPinnacleData(lteInfo->rssi, lteInfo->sinr);
+		if (rc == 0) {
+			blinks += 1;
+		}
 	}
-	LOG_INF("%u unsent messages", k_msgq_num_used_get(&sensorQ));
 
-	/* The purpose of this delay is to allow the UI (green LED) to be on
-	 * for a noticeable amount of time after data is sent. */
-	led_turn_on(GREEN_LED2);
-	k_sleep(SEND_DATA_TO_DISCONNECT_DELAY_TICKS);
+	/* The RSSI is always sent. If the count is 0 there was a problem. */
+	if (blinks > 0) {
+		dataSendLedPattern.repeat_count = blinks - 1;
+		led_blink(GREEN_LED2, &dataSendLedPattern);
+	} else {
+		led_turn_off(GREEN_LED2);
+	}
 
-#if CONFIG_MODEM_HL7800_PSM
-	/* Disconnect from AWS now that the data has been sent. */
-	appState = appStateAwsDisconnect;
-#else
-	k_sleep(PSM_DISABLED_SEND_DATA_RATE_TICKS);
-#endif
+	if (k_msgq_num_used_get(&sensorQ) != 0) {
+		MAIN_LOG_WRN("%u unsent messages",
+			     k_msgq_num_used_get(&sensorQ));
+	}
 }
 
-/* The modem will periodically wake and sleep.
- * After data is sent wait for the modem to go to sleep.
- * Then wait for the modem to wakeup.
- * (The modem controls the timing of sending the data.)
- */
-static void appStateWaitForModemDisconnect(void)
+static const char *getAppStateString(app_state_function_t state)
 {
-	MAIN_LOG_DBG("Wait for Disconnect state");
+#ifdef CONFIG_LWM2M
+	IF_RETURN_STRING(state, appStateLwm2m);
+	IF_RETURN_STRING(state, appStateInitLwm2mClient);
+#endif
+	IF_RETURN_STRING(state, appStateAwsSendSensorData);
+	IF_RETURN_STRING(state, appStateAwsConnect);
+	IF_RETURN_STRING(state, appStateAwsDisconnect);
+	IF_RETURN_STRING(state, appStateWaitForLte);
+	IF_RETURN_STRING(state, appStateLteConnectedAws);
+	IF_RETURN_STRING(state, appStateAwsResolveServer);
+	IF_RETURN_STRING(state, appStateAwsInitShadow);
+	IF_RETURN_STRING(state, appStateCommissionDevice);
+	IF_RETURN_STRING(state, appStateStartup);
+	return "appStateUnknown";
+}
 
-#if CONFIG_MODEM_HL7800_PSM
-	while (lteIsReady()) {
-		k_sleep(WAIT_FOR_DISCONNECT_POLL_RATE_TICKS);
+static void appSetNextState(app_state_function_t next)
+{
+	MAIN_LOG_DBG("%s->%s", getAppStateString(appState),
+		     getAppStateString(next));
+	appState = next;
+}
+
+static void appStateStartup(void)
+{
+#ifdef CONFIG_LWM2M
+	appSetNextState(appStateWaitForLte);
+#else
+	if (commissioned && setAwsCredentials() == 0) {
+		appSetNextState(appStateWaitForLte);
+	} else {
+		appSetNextState(appStateCommissionDevice);
 	}
 #endif
-
-	if (appState == appStateWaitForModemDisconnect) {
-		appState = appStateWaitForLte;
-	}
 }
 
 /* This function will throw away sensor data if it can't send it. */
-static void awsMsgHandler(void)
+static void awsMsgHandler(s32_t *blinks)
 {
 	int rc = 0;
 	FwkMsg_t *pMsg;
-
-	linkUpDelta = 0;
+	bool freeMsg;
 
 	while (rc == 0) {
-#if CONFIG_MODEM_HL7800_PSM
-		/* Only send data if we have enough time to send it */
-		linkUpDelta += k_uptime_delta_32(&linkUpTime);
-		if (linkUpDelta >= PSM_ENABLED_SEND_DATA_WINDOW_TICKS) {
-			LOG_INF("Send data window closed");
-			return;
-		}
-#endif
-		/* Remove sensor/gateway data from queue and send it to cloud. */
+		/* Remove sensor/gateway data from queue and send it to cloud.
+		 * Block if there are not any messages, but periodically send RSSI to
+		 * keep AWS connection open.
+		 */
 		rc = -EINVAL;
 		pMsg = NULL;
-		Framework_Receive(awsMsgReceiver.pQueue, &pMsg, K_NO_WAIT);
+		Framework_Receive(awsMsgReceiver.pQueue, &pMsg,
+				  K_SECONDS(CONFIG_AWS_QUEUE_TIMEOUT_SECONDS));
 		if (pMsg == NULL) {
 			return;
 		}
+		freeMsg = true;
 
 		switch (pMsg->header.msgCode) {
 		case FMC_BL654_SENSOR_EVENT: {
@@ -400,93 +455,118 @@ static void awsMsgHandler(void)
 						       pBmeMsg->pressurePa);
 		} break;
 
-		case FMC_BT510_EVENT: {
+		case FMC_SENSOR_PUBLISH: {
 			JsonMsg_t *pJsonMsg = (JsonMsg_t *)pMsg;
 			rc = awsSendData(pJsonMsg->buffer,
-					 BT510_USES_SINGLE_AWS_TOPIC ?
+					 CONFIG_USE_SINGLE_AWS_TOPIC ?
 						 GATEWAY_TOPIC :
 						 pJsonMsg->topic);
 		} break;
 
-		case FMC_BT510_GATEWAY_OUT: {
+		case FMC_GATEWAY_OUT: {
 			JsonMsg_t *pJsonMsg = (JsonMsg_t *)pMsg;
 			rc = awsSendData(pJsonMsg->buffer, GATEWAY_TOPIC);
+			if (rc == 0) {
+				FRAMEWORK_MSG_CREATE_AND_SEND(
+					FWK_ID_AWS, FWK_ID_SENSOR_TASK,
+					FMC_SHADOW_ACK);
+			}
+		} break;
+
+		case FMC_SUBSCRIBE: {
+			SubscribeMsg_t *pSubMsg = (SubscribeMsg_t *)pMsg;
+			rc = awsSubscribe(pSubMsg->topic, pSubMsg->subscribe);
+			pSubMsg->success = (rc == 0);
+			FRAMEWORK_MSG_REPLY(pSubMsg, FMC_SUBSCRIBE_ACK);
+			freeMsg = false;
+		} break;
+
+		case FMC_AWS_GET_ACCEPTED_RECEIVED: {
+			rc = awsGetAcceptedUnsub();
+			if (rc == 0) {
+				getShadowProcessed = true;
+			}
 		} break;
 
 		default:
 			break;
 		}
-		BufferPool_Free(pMsg);
+		if (freeMsg) {
+			BufferPool_Free(pMsg);
+		}
 
 		if (rc != 0) {
 			MAIN_LOG_ERR("Could not send data (%d)", rc);
 		} else {
-			MAIN_LOG_INF("Data sent");
-			blinkLedForDataSend();
+			*blinks += 1;
 		}
 	}
 }
 
-static void blinkLedForDataSend(void)
+static void ledPatternCompleteCallback(void)
 {
-	led_turn_off(GREEN_LED2);
-	k_sleep(DATA_SEND_LED_OFF_TIME_TICKS);
+	/* This occurs in LED timer context (system workq) */
+	if (awsConnected()) {
+		led_turn_on(GREEN_LED2);
+	} else {
+		led_turn_off(GREEN_LED2);
+	}
 }
 
 /* Used to limit table generation to once per data interval. */
-static void generateBt510shadowRequestMsg(void)
+static void generateShadowRequestMsg(void)
 {
-	FwkMsg_t *pMsg = BufferPool_TryToTake(sizeof(FwkMsg_t));
+	FwkMsg_t *pMsg = BufferPool_Take(sizeof(FwkMsg_t));
 	if (pMsg != NULL) {
-		pMsg->header.msgCode = FMC_BT510_SHADOW_REQUEST;
+		pMsg->header.msgCode = FMC_SHADOW_REQUEST;
 		pMsg->header.txId = FWK_ID_RESERVED;
 		pMsg->header.rxId = FWK_ID_SENSOR_TASK;
-		/* Try is used because the sensor task queue can be filled with ads. */
-		FRAMEWORK_MSG_TRY_TO_SEND(pMsg);
-		/* Allow sensor task to process message immediately (if system is idle). */
+		FRAMEWORK_MSG_SEND(pMsg);
+		/* Allow sensor task to process message immediately
+		 * (if system is idle). */
 		k_yield();
 	}
 }
 
+/* The shadow init is only sent once after the very first connect.*/
 static void appStateAwsInitShadow(void)
 {
-	int rc;
+	int rc = 0;
 
-	MAIN_LOG_DBG("AWS init shadow state");
+	if (initShadow) {
+		awsGenerateGatewayTopics(lteInfo->IMEI);
+		/* Fill in base shadow info and publish */
+		awsSetShadowAppFirmwareVersion(APP_VERSION_STRING);
+		awsSetShadowKernelVersion(KERNEL_VERSION_STRING);
+		awsSetShadowIMEI(lteInfo->IMEI);
+		awsSetShadowICCID(lteInfo->ICCID);
+		awsSetShadowRadioFirmwareVersion(lteInfo->radio_version);
+		awsSetShadowRadioSerialNumber(lteInfo->serialNumber);
 
-	/* Fill in base shadow info and publish */
-	awsSetShadowAppFirmwareVersion(APP_VERSION_STRING);
-	awsSetShadowKernelVersion(KERNEL_VERSION_STRING);
-	awsSetShadowIMEI(lteInfo->IMEI);
-	awsSetShadowICCID(lteInfo->ICCID);
-	awsSetShadowRadioFirmwareVersion(lteInfo->radio_version);
-	awsSetShadowRadioSerialNumber(lteInfo->serialNumber);
+		MAIN_LOG_INF("Send persistent shadow data");
+		rc = awsPublishShadowPersistentData();
+	}
 
-	MAIN_LOG_INF("Send persistent shadow data");
-	rc = awsPublishShadowPersistentData();
 	if (rc != 0) {
-		appState = appStateAwsDisconnect;
+		LOG_ERR("%d", rc);
+		appSetNextState(appStateAwsDisconnect);
 	} else {
 		initShadow = false;
-		/* The shadow init is only sent once after the very first connect.*/
-		appState = appStateAwsSendSensorData; /* code */
+		appSetNextState(appStateAwsSendSensorData);
+		FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED,
+						   FMC_AWS_CONNECTED);
 	}
 }
 
 static void appStateAwsConnect(void)
 {
-	MAIN_LOG_DBG("AWS connect state");
-
-	if (!lteIsReady()) {
-		appState = appStateWaitForLte;
-		return;
-	}
-
 	if (awsConnect() != 0) {
 		MAIN_LOG_ERR("Could not connect to AWS");
 		setAwsStatusWrapper(mg100_ble_get_central_connection(),
 				    AWS_STATUS_CONNECTION_ERR);
-		appState = appStateWaitForModemDisconnect;
+
+		/* wait some time before trying to re-connect */
+		k_sleep(WAIT_TIME_BEFORE_RETRY_TICKS);
 		return;
 	}
 
@@ -497,12 +577,7 @@ static void appStateAwsConnect(void)
 	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_CONNECTING);
 
-	if (initShadow) {
-		/* Init the shadow once, the first time we connect */
-		appState = appStateAwsInitShadow;
-	} else {
-		appState = appStateAwsSendSensorData;
-	}
+	appSetNextState(appStateAwsInitShadow);
 }
 
 static bool areCertsSet(void)
@@ -512,52 +587,100 @@ static bool areCertsSet(void)
 
 static void appStateAwsDisconnect(void)
 {
-	MAIN_LOG_DBG("AWS disconnect state");
 	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_DISCONNECTED);
 	awsDisconnect();
-	appState = appStateWaitForModemDisconnect;
+	gatewaySubscribed = false;
+	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED,
+					   FMC_AWS_DISCONNECTED);
+	appSetNextState(appStateAwsConnect);
 }
 
 static void appStateAwsResolveServer(void)
 {
-	MAIN_LOG_DBG("AWS resolve server state");
-
-	if (!lteIsReady()) {
-		appState = appStateWaitForLte;
-		return;
-	}
-
 	if (awsGetServerAddr() != 0) {
 		MAIN_LOG_ERR("Could not get server address");
-		appState = appStateWaitForModemDisconnect;
+		/* wait some time before trying to resolve address again */
+		k_sleep(WAIT_TIME_BEFORE_RETRY_TICKS);
 		return;
 	}
 	resolveAwsServer = false;
-	appState = appStateAwsConnect;
+	appSetNextState(appStateAwsConnect);
 }
 
 static void appStateWaitForLte(void)
 {
-	MAIN_LOG_DBG("Wait for LTE state");
-
 	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_DISCONNECTED);
 
-	if (!lteIsReady()) {
-		/* Wait for LTE read evt */
-		k_sem_reset(&lte_ready_sem);
+	if (lteNeverConnected && !lteIsReady()) {
+		/* Wait for LTE ready evt */
 		k_sem_take(&lte_ready_sem, K_FOREVER);
 	}
 
+#ifdef CONFIG_LWM2M
+	appSetNextState(appStateInitLwm2mClient);
+#else
+	appSetNextState(appStateLteConnectedAws);
+#endif
+}
+
+static void appStateLteConnectedAws(void)
+{
 	if (resolveAwsServer && areCertsSet()) {
-		appState = appStateAwsResolveServer;
+		appSetNextState(appStateAwsResolveServer);
 	} else if (areCertsSet()) {
-		appState = appStateAwsConnect;
+		appSetNextState(appStateAwsConnect);
 	} else {
-		appState = appStateCommissionDevice;
+		appSetNextState(appStateCommissionDevice);
 	}
 }
+
+#ifdef CONFIG_LWM2M
+static void appStateInitLwm2mClient(void)
+{
+	lwm2m_client_init();
+	appSetNextState(appStateLwm2m);
+}
+
+static void appStateLwm2m(void)
+{
+	lwm2mMsgHandler();
+}
+
+static void lwm2mMsgHandler(void)
+{
+	int rc = 0;
+	FwkMsg_t *pMsg;
+
+	while (rc == 0) {
+		/* Remove sensor/gateway data from queue and send it to cloud. */
+		rc = -EINVAL;
+		pMsg = NULL;
+		Framework_Receive(awsMsgReceiver.pQueue, &pMsg, K_FOREVER);
+		if (pMsg == NULL) {
+			return;
+		}
+
+		switch (pMsg->header.msgCode) {
+		case FMC_BL654_SENSOR_EVENT: {
+			BL654SensorMsg_t *pBmeMsg = (BL654SensorMsg_t *)pMsg;
+			rc = lwm2m_set_bl654_sensor_data(
+				pBmeMsg->temperatureC, pBmeMsg->humidityPercent,
+				pBmeMsg->pressurePa);
+		} break;
+
+		default:
+			break;
+		}
+		BufferPool_Free(pMsg);
+
+		if (rc != 0) {
+			MAIN_LOG_ERR("Could not send data (%d)", rc);
+		}
+	}
+}
+#endif
 
 static int setAwsCredentials(void)
 {
@@ -579,7 +702,6 @@ static int setAwsCredentials(void)
 
 static void appStateCommissionDevice(void)
 {
-	MAIN_LOG_DBG("Commission device state");
 	printk("\n\nWaiting to commission device\n\n");
 	setAwsStatusWrapper(mg100_ble_get_central_connection(),
 			    AWS_STATUS_NOT_PROVISIONED);
@@ -587,7 +709,7 @@ static void appStateCommissionDevice(void)
 
 	k_sem_take(&rx_cert_sem, K_FOREVER);
 	if (setAwsCredentials() == 0) {
-		appState = appStateWaitForLte;
+		appSetNextState(appStateWaitForLte);
 	}
 }
 
@@ -598,7 +720,7 @@ static void decommission(void)
 	devKeySet = false;
 	commissioned = false;
 	allowCommissioning = true;
-	appState = appStateAwsDisconnect;
+	appSetNextState(appStateAwsDisconnect);
 	printk("Device is decommissioned\n");
 }
 
@@ -619,12 +741,6 @@ static void awsSvcEvent(enum aws_svc_event event)
 static void setAwsStatusWrapper(struct bt_conn *conn, enum aws_status status)
 {
 	aws_svc_set_status(conn, status);
-
-	if (status == AWS_STATUS_CONNECTED) {
-		led_turn_on(GREEN_LED2);
-	} else {
-		led_turn_off(GREEN_LED2);
-	}
 }
 
 static void initializeAwsMsgReceiver(void)
@@ -760,7 +876,6 @@ static int shell_bootloader(const struct shell *shell, size_t argc, char **argv)
 }
 #endif /* CONFIG_REBOOT */
 #endif /* CONFIG_SHELL */
-
 
 #ifdef CONFIG_SHELL
 SHELL_STATIC_SUBCMD_SET_CREATE(

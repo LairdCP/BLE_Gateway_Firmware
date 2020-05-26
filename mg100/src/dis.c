@@ -39,7 +39,7 @@ static struct bt_uuid_16 FIRMWARE_REVISION_UUID = BT_UUID_INIT_16(0x2a26);
 static struct bt_uuid_16 SOFTWARE_REVISION_UUID = BT_UUID_INIT_16(0x2a28);
 static struct bt_uuid_16 MANUFACTURER_NAME_UUID = BT_UUID_INIT_16(0x2a29);
 
-static const char MODEL_NUMBER[] = "Pinnacle 100";
+static const char MODEL_NUMBER[] = CONFIG_BOARD;
 static const char SOFTWARE_REVISION[] = APP_VERSION_STRING;
 static const char MANUFACTURER_NAME[] = "Laird Connectivity";
 
@@ -91,6 +91,21 @@ void dis_initialize(void)
 		 "Zephyr stringbuilder failure");
 
 	bt_gatt_service_register(&dis_gatt);
+}
+
+const char *dis_get_model_number(void)
+{
+	return MODEL_NUMBER;
+}
+
+const char *dis_get_software_revision(void)
+{
+	return SOFTWARE_REVISION;
+}
+
+const char *dis_get_manufacturer_name(void)
+{
+	return MANUFACTURER_NAME;
 }
 
 /******************************************************************************/

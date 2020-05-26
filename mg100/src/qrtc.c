@@ -101,7 +101,7 @@ static u32_t GetUptimeSeconds(void)
 
 static u32_t ConvertTimeToEpoch(time_t Time)
 {
-	// Time is a long long int in Zephyr.
+	/* Time is a long long int in Zephyr. */
 	if (Time < 0) {
 		return 0;
 	} else if (Time >= UINT32_MAX) {

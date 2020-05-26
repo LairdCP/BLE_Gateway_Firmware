@@ -276,6 +276,14 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		cell_svc_set_rat(*((u8_t *)event_data));
 		break;
 
+	case HL7800_EVENT_BANDS:
+		cell_svc_set_bands((char *)event_data);
+		break;
+
+	case HL7800_EVENT_ACTIVE_BANDS:
+		cell_svc_set_active_bands((char *)event_data);
+		break;
+
 	default:
 		LOG_ERR("Unknown modem event");
 		break;

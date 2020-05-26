@@ -77,8 +77,7 @@ void led_turn_off(enum led_index index);
  * @param index is a Valid LED
  * @param led_blink_pattern @ref struct led_blink_pattern
  *
- * @details
- *  The pattern in copied by the LED driver.
+ * @note The pattern is copied by the LED driver.
  */
 void led_blink(enum led_index index, struct led_blink_pattern const *pPattern);
 

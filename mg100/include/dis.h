@@ -22,6 +22,24 @@ extern "C" {
  */
 void dis_initialize(void);
 
+/**
+ * @brief Accessor function
+ * @retval string
+ */
+const char *dis_get_model_number(void);
+
+/**
+ * @brief Accessor function
+ * @retval string
+ */
+const char *dis_get_software_revision(void);
+
+/**
+ * @brief Accessor function
+ * @retval string
+ */
+const char *dis_get_manufacturer_name(void);
+
 #ifdef __cplusplus
 }
 #endif

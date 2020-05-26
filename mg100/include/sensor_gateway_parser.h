@@ -1,7 +1,6 @@
 /**
  * @file sensor_gateway_parser.h
- * @brief Process subscription data from AWS that is used to
- * enable/disable sending BT510 data to AWS.
+ * @brief Process subscription data from AWS.
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -18,10 +17,14 @@ extern "C" {
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
 /**
- * @brief Process JSON message from AWS.  Sends a message to sensor task to
- * whitelist sensors.
+ * @brief Process JSON messages from AWS.
+ *
+ * @param pTopic is a pointer to the topic message was received on.
+ * For gateway topic, sends a message to sensor task to whitelist sensors.
+ * For sensor topic, sends a message to sensor task to configure sensor.
+ * @param pJson is a pointer to JSON string.
  */
-void SensorGatewayParser_Run(char *pJson);
+void SensorGatewayParser(const char *pTopic, const char *pJson);
 
 #ifdef __cplusplus
 }

@@ -1,0 +1,140 @@
+# Copyright (c) 2020 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+
+menuconfig USER_APPLICATION
+     bool "Config User Application"
+	 default y
+
+if USER_APPLICATION
+
+config LAIRD_CONNECTIVITY_DEBUG
+    bool
+    default n
+
+config SCAN_FOR_BL654_SENSOR
+    bool "Parse Bluetooth advertisements for BL654 Sensor"
+    default y
+
+config SCAN_FOR_BT510
+    bool "Parse Bluetooth advertisements for BT510 Sensor"
+    default y
+
+config JSON_BRACKET_BUFFER_SIZE
+    int "The maximum size JSON message that can be processed"
+    default 1536
+    help
+        This applies to sensor messages received over Bluetooth.
+
+config AWS_QUEUE_TIMEOUT_SECONDS
+    int "The amount of time to wait for data to send to AWS"
+    default 30
+    range 1 60
+    help
+        This can't be more than the AWS connection timeout.
+
+config BL654_SENSOR_SEND_TO_AWS_RATE_SECONDS
+    int "The period at which to send BL654 Sensor data to AWS"
+    default 30
+    range 30 3600
+
+config USE_SINGLE_AWS_TOPIC
+    bool "Send all sensor data to gateway topic"
+    help
+        PSM mode doesn't easily support receiving information from the
+        Laird Connectivity Cloud demo.
+        When using a single topic [BT510] temperature data is sent to the
+        gateway's topic vs. the individual sensor topic.
+        BL654 sensor data is always sent to the gateway topic.
+
+config SENSOR_TOPIC_FMT_STR_PREFIX
+	string "Default location for sensor data"
+	default "$aws/things/%s/shadow"
+    help
+        "%s will be replaced by the sensor BT address"
+
+config TOPIC_MAX_SIZE
+    int "Maximum size for AWS topic strings"
+    default 64
+
+config SHADOW_IN_MAX_SIZE
+    int "Maximum size of subscription/shadow that can be processed"
+    default 8192
+    help
+        The timestamps can make the shadow larger than 7K bytes.
+
+config SENSOR_TABLE_SIZE
+    int "Number of sensors that can be monitored"
+    default 3
+    range 1 15
+
+config SENSOR_LOG_MAX_SIZE
+    int "The maximum number of stored sensor events"
+    default 30
+    range 1 30
+    help
+        Limited by the memory pool
+        Limited by MQTT or modem.
+
+config VSP_TX_ECHO
+    bool "Print Virtual Serial Port data transmitted to sensors"
+    help
+        This occurs in task context because strings can be long
+
+config VSP_RX_ECHO
+    bool "Print Virtual Serial Port data received from sensors"
+    help
+        This occurs in task context because strings can be long
+
+config JSON_LOG_ENABLED
+    bool "Print JSON messages in task context using printk"
+
+config JSON_LOG_PUBLISH
+    bool "Print data published to AWS"
+
+config JSON_LOG_TOPIC
+    bool "Print the topic that documents are published to or received from"
+
+config JSON_LOG_MQTT_RX_DATA
+    bool "Enable/Disable printing of received MQTT data."
+
+config DNS_RETRIES
+    int "Number of times to retry resolving server address"
+    default 1
+
+config DNS_RETRY_DELAY_SECONDS
+    int "Number of seconds to wait between resolution attempts"
+    default 5
+
+menu "Laird Connectivity LWM2M Demo Options"
+     depends on LWM2M
+
+config L2M2M_ENABLE_PSK_GENERATION
+    bool "Allow new PSK to be generated over Bluetooth"
+    default y
+
+config LWM2M_PSK_SIZE
+    int
+    default 16
+
+config LWM2M_CLIENT_ID_MAX_SIZE
+    int "Maximum size of the client id string"
+    default 32
+    range 1 64
+
+config LWM2M_PEER_URL_MAX_SIZE
+    int "Maximum size of the peer URL string"
+    default 128
+    range 1 512
+
+config LWM2M_CLIENT_ENDPOINT_MAX_SIZE
+    int "Maximum size of the client endpoint name"
+    default 64
+
+endmenu
+
+endif # USER_APPLICATION
+
+source "../modules/framework/Kconfig"
+
+source "Kconfig.zephyr"

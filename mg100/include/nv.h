@@ -42,6 +42,8 @@ int nvDeleteAwsClientId(void);
 int nvStoreAwsRootCa(u8_t *cert, u16_t size);
 int nvReadAwsRootCa(u8_t *cert, u16_t size);
 int nvDeleteAwsRootCa(void);
+int nvInitLwm2mConfig(void *data, void *init_value, u16_t size);
+int nvWriteLwm2mConfig(void *data, u16_t size);
 int nvReadBatteryLow(u16_t * batteryData);
 int nvReadBatteryAlarm(u16_t * batteryData);
 int nvReadBattery4(u16_t * batteryData);

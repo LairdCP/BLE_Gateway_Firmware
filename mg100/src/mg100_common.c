@@ -102,7 +102,7 @@ void print_thread_list(void)
  */
 void print_json(const char *prefix, size_t size, const char *buffer)
 {
-#if JSON_LOG_ENABLED
+#if CONFIG_JSON_LOG_ENABLED
 	printk("%s size: %u data: %s\r\n", prefix, size, buffer);
 #endif
 }

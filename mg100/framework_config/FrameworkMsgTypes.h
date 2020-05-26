@@ -17,55 +17,19 @@ extern "C" {
 /* Includes                                                                   */
 /******************************************************************************/
 #include <bluetooth/bluetooth.h>
-#include "FrameworkMsgConfiguration.h"
 
-/******************************************************************************/
-/* Global Constants, Macros and Type Definitions                              */
-/******************************************************************************/
-
-/* The size of the buffer pool messages limits framework message sizes. */
-#ifndef BUFFER_POOL_MINSZ
-#define BUFFER_POOL_MINSZ 4
-#endif
-
-#ifndef BUFFER_POOL_MAXSZ
-#define BUFFER_POOL_MAXSZ 4096
-#endif
-
-#ifndef BUFFER_POOL_NMAX
-#define BUFFER_POOL_NMAX 8
-#endif
-
-#ifndef BUFFER_POOL_ALIGN
-#define BUFFER_POOL_ALIGN 4
-#endif
-
-#define CHECK_FWK_MSG_SIZE(x)                                                  \
-	BUILD_ASSERT_MSG(sizeof(x) <= BUFFER_POOL_MAXSZ,                       \
-			 "Buffer Pool Max Message size is too small")
+#include "Framework.h"
 
 /******************************************************************************/
 /* Project Specific Message Types                                             */
 /******************************************************************************/
-
-#define JSON_OUT_BUFFER_SIZE (640)
-#define JSON_IN_BUFFER_SIZE (3072)
-#define TOPIC_MAX_SIZE (64)
-
 typedef struct JsonMsg {
 	FwkMsgHeader_t header;
-	size_t size;
-	char buffer[JSON_OUT_BUFFER_SIZE];
-	char topic[TOPIC_MAX_SIZE];
+	size_t size; /** number of bytes */
+	size_t length; /** of the data */
+	char topic[CONFIG_TOPIC_MAX_SIZE];
+	char buffer[];
 } JsonMsg_t;
-CHECK_FWK_MSG_SIZE(JsonMsg_t);
-
-typedef struct JsonGatewayInMsg {
-	FwkMsgHeader_t header;
-	size_t size;
-	char buffer[JSON_IN_BUFFER_SIZE];
-} JsonGatewayInMsg_t;
-CHECK_FWK_MSG_SIZE(JsonGatewayInMsg_t);
 
 /* Zephyr currently doesn't support extended advertisements. */
 #define MAX_AD_SIZE 31

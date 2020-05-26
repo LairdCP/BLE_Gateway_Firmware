@@ -14,19 +14,26 @@ extern "C" {
 #endif
 
 /******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
+#include "Framework.h"
+
+/******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-typedef enum FwkIdEnumeration {
+enum FwkIdEnum {
 	/* Reserved for framework (DO NOT DELETE) */
-	FWK_ID_RESERVED = 0,
+	__FWK_ID_RESERVED = FWK_ID_RESERVED,
 
 	/* Application */
-	FWK_ID_SENSOR_TASK,
+	FWK_ID_SENSOR_TASK = FWK_ID_APP_START,
 	FWK_ID_AWS,
 
 	/* Reserved for framework (DO NOT DELETE, and it must be LAST) */
-	FRAMEWORK_MAX_MSG_RECEIVERS
-} FwkId_t;
+	__FRAMEWORK_MAX_MSG_RECEIVERS
+};
+BUILD_ASSERT_MSG(__FRAMEWORK_MAX_MSG_RECEIVERS <= CONFIG_FWK_MAX_MSG_RECEIVERS,
+		 "Adjust number of message receivers in Kconfig");
 
 #ifdef __cplusplus
 }

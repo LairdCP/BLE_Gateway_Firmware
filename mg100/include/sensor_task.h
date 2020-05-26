@@ -21,6 +21,13 @@ extern "C" {
  */
 void SensorTask_Initialize(void);
 
+/**
+ * @brief Accessor Function
+ *
+ * @retval returns connection handle use by sensor task.
+ */
+struct bt_conn *SensorTask_GetConn(void);
+
 #ifdef __cplusplus
 }
 #endif

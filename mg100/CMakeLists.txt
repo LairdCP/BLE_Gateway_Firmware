@@ -7,9 +7,14 @@ target_sources(app PRIVATE ${app_sources})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 zephyr_include_directories(${ZEPHYR_BASE}/drivers/modem)
 
-FILE(GLOB fwk_sources ./../../modules/framework/source/*.c)
-target_sources(app PRIVATE ${fwk_sources})
-include_directories(${CMAKE_SOURCE_DIR}/../../modules/framework/include)
 include_directories(${CMAKE_SOURCE_DIR}/framework_config)
 
 include_directories(${CMAKE_SOURCE_DIR}/../../modules/jsmn)
+
+if(CONFIG_LWM2M)
+include_directories(${CMAKE_SOURCE_DIR}/lwm2m/include)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/lwm2m/source/lwm2m_client.c
+    ${CMAKE_SOURCE_DIR}/lwm2m/source/ble_lwm2m_service.c
+)
+endif()

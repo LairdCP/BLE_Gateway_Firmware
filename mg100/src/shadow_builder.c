@@ -7,12 +7,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <logging/log.h>
+#define LOG_LEVEL LOG_LEVEL_INF
+LOG_MODULE_REGISTER(shadow_builder);
+
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
 #include <string.h>
 
-#include "Framework.h"
+#include "FrameworkIncludes.h"
 #include "to_string.h"
 #include "shadow_builder.h"
 
@@ -20,11 +24,12 @@
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
 #define JSON_APPEND_CHAR(c) JsonAppendChar(pJsonMsg, (u8_t)(c))
+#define JSON_APPEND_STRING(s) JsonAppendString(pJsonMsg, (s), true)
 
 #define JSON_APPEND_VALUE_STRING(s)                                            \
 	do {                                                                   \
 		JSON_APPEND_CHAR('"');                                         \
-		JsonAppendString(pJsonMsg, (s));                               \
+		JSON_APPEND_STRING(s);                                         \
 		JSON_APPEND_CHAR('"');                                         \
 	} while (0)
 
@@ -45,10 +50,15 @@
 	do {                                                                   \
 		memset(str, 0, MAXIMUM_LENGTH_OF_TO_STRING_OUTPUT);            \
 		ToString_Hex8(str, (c));                                       \
-		JSON_APPEND_STRING(str);                                       \
+		JSON_APPEND_VALUE_STRING(str);                                 \
 	} while (0)
 
-#define JSON_APPEND_STRING(s) JsonAppendString(pJsonMsg, (s))
+#define JSON_APPEND_HEX16(c)                                                   \
+	do {                                                                   \
+		memset(str, 0, MAXIMUM_LENGTH_OF_TO_STRING_OUTPUT);            \
+		ToString_Hex16(str, (c));                                      \
+		JSON_APPEND_VALUE_STRING(str);                                 \
+	} while (0)
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -58,7 +68,8 @@ static char str[MAXIMUM_LENGTH_OF_TO_STRING_OUTPUT];
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static void JsonAppendString(JsonMsg_t *pJsonMsg, const char *restrict pString);
+static void JsonAppendString(JsonMsg_t *pJsonMsg, const char *restrict pString,
+			     bool EscapeQuoteChar);
 static void JsonAppendChar(JsonMsg_t *pJsonMsg, char Character);
 
 /******************************************************************************/
@@ -67,18 +78,19 @@ static void JsonAppendChar(JsonMsg_t *pJsonMsg, char Character);
 void ShadowBuilder_Start(JsonMsg_t *pJsonMsg, bool ClearBuffer)
 {
 	FRAMEWORK_ASSERT(pJsonMsg != NULL);
+	FRAMEWORK_ASSERT(pJsonMsg->size != 0);
 	if (ClearBuffer) {
-		memset(pJsonMsg->buffer, 0, JSON_OUT_BUFFER_SIZE);
+		memset(pJsonMsg->buffer, 0, pJsonMsg->size);
 	}
-	pJsonMsg->size = 0;
+	pJsonMsg->length = 0;
 	JSON_APPEND_CHAR('{');
 }
 
 void ShadowBuilder_Finalize(JsonMsg_t *pJsonMsg)
 {
 	FRAMEWORK_ASSERT(pJsonMsg != NULL);
-	FRAMEWORK_ASSERT(pJsonMsg->buffer[pJsonMsg->size - 1] == ',');
-	pJsonMsg->buffer[pJsonMsg->size - 1] = '}';
+	FRAMEWORK_ASSERT(pJsonMsg->buffer[pJsonMsg->length - 1] == ',');
+	pJsonMsg->buffer[pJsonMsg->length - 1] = '}';
 }
 
 void ShadowBuilder_AddUint32(JsonMsg_t *pJsonMsg, const char *restrict pKey,
@@ -198,9 +210,9 @@ void ShadowBuilder_StartGroup(JsonMsg_t *pJsonMsg, const char *restrict pKey)
 void ShadowBuilder_EndGroup(JsonMsg_t *pJsonMsg)
 {
 	FRAMEWORK_ASSERT(pJsonMsg != NULL);
-	FRAMEWORK_ASSERT(pJsonMsg->buffer[pJsonMsg->size - 1] == ',');
+	FRAMEWORK_ASSERT(pJsonMsg->buffer[pJsonMsg->length - 1] == ',');
 
-	pJsonMsg->buffer[pJsonMsg->size - 1] = '}';
+	pJsonMsg->buffer[pJsonMsg->length - 1] = '}';
 	JSON_APPEND_CHAR(',');
 }
 
@@ -217,9 +229,9 @@ void ShadowBuilder_StartArray(JsonMsg_t *pJsonMsg, const char *restrict pKey)
 void ShadowBuilder_EndArray(JsonMsg_t *pJsonMsg)
 {
 	FRAMEWORK_ASSERT(pJsonMsg != NULL);
-	FRAMEWORK_ASSERT(pJsonMsg->buffer[pJsonMsg->size - 1] == ',');
+	FRAMEWORK_ASSERT(pJsonMsg->buffer[pJsonMsg->length - 1] == ',');
 
-	pJsonMsg->buffer[pJsonMsg->size - 1] = ']';
+	pJsonMsg->buffer[pJsonMsg->length - 1] = ']';
 	JSON_APPEND_CHAR(',');
 }
 
@@ -241,69 +253,106 @@ void ShadowBuilder_AddSensorTableArrayEntry(JsonMsg_t *pJsonMsg,
 	JSON_APPEND_CHAR(',');
 }
 
+void ShadowBuilder_AddEventLogEntry(JsonMsg_t *pJsonMsg, SensorLogEvent_t *p)
+{
+	FRAMEWORK_ASSERT(pJsonMsg != NULL);
+
+	JSON_APPEND_CHAR('[');
+	JSON_APPEND_HEX8(p->recordType);
+	JSON_APPEND_CHAR(',');
+	JSON_APPEND_U32(p->epoch);
+	JSON_APPEND_CHAR(',');
+	JSON_APPEND_HEX16(p->data);
+	JSON_APPEND_CHAR(']');
+	JSON_APPEND_CHAR(',');
+}
+
+void ShadowBuilder_AddString(JsonMsg_t *pJsonMsg, const char *restrict pKey,
+			     const char *restrict pStr)
+{
+	FRAMEWORK_ASSERT(pJsonMsg != NULL);
+	FRAMEWORK_ASSERT(pKey != NULL);
+	FRAMEWORK_ASSERT(strlen(pKey) > 0);
+	FRAMEWORK_ASSERT(pStr != NULL);
+
+	JSON_APPEND_KEY(pKey);
+	JsonAppendString(pJsonMsg, pStr, false);
+	JSON_APPEND_CHAR(',');
+}
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
 static void JsonAppendChar(JsonMsg_t *pJsonMsg, char Character)
 {
-	if ((pJsonMsg->size) < JSON_OUT_BUFFER_SIZE - 1) {
-		pJsonMsg->buffer[pJsonMsg->size++] = Character;
+	FRAMEWORK_ASSERT(pJsonMsg != NULL);
+	/* Leave room for NULL terminator */
+	if (pJsonMsg->length < (pJsonMsg->size - 1)) {
+		pJsonMsg->buffer[pJsonMsg->length++] = Character;
 	} else { /* buffer too small */
 		FRAMEWORK_ASSERT(false);
 	}
-
-	FRAMEWORK_ASSERT(pJsonMsg->size < JSON_OUT_BUFFER_SIZE);
 }
 
-static void JsonAppendString(JsonMsg_t *pJsonMsg, const char *restrict pString)
+static void JsonAppendString(JsonMsg_t *pJsonMsg, const char *restrict pString,
+			     bool EscapeQuoteChar)
 {
+	FRAMEWORK_ASSERT(pJsonMsg != NULL);
+	if (pJsonMsg == NULL) {
+		return;
+	}
+
 	size_t length = strlen(pString);
 	size_t i = 0;
-	while (i < length && (pJsonMsg->size < JSON_OUT_BUFFER_SIZE - 1)) {
+	/* Leave room for NULL terminator and an escaped char. */
+	while (i < length && (pJsonMsg->length < (pJsonMsg->size - 2))) {
 		/* Escape character handling */
 		switch (pString[i]) {
 		case '"':
+			if (EscapeQuoteChar) {
+				pJsonMsg->buffer[pJsonMsg->length++] = '\\';
+			}
+			pJsonMsg->buffer[pJsonMsg->length++] = pString[i++];
+			break;
+
 		case '\\':
-			pJsonMsg->buffer[pJsonMsg->size++] = '\\';
-			pJsonMsg->buffer[pJsonMsg->size++] = pString[i++];
+			pJsonMsg->buffer[pJsonMsg->length++] = '\\';
+			pJsonMsg->buffer[pJsonMsg->length++] = pString[i++];
 			break;
 
 		case '\b':
-			pJsonMsg->buffer[pJsonMsg->size++] = '\\';
-			pJsonMsg->buffer[pJsonMsg->size++] = 'b';
+			pJsonMsg->buffer[pJsonMsg->length++] = '\\';
+			pJsonMsg->buffer[pJsonMsg->length++] = 'b';
 			i += 1;
 			break;
 
 		case '\f':
-			pJsonMsg->buffer[pJsonMsg->size++] = '\\';
-			pJsonMsg->buffer[pJsonMsg->size++] = 'f';
+			pJsonMsg->buffer[pJsonMsg->length++] = '\\';
+			pJsonMsg->buffer[pJsonMsg->length++] = 'f';
 			i += 1;
 			break;
 
 		case '\n':
-			pJsonMsg->buffer[pJsonMsg->size++] = '\\';
-			pJsonMsg->buffer[pJsonMsg->size++] = 'n';
+			pJsonMsg->buffer[pJsonMsg->length++] = '\\';
+			pJsonMsg->buffer[pJsonMsg->length++] = 'n';
 			i += 1;
 			break;
 
 		case '\r':
-			pJsonMsg->buffer[pJsonMsg->size++] = '\\';
-			pJsonMsg->buffer[pJsonMsg->size++] = 'r';
+			pJsonMsg->buffer[pJsonMsg->length++] = '\\';
+			pJsonMsg->buffer[pJsonMsg->length++] = 'r';
 			i += 1;
 			break;
 
 		case '\t':
-			pJsonMsg->buffer[pJsonMsg->size++] = '\\';
-			pJsonMsg->buffer[pJsonMsg->size++] = 't';
+			pJsonMsg->buffer[pJsonMsg->length++] = '\\';
+			pJsonMsg->buffer[pJsonMsg->length++] = 't';
 			i += 1;
 			break;
 
 		default:
-			pJsonMsg->buffer[pJsonMsg->size++] = pString[i++];
+			pJsonMsg->buffer[pJsonMsg->length++] = pString[i++];
 			break;
 		}
 	}
-
-	FRAMEWORK_ASSERT(i == length); /* buffer too small */
-	FRAMEWORK_ASSERT(pJsonMsg->size < JSON_OUT_BUFFER_SIZE);
 }

@@ -1,6 +1,6 @@
 /**
  * @file mg100_ble.c
- * @brief BLE portion for the MG100
+ * @brief BLE portion for out of box demo
  *
  * Copyright (c) 2020 Laird Connectivity
  *
@@ -26,20 +26,22 @@ LOG_MODULE_REGISTER(mg100_ble);
 #include <bluetooth/bluetooth.h>
 #include <version.h>
 
-#include "mg100_common.h"
 #include "mg100_ble.h"
 #include "ble_cellular_service.h"
 #include "ble_sensor_service.h"
 #include "laird_utility_macros.h"
 #include "led.h"
-#include "sensor_bt510.h"
+#include "sensor_table.h"
 #include "ad_find.h"
+#include "bt_scan.h"
+#include "sensor_task.h"
+#include "mg100_common.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
 #define BT_REMOTE_DEVICE_NAME_STR "BL654 BME280 Sensor"
-#define DESCOVER_SERVICES_DELAY_SECONDS 1
+#define DISCOVER_SERVICES_DELAY_SECONDS 1
 
 enum ble_state {
 	/* Scanning for remote sensor */
@@ -78,14 +80,6 @@ struct remote_ble_sensor {
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-/* Functions for starting and stopping BLE scan */
-static void bt_scan(void);
-static void bt_stop_scan(void);
-
-/* This callback is triggered after receiving BLE adverts */
-static void adv_handler(const bt_addr_le_t *addr, s8_t rssi, u8_t type,
-			struct net_buf_simple *ad);
-
 /* This callback is triggered when notifications from remote device are received */
 static u8_t notify_func_callback(struct bt_conn *conn,
 				 struct bt_gatt_subscribe_params *params,
@@ -125,6 +119,7 @@ static u8_t find_desc(struct bt_conn *conn, struct bt_uuid_16 uuid,
 static void set_ble_state(enum ble_state state);
 
 static void discover_services_work_callback(struct k_work *work);
+static void discover_failed_handler(struct bt_conn *conn, int err);
 
 static int startAdvertising(void);
 
@@ -137,8 +132,6 @@ static const struct bt_data ad[] = {
 		      0x69, 0xa6, 0xb1, 0x4e, 0x84, 0x9e, 0x60, 0x7c, 0x78,
 		      0x43),
 };
-
-static bool scanning;
 
 static struct bt_conn *sensor_conn = NULL;
 static struct bt_conn *central_conn = NULL;
@@ -193,7 +186,7 @@ void bl654_sensor_adv_handler(const bt_addr_le_t *addr, s8_t rssi, u8_t type,
 	BLE_LOG_INF("Found BL654 Sensor");
 
 	/* Can't connect while scanning for BT510s */
-	bt_stop_scan();
+	bt_scan_stop();
 
 	/* Connect to device */
 	bt_addr_le_to_str(addr, bt_addr, sizeof(bt_addr));
@@ -239,10 +232,7 @@ void mg100_ble_initialise(const char *imei)
 		BLE_LOG_ERR("Failed to set device name (%d)", err);
 	}
 
-	err = startAdvertising();
-	if (err) {
-		BLE_LOG_ERR("Advertising failed to start (%d)", err);
-	}
+	startAdvertising();
 
 	/* Initialize the state to 'looking for device' */
 	set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
@@ -269,58 +259,16 @@ static void discover_services_work_callback(struct k_work *work)
 	set_ble_state(BT_DEMO_APP_STATE_FINDING_SERVICE);
 	int err = find_service(sensor_conn, uuid);
 	if (err) {
-		BLE_LOG_ERR("Discover failed(err %d)", err);
+		discover_failed_handler(sensor_conn, err);
 	}
 }
 
-/* Function for starting BLE scan */
-static void bt_scan(void)
+static void discover_failed_handler(struct bt_conn *conn, int err)
 {
-	if (!scanning) {
-		int err = bt_le_scan_start(BT_LE_SCAN_ACTIVE, adv_handler);
-		if (err) {
-			BLE_LOG_ERR("BLE Scan failed to start (err %d)", err);
-		} else {
-			scanning = true;
-			BLE_LOG_INF("Scanning for remote BLE devices started");
-		}
-	}
+	BLE_LOG_ERR("Discover failed (err %d)", err);
+	/* couldn't discover something, disconnect */
+	bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 }
-
-static void bt_stop_scan(void)
-{
-	scanning = false;
-	int err = bt_le_scan_stop();
-	if (err) {
-		BLE_LOG_ERR("Stop LE scan failed (err %d)", err);
-	}
-}
-
-/* This callback is triggered after receiving BLE adverts */
-static void adv_handler(const bt_addr_le_t *addr, s8_t rssi, u8_t type,
-			struct net_buf_simple *ad)
-{
-	/* Send a message so we can process ads in Sensor Task context
-	 * so that the BLE RX task isn't blocked.
-	 */
-	AdvMsg_t *pMsg = BufferPool_TryToTake(sizeof(AdvMsg_t));
-	if (pMsg == NULL) {
-		return;
-	}
-
-	pMsg->header.msgCode = FMC_ADV;
-	pMsg->header.rxId = FWK_ID_SENSOR_TASK;
-
-	pMsg->rssi = rssi;
-	pMsg->type = type;
-	pMsg->ad.len = ad->len;
-	memcpy(&pMsg->addr, addr, sizeof(bt_addr_le_t));
-	memcpy(pMsg->ad.data, ad->data, MIN(MAX_AD_SIZE, ad->len));
-	/* If the sensor task queue is full, then delete the message
-	 * because the system is too busy to process it. */
-	FRAMEWORK_MSG_TRY_TO_SEND(pMsg);
-}
-
 
 /* This callback is triggered when notifications from remote device are received */
 static u8_t notify_func_callback(struct bt_conn *conn,
@@ -328,6 +276,13 @@ static u8_t notify_func_callback(struct bt_conn *conn,
 				 const void *data, u16_t length)
 {
 	s32_t reading;
+	if (conn != sensor_conn) {
+		return BT_GATT_ITER_CONTINUE;
+	}
+
+	/* Bug 16486: Zephyr 2.x - Retest NULL notifications that occur when
+	* BL654 sensor when CONFIG_HW_STACK_PROTECTION=y, CONFIG_STACK_SENTINEL=y,
+	* and CONFIG_STACK_CANARIES=y are set. */
 	if (!data) {
 		if (params->value_handle ==
 		    remote_ble_sensor_params.temperature_subscribe_params
@@ -417,6 +372,9 @@ static u8_t find_desc(struct bt_conn *conn, struct bt_uuid_16 uuid,
 static u8_t find_char(struct bt_conn *conn, struct bt_uuid_16 n_uuid)
 {
 	u8_t err;
+	if (conn != sensor_conn) {
+		return BT_GATT_ITER_CONTINUE;
+	}
 
 	/* Update discover parameters before initiating discovery */
 	discover_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
@@ -454,6 +412,9 @@ static u8_t desc_discover_func(struct bt_conn *conn,
 			       struct bt_gatt_discover_params *params)
 {
 	u8_t err;
+	if (conn != sensor_conn) {
+		return BT_GATT_ITER_CONTINUE;
+	}
 
 	if (remote_ble_sensor_params.app_state ==
 	    BT_DEMO_APP_STATE_FINDING_TEMP_CHAR) {
@@ -478,11 +439,7 @@ static u8_t desc_discover_func(struct bt_conn *conn,
 			err = find_char(conn, uuid);
 
 			if (err) {
-				BLE_LOG_ERR("Discover failed (err %d)", err);
-
-				/* couldn't discover char, disconnect */
-				bt_conn_disconnect(
-					conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+				discover_failed_handler(conn, err);
 			} else {
 				/* everything looks good, update state to looking for humidity char */
 				set_ble_state(
@@ -512,11 +469,7 @@ static u8_t desc_discover_func(struct bt_conn *conn,
 			err = find_char(conn, uuid);
 
 			if (err) {
-				BLE_LOG_ERR("Discover failed (err %d)", err);
-
-				/* couldn't discover char, disconnect */
-				bt_conn_disconnect(
-					conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+				discover_failed_handler(conn, err);
 			} else {
 				/* everything looks good, update state to looking for pressure char */
 				set_ble_state(
@@ -554,6 +507,9 @@ static u8_t char_discover_func(struct bt_conn *conn,
 			       struct bt_gatt_discover_params *params)
 {
 	u8_t err;
+	if (conn != sensor_conn) {
+		return BT_GATT_ITER_CONTINUE;
+	}
 
 	if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_TEMPERATURE)) {
 		BLE_LOG_DBG("Found ESS Temperature characteristic");
@@ -565,9 +521,7 @@ static u8_t char_discover_func(struct bt_conn *conn,
 		memcpy(&uuid, BT_UUID_GATT_CCC, sizeof(uuid));
 		err = find_desc(conn, uuid, attr->handle + 2);
 		if (err) {
-			BLE_LOG_ERR("Discover failed (err %d)", err);
-			bt_conn_disconnect(conn,
-					   BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+			discover_failed_handler(conn, err);
 		}
 	} else if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_HUMIDITY)) {
 		BLE_LOG_DBG("Found ESS Humidity characteristic");
@@ -579,7 +533,7 @@ static u8_t char_discover_func(struct bt_conn *conn,
 		memcpy(&uuid, BT_UUID_GATT_CCC, sizeof(uuid));
 		err = find_desc(conn, uuid, attr->handle + 2);
 		if (err) {
-			BLE_LOG_ERR("Discover failed (err %d)", err);
+			discover_failed_handler(conn, err);
 		}
 	} else if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_PRESSURE)) {
 		BLE_LOG_DBG("Found ESS Pressure characteristic");
@@ -591,9 +545,7 @@ static u8_t char_discover_func(struct bt_conn *conn,
 		memcpy(&uuid, BT_UUID_GATT_CCC, sizeof(uuid));
 		err = find_desc(conn, uuid, attr->handle + 2);
 		if (err) {
-			BLE_LOG_ERR("Discover failed (err %d)", err);
-			bt_conn_disconnect(conn,
-					   BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+			discover_failed_handler(conn, err);
 		}
 	}
 
@@ -606,6 +558,9 @@ static u8_t service_discover_func(struct bt_conn *conn,
 				  struct bt_gatt_discover_params *params)
 {
 	int err;
+	if (conn != sensor_conn) {
+		return BT_GATT_ITER_CONTINUE;
+	}
 
 	if (!attr) {
 		BLE_LOG_DBG("Discover complete");
@@ -622,11 +577,7 @@ static u8_t service_discover_func(struct bt_conn *conn,
 		memcpy(&uuid, BT_UUID_TEMPERATURE, sizeof(uuid));
 		err = find_char(conn, uuid);
 		if (err) {
-			BLE_LOG_ERR("Discover failed (err %d)", err);
-
-			/* couldn't discover char, disconnect */
-			bt_conn_disconnect(conn,
-					   BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+			discover_failed_handler(conn, err);
 		} else {
 			/* Looking for temperature char, update state */
 			set_ble_state(BT_DEMO_APP_STATE_FINDING_TEMP_CHAR);
@@ -638,8 +589,12 @@ static u8_t service_discover_func(struct bt_conn *conn,
 
 static int startAdvertising(void)
 {
-	return bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL,
-			       0);
+	int err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL,
+				  0);
+	if (err) {
+		BLE_LOG_ERR("Advertising failed to start (%d)", err);
+	}
+	return err;
 }
 
 /* This callback is triggered when a BLE connection occurs */
@@ -648,6 +603,11 @@ static void connected(struct bt_conn *conn, u8_t err)
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	/* Bug 16488: Zephyr 2.x - If possible, remove this coupling. */
+	if (conn == SensorTask_GetConn()) {
+		return;
+	}
 
 	if (err) {
 		goto fail;
@@ -664,32 +624,28 @@ static void connected(struct bt_conn *conn, u8_t err)
 		* notifications when we discover characteristics */
 		k_delayed_work_submit(
 			&discover_services_work,
-			K_SECONDS(DESCOVER_SERVICES_DELAY_SECONDS));
+			K_SECONDS(DISCOVER_SERVICES_DELAY_SECONDS));
 	} else {
 		/* In this case a central device connected to us */
 		BLE_LOG_INF("Connected central: %s", log_strdup(addr));
 		central_conn = bt_conn_ref(conn);
 		/* stop advertising so another central cannot connect */
 		bt_le_adv_stop();
-#ifdef CONFIG_BT_SMP
-		if (bt_conn_security(conn, BT_SECURITY_MEDIUM)) {
-			BLE_LOG_ERR("Failed to set security (%d)", rc);
-		}
-#endif /* CONFIG_BT_SMP */
 	}
 
 	return;
 fail:
-	bt_conn_unref(conn);
 	if (conn == sensor_conn) {
 		BLE_LOG_ERR("Failed to connect to sensor %s (%u)",
 			    log_strdup(addr), err);
+		bt_conn_unref(conn);
 		sensor_conn = NULL;
 		/* Set state to searching */
 		set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
 	} else {
 		BLE_LOG_ERR("Failed to connect to central %s (%u)",
 			    log_strdup(addr), err);
+		bt_conn_unref(conn);
 		central_conn = NULL;
 	}
 
@@ -699,27 +655,24 @@ fail:
 /* This callback is triggered when a BLE disconnection occurs */
 static void disconnected(struct bt_conn *conn, u8_t reason)
 {
-	int rc;
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-	bt_conn_unref(conn);
 	if (conn == sensor_conn) {
 		BLE_LOG_INF("Disconnected sensor: %s (reason %u)",
 			    log_strdup(addr), reason);
 
+		bt_conn_unref(conn);
 		sensor_conn = NULL;
 
 		/* Set state to searching */
 		set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
-	} else {
+	} else if (conn == central_conn) {
 		BLE_LOG_INF("Disconnected central: %s (reason %u)",
 			    log_strdup(addr), reason);
-		rc = startAdvertising();
-		if (rc != 0) {
-			BLE_LOG_ERR("Could not start advertising (%d)", rc);
-		}
+		startAdvertising();
+		bt_conn_unref(conn);
 		central_conn = NULL;
 	}
 }
@@ -752,13 +705,13 @@ static void set_ble_state(enum ble_state state)
 	case BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED:
 		led_turn_on(BLUE_LED1);
 		/* BL654 Sensor was found, now continue listening for BT510 */
-		bt_scan();
+		bt_scan_resume();
 		break;
 
 	case BT_DEMO_APP_STATE_FINDING_DEVICE:
 		led_blink(BLUE_LED1, &LED_SENSOR_SEARCH_PATTERN);
 		bss_set_sensor_bt_addr(NULL);
-		bt_scan();
+		bt_scan_start();
 		break;
 
 	default:

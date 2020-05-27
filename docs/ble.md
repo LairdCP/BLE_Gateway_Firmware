@@ -107,19 +107,19 @@ Characteristics:
 ### UUID: 6d4a06b0-9641-11ea-ab12-0800200c9a66
 
 Characteristics:
-| Name                 | UUID                                 | Properties | Description                                                                                                                                                      |
-| ----------------------- | ------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Battery Voltage         | 6d4a06b1-9641-11ea-ab12-0800200c9a66 | notify      | unsigned 16-bit value representing the voltage in millivolts
-| Battery Capacity        | 6d4a06b2-9641-11ea-ab12-0800200c9a66 | read/notify | unsigned 8-bit value representing the remaining battery capacity (0 - 4).       |
-| Charging State          | 6d4a06b3-9641-11ea-ab12-0800200c9a66 | read/notify | 8-bit bit field representing the charging state. Bit 0 = External Power State, Bit 1 = The battery is charging, Bit 2 = The battery is not charging, Bit 3 The battery is discharging.   |
-| Battery Low Threshold   | 6d4a06b4-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the low battery threshold in millivolts.  |
-| Battery Alarm Threshold | 6d4a06b5-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the low battery threshold in millivolts.  |
-| Battery Threshold 4     | 6d4a06b6-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the highest threshold in millivolts for a 4-segment charging meter.       |
-| Battery Threshold 3     | 6d4a06b7-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.       |
-| Battery Threshold 2     | 6d4a06b8-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.       |
-| Battery Threshold 1     | 6d4a06b9-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.       |
-| Battery Threshold 0     | 6d4a06ba-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the lowest threshold in millivolts for a 4-segment charging meter.  |
-| Battery Low Alarm       | 6d4a06bb-9641-11ea-ab12-0800200c9a66 | notify      | unsigned 8-bit value indicating the low battery alarm state. 0 = no alarm, 1 = alarm.       |
+| Name                    | UUID                                 | Properties  | Description                                                                                                                                                                            |
+| ----------------------- | ------------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Battery Voltage         | 6d4a06b1-9641-11ea-ab12-0800200c9a66 | notify      | unsigned 16-bit value representing the voltage in millivolts                                                                                                                           |
+| Battery Capacity        | 6d4a06b2-9641-11ea-ab12-0800200c9a66 | read/notify | unsigned 8-bit value representing the remaining battery capacity (0 - 4).                                                                                                              |
+| Charging State          | 6d4a06b3-9641-11ea-ab12-0800200c9a66 | read/notify | 8-bit bit field representing the charging state. Bit 0 = External Power State, Bit 1 = The battery is charging, Bit 2 = The battery is not charging, Bit 3 The battery is discharging. |
+| Battery Low Threshold   | 6d4a06b4-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the low battery threshold in millivolts.                                                                                                            |
+| Battery Alarm Threshold | 6d4a06b5-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the low battery threshold in millivolts.                                                                                                            |
+| Battery Threshold 4     | 6d4a06b6-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the highest threshold in millivolts for a 4-segment charging meter.                                                                                 |
+| Battery Threshold 3     | 6d4a06b7-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.                                                                                           |
+| Battery Threshold 2     | 6d4a06b8-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.                                                                                           |
+| Battery Threshold 1     | 6d4a06b9-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing a threshold in millivolts for a 4-segment charging meter.                                                                                           |
+| Battery Threshold 0     | 6d4a06ba-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the lowest threshold in millivolts for a 4-segment charging meter.                                                                                  |
+| Battery Low Alarm       | 6d4a06bb-9641-11ea-ab12-0800200c9a66 | notify      | unsigned 8-bit value indicating the low battery alarm state. 0 = no alarm, 1 = alarm.                                                                                                  |
 
 ## Sensor Profile
 

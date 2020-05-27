@@ -1,6 +1,6 @@
 /**
  * @file mg100_ble.h
- * @brief Out-of-Box Demo BLE API
+ * @brief MG100 BLE API
  *
  * Copyright (c) 2020 Laird Connectivity
  *

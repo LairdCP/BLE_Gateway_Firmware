@@ -1,6 +1,6 @@
 /**
  * @file mg100_common.h
- * @brief Configuration and utility functions for the Out-of-Box demo.
+ * @brief Configuration and utility functions for the MG100.
  *
  * Copyright (c) 2020 Laird Connectivity
  *

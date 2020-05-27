@@ -1,6 +1,6 @@
 /**
  * @file mg100_ble.c
- * @brief BLE portion for out of box demo
+ * @brief BLE portion for the MG100
  *
  * Copyright (c) 2020 Laird Connectivity
  *

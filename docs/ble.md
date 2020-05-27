@@ -107,6 +107,7 @@ Characteristics:
 ### UUID: 6d4a06b0-9641-11ea-ab12-0800200c9a66
 
 Characteristics:
+
 | Name                    | UUID                                 | Properties  | Description                                                                                                                                                                            |
 | ----------------------- | ------------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Battery Voltage         | 6d4a06b1-9641-11ea-ab12-0800200c9a66 | notify      | unsigned 16-bit value representing the voltage in millivolts                                                                                                                           |

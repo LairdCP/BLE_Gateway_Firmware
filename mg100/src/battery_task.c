@@ -43,7 +43,7 @@ LOG_MODULE_REGISTER(battery_task);
 #define BATTERY_VOLT_OFFSET 150
 #define BASE_TEMP 20
 
-#define BATTERY_NUM_READINGS 5
+#define BATTERY_NUM_READINGS 50
 
 /* values used to indicate the charger state */
 #define BATTERY_EXT_POWER_STATE		BIT(0)
@@ -222,6 +222,7 @@ u16_t BatteryGetThresholds(enum battery_thresh_idx Thresh)
 u16_t BatteryCalculateRunningAvg(u16_t Voltage)
 {
 	u32_t total = 0;
+	u16_t ret = 0;
 	u8_t idx = 0;
 
 	/* store the latest voltage reading */
@@ -250,7 +251,12 @@ u16_t BatteryCalculateRunningAvg(u16_t Voltage)
 		}
 	}
 
-	return ( total / idx );
+	if (idx != 0)
+	{
+		ret = total / idx;
+	}
+
+	return (ret);
 }
 
 static int ReadTempSensor()

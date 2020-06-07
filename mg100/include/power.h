@@ -27,7 +27,7 @@ extern "C" {
 #define MEASURE_ENABLE_PIN 10
 
 /* Measurement time between readings */
-#define POWER_TIMER_PERIOD K_MSEC(15000)
+#define POWER_TIMER_PERIOD K_MSEC(3000)
 
 /* Reboot types */
 #define REBOOT_TYPE_NORMAL 0

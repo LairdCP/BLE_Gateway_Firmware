@@ -591,9 +591,7 @@ static int startAdvertising(void)
 {
 	int err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL,
 				  0);
-	if (err) {
-		BLE_LOG_ERR("Advertising failed to start (%d)", err);
-	}
+	BLE_LOG_DBG("status (%d)", err);
 	return err;
 }
 
@@ -671,9 +669,9 @@ static void disconnected(struct bt_conn *conn, u8_t reason)
 	} else if (conn == central_conn) {
 		BLE_LOG_INF("Disconnected central: %s (reason %u)",
 			    log_strdup(addr), reason);
-		startAdvertising();
 		bt_conn_unref(conn);
 		central_conn = NULL;
+		startAdvertising();
 	}
 }
 

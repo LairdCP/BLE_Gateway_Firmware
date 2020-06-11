@@ -21,6 +21,9 @@ LOG_MODULE_REGISTER(battery_task);
 #include "ble_battery_service.h"
 #include "nv.h"
 #include "power.h"
+#ifdef CONFIG_BATTERY_LOGGING
+# include "sdcard_log.h"
+#endif
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -63,6 +66,7 @@ LOG_MODULE_REGISTER(battery_task);
 
 #define INVALID_TEMPERATURE		-127
 
+#define MAX_LOG_STR_SIZE		30
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
@@ -95,6 +99,9 @@ static enum battery_status CalculateRemainingCapacity(s16_t Voltage);
 static s16_t DetermineTempOffset(s32_t Temperature);
 static void ChgStateHandler(struct k_work *Item);
 static void BatteryGpioInit();
+#ifdef CONFIG_BATTERY_LOGGING
+static void BatteryLogData(s16_t voltage, s32_t temp);
+#endif
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -301,6 +308,9 @@ enum battery_status BatteryCalculateRemainingCapacity(u16_t Volts)
 	{
 		Temperature = BASE_TEMP;
 	}
+#ifdef CONFIG_BATTERY_LOGGING
+	BatteryLogData(Voltage, Temperature);
+#endif
 
 	/* adjust the voltage based on the ambient temperature */
 	vOffset = DetermineTempOffset(Temperature);
@@ -335,6 +345,21 @@ enum battery_status BatteryCalculateRemainingCapacity(u16_t Volts)
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
+#ifdef CONFIG_BATTERY_LOGGING
+static void BatteryLogData(s16_t voltage, s32_t temp)
+{
+	char * logStr = k_malloc(MAX_LOG_STR_SIZE);
+	logStr = k_malloc(MAX_LOG_STR_SIZE);
+	snprintk(logStr, MAX_LOG_STR_SIZE, "%d,%d", voltage, temp);
+	if (logStr > 0)
+	{
+		sdCardLogBatteryData(logStr, strlen(logStr));
+		k_free(logStr);
+		logStr = 0;
+	}
+}
+#endif
+
 static void BatteryChgStateChanged(struct device *Dev,
 			   struct gpio_callback *Cb, u32_t Pins)
 {

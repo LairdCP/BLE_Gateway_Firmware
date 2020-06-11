@@ -47,6 +47,7 @@ LOG_MODULE_REGISTER(mg100_main);
 #include "sensor_task.h"
 #include "sensor_table.h"
 #include "laird_utility_macros.h"
+#include "sdcard_log.h"
 
 #ifdef CONFIG_LWM2M
 #include "lwm2m_client.h"
@@ -148,6 +149,8 @@ void main(void)
 		MAIN_LOG_ERR("NV init (%d)", rc);
 		goto exit;
 	}
+
+	sdCardLogInit();
 
 	nvReadCommissioned(&commissioned);
 
@@ -301,6 +304,7 @@ static void sensorUpdated(u8_t sensor, s32_t reading)
 		pMsg->temperatureC = temperatureReading;
 		pMsg->humidityPercent = humidityReading;
 		pMsg->pressurePa = pressureReading;
+		sdCardLogBL654Data(pMsg);
 		FRAMEWORK_MSG_SEND(pMsg);
 		bUpdatedTemperature = false;
 		bUpdatedHumidity = false;

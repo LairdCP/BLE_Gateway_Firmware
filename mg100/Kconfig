@@ -106,6 +106,9 @@ config DNS_RETRY_DELAY_SECONDS
     int "Number of seconds to wait between resolution attempts"
     default 5
 
+config BATTERY_LOGGING
+    bool "Enable battery voltage logging"
+
 menu "Laird Connectivity LWM2M Demo Options"
      depends on LWM2M
 

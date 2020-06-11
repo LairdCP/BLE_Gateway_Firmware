@@ -32,6 +32,7 @@ LOG_MODULE_REGISTER(sensor_table);
 #include "sensor_log.h"
 #include "bt510_flags.h"
 #include "lte.h"
+#include "sdcard_log.h"
 #include "sensor_table.h"
 
 /******************************************************************************/
@@ -593,6 +594,8 @@ static void AdEventHandler(AdHandle_t *pHandle, s8_t Rssi, u32_t Index)
 		ShadowMaker(&sensorTable[Index]);
 		/* The cloud uses the RX epoch (in the table) for filtering. */
 		gatewayShadowUpdateRequests += 1;
+
+		sdCardLogAdEvent(p);
 	}
 }
 

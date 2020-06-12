@@ -130,7 +130,7 @@ void motion_svc_init()
 	bms.motion_alarm_index = lbt_find_gatt_index(&MOTION_ALARM_UUID.uuid, motion_attrs,
 						gatt_size);
 
-   	k_timer_init(&motion_timer, motion_timer_callback, NULL);
+	k_timer_init(&motion_timer, motion_timer_callback, NULL);
 
 	sVal.val1 = MOTION_DEFAULT_THS;
 	sVal.val2 = 0;

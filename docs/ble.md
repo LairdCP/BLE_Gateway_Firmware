@@ -133,6 +133,16 @@ Characteristics:
 | Sensor State             | ab010001-5bab-471a-9074-a0ae3937c70c | read/notify | One Byte. BME280 Sensor State: 0 - Finding device, 1 - Finding service, 2 - Finding Temperature Characteristic, 3 - Finding Humidity Characteristic, 4 - Finding pressure characteristic, 5 - Connected and Configured |
 | Sensor Bluetooth Address | ab010002-5bab-471a-9074-a0ae3937c70c | read/notify | String representation of address of connected BME280 sensor.                                                                                                                                                           |
 
+## Motion Profile
+
+### UUID: adce0a30-ac1a-11ea-8b6e-0800200c9a66
+
+Characteristics:
+
+| Name                     | UUID                                 | Properties  | Description                                                                                  |
+| ------------------------ | ------------------------------------ | ----------- | -------------------------------------------------------------------------------------------- |
+| Motion Alarm             | adce0a31-ac1a-11ea-8b6e-0800200c9a66 | notify      | One Byte. Motion State: 1 - Motion, 0 - No Motion                                            |
+
 ## LwM2M Client Configuration Profile
 
 This service is only available for the LwM2M example.

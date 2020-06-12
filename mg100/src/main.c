@@ -199,6 +199,10 @@ void main(void)
 	power_init();
 	BatteryInit();
 
+	motion_svc_init();
+	motion_svc_assign_connection_handler_getter(
+		mg100_ble_get_central_connection);
+
 	bootloader_init();
 
 	rc = aws_svc_init(lteInfo->IMEI);

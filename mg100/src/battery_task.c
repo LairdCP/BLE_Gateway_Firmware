@@ -349,13 +349,16 @@ enum battery_status BatteryCalculateRemainingCapacity(u16_t Volts)
 static void BatteryLogData(s16_t voltage, s32_t temp)
 {
 	char * logStr = k_malloc(MAX_LOG_STR_SIZE);
-	logStr = k_malloc(MAX_LOG_STR_SIZE);
-	snprintk(logStr, MAX_LOG_STR_SIZE, "%d,%d", voltage, temp);
 	if (logStr > 0)
 	{
+		snprintk(logStr, MAX_LOG_STR_SIZE, "%d,%d", voltage, temp);
 		sdCardLogBatteryData(logStr, strlen(logStr));
 		k_free(logStr);
 		logStr = 0;
+	}
+	else
+	{
+		LOG_ERR("Malloc failed in BatteryLogData. ret = %d", (u32_t)logStr);
 	}
 }
 #endif

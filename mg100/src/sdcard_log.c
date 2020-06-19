@@ -19,6 +19,7 @@ LOG_MODULE_REGISTER(sdcard_log);
 #include <gpio.h>
 #include <ff.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "FrameworkIncludes.h"
 #include "sdcard_log.h"
@@ -68,6 +69,8 @@ static struct fs_file_t bl654LogFileZfp;
 static int bl654LogSeekOffset = 0;
 static int bl654LogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH;
 static bool bl654LogFileOpened = false;
+
+K_MUTEX_DEFINE(sdcardLogMutex);
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -140,6 +143,7 @@ int sdCardLogBL654Data(BL654SensorMsg_t * msg)
 
 	if (sdCardPresent)
 	{
+		k_mutex_lock(&sdcardLogMutex, K_FOREVER);
 		/* if this is the first open, we want to
 		*	be sure to append to the end rather than overwrite from
 		*	the beginning.
@@ -183,6 +187,7 @@ int sdCardLogBL654Data(BL654SensorMsg_t * msg)
 			/* close the file (this also flushes data to the physical media) */
 			ret = fs_close(&bl654LogFileZfp);
 		}
+		k_mutex_unlock(&sdcardLogMutex);
 	}
 
 	return ret;
@@ -197,6 +202,7 @@ int sdCardLogAdEvent(Bt510AdEvent_t * event)
 
 	if (sdCardPresent)
 	{
+		k_mutex_lock(&sdcardLogMutex, K_FOREVER);
 		/* if this is the first open, we want to
 		*	be sure to append to the end rather than overwrite from
 		*	the beginning.
@@ -241,6 +247,7 @@ int sdCardLogAdEvent(Bt510AdEvent_t * event)
 			/* close the file (this also flushes data to the physical media) */
 			ret = fs_close(&sensorLogFileZfp);
 		}
+		k_mutex_unlock(&sdcardLogMutex);
 	}
 
 	return ret;
@@ -255,6 +262,7 @@ int sdCardLogBatteryData(void * data, int length)
 
 	if (sdCardPresent)
 	{
+		k_mutex_lock(&sdcardLogMutex, K_FOREVER);
 		/* if this is the first open, we want to
 		*	be sure to append to the end rather than overwrite from
 		*	the beginning.
@@ -294,9 +302,14 @@ int sdCardLogBatteryData(void * data, int length)
 				k_free(logData);
 				logData = 0;
 			}
+			else
+			{
+				LOG_ERR("Malloc failed in sdCardLogBatteryData. ret = %d", (u32_t)logData);
+			}
 			/* close the file (this also flushes) */
 			ret = fs_close(&batteryLogZfp);
 		}
+		k_mutex_unlock(&sdcardLogMutex);
 	}
 
 	return ret;

@@ -18,7 +18,6 @@ LOG_MODULE_REGISTER(ble_lwm2m_service);
 #include <bluetooth/gatt.h>
 #include <bluetooth/bluetooth.h>
 
-#include "mg100_common.h"
 #include "laird_bluetooth.h"
 #include "nv.h"
 #include "ble_lwm2m_service.h"
@@ -38,7 +37,7 @@ static struct bt_uuid_128 LWM2M_CLIENT_ID_UUID = BSS_BASE_UUID_128(0x0003);
 static struct bt_uuid_128 LWM2M_PEER_URL_UUID = BSS_BASE_UUID_128(0x0004);
 
 struct lwm2m_config {
-	u8_t client_psk[CONFIG_LWM2M_PSK_SIZE];
+	uint8_t client_psk[CONFIG_LWM2M_PSK_SIZE];
 	char client_id[CONFIG_LWM2M_CLIENT_ID_MAX_SIZE];
 	char peer_url[CONFIG_LWM2M_PEER_URL_MAX_SIZE];
 };
@@ -61,26 +60,26 @@ static struct lwm2m_config lwm2m;
 /******************************************************************************/
 static ssize_t generate_psk(struct bt_conn *conn,
 			    const struct bt_gatt_attr *attr, const void *buf,
-			    u16_t len, u16_t offset, u8_t flags);
+			    uint16_t len, uint16_t offset, uint8_t flags);
 
 static ssize_t write_client_id(struct bt_conn *conn,
 			       const struct bt_gatt_attr *attr, const void *buf,
-			       u16_t len, u16_t offset, u8_t flags);
+			       uint16_t len, uint16_t offset, uint8_t flags);
 
 static ssize_t write_peer_url(struct bt_conn *conn,
 			      const struct bt_gatt_attr *attr, const void *buf,
-			      u16_t len, u16_t offset, u8_t flags);
+			      uint16_t len, uint16_t offset, uint8_t flags);
 
 static ssize_t read_psk(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			void *buf, u16_t len, u16_t offset);
+			void *buf, uint16_t len, uint16_t offset);
 
 static ssize_t read_client_id(struct bt_conn *conn,
 			      const struct bt_gatt_attr *attr, void *buf,
-			      u16_t len, u16_t offset);
+			      uint16_t len, uint16_t offset);
 
 static ssize_t read_peer_url(struct bt_conn *conn,
 			     const struct bt_gatt_attr *attr, void *buf,
-			     u16_t len, u16_t offset);
+			     uint16_t len, uint16_t offset);
 
 /******************************************************************************/
 /* Sensor Service                                                             */
@@ -115,7 +114,7 @@ void ble_lwm2m_service_init()
 	bt_gatt_service_register(&lwm2m_service);
 }
 
-u8_t *ble_lwm2m_get_client_psk(void)
+uint8_t *ble_lwm2m_get_client_psk(void)
 {
 	return lwm2m.client_psk;
 }
@@ -135,21 +134,22 @@ char *ble_lwm2m_get_peer_url(void)
 /******************************************************************************/
 static ssize_t generate_psk(struct bt_conn *conn,
 			    const struct bt_gatt_attr *attr, const void *buf,
-			    u16_t len, u16_t offset, u8_t flags)
+			    uint16_t len, uint16_t offset, uint8_t flags)
 {
-#if CONFIG_L2M2M_ENABLE_PSK_GENERATION
-	u8_t value = *((u8_t *)buf);
+#if CONFIG_LWM2M_ENABLE_PSK_GENERATION
+	uint8_t value = *((uint8_t *)buf);
 	if (value) {
 		LOG_WRN("Generating a new LwM2M PSK");
 		size_t i;
 		for (i = 0; i < CONFIG_LWM2M_PSK_SIZE; i++) {
-			lwm2m.client_psk[i] = (u8_t)sys_rand32_get();
+			lwm2m.client_psk[i] = (uint8_t)sys_rand32_get();
 		}
 	} else {
 		LOG_WRN("Setting LwM2M config to defaults");
 		memcpy(&lwm2m, &DEFAULT_CONFIG, sizeof(lwm2m));
-		LOG_DBG("LwM2M Client Identity: %s", lwm2m.client_id);
-		LOG_DBG("LwM2M Peer URL: %s", lwm2m.peer_url);
+		LOG_DBG("LwM2M Client Identity: %s",
+			log_strdup(lwm2m.client_id));
+		LOG_DBG("LwM2M Peer URL: %s", log_strdup(lwm2m.peer_url));
 	}
 	nvWriteLwm2mConfig(&lwm2m, sizeof(lwm2m));
 	LOG_HEXDUMP_DBG(lwm2m.client_psk, CONFIG_LWM2M_PSK_SIZE,
@@ -162,32 +162,33 @@ static ssize_t generate_psk(struct bt_conn *conn,
 
 static ssize_t write_client_id(struct bt_conn *conn,
 			       const struct bt_gatt_attr *attr, const void *buf,
-			       u16_t len, u16_t offset, u8_t flags)
+			       uint16_t len, uint16_t offset, uint8_t flags)
 {
 	ssize_t length = lbt_write_string(conn, attr, buf, len, offset, flags,
 					  CONFIG_LWM2M_CLIENT_ID_MAX_SIZE);
 	if (length > 0) {
 		nvWriteLwm2mConfig(&lwm2m, sizeof(lwm2m));
-		LOG_DBG("LwM2M Client Identity: %s", lwm2m.client_id);
+		LOG_DBG("LwM2M Client Identity: %s",
+			log_strdup(lwm2m.client_id));
 	}
 	return length;
 }
 
 static ssize_t write_peer_url(struct bt_conn *conn,
 			      const struct bt_gatt_attr *attr, const void *buf,
-			      u16_t len, u16_t offset, u8_t flags)
+			      uint16_t len, uint16_t offset, uint8_t flags)
 {
 	ssize_t length = lbt_write_string(conn, attr, buf, len, offset, flags,
 					  CONFIG_LWM2M_PEER_URL_MAX_SIZE);
 	if (length > 0) {
 		nvWriteLwm2mConfig(&lwm2m, sizeof(lwm2m));
-		LOG_DBG("LwM2M Peer URL: %s", lwm2m.peer_url);
+		LOG_DBG("LwM2M Peer URL: %s", log_strdup(lwm2m.peer_url));
 	}
 	return length;
 }
 
 static ssize_t read_psk(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			void *buf, u16_t len, u16_t offset)
+			void *buf, uint16_t len, uint16_t offset)
 {
 	const char *value = attr->user_data;
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, value,
@@ -196,7 +197,7 @@ static ssize_t read_psk(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 
 static ssize_t read_client_id(struct bt_conn *conn,
 			      const struct bt_gatt_attr *attr, void *buf,
-			      u16_t len, u16_t offset)
+			      uint16_t len, uint16_t offset)
 {
 	return lbt_read_string(conn, attr, buf, len, offset,
 			       CONFIG_LWM2M_CLIENT_ID_MAX_SIZE - 1);
@@ -204,7 +205,7 @@ static ssize_t read_client_id(struct bt_conn *conn,
 
 static ssize_t read_peer_url(struct bt_conn *conn,
 			     const struct bt_gatt_attr *attr, void *buf,
-			     u16_t len, u16_t offset)
+			     uint16_t len, uint16_t offset)
 {
 	return lbt_read_string(conn, attr, buf, len, offset,
 			       CONFIG_LWM2M_PEER_URL_MAX_SIZE - 1);

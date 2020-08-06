@@ -14,29 +14,9 @@
     {
       "label": "build",
       "type": "shell",
-      // Linux based command is not tested
-      "command": "west build -b mg100 -d build mg100",
+      "command": "west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100",
       "windows": {
-        "command": "west build -b mg100 -d ${workspaceRoot}\\build ${workspaceRoot}\\mg100"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "re-build",
-      "type": "shell",
-      // Linux based command is not tested
-      "command": "west build -p -b mg100 -d build mg100",
-      "windows": {
-        "command": "west build -p -b mg100 -d ${workspaceRoot}\\build ${workspaceRoot}\\mg100"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "build-lwm2m",
-      "type": "shell",
-      "command": "west build -b mg100 -d build mg100 -DCONF_FILE=prj.conf;overlay_lwm2m_dtls.conf",
-      "windows": {
-        "command": "west build -b mg100 -d ${workspaceRoot}\\build ${workspaceRoot}\\mg100 -- -DCONF_FILE=${workspaceRoot}\\mg100\\prj.conf;${workspaceRoot}\\mg100\\overlay_lwm2m_dtls.conf"
+        "command": "west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100"
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -44,34 +24,281 @@
       }
     },
     {
-      "label": "flash application",
+      "label": "re-build",
       "type": "shell",
-      // Linux based command is not tested
-      "command": "west flash -d build && nrfjprog -f NRF52 --reset",
+      "command": "west build -p -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100",
       "windows": {
-        "command": "west flash -d ${workspaceRoot}\\build && nrfjprog -f NRF52 --reset"
+        "command": "west build -p -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100"
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
+      "label": "flash app",
+      "type": "shell",
+      "command": "west flash -d ${workspaceRoot}/build/${input:app}",
+      "windows": {
+        "command": "west flash -d ${workspaceRoot}\\build\\${input:app}"
       },
       "problemMatcher": []
     },
     {
-      "label": "clean",
+      "label": "clean app",
       "type": "shell",
-      // Linux based command is not tested
-      "command": "west build -t clean -d build",
+      "command": "west build -t clean -d ${workspaceRoot}/build/${input:app}",
       "windows": {
-        "command": "west build -t clean -d ${workspaceRoot}\\build"
+        "command": "west build -t clean -d ${workspaceRoot}\\build\\${input:app}"
       },
       "problemMatcher": []
     },
     {
-      "label": "pristine",
+      "label": "pristine app",
       "type": "shell",
-      // Linux based command is not tested
-      "command": "west build -t pristine -d build",
+      "command": "west build -t pristine -d ${workspaceRoot}/build/${input:app}",
       "windows": {
-        "command": "west build -t pristine -d ${workspaceRoot}\\build"
+        "command": "west build -t pristine -d ${workspaceRoot}\\build\\${input:app}"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "menuconfig",
+      "type": "shell",
+      "command": "west build -t menuconfig -d ${workspaceRoot}/build/${input:app} ${workspaceRoot}/mg100",
+      "windows": {
+        "command": "west build -t menuconfig -d ${workspaceRoot}\\build\\${input:app} ${workspaceRoot}\\mg100"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "build lwm2m",
+      "type": "shell",
+      "command": "west build -b mg100 -d ${workspaceRoot}/build/mg100_lwm2m ${workspaceRoot}/mg100 -- -DCONF_FILE=\"${config:app_lwm2m_config_unix}\"",
+      "windows": {
+        "command": "west build -b mg100 -d ${workspaceRoot}\\build\\mg100_lwm2m ${workspaceRoot}\\mg100 -- -DCONF_FILE=\"${config:app_lwm2m_config_windows}\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
+      "label": "app ram_report",
+      "type": "shell",
+      "command": "west build -d ${workspaceRoot}/build/${input:app} ${workspaceRoot}/mg100 --target ram_report > ${workspaceRoot}/build/${input:app}/ram_report",
+      "windows": {
+        "command": "west build -d ${workspaceRoot}\\build\\${input:app} ${workspaceRoot}\\mg100 --target ram_report > ${workspaceRoot}\\build\\${input:app}\\ram_report"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "app rom_report",
+      "type": "shell",
+      "command": "west build -d ${workspaceRoot}/build/${input:app} ${workspaceRoot}/mg100 --target rom_report > ${workspaceRoot}/build/${input:app}/rom_report",
+      "windows": {
+        "command": "west build -d ${workspaceRoot}\\build\\${input:app} ${workspaceRoot}\\mg100 --target rom_report > ${workspaceRoot}\\build\\${input:app}\\rom_report"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "build with mcumgr",
+      "type": "shell",
+      "command": "west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100 -- -DCONF_FILE=\"${config:app_aws_config_unix} ${config:app_mcumgr_config_unix}\"",
+      "windows": {
+        "command": "west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100 -- -DCONF_FILE=\"${config:app_aws_config_windows} ${config:app_mcumgr_config_windows}\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
+      "label": "build with mcumgr serial",
+      "type": "shell",
+      "command": "west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100 -- -DCONF_FILE=\"${config:app_aws_config_unix} ${config:app_mcumgr_serial_config_unix}\"",
+      "windows": {
+        "command": "west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100 -- -DCONF_FILE=\"${config:app_aws_config_windows} ${config:app_mcumgr_serial_config_windows}\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
+      "label": "build for mcuboot",
+      "type": "shell",
+      "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100 -- -DCONF_FILE=\"${config:app_aws_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\"",
+      "windows": {
+        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100 -- -DCONF_FILE=\"${config:app_aws_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
+      "label": "build lwm2m for mcuboot",
+      "type": "shell",
+      "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_lwm2m ${workspaceRoot}/mg100 -- -DCONF_FILE=\"${config:app_lwm2m_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\"",
+      "windows": {
+        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_lwm2m ${workspaceRoot}\\mg100 -- -DCONF_FILE=\"${config:app_lwm2m_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
+      "label": "build mcuboot",
+      "type": "shell",
+      "command": "west build -b mg100 -d ${workspaceRoot}/build/mcuboot ${workspaceRoot}/../bootloader/mcuboot/boot/zephyr -- -DCONF_FILE=\"${config:mcuboot_config_unix}\"",
+      "windows": {
+        "command": "west build -b mg100 -d ${workspaceRoot}\\build\\mcuboot ${workspaceRoot}\\..\\bootloader\\mcuboot\\boot\\zephyr -- -DCONF_FILE=\"${config:mcuboot_config_windows}\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
+      "label": "flash mcuboot",
+      "type": "shell",
+      "command": "west flash -d ${workspaceRoot}/build/mcuboot",
+      "windows": {
+        "command": "west flash -d ${workspaceRoot}\\build\\mcuboot"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "sign app",
+      "type": "shell",
+      "command": "west sign -t imgtool -d ${workspaceRoot}/build/${input:app} -- --key ${workspaceRoot}/../bootloader/mcuboot/root-rsa-2048.pem --version ${input:app_ver}",
+      "windows": {
+        "command": "west sign -t imgtool -d ${workspaceRoot}\\build\\${input:app} -- --key ${workspaceRoot}\\..\\bootloader\\mcuboot\\root-rsa-2048.pem --version ${input:app_ver}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "create app image",
+      "type": "shell",
+      "command": "west sign -t imgtool -d ${workspaceRoot}/build/${input:app} -- --version ${input:app_ver}",
+      "windows": {
+        "command": "west sign -t imgtool -d ${workspaceRoot}\\build\\${input:app} -- --version ${input:app_ver}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "flash signed app",
+      "type": "shell",
+      "command": "west flash --skip-rebuild -d ${workspaceRoot}/build/${input:app} --hex-file ${workspaceRoot}/build/${input:app}/zephyr/zephyr.signed.hex",
+      "windows": {
+        "command": "west flash --skip-rebuild -d ${workspaceRoot}\\build\\${input:app} --hex-file ${workspaceRoot}\\build\\${input:app}\\zephyr\\zephyr.signed.hex"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "aws - build sign flash",
+      "type": "shell",
+      "dependsOrder": "sequence",
+      "dependsOn": ["build for mcuboot", "sign app", "flash signed app"],
+      "problemMatcher": []
+    },
+    {
+      "label": "aws - build flash",
+      "type": "shell",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "build for mcuboot",
+        "create app image",
+        "flash signed app"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lwm2m - build sign flash",
+      "type": "shell",
+      "dependsOrder": "sequence",
+      "dependsOn": ["build lwm2m for mcuboot", "sign app", "flash signed app"],
+      "problemMatcher": []
+    },
+    {
+      "label": "lwm2m - build flash",
+      "type": "shell",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "build lwm2m for mcuboot",
+        "create app image",
+        "flash signed app"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "mcumgr upload signed app",
+      "type": "shell",
+      "command": "sudo mcumgr ${input:mcumgr_cnx} image upload ${workspaceRoot}/build/${input:app}/zephyr/zephyr.signed.bin",
+      "problemMatcher": []
+    },
+    {
+      "label": "mcumgr list images",
+      "type": "shell",
+      "command": "sudo mcumgr ${input:mcumgr_cnx} image list",
+      "problemMatcher": []
+    },
+    {
+      "label": "mcumgr test image",
+      "type": "shell",
+      "command": "sudo mcumgr ${input:mcumgr_cnx} image test ${input:image-hash}",
+      "problemMatcher": []
+    },
+    {
+      "label": "mcumgr reset",
+      "type": "shell",
+      "command": "sudo mcumgr ${input:mcumgr_cnx} reset",
+      "problemMatcher": []
+    },
+    {
+      "label": "mcumgr confirm",
+      "type": "shell",
+      "command": "sudo mcumgr ${input:mcumgr_cnx} image confirm",
+      "problemMatcher": []
+    },
+    {
+      "label": "mcumgr echo",
+      "type": "shell",
+      "command": "sudo mcumgr ${input:mcumgr_cnx} echo 'hello'",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "app",
+      "description": "Select an app",
+      "default": "mg100_aws",
+      "type": "pickString",
+      "options": ["mg100_aws", "mg100_lwm2m"]
+    },
+    {
+      "id": "mcumgr_cnx",
+      "description": "mcumgr connection params",
+      "type": "pickString",
+      "options": [
+        // Change 'peer_name=' to match your device name
+        "--conntype ble --connstring ctlr_name=hci0,peer_name='MG100-0303848'",
+        // Change 'dev=' to match your serial device
+        "--conntype serial --connstring dev=/dev/tty.usbserial-A908JLEI"
+      ]
+    },
+    {
+      "id": "image-hash",
+      "description": "hash of firmware image",
+      "type": "promptString",
+      "default": "enter hash here"
+    },
+    {
+      "id": "app_ver",
+      "description": "firmware version",
+      "type": "promptString"
     }
   ]
 }

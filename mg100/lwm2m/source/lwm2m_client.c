@@ -18,16 +18,16 @@ LOG_MODULE_REGISTER(lwm2m_client);
 /******************************************************************************/
 #include <zephyr.h>
 #include <zephyr/types.h>
-#include <gpio.h>
+#include <drivers/gpio.h>
 #include <net/lwm2m.h>
 #include <string.h>
 #include <stddef.h>
 
 #include "dns.h"
-#include "led.h"
+#include "led_configuration.h"
 #include "dis.h"
 #include "qrtc.h"
-#include "power.h"
+#include "laird_power.h"
 #include "ble_lwm2m_service.h"
 #include "lte.h"
 #include "lwm2m_client.h"
@@ -48,8 +48,8 @@ LOG_MODULE_REGISTER(lwm2m_client);
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
-static u8_t led_state;
-static u32_t lwm2m_time;
+static uint8_t led_state;
+static uint32_t lwm2m_time;
 
 static struct lwm2m_ctx client;
 
@@ -63,12 +63,13 @@ static char server_addr[SERVER_ADDR_MAX_SIZE];
 /******************************************************************************/
 static void lwm2m_client_init_internal(void);
 
-static int device_reboot_cb(u16_t obj_inst_id);
-static int device_factory_default_cb(u16_t obj_inst_id);
+static int device_reboot_cb(uint16_t obj_inst_id);
+static int device_factory_default_cb(uint16_t obj_inst_id);
 static int lwm2m_setup(const char *serial_number, const char *imei);
 static void rd_client_event(struct lwm2m_ctx *client,
 			    enum lwm2m_rd_client_event client_event);
-static int led_on_off_cb(u16_t obj_inst_id, u8_t *data, u16_t data_len,
+static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
+			 uint16_t res_inst_id, uint8_t *data, uint16_t data_len,
 			 bool last_block, size_t total_size);
 static int resolve_server_address(void);
 static void create_bl654_sensor_objects(void);
@@ -80,8 +81,6 @@ static size_t lwm2m_str_size(const char *s);
 /******************************************************************************/
 void lwm2m_client_init(void)
 {
-	ble_lwm2m_service_init();
-
 	lwm2m_client_init_internal();
 }
 
@@ -93,14 +92,26 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 	if (lwm2m_initialized) {
 		struct float32_value float_value;
 
+#ifdef CONFIG_LWM2M_IPSO_TEMP_SENSOR
 		float_value = make_float_value(temperature);
 		result += lwm2m_engine_set_float32("3303/0/5700", &float_value);
+#endif
 
+		/* Temperature is used to test generic sensor */
+#ifdef CONFIG_LWM2M_IPSO_GENERIC_SENSOR
+		float_value = make_float_value(temperature);
+		result += lwm2m_engine_set_float32("3303/0/5700", &float_value);
+#endif
+
+#ifdef CONFIG_LWM2M_IPSO_HUMIDITY_SENSOR
 		float_value = make_float_value(humidity);
 		result += lwm2m_engine_set_float32("3304/0/5700", &float_value);
+#endif
 
+#ifdef CONFIG_LWM2M_IPSO_PRESSURE_SENSOR
 		float_value = make_float_value(pressure);
 		result += lwm2m_engine_set_float32("3323/0/5700", &float_value);
+#endif
 	}
 	return result;
 }
@@ -108,7 +119,7 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static int device_reboot_cb(u16_t obj_inst_id)
+static int device_reboot_cb(uint16_t obj_inst_id)
 {
 #ifdef CONFIG_REBOOT
 	LOG_INF("DEVICE: REBOOT");
@@ -119,13 +130,14 @@ static int device_reboot_cb(u16_t obj_inst_id)
 #endif
 }
 
-static int device_factory_default_cb(u16_t obj_inst_id)
+static int device_factory_default_cb(uint16_t obj_inst_id)
 {
 	LOG_INF("DEVICE: FACTORY DEFAULT");
 	return -1;
 }
 
-static void *current_time_read_cb(u16_t obj_inst_id, size_t *data_len)
+static void *current_time_read_cb(uint16_t obj_inst_id, uint16_t res_id,
+				  uint16_t res_inst_id, size_t *data_len)
 {
 	/* The device object doesn't allow this to be set because
 	 * reads are intercepted */
@@ -139,8 +151,8 @@ static int lwm2m_setup(const char *serial_number, const char *imei)
 {
 	int ret;
 	char *server_url;
-	u16_t server_url_len;
-	u8_t server_url_flags;
+	uint16_t server_url_len;
+	uint8_t server_url_flags;
 
 	/* setup SECURITY object */
 
@@ -154,7 +166,7 @@ static int lwm2m_setup(const char *serial_number, const char *imei)
 	snprintk(server_url, server_url_len, "coap%s//%s",
 		 IS_ENABLED(CONFIG_LWM2M_DTLS_SUPPORT) ? "s:" : ":",
 		 server_addr);
-	LOG_WRN("Server URL: %s", server_url);
+	LOG_WRN("Server URL: %s", log_strdup(server_url));
 
 	/* Security Mode */
 	lwm2m_engine_set_u8("0/0/2",
@@ -238,6 +250,9 @@ static void rd_client_event(struct lwm2m_ctx *client,
 	case LWM2M_RD_CLIENT_EVENT_DISCONNECT:
 		LOG_DBG("Disconnected");
 		break;
+	case LWM2M_RD_CLIENT_EVENT_QUEUE_MODE_RX_OFF:
+		/* do nothing */
+		break;
 	}
 }
 
@@ -303,10 +318,11 @@ static void lwm2m_client_init_internal(void)
 	lwm2m_initialized = true;
 }
 
-static int led_on_off_cb(u16_t obj_inst_id, u8_t *data, u16_t data_len,
+static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
+			 uint16_t res_inst_id, uint8_t *data, uint16_t data_len,
 			 bool last_block, size_t total_size)
 {
-	u8_t led_val = *(u8_t *)data;
+	uint8_t led_val = *(uint8_t *)data;
 	if (led_val != led_state) {
 		if (led_val) {
 			led_turn_on(GREEN_LED2);
@@ -326,37 +342,50 @@ static void create_bl654_sensor_objects(void)
 	/* The BL654 Sensor contains a BME 280. */
 	/* 5603 and 5604 are the range of values supported by sensor. */
 	struct float32_value float_value;
-	/* temperature */
+#ifdef CONFIG_LWM2M_IPSO_TEMP_SENSOR
 	lwm2m_engine_create_obj_inst("3303/0");
 	lwm2m_engine_set_string("3303/0/5701", "C");
 	float_value.val1 = -40;
 	lwm2m_engine_set_float32("3303/0/5603", &float_value);
 	float_value.val1 = 85;
 	lwm2m_engine_set_float32("3303/0/5604", &float_value);
+#endif
 
-	/* humidity */
+#ifdef CONFIG_LWM2M_IPSO_GENERIC_SENSOR
+	/* temperature used for test */
+	lwm2m_engine_create_obj_inst("3303/0");
+	lwm2m_engine_set_string("3303/0/5701", "C");
+	float_value.val1 = -40;
+	lwm2m_engine_set_float32("3303/0/5603", &float_value);
+	float_value.val1 = 85;
+	lwm2m_engine_set_float32("3303/0/5604", &float_value);
+#endif
+
+#ifdef CONFIG_LWM2M_IPSO_HUMIDITY_SENSOR
 	lwm2m_engine_create_obj_inst("3304/0");
 	lwm2m_engine_set_string("3304/0/5701", "%");
 	float_value.val1 = 0;
 	lwm2m_engine_set_float32("3304/0/5603", &float_value);
 	float_value.val1 = 100;
 	lwm2m_engine_set_float32("3304/0/5604", &float_value);
+#endif
 
-	/* pressure */
+#ifdef CONFIG_LWM2M_IPSO_PRESSURE_SENSOR
 	lwm2m_engine_create_obj_inst("3323/0");
 	lwm2m_engine_set_string("3323/0/5701", "Pa");
 	float_value.val1 = 300;
 	lwm2m_engine_set_float32("3323/0/5603", &float_value);
 	float_value.val1 = 1100000;
 	lwm2m_engine_set_float32("3323/0/5604", &float_value);
+#endif
 }
 
 static struct float32_value make_float_value(float v)
 {
 	struct float32_value f;
 
-	f.val1 = (s32_t)v;
-	f.val2 = (s32_t)(LWM2M_FLOAT32_DEC_MAX * (v - f.val1));
+	f.val1 = (int32_t)v;
+	f.val2 = (int32_t)(LWM2M_FLOAT32_DEC_MAX * (v - f.val1));
 
 	return f;
 }

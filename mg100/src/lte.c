@@ -9,7 +9,7 @@
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(mg100_lte);
+LOG_MODULE_REGISTER(oob_lte);
 
 #define LTE_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define LTE_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
@@ -26,27 +26,33 @@ LOG_MODULE_REGISTER(mg100_lte);
 #include <net/net_mgmt.h>
 #include <net/socket.h>
 
-#include <drivers/modem/modem_receiver.h>
 #include <drivers/modem/hl7800.h>
 #include "ble_cellular_service.h"
-#include "led.h"
-#include "mg100_common.h"
+#include "fota.h"
+#include "led_configuration.h"
 #include "qrtc.h"
 
 #include "lte.h"
 
 /******************************************************************************/
+/* Global Data Definitions                                                    */
+/******************************************************************************/
+#ifdef CONFIG_BLUEGRASS
+extern bool initShadow;
+#endif
+
+/******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
 struct mgmt_events {
-	u32_t event;
+	uint32_t event;
 	net_mgmt_event_handler_t handler;
 	struct net_mgmt_event_callback cb;
 };
 
 static const struct led_blink_pattern NETWORK_SEARCH_LED_PATTERN = {
-	.on_time = DEFAULT_LED_ON_TIME_FOR_1_SECOND_BLINK,
-	.off_time = DEFAULT_LED_OFF_TIME_FOR_1_SECOND_BLINK,
+	.on_time = CONFIG_DEFAULT_LED_ON_TIME_FOR_1_SECOND_BLINK,
+	.off_time = CONFIG_DEFAULT_LED_OFF_TIME_FOR_1_SECOND_BLINK,
 	.repeat_count = REPEAT_INDEFINITELY
 };
 
@@ -56,9 +62,9 @@ static const struct led_blink_pattern NETWORK_SEARCH_LED_PATTERN = {
 static void onLteEvent(enum lte_event event);
 
 static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
-				    u32_t mgmt_event, struct net_if *iface);
+				    uint32_t mgmt_event, struct net_if *iface);
 static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
-				   u32_t mgmt_event, struct net_if *iface);
+				   uint32_t mgmt_event, struct net_if *iface);
 
 static void setup_iface_events(void);
 
@@ -71,13 +77,12 @@ static void getLocalTimeFromModemWorkHandler(struct k_work *item);
 /******************************************************************************/
 static struct net_if *iface;
 static struct net_if_config *cfg;
-static struct mdm_receiver_context *mdm_rcvr;
 static struct dns_resolve_context *dns;
 static struct lte_status lteStatus;
 static lte_event_function_t lteCallbackFunction = NULL;
 struct k_work localTimeWork;
 static struct tm localTime;
-static s32_t localOffset;
+static int32_t localOffset;
 
 static struct mgmt_events iface_events[] = {
 	{ .event = NET_EVENT_DNS_SERVER_ADD,
@@ -123,16 +128,8 @@ int lteInit(void)
 		goto exit;
 	}
 
-	/* Get the modem receive context */
-	mdm_rcvr = mdm_receiver_context_from_id(0);
-	if (mdm_rcvr == NULL) {
-		LTE_LOG_ERR("Invalid modem receiver");
-		rc = LTE_ERR_MDM_CTX;
-		goto exit;
-	}
-
-	lteStatus.radio_version = mdm_rcvr->data_revision;
-	lteStatus.IMEI = mdm_rcvr->data_imei;
+	lteStatus.radio_version = (const char *)mdm_hl7800_get_fw_version();
+	lteStatus.IMEI = (const char *)mdm_hl7800_get_imei();
 	lteStatus.ICCID = (const char *)mdm_hl7800_get_iccid();
 	lteStatus.serialNumber = (const char *)mdm_hl7800_get_sn();
 	mdm_hl7800_generate_status_events();
@@ -171,7 +168,7 @@ static void onLteEvent(enum lte_event event)
 }
 
 static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
-				    u32_t mgmt_event, struct net_if *iface)
+				    uint32_t mgmt_event, struct net_if *iface)
 {
 	if (mgmt_event != NET_EVENT_DNS_SERVER_ADD) {
 		return;
@@ -184,7 +181,7 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 }
 
 static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
-				   u32_t mgmt_event, struct net_if *iface)
+				   uint32_t mgmt_event, struct net_if *iface)
 {
 	if (mgmt_event != NET_EVENT_IF_DOWN) {
 		return;
@@ -210,7 +207,7 @@ static void setup_iface_events(void)
 
 static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 {
-	u8_t code = ((struct mdm_hl7800_compound_event *)event_data)->code;
+	uint8_t code = ((struct mdm_hl7800_compound_event *)event_data)->code;
 	switch (event) {
 	case HL7800_EVENT_NETWORK_STATE_CHANGE:
 		cell_svc_set_network_state(code);
@@ -273,7 +270,7 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_RAT:
-		cell_svc_set_rat(*((u8_t *)event_data));
+		cell_svc_set_rat(*((uint8_t *)event_data));
 		break;
 
 	case HL7800_EVENT_BANDS:
@@ -282,6 +279,22 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 
 	case HL7800_EVENT_ACTIVE_BANDS:
 		cell_svc_set_active_bands((char *)event_data);
+		break;
+
+	case HL7800_EVENT_FOTA_STATE:
+		fota_state_handler(*((uint8_t *)event_data));
+		break;
+
+	case HL7800_EVENT_FOTA_COUNT:
+		fota_set_count(*((uint32_t *)event_data));
+		break;
+
+	case HL7800_EVENT_REVISION:
+		cell_svc_set_fw_ver((char *)event_data);
+#ifdef CONFIG_BLUEGRASS
+		/* Update shadow because modem version has changed. */
+		initShadow = true;
+#endif
 		break;
 
 	default:
@@ -295,7 +308,7 @@ static void getLocalTimeFromModemWorkHandler(struct k_work *item)
 	ARG_UNUSED(item);
 
 	if (!Qrtc_EpochWasSet()) {
-		s32_t status =
+		int32_t status =
 			mdm_hl7800_get_local_time(&localTime, &localOffset);
 		if (status == 0) {
 			LOG_INF("Epoch set to %u",

@@ -9,7 +9,7 @@
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(mg100_aws);
+LOG_MODULE_REGISTER(aws);
 
 #define AWS_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define AWS_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
@@ -25,10 +25,16 @@ LOG_MODULE_REGISTER(mg100_aws);
 #include <stdio.h>
 #include <kernel.h>
 
-#include "mg100_common.h"
-#include "sensor_gateway_parser.h"
 #include "dns.h"
+#include "print_json.h"
 #include "aws.h"
+#include "lairdconnect_battery.h"
+#include "ble_motion_service.h"
+#include "sdcard_log.h"
+
+#if CONFIG_BLUEGRASS
+#include "sensor_gateway_parser.h"
+#endif
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -43,10 +49,10 @@ LOG_MODULE_REGISTER(mg100_aws);
 #define CONVERSION_MAX_STR_LEN 10
 
 struct topics {
-	u8_t update[CONFIG_TOPIC_MAX_SIZE];
-	u8_t update_delta[CONFIG_TOPIC_MAX_SIZE];
-	u8_t get[CONFIG_TOPIC_MAX_SIZE];
-	u8_t get_accepted[CONFIG_TOPIC_MAX_SIZE];
+	uint8_t update[CONFIG_AWS_TOPIC_MAX_SIZE];
+	uint8_t update_delta[CONFIG_AWS_TOPIC_MAX_SIZE];
+	uint8_t get[CONFIG_AWS_TOPIC_MAX_SIZE];
+	uint8_t get_accepted[CONFIG_AWS_TOPIC_MAX_SIZE];
 };
 
 /******************************************************************************/
@@ -59,9 +65,11 @@ K_SEM_DEFINE(connected_sem, 0, 1);
 K_SEM_DEFINE(send_ack_sem, 0, 1);
 
 /* Buffers for MQTT client. */
-static u8_t rx_buffer[APP_MQTT_BUFFER_SIZE];
-static u8_t tx_buffer[APP_MQTT_BUFFER_SIZE];
-static u8_t subscription_buffer[CONFIG_SHADOW_IN_MAX_SIZE];
+static uint8_t rx_buffer[APP_MQTT_BUFFER_SIZE];
+static uint8_t tx_buffer[APP_MQTT_BUFFER_SIZE];
+#if CONFIG_BLUEGRASS
+static uint8_t subscription_buffer[CONFIG_SHADOW_IN_MAX_SIZE];
+#endif
 
 /* mqtt client id */
 static char *mqtt_client_id;
@@ -91,7 +99,7 @@ static struct topics topics;
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static int tls_init(const u8_t *cert, const u8_t *key);
+static int tls_init(const uint8_t *cert, const uint8_t *key);
 static void prepare_fds(struct mqtt_client *client);
 static void clear_fds(void);
 static void wait(int timeout);
@@ -101,7 +109,7 @@ static int subscription_handler(struct mqtt_client *const client,
 				const struct mqtt_evt *evt);
 static void subscription_flush(struct mqtt_client *const client, size_t length);
 static int publish_string(struct mqtt_client *client, enum mqtt_qos qos,
-			  char *data, u8_t *topic);
+			  char *data, uint8_t *topic);
 static void client_init(struct mqtt_client *client);
 static int try_to_connect(struct mqtt_client *client);
 static void awsRxThread(void *arg1, void *arg2, void *arg3);
@@ -109,6 +117,11 @@ static void awsRxThread(void *arg1, void *arg2, void *arg3);
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
+char * awsGetGatewayUpdateDeltaTopic()
+{
+	return (topics.update);
+}
+
 int awsInit(void)
 {
 	/* init shadow data */
@@ -129,7 +142,7 @@ int awsInit(void)
 	return 0;
 }
 
-int awsSetCredentials(const u8_t *cert, const u8_t *key)
+int awsSetCredentials(const uint8_t *cert, const uint8_t *key)
 {
 	return tls_init(cert, key);
 }
@@ -161,7 +174,8 @@ int awsGetServerAddr(void)
 
 int awsConnect()
 {
-	AWS_LOG_INF("Attempting to connect %s to AWS...", mqtt_client_id);
+	AWS_LOG_INF("Attempting to connect %s to AWS...",
+		    log_strdup(mqtt_client_id));
 	int rc = try_to_connect(&client_ctx);
 	if (rc != 0) {
 		AWS_LOG_ERR("AWS connect err (%d)", rc);
@@ -230,7 +244,7 @@ int awsSetShadowRadioSerialNumber(const char *sn)
 	return 0;
 }
 
-static int sendData(char *data, u8_t *topic)
+static int sendData(char *data, uint8_t *topic)
 {
 	int rc;
 
@@ -253,7 +267,7 @@ done:
 	return rc;
 }
 
-int awsSendData(char *data, u8_t *topic)
+int awsSendData(char *data, uint8_t *topic)
 {
 	/* If the topic is NULL, then publish to the gateway (Pinnacle-100) topic.
 	 * Otherwise, publish to a sensor topic. */
@@ -307,18 +321,27 @@ int awsGetAcceptedUnsub(void)
 int awsPublishShadowPersistentData()
 {
 	int rc = -ENOMEM;
-	size_t buf_len;
+	ssize_t buf_len;
 
 	buf_len = json_calc_encoded_len(shadow_descr, ARRAY_SIZE(shadow_descr),
 					&shadow_persistent_data);
+	if (buf_len < 0) {
+		return buf_len;
+	}
+
+	/* account for null char */
+	buf_len += 1;
+
 	char *msg = k_calloc(buf_len, sizeof(char));
 	if (msg == NULL) {
+		AWS_LOG_ERR("k_calloc failed");
 		return rc;
 	}
 
 	rc = json_obj_encode_buf(shadow_descr, ARRAY_SIZE(shadow_descr),
 				 &shadow_persistent_data, msg, buf_len);
 	if (rc < 0) {
+		AWS_LOG_ERR("JSON encode failed");
 		goto done;
 	}
 
@@ -326,12 +349,14 @@ int awsPublishShadowPersistentData()
 	/* Clear the shadow and start fresh */
 	rc = awsSendData(SHADOW_STATE_NULL, GATEWAY_TOPIC);
 	if (rc < 0) {
+		AWS_LOG_ERR("Clear shadow failed");
 		goto done;
 	}
 #endif
 
 	rc = awsSendData(msg, GATEWAY_TOPIC);
 	if (rc < 0) {
+		AWS_LOG_ERR("Update persistent shadow data failed");
 		goto done;
 	}
 
@@ -356,15 +381,45 @@ int awsPublishBl654SensorData(float temperature, float humidity, float pressure)
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
 
-int awsPublishPinnacleData(int radioRssi, int radioSinr)
+int awsPublishPinnacleData(int radioRssi, int radioSinr,
+										struct battery_data * battery,
+										struct motion_status * motion,
+										struct sdcard_status * sdcard)
 {
 	char msg[strlen(SHADOW_REPORTED_START) + strlen(SHADOW_RADIO_RSSI) +
-		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_RADIO_SINR) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_TEMP) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_LEVEL) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_VOLT) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_PWR_STATE) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_0) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_1) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_2) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_3) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_4) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_GOOD) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_BAD) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_LOW) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_ODR) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_SCALE) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_ACT_THS) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_MOVEMENT) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_MAX_LOG_SIZE) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_CURR_LOG_SIZE) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_SDCARD_FREE) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_REPORTED_END)];
 
-	snprintf(msg, sizeof(msg), "%s%s%d,%s%d%s", SHADOW_REPORTED_START,
-		 SHADOW_RADIO_RSSI, radioRssi, SHADOW_RADIO_SINR, radioSinr,
-		 SHADOW_REPORTED_END);
+	snprintf(msg, sizeof(msg), "%s%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d%s", SHADOW_REPORTED_START,
+		 SHADOW_MG100_BATT_LEVEL, battery->batteryCapacity,
+		 SHADOW_MG100_BATT_VOLT, battery->batteryVoltage, SHADOW_MG100_PWR_STATE, battery->batteryChgState,
+		 SHADOW_MG100_BATT_0, battery->batteryThreshold0, SHADOW_MG100_BATT_1, battery->batteryThreshold1,
+		 SHADOW_MG100_BATT_2, battery->batteryThreshold2, SHADOW_MG100_BATT_3, battery->batteryThreshold3,
+		 SHADOW_MG100_BATT_4, battery->batteryThreshold4, SHADOW_MG100_BATT_GOOD, battery->batteryThresholdGood,
+		 SHADOW_MG100_BATT_BAD, battery->batteryThresholdBad, SHADOW_MG100_BATT_LOW, battery->batteryThresholdLow,
+		 SHADOW_MG100_TEMP, battery->ambientTemperature, SHADOW_MG100_ODR, motion->odr,
+		 SHADOW_MG100_SCALE, motion->scale, SHADOW_MG100_ACT_THS, motion->thr,
+		 SHADOW_MG100_MOVEMENT, motion->motion, SHADOW_MG100_MAX_LOG_SIZE, sdcard->maxLogSize,
+		 SHADOW_MG100_CURR_LOG_SIZE, sdcard->currLogSize, SHADOW_MG100_SDCARD_FREE, sdcard->freeSpace,
+		 SHADOW_RADIO_RSSI, radioRssi, SHADOW_RADIO_SINR, radioSinr, SHADOW_REPORTED_END);
 
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
@@ -374,7 +429,7 @@ bool awsConnected(void)
 	return connected;
 }
 
-int awsSubscribe(u8_t *topic, u8_t subscribe)
+int awsSubscribe(uint8_t *topic, uint8_t subscribe)
 {
 	struct mqtt_topic mt;
 	if (topic == NULL) {
@@ -388,11 +443,11 @@ int awsSubscribe(u8_t *topic, u8_t subscribe)
 	struct mqtt_subscription_list list = {
 		.list = &mt,
 		.list_count = 1,
-		.message_id = (u16_t)sys_rand32_get()
+		.message_id = (uint16_t)sys_rand32_get()
 	};
 	int rc = subscribe ? mqtt_subscribe(&client_ctx, &list) :
 			     mqtt_unsubscribe(&client_ctx, &list);
-	char *s = subscribe ? "Subscribed" : "Unsubscribed";
+	char *s = log_strdup(subscribe ? "Subscribed" : "Unsubscribed");
 	char *t = log_strdup(mt.topic.utf8);
 	if (rc != 0) {
 		AWS_LOG_ERR("%s status %d to %s", s, rc, t);
@@ -405,7 +460,7 @@ int awsSubscribe(u8_t *topic, u8_t subscribe)
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static int tls_init(const u8_t *cert, const u8_t *key)
+static int tls_init(const uint8_t *cert, const uint8_t *key)
 {
 	int err = -EINVAL;
 
@@ -483,7 +538,7 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 
 		connected = false;
 		clear_fds();
-
+		awsDisconnectCallback();
 		break;
 
 	case MQTT_EVT_PUBACK:
@@ -530,10 +585,12 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 static int subscription_handler(struct mqtt_client *const client,
 				const struct mqtt_evt *evt)
 {
-	u16_t id = evt->param.publish.message_id;
-	u32_t length = evt->param.publish.message.payload.len;
-	u8_t qos = evt->param.publish.message.topic.qos;
-	u8_t *topic = evt->param.publish.message.topic.topic.utf8;
+	int rc = 0;
+#if CONFIG_BLUEGRASS
+	uint16_t id = evt->param.publish.message_id;
+	uint32_t length = evt->param.publish.message.payload.len;
+	uint8_t qos = evt->param.publish.message.topic.qos;
+	const uint8_t *topic = evt->param.publish.message.topic.topic.utf8;
 
 	/* Leave room for null to allow easy printing */
 	size_t size = length + 1;
@@ -542,9 +599,9 @@ static int subscription_handler(struct mqtt_client *const client,
 	}
 
 	memset(subscription_buffer, 0, CONFIG_SHADOW_IN_MAX_SIZE);
-	int rc = mqtt_read_publish_payload(client, subscription_buffer, length);
+	rc = mqtt_read_publish_payload(client, subscription_buffer, length);
 	if (rc == length) {
-#if JSON_LOG_MQTT_RX_DATA
+#if CONFIG_JSON_LOG_MQTT_RX_DATA
 		print_json("MQTT Read data", rc, subscription_buffer);
 #endif
 
@@ -557,6 +614,7 @@ static int subscription_handler(struct mqtt_client *const client,
 			AWS_LOG_ERR("QOS 2 not supported");
 		}
 	}
+#endif
 	return rc;
 }
 
@@ -573,7 +631,7 @@ static void subscription_flush(struct mqtt_client *const client, size_t length)
 }
 
 static int publish_string(struct mqtt_client *client, enum mqtt_qos qos,
-			  char *data, u8_t *topic)
+			  char *data, uint8_t *topic)
 {
 	struct mqtt_publish_param param;
 
@@ -649,7 +707,7 @@ static int try_to_connect(struct mqtt_client *client)
 		rc = mqtt_connect(client);
 		if (rc != 0) {
 			AWS_LOG_ERR("mqtt_connect (%d)", rc);
-			k_sleep(APP_SLEEP_MSECS);
+			k_sleep(K_MSEC(APP_SLEEP_MSECS));
 			continue;
 		}
 
@@ -675,7 +733,7 @@ static void awsRxThread(void *arg1, void *arg2, void *arg3)
 	while (true) {
 		if (connected) {
 			/* Wait for socket RX data */
-			wait(K_FOREVER);
+			wait(SYS_FOREVER_MS);
 			/* process MQTT RX data */
 			mqtt_input(&client_ctx);
 		} else {
@@ -685,4 +743,12 @@ static void awsRxThread(void *arg1, void *arg2, void *arg3)
 			k_sem_take(&connected_sem, K_FOREVER);
 		}
 	}
+}
+
+/******************************************************************************/
+/* Override in application                                                    */
+/******************************************************************************/
+__weak void awsDisconnectCallback(void)
+{
+	return;
 }

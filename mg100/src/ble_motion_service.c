@@ -8,7 +8,7 @@
  */
 
 #include <logging/log.h>
-#include <sensor.h>
+#include <drivers/sensor.h>
 
 #define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(mg100_motion_svc);
@@ -21,8 +21,6 @@ LOG_MODULE_REGISTER(mg100_motion_svc);
 #define MOTION_ALARM_ACTIVE		1
 #define MOTION_ALARM_INACTIVE   0
 #define INACTIVITY_TIMER_PERIOD K_MSEC(30000)
-#define MOTION_DEFAULT_THS  8
-#define MOTION_DEFAULT_DUR  6
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -31,9 +29,9 @@ LOG_MODULE_REGISTER(mg100_motion_svc);
 #include <bluetooth/gatt.h>
 #include <bluetooth/bluetooth.h>
 
-#include "mg100_common.h"
 #include "laird_bluetooth.h"
 #include "ble_motion_service.h"
+#include "nv.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -59,8 +57,9 @@ struct ccc_table {
 /******************************************************************************/
 static struct ble_motion_service bms;
 static struct ccc_table ccc;
-static struct bt_conn *(*get_connection_handle_fptr)(void);
+static struct bt_conn *motion_svc_conn;
 static struct k_timer motion_timer;
+static struct motion_status motionStatus;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -70,10 +69,17 @@ static void motion_alarm_ccc_handler(const struct bt_gatt_attr *attr,
 static void motion_sensor_trig_handler(struct device *dev,
 					struct sensor_trigger *trigger);
 static void motion_timer_callback(struct k_timer *timer_id);
+static void motion_svc_connected(struct bt_conn *conn, uint8_t err);
+static void motion_svc_disconnected(struct bt_conn *conn, uint8_t reason);
 
 /******************************************************************************/
 /* Motion Service Declaration                                                 */
 /******************************************************************************/
+static struct bt_conn_cb motion_svc_conn_callbacks = {
+	.connected = motion_svc_connected,
+	.disconnected = motion_svc_disconnected,
+};
+
 static struct bt_gatt_attr motion_attrs[] = {
 	BT_GATT_PRIMARY_SERVICE(&MOTION_SVC_UUID),
 	BT_GATT_CHARACTERISTIC(
@@ -83,29 +89,140 @@ static struct bt_gatt_attr motion_attrs[] = {
 };
 
 static struct bt_gatt_service motion_svc = BT_GATT_SERVICE(motion_attrs);
-
+static struct device *sensor = NULL;
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-void motion_svc_assign_connection_handler_getter(
-	struct bt_conn *(*function)(void))
+static void motion_svc_connected(struct bt_conn *conn, uint8_t err)
 {
-	get_connection_handle_fptr = function;
+	if (err) {
+		return;
+	}
+
+	if (!lbt_slave_role(conn)) {
+		return;
+	}
+
+	motion_svc_conn = bt_conn_ref(conn);
+}
+
+static void motion_svc_disconnected(struct bt_conn *conn, uint8_t reason)
+{
+	if (!lbt_slave_role(conn)) {
+		return;
+	}
+
+	if (motion_svc_conn) {
+		bt_conn_unref(motion_svc_conn);
+		motion_svc_conn = NULL;
+	}
+}
+
+/* The weak implementation can be used for single peripheral designs. */
+__weak struct bt_conn *motion_svc_get_conn(void)
+{
+	return motion_svc_conn;
+}
+
+bool UpdateOdr(int Value)
+{
+	bool ret = true;
+	int Status = 0;
+	struct sensor_value sVal;
+
+	sVal.val1 = Value;
+	sVal.val2 = 0;
+
+	Status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &sVal);
+	nvStoreAccelODR(Value);
+
+	LOG_DBG("ODR = %d, Status = %d", Value, Status);
+
+	return(ret);
+}
+
+bool UpdateScale(int Value)
+{
+	bool ret = true;
+	int Status = 0;
+/* TODO: Temporarily disabled until this will work. Bug 17087 */
+#if 0
+	struct sensor_value sVal;
+
+	sVal.val1 = Value;
+	sVal.val2 = 0;
+
+	Status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_FULL_SCALE, &sVal);
+#endif
+	nvStoreAccelScale(Value);
+
+	LOG_DBG("Scale = %d, Status = %d", Value, Status);
+
+	return(ret);
+}
+
+bool UpdateActivityThreshold(int Value)
+{
+	bool ret = true;
+	int Status = 0;
+	struct sensor_value sVal;
+
+	sVal.val1 = Value;
+	sVal.val2 = 0;
+
+	Status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SLOPE_TH, &sVal);
+	nvStoreAccelThresh(Value);
+
+	LOG_DBG("Activity Threshold = %d, Status = %d", Value, Status);
+
+	return(ret);
+}
+
+int GetOdr()
+{
+	int Value = 0;
+	nvReadAccelODR(&Value);
+	LOG_DBG("ODR = %d", Value);
+
+	return (Value);
+}
+
+int GetScale()
+{
+	int Value = 0;
+	nvReadAccelScale(&Value);
+	LOG_DBG("Scale = %d", Value);
+
+	return (Value);
+}
+
+int GetActivityThreshold()
+{
+	int Value = 0;
+	nvReadAccelThresh(&Value);
+	LOG_DBG("Threshold = %d", Value);
+
+	return (Value);
+}
+
+struct motion_status *motionGetStatus()
+{
+	int Value;
+	nvReadAccelScale(&Value);
+	motionStatus.motion = bms.motion_alarm;
+
+	return (&motionStatus);
 }
 
 static void motion_svc_notify(bool notify, u16_t index, u16_t length)
 {
-	if (get_connection_handle_fptr == NULL) {
-		return;
-	}
-
-	struct bt_conn *connection_handle = get_connection_handle_fptr();
+	struct bt_conn *connection_handle = motion_svc_get_conn();
 	if (connection_handle != NULL) {
 		if (notify) {
 			bt_gatt_notify(connection_handle,
-						&motion_svc.attrs[index],
-						motion_svc.attrs[index].user_data,
-						length);
+				       &motion_svc.attrs[index],
+				       motion_svc.attrs[index].user_data,
+				       length);
 		}
 	}
 }
@@ -119,20 +236,49 @@ void motion_svc_set_alarm_state(u8_t alarmState)
 
 void motion_svc_init()
 {
+	/* This array maps ODR values to real sampling frequency values. To keep the
+	 * implementation common between various Laird Connectivity products for the
+	 * device shadow, we present ODR values rather than the real sampling frequency
+	 * values. However, the sensor framework expects the real sampling frequency
+	 * values. This mapping was copied from the LIS2DH driver in Zephyr which
+	 * translates these back into ODR values. These are the supported sampling
+	 * frequency / ODR settings supported by the LIS2DH.
+	 */
+	uint16_t lis2dh_odr_map[] = {0, 1, 10, 25, 50, 100, 200, 400, 1620,
+				    1344, 5376};
 	struct sensor_trigger trigger;
-	struct device *sensor = device_get_binding(DT_ST_LIS2DH_0_LABEL);
 	struct sensor_value sVal;
 	int status = 0;
+	int AccelODR = 0;
+	int AccelThs = 0;
 
+	sensor = device_get_binding(DT_LABEL(DT_INST(0, st_lis2dh)));
 	bms.motion_alarm = MOTION_ALARM_INACTIVE;
+
 	bt_gatt_service_register(&motion_svc);
+	bt_conn_cb_register(&motion_svc_conn_callbacks);
+
 	size_t gatt_size = (sizeof(motion_attrs) / sizeof(motion_attrs[0]));
 	bms.motion_alarm_index = lbt_find_gatt_index(&MOTION_ALARM_UUID.uuid, motion_attrs,
 						gatt_size);
 
 	k_timer_init(&motion_timer, motion_timer_callback, NULL);
 
-	sVal.val1 = MOTION_DEFAULT_THS;
+	nvReadAccelODR(&AccelODR);
+
+	/* use the translated value */
+	sVal.val1 = lis2dh_odr_map[AccelODR];
+	sVal.val2 = 0;
+
+	status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &sVal);
+	if (status < 0)
+	{
+		MOTION_SVC_LOG_ERR("Failed to set ODR in the accelerometer.");
+	}
+
+	nvReadAccelThresh(&AccelThs);
+
+	sVal.val1 = AccelThs;
 	sVal.val2 = 0;
 
 	status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SLOPE_TH, &sVal);

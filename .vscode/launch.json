@@ -6,7 +6,7 @@
     "configurations": [
         {
             "cwd": "${workspaceRoot}",
-            "executable": "build/zephyr/zephyr.elf",
+            "executable": "build/mg100_aws/zephyr/zephyr.elf",
             "name": "Debug",
             "request": "launch",
             "type": "cortex-debug",

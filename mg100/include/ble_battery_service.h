@@ -22,17 +22,13 @@ extern "C" {
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-
-/** @param function that battery service should use to get connection handle when
- * determining if a value should by notified.
- */
-void battery_svc_assign_connection_handler_getter(
-	struct bt_conn *(*function)(void));
+/* For multi-peripheral device the weak implementation can be overriden. */
+struct bt_conn *battery_svc_get_conn(void);
 
 void battery_svc_init();
-void battery_svc_set_battery(u16_t voltage, u8_t capacity);
-void battery_svc_set_chg_state(u8_t chgState);
-void battery_svc_set_alarm_state(u8_t alarmState);
+void battery_svc_set_battery(uint16_t voltage, uint8_t capacity);
+void battery_svc_set_chg_state(uint8_t chgState);
+void battery_svc_set_alarm_state(uint8_t alarmState);
 void battery_svc_update_data();
 
 #ifdef __cplusplus

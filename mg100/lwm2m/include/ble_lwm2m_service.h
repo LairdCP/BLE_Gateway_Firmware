@@ -32,7 +32,7 @@ void ble_lwm2m_service_init();
  * @brief Accessor function
  * @note This is not NULL terminated.
  */
-u8_t *ble_lwm2m_get_client_psk(void);
+uint8_t *ble_lwm2m_get_client_psk(void);
 
 /**
  * @brief Accessor function

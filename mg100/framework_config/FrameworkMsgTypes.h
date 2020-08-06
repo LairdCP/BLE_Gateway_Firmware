@@ -27,7 +27,7 @@ typedef struct JsonMsg {
 	FwkMsgHeader_t header;
 	size_t size; /** number of bytes */
 	size_t length; /** of the data */
-	char topic[CONFIG_TOPIC_MAX_SIZE];
+	char topic[CONFIG_AWS_TOPIC_MAX_SIZE];
 	char buffer[];
 } JsonMsg_t;
 
@@ -36,14 +36,14 @@ typedef struct JsonMsg {
 
 typedef struct Ad {
 	size_t len;
-	u8_t data[MAX_AD_SIZE];
+	uint8_t data[MAX_AD_SIZE];
 } Ad_t;
 
 typedef struct AdvMsg {
 	FwkMsgHeader_t header;
 	bt_addr_le_t addr;
-	s8_t rssi;
-	u8_t type;
+	int8_t rssi;
+	uint8_t type;
 	Ad_t ad;
 } AdvMsg_t;
 CHECK_FWK_MSG_SIZE(AdvMsg_t);

@@ -14,14 +14,15 @@ LOG_MODULE_REGISTER(sdcard_log);
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
-#include <disk_access.h>
-#include <fs.h>
-#include <gpio.h>
+#include <devicetree.h>
+#include <disk/disk_access.h>
+#include <fs/fs.h>
+#include <drivers/gpio.h>
 #include <ff.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "FrameworkIncludes.h"
+#include "nv.h"
 #include "sdcard_log.h"
 #include "sensor_log.h"
 #include "qrtc.h"
@@ -29,15 +30,19 @@ LOG_MODULE_REGISTER(sdcard_log);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
-#define SD_OE_PORT				DT_NORDIC_NRF_GPIO_0_LABEL
+#define SD_OE_PORT				DT_PROP(DT_NODELABEL(gpio0), label)
 #define SD_OE_PIN				4
 #define SD_OE_ENABLED			1
 #define SD_OE_DISABLED			0
-#define SDCARD_LOG_DEFAULT_MAX_LENGTH	512 * 1024 * 1024
+
 #define TIMESTAMP_LEN			10
 #define FMT_CHAR_LEN			3
 #define EVENT_MAX_STR_LEN		128
 #define EVENT_FMT_CHAR_LEN		5
+
+#define B_PER_KB				1024
+#define KB_PER_MB				1024
+#define B_PER_MB				(B_PER_KB * KB_PER_MB)
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
@@ -59,18 +64,17 @@ static const char *bl654FilePath = "/SD:/mg100bl6.csv";
 static bool sdCardPresent = false;
 static struct fs_file_t batteryLogZfp;
 static int batteryLogSeekOffset = 0;
-static int batteryLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH;
+static int batteryLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static bool batteryLogFileOpened = false;
 static struct fs_file_t sensorLogFileZfp;
 static int sensorLogSeekOffset = 0;
-static int sensorLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH;
+static int sensorLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static bool sensorLogFileOpened = false;
 static struct fs_file_t bl654LogFileZfp;
 static int bl654LogSeekOffset = 0;
-static int bl654LogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH;
+static int bl654LogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static bool bl654LogFileOpened = false;
-
-K_MUTEX_DEFINE(sdcardLogMutex);
+static struct sdcard_status sdCardLogStatus;
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -78,19 +82,116 @@ K_MUTEX_DEFINE(sdcardLogMutex);
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
+struct sdcard_status *sdCardLogGetStatus()
+{
+	sdCardLogStatus.currLogSize = GetLogSize();
+	sdCardLogStatus.maxLogSize = GetMaxLogSize();
+	sdCardLogStatus.freeSpace = GetFSFree();
+
+	return (&sdCardLogStatus);
+}
+bool UpdateMaxLogSize(int Value)
+{
+	bool ret = true;
+	int ValueB = Value * B_PER_MB;
+	sensorLogMaxLength = ValueB;
+	bl654LogMaxLength = ValueB;
+	batteryLogMaxLength = ValueB;
+	nvStoreSDLogMaxSize(Value);
+	LOG_INF("Max log file size = %d MB", Value);
+
+	return (ret);
+}
+
+int GetMaxLogSize()
+{
+	int LengthB = sensorLogMaxLength / B_PER_MB;
+	return(LengthB);
+}
+
+int GetFSFree()
+{
+	struct fs_statvfs Stats;
+	unsigned long FreeSpace = 0;
+	int Status = 0;
+	int Ret = -1;
+
+	if (sdCardPresent == true)
+	{
+		Status = fs_statvfs(mountPoint, &Stats);
+
+		if (Status == 0)
+		{
+			FreeSpace = Stats.f_bfree * Stats.f_frsize;
+			/* always round up 1MB */
+			Ret = (FreeSpace / B_PER_MB) + 1;
+		}
+	}
+
+	LOG_INF("Free Space = %d MB", Ret);
+
+	return (Ret);
+}
+
+int GetLogSize()
+{
+	struct fs_dirent fileStat;
+	int LogSize = 0;
+	int Status = 0;
+	int Ret = -1;
+
+	if (sdCardPresent == true)
+	{
+		Status = fs_stat(bl654FilePath, &fileStat);
+		if (Status == 0)
+		{
+			LogSize += fileStat.size;
+		}
+		Status = fs_stat(sensorFilePath, &fileStat);
+		if (Status == 0)
+		{
+			LogSize += fileStat.size;
+		}
+		Status = fs_stat(batteryFilePath, &fileStat);
+		if (Status == 0)
+		{
+			LogSize += fileStat.size;
+		}
+		/* always round up */
+		Ret = (LogSize / B_PER_MB) + 1;
+	}
+
+	LOG_INF("Current Log Size = %d MB", Ret);
+
+	return (Ret);
+}
+
 int sdCardLogInit()
 {
 	int ret = 0;
+	int LogLength = 0;
 	u32_t blockCount = 0;
 	u32_t blockSize = 0;
 	u64_t sdCardSize = 0;
 	static const char *diskPdrv = "SD";
 	struct device * sdcardEnable = 0;
 
+	/* initialize the log size based on the stored log size */
+	ret = nvReadSDLogMaxSize(&LogLength);
+
+
+	/* if nothing valid is present just set it to a default value */
+	if ((ret < 0) || (LogLength < SDCARD_LOG_DEFAULT_MAX_LENGTH))
+	{
+		LogLength = SDCARD_LOG_DEFAULT_MAX_LENGTH;
+	}
+
+	UpdateMaxLogSize(LogLength);
+
 	/* enable the voltage translator between the nRF52 and SD card */
 	sdcardEnable = device_get_binding(SD_OE_PORT);
-	gpio_pin_configure(sdcardEnable, SD_OE_PIN, GPIO_DIR_OUT);
-	gpio_pin_write(sdcardEnable, SD_OE_PIN, SD_OE_ENABLED);
+	gpio_pin_configure(sdcardEnable, SD_OE_PIN, GPIO_OUTPUT);
+	gpio_pin_set(sdcardEnable, SD_OE_PIN, SD_OE_ENABLED);
 
 	do
 	{
@@ -143,7 +244,6 @@ int sdCardLogBL654Data(BL654SensorMsg_t * msg)
 
 	if (sdCardPresent)
 	{
-		k_mutex_lock(&sdcardLogMutex, K_FOREVER);
 		/* if this is the first open, we want to
 		*	be sure to append to the end rather than overwrite from
 		*	the beginning.
@@ -187,7 +287,6 @@ int sdCardLogBL654Data(BL654SensorMsg_t * msg)
 			/* close the file (this also flushes data to the physical media) */
 			ret = fs_close(&bl654LogFileZfp);
 		}
-		k_mutex_unlock(&sdcardLogMutex);
 	}
 
 	return ret;
@@ -202,7 +301,6 @@ int sdCardLogAdEvent(Bt510AdEvent_t * event)
 
 	if (sdCardPresent)
 	{
-		k_mutex_lock(&sdcardLogMutex, K_FOREVER);
 		/* if this is the first open, we want to
 		*	be sure to append to the end rather than overwrite from
 		*	the beginning.
@@ -247,7 +345,6 @@ int sdCardLogAdEvent(Bt510AdEvent_t * event)
 			/* close the file (this also flushes data to the physical media) */
 			ret = fs_close(&sensorLogFileZfp);
 		}
-		k_mutex_unlock(&sdcardLogMutex);
 	}
 
 	return ret;
@@ -262,7 +359,6 @@ int sdCardLogBatteryData(void * data, int length)
 
 	if (sdCardPresent)
 	{
-		k_mutex_lock(&sdcardLogMutex, K_FOREVER);
 		/* if this is the first open, we want to
 		*	be sure to append to the end rather than overwrite from
 		*	the beginning.
@@ -302,14 +398,9 @@ int sdCardLogBatteryData(void * data, int length)
 				k_free(logData);
 				logData = 0;
 			}
-			else
-			{
-				LOG_ERR("Malloc failed in sdCardLogBatteryData. ret = %d", (u32_t)logData);
-			}
 			/* close the file (this also flushes) */
 			ret = fs_close(&batteryLogZfp);
 		}
-		k_mutex_unlock(&sdcardLogMutex);
 	}
 
 	return ret;

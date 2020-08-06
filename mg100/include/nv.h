@@ -16,8 +16,7 @@ extern "C" {
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-#define NV_FLASH_DEVICE DT_FLASH_DEV_NAME
-#define NV_FLASH_OFFSET DT_FLASH_AREA_STORAGE_OFFSET
+#define NV_FLASH_DEVICE DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL
 
 #define NUM_FLASH_SECTORS 4
 
@@ -27,37 +26,45 @@ extern "C" {
 int nvInit(void);
 int nvReadCommissioned(bool *commissioned);
 int nvStoreCommissioned(bool commissioned);
-int nvStoreDevCert(u8_t *cert, u16_t size);
-int nvStoreDevKey(u8_t *key, u16_t size);
-int nvReadDevCert(u8_t *cert, u16_t size);
-int nvReadDevKey(u8_t *key, u16_t size);
+int nvStoreDevCert(uint8_t *cert, uint16_t size);
+int nvStoreDevKey(uint8_t *key, uint16_t size);
+int nvReadDevCert(uint8_t *cert, uint16_t size);
+int nvReadDevKey(uint8_t *key, uint16_t size);
 int nvDeleteDevCert(void);
 int nvDeleteDevKey(void);
-int nvStoreAwsEndpoint(u8_t *ep, u16_t size);
-int nvReadAwsEndpoint(u8_t *ep, u16_t size);
+int nvStoreAwsEndpoint(uint8_t *ep, uint16_t size);
+int nvReadAwsEndpoint(uint8_t *ep, uint16_t size);
 int nvDeleteAwsEndpoint(void);
-int nvStoreAwsClientId(u8_t *id, u16_t size);
-int nvReadAwsClientId(u8_t *id, u16_t size);
+int nvStoreAwsClientId(uint8_t *id, uint16_t size);
+int nvReadAwsClientId(uint8_t *id, uint16_t size);
 int nvDeleteAwsClientId(void);
-int nvStoreAwsRootCa(u8_t *cert, u16_t size);
-int nvReadAwsRootCa(u8_t *cert, u16_t size);
+int nvStoreAwsRootCa(uint8_t *cert, uint16_t size);
+int nvReadAwsRootCa(uint8_t *cert, uint16_t size);
 int nvDeleteAwsRootCa(void);
-int nvInitLwm2mConfig(void *data, void *init_value, u16_t size);
-int nvWriteLwm2mConfig(void *data, u16_t size);
-int nvReadBatteryLow(u16_t * batteryData);
-int nvReadBatteryAlarm(u16_t * batteryData);
-int nvReadBattery4(u16_t * batteryData);
-int nvReadBattery3(u16_t * batteryData);
-int nvReadBattery2(u16_t * batteryData);
-int nvReadBattery1(u16_t * batteryData);
-int nvReadBattery0(u16_t * batteryData);
-int nvStoreBatteryLow(u16_t * batteryData);
-int nvStoreBatteryAlarm(u16_t * batteryData);
-int nvStoreBattery4(u16_t * batteryData);
-int nvStoreBattery3(u16_t * batteryData);
-int nvStoreBattery2(u16_t * batteryData);
-int nvStoreBattery1(u16_t * batteryData);
-int nvStoreBattery0(u16_t * batteryData);
+int nvInitLwm2mConfig(void *data, void *init_value, uint16_t size);
+int nvWriteLwm2mConfig(void *data, uint16_t size);
+int nvReadBatteryLow(uint16_t * batteryData);
+int nvReadBatteryAlarm(uint16_t * batteryData);
+int nvReadBattery4(uint16_t * batteryData);
+int nvReadBattery3(uint16_t * batteryData);
+int nvReadBattery2(uint16_t * batteryData);
+int nvReadBattery1(uint16_t * batteryData);
+int nvReadBattery0(uint16_t * batteryData);
+int nvStoreBatteryLow(uint16_t * batteryData);
+int nvStoreBatteryAlarm(uint16_t * batteryData);
+int nvStoreBattery4(uint16_t * batteryData);
+int nvStoreBattery3(uint16_t * batteryData);
+int nvStoreBattery2(uint16_t * batteryData);
+int nvStoreBattery1(uint16_t * batteryData);
+int nvStoreBattery0(uint16_t * batteryData);
+int nvStoreAccelODR(int Value);
+int nvStoreAccelThresh(int Value);
+int nvStoreAccelScale(int Value);
+int nvStoreSDLogMaxSize(int Value);
+int nvReadAccelODR(int * Value);
+int nvReadAccelThresh(int * Value);
+int nvReadAccelScale(int * Value);
+int nvReadSDLogMaxSize(int * Value);
 
 #ifdef __cplusplus
 }

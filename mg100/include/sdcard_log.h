@@ -26,14 +26,28 @@ extern "C" {
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
+#define SDCARD_LOG_DEFAULT_MAX_LENGTH	32
 
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
-
+struct sdcard_status {
+	int currLogSize;
+	int maxLogSize;
+	int freeSpace;
+};
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
+/**
+ * @brief this function initializes the sdcard logging sub-system.
+ *
+ * @param none
+ *
+ * @retval struct sdcard_status * - returns the sdcard shadow parameter data.
+ */
+struct sdcard_status *sdCardLogGetStatus(void);
+
 /**
  * @brief this function initializes the sdcard logging sub-system.
  *
@@ -85,15 +99,41 @@ int sdCardLogAdEvent(Bt510AdEvent_t * event);
  */
 int sdCardLogBL654Data(BL654SensorMsg_t * msg);
 
+/**
+ * @brief this function is called by the gateway JSON parser to set the maximum log size.
+ *
+ * @param int Value - the maximum log size in MB.
+ *
+ * @retval none
+ */
+bool UpdateMaxLogSize(int Value);
 
 /**
- * @brief
+ * @brief this function is called by the gateway JSON parser to get the maximum log size.
  *
- * @param
- * @param
+ * @param none
  *
- * @retval
+ * @retval int Value - the maximum log size in in MB.
  */
+int GetMaxLogSize();
+
+/**
+ * @brief this function is called by the gateway JSON parser to get the current log size.
+ *
+ * @param none
+ *
+ * @retval int Value - the current log size in MB.
+ */
+int GetLogSize();
+
+/**
+ * @brief this function is called by the gateway JSON parser to get the sdcard's free spce.
+ *
+ * @param none
+ *
+ * @retval int Value - the freespace in MB.
+ */
+int GetFSFree();
 
 #ifdef __cplusplus
 }

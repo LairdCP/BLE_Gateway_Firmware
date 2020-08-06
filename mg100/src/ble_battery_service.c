@@ -23,11 +23,10 @@ LOG_MODULE_REGISTER(mg100_battery_svc);
 #include <bluetooth/gatt.h>
 #include <bluetooth/bluetooth.h>
 
-#include "mg100_common.h"
 #include "laird_bluetooth.h"
 #include "ble_battery_service.h"
-#include "power.h"
-#include "battery.h"
+#include "laird_power.h"
+#include "lairdconnect_battery.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -50,21 +49,21 @@ static struct bt_uuid_128 BATTERY_THRESH_0_UUID = BATTERY_SVC_BASE_UUID_128(0x06
 static struct bt_uuid_128 BATTERY_ALARM_UUID = BATTERY_SVC_BASE_UUID_128(0x06bb);
 
 struct ble_battery_service {
-	s16_t batt_voltage;
-	u16_t batt_voltage_index;
-	u16_t batt_cap_index;
-	u16_t batt_chg_state_index;
-	u16_t batt_alarm_index;
+	int16_t batt_voltage;
+	uint16_t batt_voltage_index;
+	uint16_t batt_cap_index;
+	uint16_t batt_chg_state_index;
+	uint16_t batt_alarm_index;
 	enum battery_status batt_cap;
-	u16_t batt_threshold_low;
-	u16_t batt_threshold_alarm;
-	u16_t batt_threshold_4;
-	u16_t batt_threshold_3;
-	u16_t batt_threshold_2;
-	u16_t batt_threshold_1;
-	u16_t batt_threshold_0;
-	u8_t batt_chg_state;
-	u8_t batt_alarm;
+	uint16_t batt_threshold_low;
+	uint16_t batt_threshold_alarm;
+	uint16_t batt_threshold_4;
+	uint16_t batt_threshold_3;
+	uint16_t batt_threshold_2;
+	uint16_t batt_threshold_1;
+	uint16_t batt_threshold_0;
+	uint8_t batt_chg_state;
+	uint8_t batt_alarm;
 };
 
 struct ccc_table {
@@ -73,35 +72,41 @@ struct ccc_table {
 	struct lbt_ccc_element battery_chg_state;
 	struct lbt_ccc_element battery_alarm;
 };
+/******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
+static void battery_svc_connected(struct bt_conn *conn, uint8_t err);
+static void battery_svc_disconnected(struct bt_conn *conn, uint8_t reason);
+static void battery_voltage_ccc_handler(const struct bt_gatt_attr *attr, uint16_t value);
+static void battery_cap_ccc_handler(const struct bt_gatt_attr *attr, uint16_t value);
+static void battery_chg_state_ccc_handler(const struct bt_gatt_attr *attr, uint16_t value);
+static void battery_alarm_ccc_handler(const struct bt_gatt_attr *attr, uint16_t value);
+static ssize_t write_battery_threshold_low(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags);
+static ssize_t write_battery_threshold_alarm(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags);
+static ssize_t write_battery_threshold_4(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags);
+static ssize_t write_battery_threshold_3(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags);
+static ssize_t write_battery_threshold_2(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags);
+static ssize_t write_battery_threshold_1(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags);
+static ssize_t write_battery_threshold_0(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
 static struct ble_battery_service bps;
 static struct ccc_table ccc;
-static struct bt_conn *(*get_connection_handle_fptr)(void);
+static struct bt_conn *battery_svc_conn;
 
-/******************************************************************************/
-/* Local Function Prototypes                                                  */
-/******************************************************************************/
-static void battery_voltage_ccc_handler(const struct bt_gatt_attr *attr, u16_t value);
-static void battery_cap_ccc_handler(const struct bt_gatt_attr *attr, u16_t value);
-static void battery_chg_state_ccc_handler(const struct bt_gatt_attr *attr, u16_t value);
-static void battery_alarm_ccc_handler(const struct bt_gatt_attr *attr, u16_t value);
-static ssize_t write_battery_threshold_low(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags);
-static ssize_t write_battery_threshold_alarm(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags);
-static ssize_t write_battery_threshold_4(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags);
-static ssize_t write_battery_threshold_3(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags);
-static ssize_t write_battery_threshold_2(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags);
-static ssize_t write_battery_threshold_1(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags);
-static ssize_t write_battery_threshold_0(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags);
+static struct bt_conn_cb battery_svc_conn_callbacks = {
+	.connected = battery_svc_connected,
+	.disconnected = battery_svc_disconnected,
+};
 
 /******************************************************************************/
 /* Battery Service Declaration                                                  */
@@ -153,30 +158,20 @@ static struct bt_gatt_service battery_svc = BT_GATT_SERVICE(battery_attrs);
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-void battery_svc_assign_connection_handler_getter(
-	struct bt_conn *(*function)(void))
+static void battery_svc_notify(bool notify, uint16_t index, uint16_t length)
 {
-	get_connection_handle_fptr = function;
-}
-
-static void battery_svc_notify(bool notify, u16_t index, u16_t length)
-{
-	if (get_connection_handle_fptr == NULL) {
-		return;
-	}
-
-	struct bt_conn *connection_handle = get_connection_handle_fptr();
+	struct bt_conn *connection_handle = battery_svc_get_conn();
 	if (connection_handle != NULL) {
 		if (notify) {
 			bt_gatt_notify(connection_handle,
-				       &battery_svc.attrs[index],
-				       battery_svc.attrs[index].user_data,
-				       length);
+					&battery_svc.attrs[index],
+					battery_svc.attrs[index].user_data,
+					length);
 		}
 	}
 }
 
-void battery_svc_set_battery(u16_t voltage, u8_t capacity)
+void battery_svc_set_battery(uint16_t voltage, uint8_t capacity)
 {
 	bps.batt_voltage = voltage;
 	bps.batt_cap = capacity;
@@ -187,14 +182,14 @@ void battery_svc_set_battery(u16_t voltage, u8_t capacity)
 			 sizeof(bps.batt_cap));
 }
 
-void battery_svc_set_chg_state(u8_t chgState)
+void battery_svc_set_chg_state(uint8_t chgState)
 {
 	bps.batt_chg_state = chgState;
 	battery_svc_notify(ccc.battery_chg_state.notify, bps.batt_chg_state_index,
 			 sizeof(bps.batt_chg_state));
 }
 
-void battery_svc_set_alarm_state(u8_t alarmState)
+void battery_svc_set_alarm_state(uint8_t alarmState)
 {
 	bps.batt_alarm = alarmState;
 	battery_svc_notify(ccc.battery_alarm.notify, bps.batt_alarm_index,
@@ -204,6 +199,8 @@ void battery_svc_set_alarm_state(u8_t alarmState)
 void battery_svc_init()
 {
 	bt_gatt_service_register(&battery_svc);
+
+	bt_conn_cb_register(&battery_svc_conn_callbacks);
 
 	size_t gatt_size = (sizeof(battery_attrs) / sizeof(battery_attrs[0]));
 	bps.batt_voltage_index =
@@ -231,29 +228,59 @@ void battery_svc_update_data()
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static void battery_voltage_ccc_handler(const struct bt_gatt_attr *attr, u16_t value)
+static void battery_svc_connected(struct bt_conn *conn, uint8_t err)
+{
+	if (err) {
+		return;
+	}
+
+	if (!lbt_slave_role(conn)) {
+		return;
+	}
+
+	battery_svc_conn = bt_conn_ref(conn);
+}
+
+static void battery_svc_disconnected(struct bt_conn *conn, uint8_t reason)
+{
+	if (!lbt_slave_role(conn)) {
+		return;
+	}
+
+	if (battery_svc_conn) {
+		bt_conn_unref(battery_svc_conn);
+		battery_svc_conn = NULL;
+	}
+}
+/* The weak implementation can be used for single peripheral designs. */
+__weak struct bt_conn *battery_svc_get_conn(void)
+{
+	return battery_svc_conn;
+}
+
+static void battery_voltage_ccc_handler(const struct bt_gatt_attr *attr, uint16_t value)
 {
 	ccc.battery_voltage.notify = IS_NOTIFIABLE(value);
 }
 
-static void battery_cap_ccc_handler(const struct bt_gatt_attr *attr, u16_t value)
+static void battery_cap_ccc_handler(const struct bt_gatt_attr *attr, uint16_t value)
 {
 	ccc.battery_cap.notify = IS_NOTIFIABLE(value);
 }
 
-static void battery_chg_state_ccc_handler(const struct bt_gatt_attr *attr, u16_t value)
+static void battery_chg_state_ccc_handler(const struct bt_gatt_attr *attr, uint16_t value)
 {
 	ccc.battery_chg_state.notify = IS_NOTIFIABLE(value);
 }
 
-static void battery_alarm_ccc_handler(const struct bt_gatt_attr *attr, u16_t value)
+static void battery_alarm_ccc_handler(const struct bt_gatt_attr *attr, uint16_t value)
 {
 	ccc.battery_alarm.notify = IS_NOTIFIABLE(value);
 }
 
 
 static ssize_t write_battery_threshold_low(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags)
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags)
 {
 	ssize_t length = lbt_write_u16(conn, attr, buf, len, offset, flags);
 	BatterySetThresholds(BATTERY_IDX_LOW, bps.batt_threshold_low);
@@ -261,7 +288,7 @@ static ssize_t write_battery_threshold_low(struct bt_conn *conn, const struct bt
 }
 
 static ssize_t write_battery_threshold_alarm(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags)
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags)
 {
 	ssize_t length = lbt_write_u16(conn, attr, buf, len, offset, flags);
 	BatterySetThresholds(BATTERY_IDX_ALARM, bps.batt_threshold_alarm);
@@ -269,7 +296,7 @@ static ssize_t write_battery_threshold_alarm(struct bt_conn *conn, const struct 
 }
 
 static ssize_t write_battery_threshold_4(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags)
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags)
 {
 	ssize_t length = lbt_write_u16(conn, attr, buf, len, offset, flags);
 	BatterySetThresholds(BATTERY_IDX_4, bps.batt_threshold_4);
@@ -277,7 +304,7 @@ static ssize_t write_battery_threshold_4(struct bt_conn *conn, const struct bt_g
 }
 
 static ssize_t write_battery_threshold_3(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags)
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags)
 {
 	ssize_t length = lbt_write_u16(conn, attr, buf, len, offset, flags);
 	BatterySetThresholds(BATTERY_IDX_3, bps.batt_threshold_3);
@@ -285,7 +312,7 @@ static ssize_t write_battery_threshold_3(struct bt_conn *conn, const struct bt_g
 }
 
 static ssize_t write_battery_threshold_2(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags)
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags)
 {
 	ssize_t length = lbt_write_u16(conn, attr, buf, len, offset, flags);
 	BatterySetThresholds(BATTERY_IDX_2, bps.batt_threshold_2);
@@ -293,7 +320,7 @@ static ssize_t write_battery_threshold_2(struct bt_conn *conn, const struct bt_g
 }
 
 static ssize_t write_battery_threshold_1(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags)
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags)
 {
 	ssize_t length = lbt_write_u16(conn, attr, buf, len, offset, flags);
 	BatterySetThresholds(BATTERY_IDX_1, bps.batt_threshold_1);
@@ -301,7 +328,7 @@ static ssize_t write_battery_threshold_1(struct bt_conn *conn, const struct bt_g
 }
 
 static ssize_t write_battery_threshold_0(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			 const void *buf, u16_t len, u16_t offset, u8_t flags)
+			 const void *buf, uint16_t len, uint16_t offset, uint8_t flags)
 {
 	ssize_t length = lbt_write_u16(conn, attr, buf, len, offset, flags);
 	BatterySetThresholds(BATTERY_IDX_0, bps.batt_threshold_0);

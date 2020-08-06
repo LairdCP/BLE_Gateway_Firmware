@@ -39,7 +39,7 @@ Select **Terminal -> Run Task...**, then select **flash application**.
 *Run flash task*
 
 ## Debugging the Firmware
-Debugging the firmware on the Pinnacle 100 DVK is made possible because of the built in J-Link hardware on the DVK and the Cortex-Debug extension for VS Code.
+Debugging the firmware on the MG100 requires a J-Link debugger and the Cortex-Debug extension for VS Code.
 
 ### Cortex-Debug Setup
 Before debugging, some simple setup is required for Cortex-Debug.  Go to **File -> Preferences -> Settings**.
@@ -59,9 +59,9 @@ Add the following lines to the settings.json file:
 >The paths shown above are Windows compatible paths.  If on Linux or macOS the paths should use single '/' characters.
 
 ### Firmware Setup
-By default `CONFIG_FLASH_LOAD_OFFSET` is set to 0x1000 to work with the Laird secure bootloader that comes pre-installed on the Pinnacle 100 modem.  Setting `CONFIG_FLASH_LOAD_OFFSET` to 0 will allow you to flash and debug the firmware without the need for the bootloader.
+By default `CONFIG_FLASH_LOAD_OFFSET` is set to 0x1000 to work with the Laird secure bootloader that comes pre-installed on the MG100.  Setting `CONFIG_FLASH_LOAD_OFFSET` to 0 will allow you to flash and debug the firmware without the need for the bootloader.
 
-In order to debug the firmware properly, it is recommended to change the optimization settings of the firmware when it is compiled.  This allows better breakpoint support and viewing temporary variable values. In [prj.conf](../mg100/prj.conf) look for:
+In order to debug the firmware properly, it is recommended to change the optimization settings of the firmware when it is compiled.  This allows better breakpoint support and viewing temporary variable values. In [prj.conf](../oob_demo/prj.conf) look for:
 ```
 CONFIG_NO_OPTIMIZATIONS
 CONFIG_DEBUG_OPTIMIZATIONS

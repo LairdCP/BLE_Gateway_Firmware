@@ -29,9 +29,9 @@ enum FwkMsgCodeEnum {
 	FMC_ADV = FMC_APPLICATION_SPECIFIC_START,
 	FMC_SENSOR_PUBLISH,
 	FMC_BL654_SENSOR_EVENT,
+	FMC_GATEWAY_INIT,
 	FMC_GATEWAY_OUT,
-	FMC_SHADOW_REQUEST,
-	FMC_SHADOW_ACK,
+	FMC_SENSOR_TICK,
 	FMC_WHITELIST_REQUEST,
 	FMC_CONFIG_REQUEST,
 	FMC_CONNECT_REQUEST,
@@ -44,6 +44,8 @@ enum FwkMsgCodeEnum {
 	FMC_SUBSCRIBE,
 	FMC_SUBSCRIBE_ACK,
 	FMC_SENSOR_SHADOW_INIT,
+	FMC_AWS_KEEP_ALIVE,
+	FMC_AWS_DECOMMISSION,
 
 	FMC_AWS_CONNECTED,
 	FMC_AWS_DISCONNECTED,
@@ -52,8 +54,8 @@ enum FwkMsgCodeEnum {
 	/* Last value (DO NOT DELETE) */
 	NUMBER_OF_FRAMEWORK_MSG_CODES
 };
-BUILD_ASSERT_MSG(sizeof(enum FwkMsgCodeEnum) <= sizeof(FwkMsgCode_t),
-		 "Too many message codes");
+BUILD_ASSERT(sizeof(enum FwkMsgCodeEnum) <= sizeof(FwkMsgCode_t),
+	     "Too many message codes");
 
 #ifdef __cplusplus
 }

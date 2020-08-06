@@ -1,9 +1,22 @@
-﻿# BLE Services and information used in the MG100 Demo
+﻿# BLE Services and information used in the Pinnacle 100 OOB Demo
 
 ## Advertisement
 
 The advertisement includes the UUID of the Cellular Profile. The complete local name is included in the scan response.
-The complete local name is "MG100-1234567", where "1234567" are replaced with the last 7 digits of the IMEI.
+The complete local name is "Pinnacle 100 OOB-1234567", where "1234567" are replaced with the last 7 digits of the IMEI.
+
+## Device Information Service
+
+### UUID: 180a
+
+Characteristics:
+
+| Name               | UUID | Properties  | Description                           |
+| ------------------ | ---- | ----------- | ------------------------------------- |
+| Model Number       | 2a24 | read        | Model number of the device (string)   |
+| Firmware Revision  | 2a26 | read        | Zephyr RTOS version (string)          |
+| Software Revision  | 2a28 | read        | OOB demo application version (string) |
+| Manufacturer       | 2a29 | read        | Manufacturer (string)                 |
 
 ## AWS Provisioning Profile
 
@@ -19,7 +32,7 @@ Characteristics:
 | Client Cert  | ae7203f4-55a9-4a14-bcd7-7c59f234a9b5 | read/write  | Up to 2048 bytes of ASCII PEM client certificate. See note below about long characteristics.                                                                                                                             |
 | Client Key   | ae7203f5-55a9-4a14-bcd7-7c59f234a9b5 | read/write  | Up to 2048 bytes of ASCII PEM private key corresponding to the client certificate. See note below about long characteristics.                                                                                            |
 | Save/Clear   | ae7203f6-55a9-4a14-bcd7-7c59f234a9b5 | write       | One byte. Writing a value of 1 will cause any data written to the above characteristics to be stored in non-volatile memory. Writing a value of 2 will cause all of the above data to be cleared in non-volatile memory. |
-| Status       | ae7203f7-55a9-4a14-bcd7-7c59f234a9b5 | read/notify | One byte representing the current status of the AWS IoT connection: 0 – Not Provisioned, 1 – Disconnected, 2 – Connected, 3 – Connection Error                                                                           |
+| Status       | ae7203f7-55a9-4a14-bcd7-7c59f234a9b5 | read/notify | One byte representing the current status of the AWS IoT connection: 0 – Not Provisioned, 1 – Disconnected, 2 – Connected, 3 – Connection Error, 4 - Connecting                                                           |
 
 For the three characteristics that store large amounts of data (two certificates and the private key), a solution is needed to permit writes to the characteristic of more than the 512 bytes allowed by BLE. The solution implemented here is to add a four-byte (unsigned 32-bit integer, little-endian byte order) offset field to the start of the characteristic write data.
 Though not technically required to be written in order, the procedure for writing one of these long characteristics is shown below. The assumption is made that writes are done in 64 bytes chunks.
@@ -122,6 +135,16 @@ Characteristics:
 | Battery Threshold 0     | 6d4a06ba-9641-11ea-ab12-0800200c9a66 | read/write  | unsigned 16-bit value representing the lowest threshold in millivolts for a 4-segment charging meter.                                                                                  |
 | Battery Low Alarm       | 6d4a06bb-9641-11ea-ab12-0800200c9a66 | notify      | unsigned 8-bit value indicating the low battery alarm state. 0 = no alarm, 1 = alarm.                                                                                                  |
 
+## Motion Profile
+
+### UUID: adce0a30-ac1a-11ea-8b6e-0800200c9a66
+
+Characteristics:
+
+| Name                     | UUID                                 | Properties  | Description                                                                                  |
+| ------------------------ | ------------------------------------ | ----------- | -------------------------------------------------------------------------------------------- |
+| Motion Alarm             | adce0a31-ac1a-11ea-8b6e-0800200c9a66 | notify      | One Byte. Motion State: 1 - Motion, 0 - No Motion                                            |
+
 ## Sensor Profile
 
 ### UUID: ab010000-5bab-471a-9074-a0ae3937c70c
@@ -132,16 +155,6 @@ Characteristics:
 | ------------------------ | ------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sensor State             | ab010001-5bab-471a-9074-a0ae3937c70c | read/notify | One Byte. BME280 Sensor State: 0 - Finding device, 1 - Finding service, 2 - Finding Temperature Characteristic, 3 - Finding Humidity Characteristic, 4 - Finding pressure characteristic, 5 - Connected and Configured |
 | Sensor Bluetooth Address | ab010002-5bab-471a-9074-a0ae3937c70c | read/notify | String representation of address of connected BME280 sensor.                                                                                                                                                           |
-
-## Motion Profile
-
-### UUID: adce0a30-ac1a-11ea-8b6e-0800200c9a66
-
-Characteristics:
-
-| Name                     | UUID                                 | Properties  | Description                                                                                  |
-| ------------------------ | ------------------------------------ | ----------- | -------------------------------------------------------------------------------------------- |
-| Motion Alarm             | adce0a31-ac1a-11ea-8b6e-0800200c9a66 | notify      | One Byte. Motion State: 1 - Motion, 0 - No Motion                                            |
 
 ## LwM2M Client Configuration Profile
 
@@ -154,6 +167,22 @@ Characteristics:
 | Name                     | UUID                                 | Properties  | Description                                                                                  |
 | ------------------------ | ------------------------------------ | ----------- | -------------------------------------------------------------------------------------------- |
 | Generate                 | 07fd0001-d320-768c-364a-c405518f724c | write       | One Byte. Write zero to set to defaults.  Write non-zero to generate new PSK.                |
-| Client PSK               | 07fd0002-d320-768c-364a-c405518f724c | read        | 16 bytes.  Private shared key used to talk to Leshan server.                                 | 
-| Client ID                | 07fd0003-d320-768c-364a-c405518f724c | read/write  | Maximum of a 32 character string.  Unique ID associated with PSK.                            | 
+| Client PSK               | 07fd0002-d320-768c-364a-c405518f724c | read        | 16 bytes.  Private shared key used to talk to Leshan server.                                 |
+| Client ID                | 07fd0003-d320-768c-364a-c405518f724c | read/write  | Maximum of a 32 character string.  Unique ID associated with PSK.                            |
 | Peer URL                 | 07fd0004-d320-768c-364a-c405518f724c | read/write  | Maximum of a 128 character string.  URL of Leshan server.                                    |
+
+
+## FOTA Profile
+
+### UUID: 3e120000-0a2a-32tb-2b85-8349747c5745
+
+Characteristics:
+
+| Name             | UUID                                 | Properties        | Description
+| ---------------- | ------------------------------------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Control Point    | 3e120001-0a2a-324b-2685-8349747c5745 | read/write/notify | One byte for controlling the FOTA service. NOP - 0, List Files - 1, Modem Start - 2, Delete Files - 3, Compute SHA256 - 4                                                                                                                                 |
+| Status           | 3e120002-0a2a-324b-2685-8349747c5745 | read/notify       | Integer. Negative System error code. 0 - Success, 1 - Busy, 2 - Unspecific error code.  Any value other than 1 can be considered Idle.  Busy will always be notified.  Any subsequeny commands issued before a success or error response will be ignored. |
+| Count            | 3e120003-0a2a-324b-2685-8349747c5745 | read/notify       | The number of bytes that have been transferred in the current FOTA update.  This may be larger than the size if data is padded during transfer.                                                                                                           |
+| Size             | 3e120004-0a2a-324b-2685-8349747c5745 | read/notify       | The size of the file in bytes.                                                                                                                                                                                                                            |
+| File Name        | 3e120005-0a2a-324b-2685-8349747c5745 | read/write/notify | The file name of the current operation.  File names are pattern matched.  An empty string will match all files.  The filesystem is not traversed.                                                                                                         |
+| Hash             | 3e120006-0a2a-324b-2685-8349747c5745 | read/notify       | The 32-byte SHA256 hash of the current file.                                                                                                                                                                                                              |

@@ -77,7 +77,7 @@ X                                X
 
 The following are required to use the MG100:
 
-- An activated SIM card. See [here](Truphone_SIM_Set_Up.pdf) for instructions on activating the SIM card that came with your kit.
+- An activated SIM card. See [here](https://connectivity-staging.s3.us-east-2.amazonaws.com/2020-08/CS-AN-Truphone%20SIM%20Set%20Up%20v1_1.pdf) for instructions on activating the SIM card that came with your kit.
 - MG100 programmed with the latest LTE-M/AWS firmware. Releases available
 - Laird Pinnacle Connect app installed on a mobile device
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)
@@ -109,7 +109,7 @@ _Scan screen_
 To scan for devices, follow these steps:
 
 1. Click **Find Pinnacle Devices**. Discovered devices are displayed.
-   > **Note:** The device name contains the last seven digits of the IMEI of the device so that you can easily identify the device to which you wish to connect. The IMEI is printed on the Pinnacle 100 modem label.
+   > **Note:** The device name contains the last seven digits of the IMEI of the device so that you can easily identify the device to which you wish to connect. The IMEI is printed on the label on the bottom of the MG100 housing.
 
 ![Scan screen - devices found](images/devices_found.png)  
 _Scan screen - devices found_
@@ -171,12 +171,12 @@ _Cell settings_
 
 ### Power Settings
 
-The power settings page displays the battery voltage and allows the user to reboot the modem. MG100 variants, 450-00038-K1 and 450-00054-K1 are equipped with a rechargable Li-ion battery used for backup power when external power is lost. The battery will automatically start charging again once external power is restored and the the battery is not fully charged. The MG100 application monitors the battery voltage and temperature to provide remaining capacity left in the battery. This data is sent over ble or cellular to report voltage and remaining battery capacity. The battery thresholds are defaulted to reasonable values, but they can be modified via ble or the shadow if customization is desired. The threshold defaults are as follows. The lowest the battery is allowed to discharge to is 2.75V before the undervoltage protection hardware kicks in.
+The power settings page displays the battery voltage and allows the user to reboot the modem. MG100 variants, 450-00038-K1 and 450-00054-K1 are equipped with a rechargable Li-ion battery used for backup power when external power is lost. The battery will automatically start charging again once external power is restored and the the battery is not fully charged. The MG100 application monitors the battery voltage and temperature to provide remaining capacity left in the battery. This data is sent over ble or cellular to report voltage and remaining battery capacity. The battery thresholds are defaulted to reasonable values, but they can be modified via ble or the shadow if customization is desired. The threshold defaults are as follows. The lowest the battery is allowed to discharge to is 2.75V before the undervoltage protection hardware kicks in.  
 
-Battery Threshold 4 - 4200 mV
-Battery Threshold 3 - 3800 mV
-Battery Threshold 2 - 3400 mV
-Battery Threshold 1 - 3000 mV
+Battery Threshold 4 - 4200 mV  
+Battery Threshold 3 - 3800 mV  
+Battery Threshold 2 - 3400 mV  
+Battery Threshold 1 - 3000 mV  
 
 These thresholds are designed to provide approximately equal discharge time between thresholds 4-3 and 3-2. Below threshold 2, the amount of time left before the battery discharges completely, drops off quickly. This behavior can vary depending on conditions and battery health.
 

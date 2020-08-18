@@ -8,9 +8,9 @@ These two modes are selected at compile time. See the following sections for doc
 
 ## Programming
 
-MG100 units with version 2.0.0 on installed on it must be upgraded via JTAG. Flashing over the air is not yet supported. To do this please consult the [MG100 Hardware Guide](https://connectivity-staging.s3.us-east-2.amazonaws.com/2020-08/CS-USER_GUIDE-MicroGateway%20v1_0.pdf) section 5.4.4 to learn how to connect the J-Link debugger to the board.
+The current FW version on production MG100 units is v2.0.0. This version currently only supports upgrading via JTAG. To do this please consult the MG100 Hardware Guide section 5.4.4 to learn how to connect the J-Link debugger to the board.
 
-MG100 units with version 3.x.y or greater support flashing over the air via mcumgr. 
+For future MG100 units with version 3.x.y, or greater support, OTA programming will be possible via mcumgr.
 
 ## LTE-M and AWS
 

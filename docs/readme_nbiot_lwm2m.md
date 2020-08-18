@@ -90,7 +90,7 @@ If the Laird Connectivity Leshan server is used, then the MG100 should be config
 1. Open the mobile app, connect to your device and go to the LwM2M Settings page.
 2. Click the Auto-commission device button.  This will automatically add the MG100 as a unique device to the Leshan LwM2M server.
 
-![Auto-commission device](images/lwm2m_auto_commission.png)
+![Auto-commission device](images/lwm2m_auto_commission.png)  
 _Auto-commission device_
 
 3. Skip to [View Cloud Data](#view-cloud-data) for instuctions on interacting with your device.
@@ -101,17 +101,17 @@ _Auto-commission device_
 2. Go to the Security page.
 3. Press "Add new client configuration".
 
-![Leshan add device](images/leshan_add_device.png)
+![Leshan add device](images/leshan_add_device.png)  
 _Leshan add device_
 
 4. Using the Pinnacle Connect mobile app, read model number from Device Information page.
 
-![Model number](images/app_model_number.png)
+![Model number](images/app_model_number.png)  
 _Model number_
 
 5. With the mobile app, read IMEI from Cellular Settings page.
 
-![IMEI](images/app_imei.png)
+![IMEI](images/app_imei.png)  
 _IMEI_
 
 6. Enter <model number>_<imei> into the Client endpoint field on the webpage.  For example, mg100_354616090287629.
@@ -120,10 +120,10 @@ _IMEI_
 8. Set and save the Client ID using the mobile app (don't reuse a name that is already present on the server).
 9. Put the same name into the Identity field on the web page.
 
-![LwM2M settings](images/lwm2m_manual_commission.png)
+![LwM2M settings](images/lwm2m_manual_commission.png)  
 _LwM2M settings_
 
-![Leshan device config](images/leshan_device_config.png)
+![Leshan device config](images/leshan_device_config.png)  
 _Leshan device config_
 
 10. Reset the modem using the mobile app (Power Settings page) or reset button (SW5 NRF_RESET).
@@ -132,17 +132,17 @@ _Leshan device config_
 From the [clients page](http://uwterminalx.lairdconnect.com:8080/#/clients), click on your device once it is connected to interact with it.
   * Make sure to set the Response Timeout to something greater than 5s at the top of the page. 
 
-![Leshan response timeout](images/leshan_response_timeout.png)
+![Leshan response timeout](images/leshan_response_timeout.png)  
 _Leshan response timeout_
 
   * Click `Read` at the top of an object to read all child values.  In some cases, not all child values are supported.
 
-![Leshan read object](images/leshan_read_object.png)
+![Leshan read object](images/leshan_read_object.png)  
 _Leshan read object_
 
   * The Light Control object can be used to control the green LED on the dev board. Write `true` or `false` to the On/Off node.
 
-![Leshan light control](images/leshan_light_control.png)
+![Leshan light control](images/leshan_light_control.png)  
 _Leshan light control_
 
 ## User Defined Server

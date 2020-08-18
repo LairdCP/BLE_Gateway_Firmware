@@ -15,12 +15,12 @@ This document will explain how to use Visual Studio Code to build and debug the 
 
 After cloning this repository with `west` you directory structure should look like:
 
-![Demo folder](images/demo_folder.png)<br>
+![Demo folder](images/demo_folder.png)  
 *Demo folder*
 
 Open the *mg100_firmware* folder with VS Code.  The source code is then viewable in the *mg100* folder.
 
-![Source code](images/oob_demo_source.png)<br>
+![Source code](images/oob_demo_source.png)  
 *Source code*
 
 There are VS Code tasks already setup to make building and flashing the firmware easy!
@@ -28,14 +28,14 @@ There are VS Code tasks already setup to make building and flashing the firmware
 
 To build the firmware, run the build task by selecting **Terminal -> Run Build Task...**
 
-![Run build task](images/run_build_task.png)<br>
+![Run build task](images/run_build_task.png)  
 *Run build task*
 
 Once the firmware has built, you can flash the firmware by running the **flash application** task.
 
 Select **Terminal -> Run Task...**, then select **flash application**.
 
-![Run flash task](images/run_flash_task.png)<br>
+![Run flash task](images/run_flash_task.png)  
 *Run flash task*
 
 ## Debugging the Firmware
@@ -46,7 +46,7 @@ Before debugging, some simple setup is required for Cortex-Debug.  Go to **File 
 
 At the top of settings type `cortex-debug` to display the settings for that extension.  The *Arm Toolchain Path* and *JLink GDB Server Path* settings need to be set.  Click one of the *Edit in settings.json* links to edit the settings.
 
-![Cortex debug settings](images/cortex_debug_settings.png)<br>
+![Cortex debug settings](images/cortex_debug_settings.png)  
 *Cortex-Debug settings*
 
 Add the following lines to the settings.json file:

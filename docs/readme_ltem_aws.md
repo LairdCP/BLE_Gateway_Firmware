@@ -103,7 +103,7 @@ _Sign-up and Login screens_
 
 Once logged in, the scan screen displays.
 
-![Scan screen](images/scan.png)<br>
+![Scan screen](images/scan.png)  
 _Scan screen_
 
 To scan for devices, follow these steps:

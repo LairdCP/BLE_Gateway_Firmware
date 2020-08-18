@@ -1,9 +1,9 @@
-﻿# BLE Services and information used in the Pinnacle 100 OOB Demo
+﻿# BLE Services and information used in the MG100 OOB Demo
 
 ## Advertisement
 
 The advertisement includes the UUID of the Cellular Profile. The complete local name is included in the scan response.
-The complete local name is "Pinnacle 100 OOB-1234567", where "1234567" are replaced with the last 7 digits of the IMEI.
+The complete local name is "MG100 OOB-1234567", where "1234567" are replaced with the last 7 digits of the IMEI.
 
 ## Device Information Service
 

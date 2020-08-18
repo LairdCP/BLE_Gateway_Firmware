@@ -16,8 +16,10 @@
 #include <zephyr/types.h>
 #include <stddef.h>
 #include "FrameworkIncludes.h"
-#include "sensor_adv_format.h"
-#include "sensor_log.h"
+#ifdef CONFIG_BLUEGRASS
+# include "sensor_adv_format.h"
+# include "sensor_log.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,6 +73,7 @@ int sdCardLogInit(void);
  */
 int sdCardLogBatteryData(void * data, int length);
 
+#ifdef CONFIG_BLUEGRASS
 /**
  * @brief this function writes data to the log. It will append data to
  *    the end of the file until the log limit is reached. when
@@ -98,7 +101,7 @@ int sdCardLogAdEvent(Bt510AdEvent_t * event);
  * @retval int - Write status - Values < 0 are errors, 0 = success.
  */
 int sdCardLogBL654Data(BL654SensorMsg_t * msg);
-
+#endif
 /**
  * @brief this function is called by the gateway JSON parser to set the maximum log size.
  *

@@ -24,9 +24,11 @@ LOG_MODULE_REGISTER(sdcard_log);
 #include "FrameworkIncludes.h"
 #include "nv.h"
 #include "sdcard_log.h"
-#include "sensor_log.h"
 #include "qrtc.h"
 
+#ifdef CONFIG_BLUEGRASS
+# include "sensor_log.h"
+#endif
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
@@ -69,12 +71,16 @@ static bool batteryLogFileOpened = false;
 static struct fs_file_t sensorLogFileZfp;
 static int sensorLogSeekOffset = 0;
 static int sensorLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
+static int bl654LogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
+static struct sdcard_status sdCardLogStatus;
+
+#ifdef CONFIG_BLUEGRASS
 static bool sensorLogFileOpened = false;
 static struct fs_file_t bl654LogFileZfp;
 static int bl654LogSeekOffset = 0;
-static int bl654LogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static bool bl654LogFileOpened = false;
-static struct sdcard_status sdCardLogStatus;
+#endif
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -235,6 +241,8 @@ int sdCardLogInit()
 
 	return ret;
 }
+
+#ifdef CONFIG_BLUEGRASS
 int sdCardLogBL654Data(BL654SensorMsg_t * msg)
 {
 	int ret = -ENODEV;
@@ -349,7 +357,7 @@ int sdCardLogAdEvent(Bt510AdEvent_t * event)
 
 	return ret;
 }
-
+#endif
 int sdCardLogBatteryData(void * data, int length)
 {
 	int ret = 0;

@@ -6,28 +6,29 @@
 2. **[Resources](#resources)**
 3. **[Prerequisites](#prerequisites)**
 4. **[Setup](#setup)**
-5. **[Using the Demo](#using-the-demo)**
-   [Signup and Login](#signup-and-login)
-   [Scan for Devices](#scan-for-devices)
-   [Home Page](#home-page)
-   [Provision](#provision)
-   [Device Information](#device-information)
-   [MG100 Settings](#mg100-settings)
-   [Cellular Settings](#cellular-settings)
-   [Power Settings](#power-settings)
-6. **[Cloud Data](#cloud-data)**
-   [BT510 Sensor Data](#bt510-sensor-data)
+5. **[Using the Demo](#using-the-demo)**  
+   [Signup and Login](#signup-and-login)  
+   [Scan for Devices](#scan-for-devices)  
+   [Home Page](#home-page)  
+   [Provision](#provision)  
+   [Device Information](#device-information)  
+   [MG100 Settings](#mg100-settings)  
+   [Cellular Settings](#cellular-settings)  
+   [Power Settings](#power-settings)  
+6. **[Cloud Data](#cloud-data)**  
+   [BT510 Sensor Data](#bt510-sensor-data)  
 7. **[LED behavior](#led-behavior)**
 8. **[Development](#development)**
 
 ## Introduction
 
-The MG100 demonstrates gathering sensor data over BLE and sending the data to the cloud (AWS) via LTE-M.
-One device that can be used for the demo is the BL654 BME280 sensor. This sensor measures temperature, humidity, and pressure.
+The MG100 firmware in the AWS configuration gathers sensor data over BLE and sends the data to the cloud (AWS) via LTE-M.
+
+One device that can be used is the BL654 BME280 sensor. This sensor measures temperature, humidity, and pressure.
 
 Another supported sensor is the BT510. It records temperature and movement. The BT510 can also be configured to detect a door opened/closed.
 
-The MG100 scans for the BL654 sensor and connect to the first one it finds. At the same time, the MG100 gathers data for the BT510 devices from advertisements without creating a connection.
+The MG100 scans for the BL654 sensor and connects to the first one it finds. At the same time, the MG100 gathers data for the BT510 devices from advertisements without creating a connection.
 The demo supports one BL654 sensor and up to fifteen BT510 sensors. The demo can be recompiled to remove support for either sensor.
 
 Using the Laird Pinnacle Connect mobile app, the user can provision the MG100 to connect to AWS. Once connected to AWS, the MG100 sends BME280 sensor data (if a sensor is found) to the cloud every 60 seconds. 
@@ -171,7 +172,7 @@ _Cell settings_
 
 ### Power Settings
 
-The power settings page displays the battery voltage and allows the user to reboot the modem. MG100 variants, 450-00038-K1 and 450-00054-K1 are equipped with a rechargable Li-ion battery used for backup power when external power is lost. The battery will automatically start charging again once external power is restored and the the battery is not fully charged. The MG100 application monitors the battery voltage and temperature to provide remaining capacity left in the battery. This data is sent over ble or cellular to report voltage and remaining battery capacity. The battery thresholds are defaulted to reasonable values, but they can be modified via ble or the shadow if customization is desired. The threshold defaults are as follows. The lowest the battery is allowed to discharge to is 2.75V before the undervoltage protection hardware kicks in.  
+The power settings page displays the battery voltage and allows the user to reboot the modem. MG100 variants, 450-00038-K1 and 450-00054-K1 are equipped with a rechargable Li-ion battery used for backup power when external power is lost. The battery will automatically start charging again once external power is restored and the the battery is not fully charged. The MG100 application monitors the battery voltage and temperature to provide remaining capacity left in the battery. This data is sent over BLE or cellular to report voltage and remaining battery capacity. The battery thresholds are defaulted to reasonable values, but they can be modified via BLE or the shadow if customization is desired. The threshold defaults are as follows. The lowest the battery is allowed to discharge to is 2.75V before the undervoltage protection hardware kicks in.  
 
 Battery Threshold 4 - 4200 mV  
 Battery Threshold 3 - 3800 mV  
@@ -181,9 +182,6 @@ Battery Threshold 1 - 3000 mV
 These thresholds are designed to provide approximately equal discharge time between thresholds 4-3 and 3-2. Below threshold 2, the amount of time left before the battery discharges completely, drops off quickly. This behavior can vary depending on conditions and battery health.
 
 This view displays the battery information. Note the MG100 does not allow for measuring the voltage of the external power supply like the Pinnacle 100 DVK. That is why power supply voltage is always shown as -1 for MG100 devices.
-
-WARNING: This product contains a Li-ion battery. There is a risk of fire and burns if the battery pack is handled improperly. Do not attempt to open or service the battery pack. Do not disassemble, crush, puncture, short external contacts or circuits, dispose of in fire or water, or expose a battery pack to temperatures higher than 60°C (140°F). The Sentrius MG100 gateway was designed to use the supplied battery pack only. Contact Laird Connectivity Technical support if a replacement is required.
-
 
 ![Power settings](images/mg100_power_settings.png)  
 _Power settings_
@@ -212,7 +210,7 @@ If a BME280 sensor is discovered, the MG100 connects and reports BME280 sensor d
 
 ### BT510 Sensor Data
 
-If a BT510 sensor is discovered, it displays in the Sensor Network list.
+If a BT510 sensor is discovered, it is displayed in the Sensor Network list.
 
 ![BT510 discovered](images/bt510_discovered.png)  
 _BT510 discovered_

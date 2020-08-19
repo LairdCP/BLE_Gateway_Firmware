@@ -6,10 +6,10 @@
 2. **[Resources](#resources)**
 3. **[Prerequisites](#prerequisites)**
 4. **[Setup](#setup)**
-5. **[Using the Demo](#using-the-demo)**
-   [Auto Commissioning](#auto-commissioning)
-   [Manual Commissioning](#manual-commissioning)
-   [View Cloud Data](#view-cloud-data)
+5. **[Using the Demo](#using-the-demo)**  
+   [Auto Commissioning](#auto-commissioning)  
+   [Manual Commissioning](#manual-commissioning)  
+   [View Cloud Data](#view-cloud-data)  
 6. **[User Defined Server](#user-defined-server)**
 7. **[LED behavior](#led-behavior)**
 8. **[Development](#development)**
@@ -17,7 +17,7 @@
 ## Introduction
 
 When using NB-IoT, we do not recommend using the TCP protocol due to the network latencies inherent to NB-IoT. UDP is recommended for NB-IoT data transfer.
-This demo is configured to use LwM2M and DTLS with pre-shared keys.  [LightweightM2M (LwM2M)](http://www.openmobilealliance.org/wp/Overviews/lightweightm2m_overview.html) is a protocol that runs on top of [CoAP](https://coap.technology/).
+In this configuration, the MG100 is configured to use LwM2M and DTLS with pre-shared keys.  [LightweightM2M (LwM2M)](http://www.openmobilealliance.org/wp/Overviews/lightweightm2m_overview.html) is a protocol that runs on top of [CoAP](https://coap.technology/).
 
 A [Leshan Server](https://www.eclipse.org/leshan/) is used to display information about the MG100 and a connected BL654 BME280 sensor.
 
@@ -67,7 +67,7 @@ X                                X
 
 The following are required to use the MG100:
 
-- An activated SIM card. The Truphone SIM card that comes with the DVK does not currently support NB-IoT. If you have purchased a MG100 in Europe, then please contact [sales](mailto:melanie.thomas@lairdconnect.com) to obtain a SIM card that is NB-IoT capable.
+- An activated SIM card. The Truphone SIM card that comes with the DVK does not currently support NB-IoT. If you have purchased a MG100 in Europe, then please contact [sales](mailto:sales@lairdconnect.com) to obtain a SIM card that is NB-IoT capable.
 - MG100 programmed with NB-IoT/LwM2M MG100 firmware.
 - Laird Pinnacle Connect app installed on a mobile device
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)
@@ -75,12 +75,10 @@ The following are required to use the MG100:
 
 ## Setup
 
-To set up the demo, follow these steps:
+To set up the MG100, follow these steps:
 
-1. Install the activated SIM card into the MG100 SIM slot.
-2. Plug the modem into the dev board.
-3. Program the latest MG100 firmware. See section 3.1.1 of the Programming Guide [here](https://www.lairdconnect.com/)
-4. On your phone, launch the Pinnacle mobile app and follow the on-screen prompts.
+1. Ensure an *activated* SIM card is inserted into the MG100 SIM slot.
+2. On your phone, launch the Pinnacle mobile app and follow the on-screen prompts.
 
 ## Using the Demo
 If the Laird Connectivity Leshan server is used, then the MG100 should be configured to something other than its default settings. This allows multiple MG100 devices to connect to the same server.
@@ -104,12 +102,12 @@ _Auto-commission device_
 ![Leshan add device](images/leshan_add_device.png)  
 _Leshan add device_
 
-4. Using the Pinnacle Connect mobile app, read model number from Device Information page.
+4. Using the Pinnacle Connect mobile app, read the model number from the Device Information page.
 
 ![Model number](images/app_model_number.png)  
 _Model number_
 
-5. With the mobile app, read IMEI from Cellular Settings page.
+5. With the mobile app, read the IMEI from the Cellular Settings page.
 
 ![IMEI](images/app_imei.png)  
 _IMEI_
@@ -150,8 +148,6 @@ In addition to the steps in the [Using the Demo](#using-the-demo) section, the P
 
 ## LED behavior
 
-LED1 - LED4 are on when the modem is booting.
-
 The Blue LED (LED1) blinks once a second when the MG100 is searching for a BL654 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
 
 The Green LED (LED2) can be controlled via the LwM2M server Light Control object.
@@ -159,4 +155,4 @@ The Green LED (LED2) can be controlled via the LwM2M server Light Control object
 The Red LED (LED3) blinks when the MG100 is searching for a cellular network. It remains on and does not blink when connected to a network. If there is an error with the SIM card or network registration, then the LED remains off.
 
 ## Development
-The LwM2M demo is built with [this overlay config file](../oob_demo/overlay_lwm2m_dtls.conf). See [here](development.md) for help on getting started with custom development.
+The LwM2M demo is built with [this overlay config file](../mg100/overlay_lwm2m_dtls.conf). See [here](development.md) for help on getting started with custom development.

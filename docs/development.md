@@ -1,7 +1,7 @@
 # Developing and Debugging the Firmware
 The out of box demo source code can be used as a starting point for your own IoT cloud applications!
 This document will explain how to use Visual Studio Code to build and debug the application.
->**Note:** These instructions assume you already have the Zephyr tools installed and can build the app successfully.  Please see [here](../README.md#preparing-to-build) if you have not completed those steps.
+>**Note:** These instructions assume you already have the Zephyr tools installed and can build the app successfully.  Please see [here](https://github.com/LairdCP/MG100_firmware_manifest#preparing-to-build) if you have not completed those steps.
 
 ## Prerequisites
 1. Install [J-Link Software and Documentation Pack](https://www.segger.com/downloads/jlink/#J-LinkSoftwareAndDocumentationPack) for J-Link drivers and software.

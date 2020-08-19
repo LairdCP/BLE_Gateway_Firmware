@@ -73,6 +73,7 @@ static uint8_t subscription_buffer[CONFIG_SHADOW_IN_MAX_SIZE];
 
 /* mqtt client id */
 static char *mqtt_client_id;
+static char mqtt_random_id[AWS_MQTT_ID_MAX_SIZE];
 
 /* The mqtt client struct */
 static struct mqtt_client client_ctx;
@@ -174,8 +175,14 @@ int awsGetServerAddr(void)
 
 int awsConnect()
 {
+	/* add randomness to client id */
+	strncpy(mqtt_random_id, mqtt_client_id, AWS_MQTT_ID_MAX_SIZE);
+	size_t id_len = strlen(mqtt_random_id);
+	snprintf(mqtt_random_id + id_len, AWS_MQTT_ID_MAX_SIZE - id_len,
+		 "_%08x", sys_rand32_get());
+
 	AWS_LOG_INF("Attempting to connect %s to AWS...",
-		    log_strdup(mqtt_client_id));
+		    log_strdup(mqtt_random_id));
 	int rc = try_to_connect(&client_ctx);
 	if (rc != 0) {
 		AWS_LOG_ERR("AWS connect err (%d)", rc);
@@ -675,8 +682,8 @@ static void client_init(struct mqtt_client *client)
 	/* MQTT client configuration */
 	client->broker = &broker;
 	client->evt_cb = mqtt_evt_handler;
-	client->client_id.utf8 = mqtt_client_id;
-	client->client_id.size = strlen(mqtt_client_id);
+	client->client_id.utf8 = mqtt_random_id;
+	client->client_id.size = strlen(mqtt_random_id);
 	client->password = NULL;
 	client->user_name = NULL;
 

@@ -145,15 +145,14 @@ bool UpdateScale(int Value)
 {
 	bool ret = true;
 	int Status = 0;
-/* TODO: Temporarily disabled until this will work. Bug 17087 */
-#if 0
+
 	struct sensor_value sVal;
 
 	sVal.val1 = Value;
 	sVal.val2 = 0;
 
 	Status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_FULL_SCALE, &sVal);
-#endif
+
 	nvStoreAccelScale(Value);
 
 	LOG_DBG("Scale = %d, Status = %d", Value, Status);
@@ -240,17 +239,15 @@ void motion_svc_init()
 	 * implementation common between various Laird Connectivity products for the
 	 * device shadow, we present ODR values rather than the real sampling frequency
 	 * values. However, the sensor framework expects the real sampling frequency
-	 * values. This mapping was copied from the LIS2DH driver in Zephyr which
+	 * values. This mapping was copied from the ST LIS2DH driver in Zephyr which
 	 * translates these back into ODR values. These are the supported sampling
-	 * frequency / ODR settings supported by the LIS2DH.
+	 * frequency / ODR settings supported by the ST LISxDH parts.
 	 */
 	uint16_t lis2dh_odr_map[] = {0, 1, 10, 25, 50, 100, 200, 400, 1620,
 				    1344, 5376};
 	struct sensor_trigger trigger;
 	struct sensor_value sVal;
 	int status = 0;
-	int AccelODR = 0;
-	int AccelThs = 0;
 
 	sensor = device_get_binding(DT_LABEL(DT_INST(0, st_lis2dh)));
 	bms.motion_alarm = MOTION_ALARM_INACTIVE;
@@ -264,40 +261,51 @@ void motion_svc_init()
 
 	k_timer_init(&motion_timer, motion_timer_callback, NULL);
 
-	nvReadAccelODR(&AccelODR);
+	/* configure the sensor */
 
-	/* use the translated value */
-	sVal.val1 = lis2dh_odr_map[AccelODR];
+	/* NOTE: the zephyr sensor framework expects a frequency value rather than ODR value directly */
+	sVal.val1 = lis2dh_odr_map[GetOdr()];
 	sVal.val2 = 0;
-
 	status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &sVal);
 	if (status < 0)
 	{
 		MOTION_SVC_LOG_ERR("Failed to set ODR in the accelerometer.");
 	}
 
-	nvReadAccelThresh(&AccelThs);
+	/* configure the scale */
+	/* NOTE: the zephyr sensor framework expects a value in m/S^2: 9.80665 m/s^2 = 1G */
+	sensor_g_to_ms2(GetScale(), &sVal);
+	status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_FULL_SCALE, &sVal);
+	if (status < 0)
+	{
+		MOTION_SVC_LOG_ERR("Failed to set the scale in the accelerometer.");
+	}
 
-	sVal.val1 = AccelThs;
+	/* configure the threshold value */
+	sVal.val1 = GetActivityThreshold();
 	sVal.val2 = 0;
-
 	status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SLOPE_TH, &sVal);
 	if (status < 0)
 	{
-		MOTION_SVC_LOG_ERR("Failed to set threshold in the accelerometer.");
+		MOTION_SVC_LOG_ERR("Failed to set the threshold in the accelerometer.");
 	}
+
+	/* configure the duration value */
 	sVal.val1 = MOTION_DEFAULT_DUR;
+	sVal.val2 = 0;
 	status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SLOPE_DUR, &sVal);
 	if (status < 0)
 	{
-		MOTION_SVC_LOG_ERR("Failed to set duration in the accelerometer.");
+		MOTION_SVC_LOG_ERR("Failed to set the duration in the accelerometer.");
 	}
+
+	/* configure the motion trigger */
 	trigger.chan = SENSOR_CHAN_ACCEL_XYZ;
 	trigger.type = SENSOR_TRIG_DELTA;
 	status = sensor_trigger_set(sensor, &trigger, motion_sensor_trig_handler);
 	if (status < 0)
 	{
-		MOTION_SVC_LOG_ERR("Failed to setup the trigger for the accelerometer.");
+		MOTION_SVC_LOG_ERR("Failed to configure the trigger for the accelerometer.");
 	}
 }
 

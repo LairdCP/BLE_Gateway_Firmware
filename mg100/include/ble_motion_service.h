@@ -22,7 +22,7 @@ extern "C" {
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-#define MOTION_DEFAULT_THS		8
+#define MOTION_DEFAULT_THS		10
 #define MOTION_DEFAULT_ODR		5
 #define MOTION_DEFAULT_SCALE	2
 #define MOTION_DEFAULT_DUR		6

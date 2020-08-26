@@ -366,7 +366,7 @@ static int ReadTempSensor()
 	struct sensor_value val;
 	struct device *sensor = device_get_binding(DT_LABEL(DT_INST(0, st_lis2dh)));
 
-	status = sensor_sample_fetch(sensor);
+	status = sensor_sample_fetch_chan(sensor, SENSOR_CHAN_AMBIENT_TEMP);
 
 	if (status >= 0) {
 		status = sensor_channel_get(sensor, SENSOR_CHAN_AMBIENT_TEMP, &val);

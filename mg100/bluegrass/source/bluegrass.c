@@ -52,8 +52,9 @@ void Bluegrass_Initialize(FwkQueue_t *pQ)
 	k_timer_init(&gatewayInitTimer, GatewayInitTimerCallbackIsr, NULL);
 }
 
-/* This caller of this function will throw away sensor data
-if it cant' be sent */
+/* This caller of this function may throw away sensor data
+ * if it cannot be sent.
+ */
 int Bluegrass_MsgHandler(FwkMsg_t *pMsg, bool *pFreeMsg)
 {
 	int rc = -EINVAL;
@@ -159,5 +160,6 @@ static void StartGatewayInitTimer(void)
 static void GatewayInitTimerCallbackIsr(struct k_timer *timer_id)
 {
 	UNUSED_PARAMETER(timer_id);
-	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD, FMC_GATEWAY_INIT);
+	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
+				      FMC_GATEWAY_INIT);
 }

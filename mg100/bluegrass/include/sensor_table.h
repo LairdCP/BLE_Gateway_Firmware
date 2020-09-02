@@ -63,6 +63,7 @@ typedef struct SensorCmdMsg {
 	FwkMsgHeader_t header;
 	uint32_t attempts;
 	bt_addr_le_t addr;
+	bool useCodedPhy;
 	bool dumpRequest;
 	bool resetRequest;
 	bool setEpochRequest;

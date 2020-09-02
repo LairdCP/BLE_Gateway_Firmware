@@ -17,6 +17,13 @@ menuconfig BL654_SENSOR
 
 if BL654_SENSOR
 
+config SENSOR_MAX_AD_SIZE
+    int "The maximum size for ads sent to sensor task"
+    default 67
+    help
+        67 - BT510 coded PHY advertisement
+        31 - BT510 1M PHY advertisement and scan response
+
 config BL654_SENSOR_SEND_TO_AWS_RATE_SECONDS
     int "The period at which to send BL654 Sensor data to AWS"
     default 60

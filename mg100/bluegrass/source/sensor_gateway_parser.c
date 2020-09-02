@@ -443,7 +443,6 @@ static void SensorDeltaParser(const char *pTopic, const char *pJson)
 		strncat(pMsg->cmd, &pJson[pState->start], stateLength);
 		strcat(pMsg->cmd, SENSOR_CMD_SUFFIX);
 		FRAMEWORK_DEBUG_ASSERT(strlen(pMsg->cmd) == bufSize - 1);
-		pMsg->resetRequest = SensorCmd_RequiresReset(pMsg->cmd);
 		FRAMEWORK_MSG_SEND(pMsg);
 	}
 }

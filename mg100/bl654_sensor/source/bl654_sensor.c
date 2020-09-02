@@ -22,6 +22,7 @@ LOG_MODULE_REGISTER(bl654_sensor);
 
 #include "FrameworkIncludes.h"
 #include "laird_utility_macros.h"
+#include "laird_bluetooth.h"
 #include "led_configuration.h"
 #include "ad_find.h"
 #include "bt_scan.h"
@@ -442,49 +443,37 @@ static uint8_t char_discover_func(struct bt_conn *conn,
 				  const struct bt_gatt_attr *attr,
 				  struct bt_gatt_discover_params *params)
 {
-	int err;
+	bool found = false;
+	u16_t value_handle = 0;
+
 	if (conn != sensor_conn) {
 		return BT_GATT_ITER_CONTINUE;
 	}
 
+	value_handle = bt_gatt_attr_value_handle(attr);
 	if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_TEMPERATURE)) {
 		LOG_DBG("Found ESS Temperature characteristic");
-
-		/* Update global structure with the handles of the temperature characteristic */
-		remote.temperature_subscribe_params.value_handle =
-			attr->handle + 1;
-		/* Now start searching for CCCD within temperature characteristic */
-		memcpy(&uuid, BT_UUID_GATT_CCC, sizeof(uuid));
-		err = find_desc(conn, uuid, attr->handle + 2);
-		if (err) {
-			discover_failed_handler(conn, err);
-		}
+		remote.temperature_subscribe_params.value_handle = value_handle;
+		found = true;
 	} else if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_HUMIDITY)) {
 		LOG_DBG("Found ESS Humidity characteristic");
-
-		/* Update global structure with the handles of the temperature characteristic */
-		remote.humidity_subscribe_params.value_handle =
-			attr->handle + 1;
-		/* Now start searching for CCCD within temperature characteristic */
-		memcpy(&uuid, BT_UUID_GATT_CCC, sizeof(uuid));
-		err = find_desc(conn, uuid, attr->handle + 2);
-		if (err) {
-			discover_failed_handler(conn, err);
-		}
+		remote.humidity_subscribe_params.value_handle = value_handle;
+		found = true;
 	} else if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_PRESSURE)) {
 		LOG_DBG("Found ESS Pressure characteristic");
+		remote.pressure_subscribe_params.value_handle = value_handle;
+		found = true;
+	}
 
-		/* Update global structure with the handles of the temperature characteristic */
-		remote.pressure_subscribe_params.value_handle =
-			attr->handle + 1;
-		/* Now start searching for CCCD within temperature characteristic */
+	if (found) {
+		/* Now start searching for CCCD */
 		memcpy(&uuid, BT_UUID_GATT_CCC, sizeof(uuid));
-		err = find_desc(conn, uuid, attr->handle + 2);
+		int err = find_desc(conn, uuid,
+				    LBT_NEXT_HANDLE_AFTER_CHAR(attr->handle));
 		if (err) {
 			discover_failed_handler(conn, err);
 		}
 	}
-
 	return BT_GATT_ITER_STOP;
 }
 
@@ -508,7 +497,8 @@ static uint8_t service_discover_func(struct bt_conn *conn,
 		/* Found ESS Service, start searching for temperature char */
 		LOG_DBG("Found ESS Service");
 		/* Update service handle global variable as it will be used when searching for chars */
-		remote.ess_service_handle = attr->handle + 1;
+		remote.ess_service_handle =
+			LBT_NEXT_HANDLE_AFTER_SERVICE(attr->handle);
 		/* Start looking for temperature characteristic */
 		memcpy(&uuid, BT_UUID_TEMPERATURE, sizeof(uuid));
 		err = find_char(conn, uuid);

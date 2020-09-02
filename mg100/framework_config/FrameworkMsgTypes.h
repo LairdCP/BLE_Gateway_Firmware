@@ -31,12 +31,9 @@ typedef struct JsonMsg {
 	char buffer[];
 } JsonMsg_t;
 
-/* Zephyr currently doesn't support extended advertisements. */
-#define MAX_AD_SIZE 31
-
 typedef struct Ad {
 	size_t len;
-	uint8_t data[MAX_AD_SIZE];
+	uint8_t data[CONFIG_SENSOR_MAX_AD_SIZE];
 } Ad_t;
 
 typedef struct AdvMsg {

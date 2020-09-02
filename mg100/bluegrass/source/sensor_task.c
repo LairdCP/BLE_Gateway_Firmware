@@ -46,6 +46,13 @@ LOG_MODULE_REGISTER(sensor_task);
 #define SENSOR_TASK_QUEUE_DEPTH 32
 #endif
 
+/** Limit the amount of space in the queue that can be used for processing
+ * advertisements.
+ */
+#ifndef SENSOR_TASK_MAX_OUTSTANDING_ADS
+#define SENSOR_TASK_MAX_OUTSTANDING_ADS (SENSOR_TASK_QUEUE_DEPTH / 2)
+#endif
+
 /** This is the timer rate for how often the AWS state is checked */
 #ifndef AWS_FIFO_CHECK_RATE_SECONDS
 #define AWS_FIFO_CHECK_RATE_SECONDS 10
@@ -87,7 +94,17 @@ typedef struct SensorTask {
 	struct k_timer sensorTick;
 	uint32_t fifoTicks;
 	int scanUserId;
+	uint32_t configDisconnects;
+	uint32_t adsProcessed;
+	atomic_t adsOutstanding; /* incremented in BT RX thread context */
+	atomic_t adsDropped; /* incremented in BT RX thread context */
 } SensorTaskObj_t;
+
+/* A connection is not created unless 1M is disabled. */
+#define BT_CONN_CODED_CREATE_CONN                                              \
+	BT_CONN_LE_CREATE_PARAM(BT_CONN_LE_OPT_CODED | BT_CONN_LE_OPT_NO_1M,   \
+				BT_GAP_SCAN_FAST_INTERVAL,                     \
+				BT_GAP_SCAN_FAST_INTERVAL)
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -302,10 +319,20 @@ static void SensorTaskThread(void *pArg1, void *pArg2, void *pArg3)
 DispatchResult_t AdvertisementMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 					 FwkMsg_t *pMsg)
 {
-	UNUSED_PARAMETER(pMsgRxer);
 	AdvMsg_t *pAdvMsg = (AdvMsg_t *)pMsg;
 	SensorTable_AdvertisementHandler(&pAdvMsg->addr, pAdvMsg->rssi,
 					 pAdvMsg->type, &pAdvMsg->ad);
+
+	SensorTaskObj_t *pObj = FWK_TASK_CONTAINER(SensorTaskObj_t);
+	pObj->adsProcessed += 1;
+	atomic_dec(&pObj->adsOutstanding);
+	/* Attempt to limit prints when busy. */
+	if (atomic_get(&pObj->adsOutstanding) == 0) {
+		if (atomic_get(&pObj->adsDropped) > 0) {
+			atomic_val_t dropped = atomic_clear(&pObj->adsDropped);
+			LOG_WRN("%u advertisements dropped", dropped);
+		}
+	}
 	return DISPATCH_OK;
 }
 
@@ -384,15 +411,15 @@ static DispatchResult_t ResponseHandler(FwkMsgReceiver_t *pMsgRxer,
 	FwkBufMsg_t *pRsp = (FwkBufMsg_t *)pMsg;
 	bool ok = (strstr(pRsp->buffer, SENSOR_CMD_ACCEPTED_SUB_STR) != NULL);
 	if (ok) {
-		if (pObj->pCmdMsg->resetRequest) {
+		if (pObj->pCmdMsg->setEpochRequest) {
+			pObj->pCmdMsg->setEpochRequest = false;
+			SendSetEpochCommand();
+		} else if (pObj->pCmdMsg->resetRequest) {
 			pObj->pCmdMsg->resetRequest = false;
 			/* Don't block this task because it also processes adverts */
 			k_timer_start(&pObj->resetTimer,
 				      BT510_WRITE_TO_RESET_DELAY_TICKS,
 				      K_NO_WAIT);
-		} else if (pObj->pCmdMsg->setEpochRequest) {
-			pObj->pCmdMsg->setEpochRequest = false;
-			SendSetEpochCommand();
 		} else {
 			pObj->configComplete = true;
 			if (pObj->pCmdMsg->dumpRequest) {
@@ -417,13 +444,14 @@ static DispatchResult_t ResponseHandler(FwkMsgReceiver_t *pMsgRxer,
 
 static void SendSetEpochCommand(void)
 {
-	size_t length = strlen(SENSOR_CMD_SET_EPOCH_FMT_STR) +
-			SENSOR_CMD_MAX_EPOCH_SIZE + 1;
-	char *buf = BufferPool_Take(length + 1);
+	size_t maxSize = strlen(SENSOR_CMD_SET_EPOCH_FMT_STR) +
+			 SENSOR_CMD_MAX_EPOCH_SIZE + 1;
+	char *buf = BufferPool_Take(maxSize);
 	if (buf != NULL) {
-		snprintk(buf, length, SENSOR_CMD_SET_EPOCH_FMT_STR,
-			 Qrtc_GetEpoch());
+		uint32_t epoch = Qrtc_GetEpoch();
+		snprintk(buf, maxSize, SENSOR_CMD_SET_EPOCH_FMT_STR, epoch);
 		WriteString(buf);
+		LOG_DBG("%u", epoch);
 	}
 }
 
@@ -499,7 +527,9 @@ static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 		pObj->resetSent = false;
 		pObj->configComplete = false;
 		err = bt_conn_le_create(&pObj->pCmdMsg->addr,
-					BT_CONN_LE_CREATE_CONN,
+					pObj->pCmdMsg->useCodedPhy ?
+						BT_CONN_CODED_CREATE_CONN :
+						BT_CONN_LE_CREATE_CONN,
 					BT_LE_CONN_PARAM_DEFAULT, &pObj->conn);
 
 		LOG_INF("Connection Request (%u): '%s' (%s) %x-%u",
@@ -517,7 +547,8 @@ static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 			 * for the next ad.  This is because the stack does not
 			 * provide a timeout for this condition.
 			 * (state == BT_CONN_CONNECT_SCAN)
-			 * Bug 16483: Zephyr 2.x - Retest connection timeout fix (stack) */
+			 * Bug 16483: Zephyr 2.x - Retest connection timeout fix (stack)
+			 */
 			k_timer_start(&pObj->msgTask.timer,
 				      CONNECTION_TIMEOUT_TICKS, K_NO_WAIT);
 			return DISPATCH_DO_NOT_FREE;
@@ -540,6 +571,7 @@ static DispatchResult_t DisconnectMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 	} else {
 		LOG_ERR("'%s' NOT configured", name);
 		(void)RetryConfigRequest(pObj);
+		pObj->configDisconnects += 1;
 	}
 
 	bt_conn_unref(pObj->conn);
@@ -629,7 +661,8 @@ static int WriteString(const char *str)
 	int status = 0;
 	ST_LOG_DEV("length: %u", remaining);
 	/* Chunk data to the size that the link supports.
-	 * Zephyr handles flow control */
+	 * Zephyr handles flow control
+	 */
 	while ((remaining > 0) && (status == BT_SUCCESS)) {
 		size_t chunk = MIN(st.mtu, remaining);
 		remaining -= chunk;
@@ -644,7 +677,8 @@ static int WriteString(const char *str)
 static int StartDiscovery(void)
 {
 	/* There isn't any reason to discover the VSP service.
-	 * The callback doesn't give a range of handles for service discovery. */
+	 * The callback doesn't give a range of handles for service discovery.
+	 */
 	st.dp.uuid = (struct bt_uuid *)&VSP_RX_UUID;
 	st.dp.func = DiscoveryCallback;
 	st.dp.start_handle = FIRST_VALID_HANDLE;
@@ -669,7 +703,8 @@ static int RequestDisconnect(SensorTaskObj_t *pObj, const char *str)
 }
 
 /* Put the request back in to the table (because something failed during
- * attempt to write configuration. */
+ * attempt to write configuration.
+ */
 static DispatchResult_t RetryConfigRequest(SensorTaskObj_t *pObj)
 {
 	FRAMEWORK_ASSERT(pObj->pCmdMsg != NULL);
@@ -811,16 +846,15 @@ static uint8_t DiscoveryCallback(struct bt_conn *conn,
 
 	/* The discovery callback is used as a state machine */
 	if (bt_uuid_cmp(params->uuid, &VSP_RX_UUID.uuid) == 0) {
-		st.writeHandle = attr->handle + 1;
+		st.writeHandle = bt_gatt_attr_value_handle(attr);
 		st.dp.uuid = (struct bt_uuid *)&VSP_TX_UUID;
 		st.dp.type = BT_GATT_DISCOVER_CHARACTERISTIC;
 		Discover();
 	} else if (bt_uuid_cmp(params->uuid, &VSP_TX_UUID.uuid) == 0) {
 		st.dp.uuid = (struct bt_uuid *)&VSP_TX_CCC_UUID;
-		st.dp.start_handle = attr->handle + 2;
+		st.dp.start_handle = LBT_NEXT_HANDLE_AFTER_CHAR(attr->handle);
 		st.dp.type = BT_GATT_DISCOVER_DESCRIPTOR;
-		/* Bug 16485: Zephyr 2.x - new api - bt_gatt_attr_value_handle(attr) */
-		st.sp.value_handle = attr->handle + 1;
+		st.sp.value_handle = bt_gatt_attr_value_handle(attr);
 		Discover();
 	} else {
 		/* Check for the expected UUID when discovery is complete. */
@@ -945,9 +979,16 @@ static void SensorTaskAdvHandler(const bt_addr_le_t *addr, int8_t rssi,
 				 uint8_t type, struct net_buf_simple *ad)
 {
 	/* After filtering for BT510 sensors, send a message so we can
-	process ads in Sensor Task context.
-	This prevents the BLE RX task from being blocked. */
+	 * process ads in Sensor Task context.
+	 * This prevents the BLE RX task from being blocked.
+	 */
 	if (SensorTable_MatchBt510(ad)) {
+		if (atomic_get(&st.adsOutstanding) >
+		    SENSOR_TASK_MAX_OUTSTANDING_ADS) {
+			atomic_inc(&st.adsDropped);
+			return;
+		}
+
 		AdvMsg_t *pMsg = BufferPool_Take(sizeof(AdvMsg_t));
 		if (pMsg == NULL) {
 			return;
@@ -960,8 +1001,10 @@ static void SensorTaskAdvHandler(const bt_addr_le_t *addr, int8_t rssi,
 		pMsg->type = type;
 		pMsg->ad.len = ad->len;
 		memcpy(&pMsg->addr, addr, sizeof(bt_addr_le_t));
-		memcpy(pMsg->ad.data, ad->data, MIN(MAX_AD_SIZE, ad->len));
+		memcpy(pMsg->ad.data, ad->data,
+		       MIN(CONFIG_SENSOR_MAX_AD_SIZE, ad->len));
 		FRAMEWORK_MSG_SEND(pMsg);
+		atomic_inc(&st.adsOutstanding);
 	}
 }
 #endif

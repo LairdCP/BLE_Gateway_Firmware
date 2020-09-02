@@ -34,6 +34,8 @@ extern const char SENSOR_CMD_SET_EPOCH_FMT_STR[];
 
 #define SENSOR_CMD_MAX_EPOCH_SIZE 10
 
+#define BT510_MAJOR_VERSION_RESET_NOT_REQUIRED 4
+
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
 /******************************************************************************/

@@ -61,6 +61,17 @@ static struct bt_conn *motion_svc_conn;
 static struct k_timer motion_timer;
 static struct motion_status motionStatus;
 
+/* This array maps ODR values to real sampling frequency values. To keep the
+ * implementation common between various Laird Connectivity products for the
+ * device shadow, we present ODR values rather than the real sampling frequency
+ * values. However, the sensor framework expects the real sampling frequency
+ * values. This mapping was copied from the ST LIS2DH driver in Zephyr which
+ * translates these back into ODR values. These are the supported sampling
+ * frequency / ODR settings supported by the ST LISxDH parts.
+ */
+static uint16_t lis2dh_odr_map[] = {0, 1, 10, 25, 50, 100, 200, 400, 1620,
+			    1344, 5376};
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -130,7 +141,7 @@ bool UpdateOdr(int Value)
 	int Status = 0;
 	struct sensor_value sVal;
 
-	sVal.val1 = Value;
+	sVal.val1 = lis2dh_odr_map[Value];
 	sVal.val2 = 0;
 
 	Status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &sVal);
@@ -148,9 +159,7 @@ bool UpdateScale(int Value)
 
 	struct sensor_value sVal;
 
-	sVal.val1 = Value;
-	sVal.val2 = 0;
-
+	sensor_g_to_ms2(Value, &sVal);
 	Status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_FULL_SCALE, &sVal);
 
 	nvStoreAccelScale(Value);
@@ -206,9 +215,10 @@ int GetActivityThreshold()
 
 struct motion_status *motionGetStatus()
 {
-	int Value;
-	nvReadAccelScale(&Value);
 	motionStatus.motion = bms.motion_alarm;
+	motionStatus.scale = GetScale();
+	motionStatus.odr = GetOdr();
+	motionStatus.thr = GetActivityThreshold();
 
 	return (&motionStatus);
 }
@@ -235,16 +245,6 @@ void motion_svc_set_alarm_state(u8_t alarmState)
 
 void motion_svc_init()
 {
-	/* This array maps ODR values to real sampling frequency values. To keep the
-	 * implementation common between various Laird Connectivity products for the
-	 * device shadow, we present ODR values rather than the real sampling frequency
-	 * values. However, the sensor framework expects the real sampling frequency
-	 * values. This mapping was copied from the ST LIS2DH driver in Zephyr which
-	 * translates these back into ODR values. These are the supported sampling
-	 * frequency / ODR settings supported by the ST LISxDH parts.
-	 */
-	uint16_t lis2dh_odr_map[] = {0, 1, 10, 25, 50, 100, 200, 400, 1620,
-				    1344, 5376};
 	struct sensor_trigger trigger;
 	struct sensor_value sVal;
 	int status = 0;

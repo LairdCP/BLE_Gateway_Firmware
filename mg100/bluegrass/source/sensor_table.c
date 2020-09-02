@@ -133,25 +133,27 @@ static bool allowGatewayShadowGeneration;
 /******************************************************************************/
 static void ClearTable(void);
 static void ClearEntry(SensorEntry_t *pEntry);
+static void FreeCmdBuffers(SensorEntry_t *pEntry);
 static void FreeEntryBuffers(SensorEntry_t *pEntry);
 
 static bool FindBt510Advertisement(AdHandle_t *pHandle);
 static bool FindBt510ScanResponse(AdHandle_t *pHandle);
+static bool FindBt510CodedAdvertisement(AdHandle_t *pHandle);
 
 static size_t AddByScanResponse(const bt_addr_le_t *pAddr,
-				AdHandle_t *pNameHandle, AdHandle_t *pRspHandle,
+				AdHandle_t *pNameHandle, Bt510Rsp_t *pRsp,
 				int8_t Rssi);
 static size_t AddByAddress(const bt_addr_t *pAddr);
 static void AddEntry(SensorEntry_t *pEntry, const bt_addr_t *pAddr,
 		     int8_t Rssi);
 static size_t FindTableIndex(const bt_addr_le_t *pAddr);
 static size_t FindFirstFree(void);
-static void AdEventHandler(AdHandle_t *pHandle, int8_t Rssi, uint32_t Index);
+static void AdEventHandler(Bt510AdEvent_t *p, int8_t Rssi, uint32_t Index);
 
 static bool AddrMatch(const void *p, size_t Index);
 static bool AddrStringMatch(const char *str, size_t Index);
 static bool NameMatch(const char *p, size_t Index);
-static bool RspMatch(const void *p, size_t Index);
+static bool RspMatch(const Bt510Rsp_t *p, size_t Index);
 static bool NewEvent(uint16_t Id, size_t Index);
 
 static void SensorAddrToString(SensorEntry_t *pEntry);
@@ -175,8 +177,9 @@ static void Whitelist(SensorEntry_t *pEntry, bool NextState);
 
 static int32_t GetTemperature(SensorEntry_t *pEntry);
 static uint32_t GetBattery(SensorEntry_t *pEntry);
+static bool LowBatteryAlarm(SensorEntry_t *pEntry);
 
-static void ConnectRequestHandler(size_t Index);
+static void ConnectRequestHandler(size_t Index, bool Coded);
 static void CreateDumpRequest(SensorEntry_t *pEntry);
 static void CreateConfigRequest(SensorEntry_t *pEntry);
 
@@ -207,7 +210,11 @@ bool SensorTable_MatchBt510(struct net_buf_simple *ad)
 		return true;
 	}
 
-	return FindBt510Advertisement(&manHandle);
+	if (FindBt510Advertisement(&manHandle)) {
+		return true;
+	}
+
+	return FindBt510CodedAdvertisement(&manHandle);
 }
 
 /* If a new event has occurred then generate a message to send sensor event
@@ -218,8 +225,9 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 
 {
 	ARG_UNUSED(type);
+	bool coded = false;
 
-	/* Filter on presense of manufacturer specific data */
+	/* Filter on presence of manufacturer specific data */
 	AdHandle_t manHandle =
 		AdFind_Type(pAd->data, pAd->len, BT_DATA_MANUFACTURER_DATA,
 			    BT_DATA_INVALID);
@@ -227,16 +235,21 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 		return;
 	}
 
+	AdHandle_t nameHandle = AdFind_Name(pAd->data, pAd->len);
 	size_t tableIndex = CONFIG_SENSOR_TABLE_SIZE;
-	/* Take name from scan response and use it to populate table. */
+	/* Take name from scan response and use it to populate table.
+	 * If device is already in table, then check if any fields need to be updated.
+	 */
 	if (FindBt510ScanResponse(&manHandle)) {
-		AdHandle_t nameHandle = AdFind_Name(pAd->data, pAd->len);
 		if (nameHandle.pPayload != NULL) {
+			Bt510RspWithHeader_t *pRspPacket =
+				(Bt510RspWithHeader_t *)manHandle.pPayload;
 			tableIndex = AddByScanResponse(pAddr, &nameHandle,
-						       &manHandle, rssi);
+						       &pRspPacket->rsp, rssi);
 		}
 		/* If scan response data was received then there won't be event data,
-		 * but a connect request may still need to be issued */
+		 * but a connect request may still need to be issued
+		 */
 	}
 
 	if (FindBt510Advertisement(&manHandle)) {
@@ -251,12 +264,28 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 		}
 
 		if (tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
-			AdEventHandler(&manHandle, rssi, tableIndex);
+			Bt510AdEvent_t *pAd =
+				(Bt510AdEvent_t *)manHandle.pPayload;
+			AdEventHandler(pAd, rssi, tableIndex);
+		}
+	}
+
+	/* The coded PHY ad (superset) is processed using the 1M PHY pieces. */
+	if (FindBt510CodedAdvertisement(&manHandle)) {
+		coded = true;
+		Bt510Coded_t *pCoded = (Bt510Coded_t *)manHandle.pPayload;
+		if (nameHandle.pPayload != NULL) {
+			tableIndex = AddByScanResponse(pAddr, &nameHandle,
+						       &pCoded->rsp, rssi);
+
+			if (tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
+				AdEventHandler(&pCoded->ad, rssi, tableIndex);
+			}
 		}
 	}
 
 	if (tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
-		ConnectRequestHandler(tableIndex);
+		ConnectRequestHandler(tableIndex, coded);
 		sensorTable[tableIndex].adCount += 1;
 		VERBOSE_AD_LOG("'%s' %u",
 			       log_strdup(sensorTable[tableIndex].name),
@@ -295,6 +324,19 @@ DispatchResult_t SensorTable_AddConfigRequest(SensorCmdMsg_t *pMsg)
 	}
 
 	SensorEntry_t *p = &sensorTable[i];
+
+	if (LowBatteryAlarm(p)) {
+		/* A sensor in low battery mode is unable to write flash. */
+		LOG_WRN("Unable to accept config for sensor in low battery mode");
+		return DISPATCH_OK;
+	}
+
+	if (p->rsp.firmwareVersionMajor >=
+	    BT510_MAJOR_VERSION_RESET_NOT_REQUIRED) {
+		pMsg->resetRequest = false;
+	} else {
+		pMsg->resetRequest = SensorCmd_RequiresReset(pMsg->cmd);
+	}
 
 	if ((pMsg->configVersion != p->rsp.configVersion) ||
 	    pMsg->dumpRequest) {
@@ -356,7 +398,8 @@ void SensorTable_AckConfigRequest(SensorCmdMsg_t *pMsg)
 	if (pMsg->tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
 		SensorEntry_t *pEntry = &sensorTable[pMsg->tableIndex];
 		/* After AWS config was written and sensor was reset,
-		 * send dump request to read state. */
+		 * send dump request to read state.
+		 */
 		pEntry->configBusy = false;
 		if (pEntry->pSecondCmd != NULL) {
 			pEntry->pCmd = pEntry->pSecondCmd;
@@ -408,8 +451,9 @@ void SensorTable_SubscriptionHandler(void)
 	for (i = 0; i < CONFIG_SENSOR_TABLE_SIZE; i++) {
 		SensorEntry_t *pEntry = &sensorTable[i];
 		/* Waiting until AD and RSP are valid makes things easier for config.
-		When subscribing there must be a delay to allow AWS to configure
-		permissions. */
+		 * When subscribing there must be a delay to allow AWS to configure
+		 * permissions.
+		 */
 		if (pEntry->validAd && pEntry->validRsp &&
 		    (pEntry->whitelisted != pEntry->subscribed) &&
 		    (pEntry->subscriptionDispatchTime <= k_uptime_get())) {
@@ -547,7 +591,8 @@ void SensorTable_CreateShadowFromDumpResponse(FwkBufMsg_t *pRsp,
 	/* Clear desired because AWS gets all state information. */
 	ShadowBuilder_AddNull(pMsg, "desired");
 	/* Add the entire response.  AWS app will ignore jsonrpc, id field,
-	 * and status fields. */
+	 * and status fields.
+	 */
 	ShadowBuilder_AddString(pMsg, "reported", pRsp->buffer);
 	ShadowBuilder_EndGroup(pMsg);
 	ShadowBuilder_Finalize(pMsg);
@@ -599,7 +644,7 @@ static void ClearEntry(SensorEntry_t *pEntry)
 	memset(pEntry, 0, sizeof(SensorEntry_t));
 }
 
-static void FreeEntryBuffers(SensorEntry_t *pEntry)
+static void FreeCmdBuffers(SensorEntry_t *pEntry)
 {
 	if (pEntry->pCmd != NULL) {
 		BufferPool_Free(pEntry->pCmd);
@@ -609,17 +654,21 @@ static void FreeEntryBuffers(SensorEntry_t *pEntry)
 		BufferPool_Free(pEntry->pSecondCmd);
 		pEntry->pSecondCmd = NULL;
 	}
+}
+
+static void FreeEntryBuffers(SensorEntry_t *pEntry)
+{
+	FreeCmdBuffers(pEntry);
+
 	if (pEntry->pLog != NULL) {
 		SensorLog_Free(pEntry->pLog);
 		pEntry->pLog = NULL;
 	}
 }
 
-static void AdEventHandler(AdHandle_t *pHandle, int8_t Rssi, uint32_t Index)
+static void AdEventHandler(Bt510AdEvent_t *p, int8_t Rssi, uint32_t Index)
 {
 	sensorTable[Index].ttl = CONFIG_SENSOR_TTL_SECONDS;
-
-	Bt510AdEvent_t *p = (Bt510AdEvent_t *)pHandle->pPayload;
 	if (NewEvent(p->id, Index)) {
 		sensorTable[Index].validAd = true;
 		LOG_DBG("New Event for [%u] '%s' (%s) RSSI: %d", Index,
@@ -627,8 +676,7 @@ static void AdEventHandler(AdHandle_t *pHandle, int8_t Rssi, uint32_t Index)
 			log_strdup(sensorTable[Index].addrString), Rssi);
 		sensorTable[Index].lastRecordType =
 			sensorTable[Index].ad.recordType;
-		memcpy(&sensorTable[Index].ad, pHandle->pPayload,
-		       sizeof(Bt510AdEvent_t));
+		memcpy(&sensorTable[Index].ad, p, sizeof(Bt510AdEvent_t));
 		sensorTable[Index].rssi = Rssi;
 		/* If event occurs before epoch is set, then AWS shows ~1970. */
 		sensorTable[Index].rxEpoch = Qrtc_GetEpoch();
@@ -671,15 +719,28 @@ static bool FindBt510ScanResponse(AdHandle_t *pHandle)
 	return false;
 }
 
+static bool FindBt510CodedAdvertisement(AdHandle_t *pHandle)
+{
+	if (pHandle->pPayload != NULL) {
+		if ((pHandle->size == BT510_MSD_CODED_PAYLOAD_LENGTH)) {
+			if (memcmp(pHandle->pPayload, BT510_CODED_HEADER,
+				   sizeof(BT510_CODED_HEADER)) == 0) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 static size_t AddByScanResponse(const bt_addr_le_t *pAddr,
-				AdHandle_t *pNameHandle, AdHandle_t *pRspHandle,
+				AdHandle_t *pNameHandle, Bt510Rsp_t *pRsp,
 				int8_t Rssi)
 {
 	if (pNameHandle->pPayload == NULL) {
 		return CONFIG_SENSOR_TABLE_SIZE;
 	}
 
-	if (pRspHandle->pPayload == NULL) {
+	if (pRsp == NULL) {
 		return CONFIG_SENSOR_TABLE_SIZE;
 	}
 
@@ -694,7 +755,7 @@ static size_t AddByScanResponse(const bt_addr_le_t *pAddr,
 		if (!NameMatch(pNameHandle->pPayload, i)) {
 			updateName = true;
 		}
-		if (!RspMatch(pRspHandle->pPayload, i)) {
+		if (!RspMatch(pRsp, i)) {
 			updateRsp = true;
 		}
 	} else {
@@ -709,8 +770,7 @@ static size_t AddByScanResponse(const bt_addr_le_t *pAddr,
 		pEntry->validRsp = true;
 		if (add || updateRsp) {
 			pEntry->updatedRsp = true;
-			memcpy(&pEntry->rsp, pRspHandle->pPayload,
-			       pRspHandle->size);
+			memcpy(&pEntry->rsp, pRsp, sizeof(Bt510Rsp_t));
 		}
 		if (add || updateName) {
 			pEntry->updatedName = true;
@@ -796,7 +856,7 @@ static bool NameMatch(const char *p, size_t Index)
 		0);
 }
 
-static bool RspMatch(const void *p, size_t Index)
+static bool RspMatch(const Bt510Rsp_t *p, size_t Index)
 {
 	return (memcmp(p, &sensorTable[Index].rsp, sizeof(Bt510Rsp_t)) == 0);
 }
@@ -813,7 +873,8 @@ static bool NewEvent(uint16_t Id, size_t Index)
 static void ShadowMaker(SensorEntry_t *pEntry)
 {
 	/* AWS will disconnect if data is sent for devices that have not
-	 * been whitelisted. */
+	 * been whitelisted.
+	 */
 	if (!CONFIG_USE_SINGLE_AWS_TOPIC) {
 		if (!pEntry->whitelisted || !pEntry->shadowInitReceived) {
 			return;
@@ -836,7 +897,8 @@ static void ShadowMaker(SensorEntry_t *pEntry)
 	if (CONFIG_USE_SINGLE_AWS_TOPIC) {
 		ShadowTemperatureHandler(pMsg, pEntry);
 		/* Sending RSSI prevents an empty buffer when
-		 * temperature isn't present. */
+		 * temperature isn't present.
+		 */
 		ShadowBuilder_AddSigned32(pMsg, MangleKey(pEntry->name, "rssi"),
 					  pEntry->rssi);
 	} else {
@@ -851,7 +913,8 @@ static void ShadowMaker(SensorEntry_t *pEntry)
 	ShadowBuilder_Finalize(pMsg);
 
 	/* The part of the topic that changes must match
-	 * the format of the address field generated by ShadowGatewayMaker. */
+	 * the format of the address field generated by ShadowGatewayMaker.
+	 */
 	char *fmt = SENSOR_UPDATE_TOPIC_FMT_STR;
 	snprintk(pMsg->topic, CONFIG_AWS_TOPIC_MAX_SIZE, fmt,
 		 pEntry->addrString);
@@ -929,8 +992,12 @@ static void ShadowRspHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 					 pEntry->rsp.bootloaderVersionPatch);
 		ShadowBuilder_AddUint32(pMsg, "configVersion",
 					pEntry->rsp.configVersion);
-		ShadowBuilder_AddUint32(pMsg, "hardwareMinorVersion",
-					pEntry->rsp.hardwareMinorVersion);
+		ShadowBuilder_AddVersion(pMsg, "hardwareVersion",
+					 ADV_FORMAT_HW_VERSION_GET_MAJOR(
+						 pEntry->rsp.hardwareVersion),
+					 ADV_FORMAT_HW_VERSION_GET_MINOR(
+						 pEntry->rsp.hardwareVersion),
+					 0);
 	}
 
 	if (pEntry->updatedName) {
@@ -954,12 +1021,18 @@ static uint32_t GetBattery(SensorEntry_t *pEntry)
 	return (uint32_t)((uint16_t)pEntry->ad.data);
 }
 
+static bool LowBatteryAlarm(SensorEntry_t *pEntry)
+{
+	return (GetFlag(pEntry->ad.flags, FLAG_LOW_BATTERY_ALARM) != 0);
+}
+
 static void ShadowTemperatureHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 {
 	int32_t temperature = GetTemperature(pEntry);
 	if (CONFIG_USE_SINGLE_AWS_TOPIC) {
 		/* The desired format is degrees when publishing to a single topic
-		 * because that is how the BL654 Sensor data is formatted. */
+		 * because that is how the BL654 Sensor data is formatted.
+		 */
 		temperature /= 100;
 	}
 	switch (pEntry->ad.recordType) {
@@ -1148,7 +1221,8 @@ static void GatewayShadowMaker(bool WhitelistProcessed)
 	ShadowBuilder_Start(pMsg, SKIP_MEMSET);
 	ShadowBuilder_StartGroup(pMsg, "state");
 	/* Setting the desired group to null lets the cloud know
-	 * that its request was processed. */
+	 * that its request was processed.
+	 */
 	if (WhitelistProcessed) {
 		ShadowBuilder_AddNull(pMsg, "desired");
 	}
@@ -1189,10 +1263,12 @@ static uint32_t WhitelistByAddress(const char *pAddrString, bool NextState)
 		}
 	}
 	/* Don't add it to the table if it isn't whitelisted because
-	 * the client may not care about this sensor. */
+	 * the client may not care about this sensor.
+	 */
 	if (NextState) {
 		/* The sensor wasn't found.  If we have just reset then
-		 * the shadow may have values that aren't in our table. */
+		 * the shadow may have values that aren't in our table.
+		 */
 		bt_addr_t addr = BtAddrStringToStruct(pAddrString);
 		i = AddByAddress(&addr);
 		if (i < CONFIG_SENSOR_TABLE_SIZE) {
@@ -1223,28 +1299,36 @@ static void Whitelist(SensorEntry_t *pEntry, bool NextState)
 }
 
 /* If the cloud desires a configuration change, then send a connect request
- * when the sensor advertisement is seen. */
-static void ConnectRequestHandler(size_t Index)
+ * when the sensor advertisement is seen.
+ */
+static void ConnectRequestHandler(size_t Index, bool Coded)
 {
 	FRAMEWORK_DEBUG_ASSERT(Index < CONFIG_SENSOR_TABLE_SIZE);
 	SensorEntry_t *pEntry = &sensorTable[Index];
 
 	if (pEntry->pCmd != NULL && !pEntry->configBusy) {
-		SensorCmdMsg_t *pMsg = pEntry->pCmd;
-		pMsg->header.msgCode = FMC_CONNECT_REQUEST;
-		pMsg->header.rxId = FWK_ID_SENSOR_TASK;
-		pMsg->tableIndex = Index;
-		pMsg->attempts += 1;
-		memcpy(&pMsg->addr.a.val, pEntry->ad.addr.val,
-		       sizeof(bt_addr_t));
-		pMsg->addr.type = BT_ADDR_LE_RANDOM;
-		strncpy(pMsg->name, pEntry->name, SENSOR_NAME_MAX_STR_LEN);
+		if (LowBatteryAlarm(pEntry)) {
+			LOG_WRN("Discarding configuration request (sensor low battery)");
+			FreeCmdBuffers(pEntry);
+		} else {
+			SensorCmdMsg_t *pMsg = pEntry->pCmd;
+			pMsg->header.msgCode = FMC_CONNECT_REQUEST;
+			pMsg->header.rxId = FWK_ID_SENSOR_TASK;
+			pMsg->tableIndex = Index;
+			pMsg->attempts += 1;
+			memcpy(&pMsg->addr.a.val, pEntry->ad.addr.val,
+			       sizeof(bt_addr_t));
+			pMsg->addr.type = BT_ADDR_LE_RANDOM;
+			pMsg->useCodedPhy = Coded;
+			strncpy(pMsg->name, pEntry->name,
+				SENSOR_NAME_MAX_STR_LEN);
 
-		/* sensor task is now responsible for this message */
-		pEntry->configBusyVersion = pMsg->configVersion;
-		pEntry->configBusy = true;
-		pEntry->pCmd = NULL;
-		FRAMEWORK_MSG_SEND(pMsg);
+			/* sensor task is now responsible for this message */
+			pEntry->configBusyVersion = pMsg->configVersion;
+			pEntry->configBusy = true;
+			pEntry->pCmd = NULL;
+			FRAMEWORK_MSG_SEND(pMsg);
+		}
 	}
 }
 
@@ -1301,7 +1385,6 @@ static void CreateConfigRequest(SensorEntry_t *pEntry)
 		strncpy(pMsg->addrString, pEntry->addrString,
 			SENSOR_ADDR_STR_LEN);
 		strcpy(pMsg->cmd, pCmd);
-		pMsg->resetRequest = SensorCmd_RequiresReset(pMsg->cmd);
 		FRAMEWORK_MSG_SEND(pMsg);
 	}
 }

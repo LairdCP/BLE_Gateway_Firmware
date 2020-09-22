@@ -1,6 +1,7 @@
 # Developing and Debugging the Firmware
 The out of box demo source code can be used as a starting point for your own IoT cloud applications!
 This document will explain how to use Visual Studio Code to build and debug the application.
+
 >**Note:** These instructions assume you already have the Zephyr tools installed and can build the app successfully.  Please see [here](https://github.com/LairdCP/MG100_firmware_manifest#preparing-to-build) if you have not completed those steps.
 
 ## Prerequisites
@@ -13,7 +14,7 @@ This document will explain how to use Visual Studio Code to build and debug the 
 
 ## Building the Firmware
 
-After cloning this repository with `west` you directory structure should look like:
+After cloning this repository with `west` the directory structure should look like:
 
 ![Demo folder](images/demo_folder.png)  
 *Demo folder*
@@ -59,9 +60,7 @@ Add the following lines to the settings.json file:
 >The paths shown above are Windows compatible paths.  If on Linux or macOS the paths should use single '/' characters.
 
 ### Firmware Setup
-By default `CONFIG_FLASH_LOAD_OFFSET` is set to 0x1000 to work with the Laird secure bootloader that comes pre-installed on the MG100.  Setting `CONFIG_FLASH_LOAD_OFFSET` to 0 will allow you to flash and debug the firmware without the need for the bootloader.
-
-In order to debug the firmware properly, it is recommended to change the optimization settings of the firmware when it is compiled.  This allows better breakpoint support and viewing temporary variable values. In [prj.conf](../oob_demo/prj.conf) look for:
+In order to debug the firmware properly, it is recommended to change the optimization settings of the firmware when it is compiled.  This allows better breakpoint support and viewing temporary variable values. In [prj.conf](../mg100/prj.conf) look for:
 ```
 CONFIG_NO_OPTIMIZATIONS
 CONFIG_DEBUG_OPTIMIZATIONS

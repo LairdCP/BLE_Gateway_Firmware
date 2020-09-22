@@ -13,6 +13,8 @@ These two modes are selected at compile time. See the following sections for doc
 
 WARNING: This product contains a Li-ion battery. There is a risk of fire and burns if the battery pack is handled improperly. Do not attempt to open or service the battery pack. Do not disassemble, crush, puncture, short external contacts or circuits, dispose of in fire or water, or expose a battery pack to temperatures higher than 60 C (140 F). The Sentrius MG100 gateway was designed to use the supplied battery pack only. Contact Laird Connectivity Technical support if a replacement is required.
 
+>**Note:** This readme file and associated documentation should be viewed on GitHub selecting the desired branch. The master branch will always be up to date with the latest features. Viewing documentation from a release GA branch is recommended to get documentation for the specific feature set of that release.
+
 ## Programming
 
 The current FW version on production MG100 units is v2.0.0. This version currently only supports upgrading via JTAG. To do this please consult the MG100 Hardware Guide section 5.4.4 to learn how to connect the J-Link debugger to the board.

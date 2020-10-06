@@ -27,6 +27,7 @@ LOG_MODULE_REGISTER(mg100_main);
 #include <version.h>
 #include <shell/shell.h>
 #include <shell/shell_uart.h>
+#include <string.h>
 
 #include "led_configuration.h"
 #include "lte.h"
@@ -49,6 +50,10 @@ LOG_MODULE_REGISTER(mg100_main);
 #include "bt_scan.h"
 #include "fota.h"
 #include "sdcard_log.h"
+
+#ifdef CONFIG_LCZ_NFC
+#include "laird_connectivity_nfc.h"
+#endif
 
 #ifdef CONFIG_BL654_SENSOR
 #include "bl654_sensor.h"
@@ -171,6 +176,7 @@ static void configure_leds(void);
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
+
 void main(void)
 {
 	int rc;
@@ -256,6 +262,10 @@ void main(void)
 	BatteryInit();
 
 	motion_svc_init();
+
+#ifdef CONFIG_LCZ_NFC
+	laird_connectivity_nfc_init();
+#endif
 
 #ifdef CONFIG_LAIRDCONNECTIVITY_BLR
 	bootloader_init();

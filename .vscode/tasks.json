@@ -14,9 +14,9 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100",
+      "command": "${config:clear_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100",
       "windows": {
-        "command": "west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100"
+        "command": "${config:clear_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100"
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -26,9 +26,9 @@
     {
       "label": "re-build",
       "type": "shell",
-      "command": "west build -p -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100",
+      "command": "${config:clear_static_partitions_unix} && west build -p -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100",
       "windows": {
-        "command": "west build -p -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100"
+        "command": "${config:clear_static_partitions_windows} && west build -p -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100"
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -74,9 +74,9 @@
     {
       "label": "build lwm2m",
       "type": "shell",
-      "command": "west build -b mg100 -d ${workspaceRoot}/build/mg100_lwm2m ${workspaceRoot}/mg100 -- -DCONF_FILE=\"${config:app_lwm2m_config_unix}\"",
+      "command": "${config:clear_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_lwm2m ${workspaceRoot}/mg100 -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix}\"",
       "windows": {
-        "command": "west build -b mg100 -d ${workspaceRoot}\\build\\mg100_lwm2m ${workspaceRoot}\\mg100 -- -DCONF_FILE=\"${config:app_lwm2m_config_windows}\""
+        "command": "${config:clear_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_lwm2m ${workspaceRoot}\\mg100 -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows}\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -102,11 +102,11 @@
       "problemMatcher": []
     },
     {
-      "label": "build with mcumgr",
+      "label": "build with mcuboot",
       "type": "shell",
-      "command": "west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100 -- -DCONF_FILE=\"${config:app_aws_config_unix} ${config:app_mcumgr_config_unix}\"",
+      "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100 -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
       "windows": {
-        "command": "west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100 -- -DCONF_FILE=\"${config:app_aws_config_windows} ${config:app_mcumgr_config_windows}\""
+        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100 -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'"
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -114,35 +114,11 @@
       }
     },
     {
-      "label": "build with mcumgr serial",
+      "label": "build lwm2m with mcuboot",
       "type": "shell",
-      "command": "west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100 -- -DCONF_FILE=\"${config:app_aws_config_unix} ${config:app_mcumgr_serial_config_unix}\"",
+      "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_lwm2m ${workspaceRoot}/mg100 -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
       "windows": {
-        "command": "west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100 -- -DCONF_FILE=\"${config:app_aws_config_windows} ${config:app_mcumgr_serial_config_windows}\""
-      },
-      "problemMatcher": {
-        "base": "$gcc",
-        "fileLocation": "absolute"
-      }
-    },
-    {
-      "label": "build for mcuboot",
-      "type": "shell",
-      "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100 -- -DCONF_FILE=\"${config:app_aws_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\"",
-      "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100 -- -DCONF_FILE=\"${config:app_aws_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
-      },
-      "problemMatcher": {
-        "base": "$gcc",
-        "fileLocation": "absolute"
-      }
-    },
-    {
-      "label": "build lwm2m for mcuboot",
-      "type": "shell",
-      "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_lwm2m ${workspaceRoot}/mg100 -- -DCONF_FILE=\"${config:app_lwm2m_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\"",
-      "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_lwm2m ${workspaceRoot}\\mg100 -- -DCONF_FILE=\"${config:app_lwm2m_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
+        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_lwm2m ${workspaceRoot}\\mg100 -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'"
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -171,66 +147,17 @@
       "problemMatcher": []
     },
     {
-      "label": "sign app",
-      "type": "shell",
-      "command": "west sign -t imgtool -d ${workspaceRoot}/build/${input:app} -- --key ${workspaceRoot}/../bootloader/mcuboot/root-rsa-2048.pem --version ${input:app_ver}",
-      "windows": {
-        "command": "west sign -t imgtool -d ${workspaceRoot}\\build\\${input:app} -- --key ${workspaceRoot}\\..\\bootloader\\mcuboot\\root-rsa-2048.pem --version ${input:app_ver}"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "create app image",
-      "type": "shell",
-      "command": "west sign -t imgtool -d ${workspaceRoot}/build/${input:app} -- --version ${input:app_ver}",
-      "windows": {
-        "command": "west sign -t imgtool -d ${workspaceRoot}\\build\\${input:app} -- --version ${input:app_ver}"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "flash signed app",
-      "type": "shell",
-      "command": "west flash --skip-rebuild -d ${workspaceRoot}/build/${input:app} --hex-file ${workspaceRoot}/build/${input:app}/zephyr/zephyr.signed.hex",
-      "windows": {
-        "command": "west flash --skip-rebuild -d ${workspaceRoot}\\build\\${input:app} --hex-file ${workspaceRoot}\\build\\${input:app}\\zephyr\\zephyr.signed.hex"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "aws - build sign flash",
-      "type": "shell",
-      "dependsOrder": "sequence",
-      "dependsOn": ["build for mcuboot", "sign app", "flash signed app"],
-      "problemMatcher": []
-    },
-    {
       "label": "aws - build flash",
       "type": "shell",
       "dependsOrder": "sequence",
-      "dependsOn": [
-        "build for mcuboot",
-        "create app image",
-        "flash signed app"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "lwm2m - build sign flash",
-      "type": "shell",
-      "dependsOrder": "sequence",
-      "dependsOn": ["build lwm2m for mcuboot", "sign app", "flash signed app"],
+      "dependsOn": ["build with mcuboot", "flash app"],
       "problemMatcher": []
     },
     {
       "label": "lwm2m - build flash",
       "type": "shell",
       "dependsOrder": "sequence",
-      "dependsOn": [
-        "build lwm2m for mcuboot",
-        "create app image",
-        "flash signed app"
-      ],
+      "dependsOn": ["build lwm2m with mcuboot", "flash app"],
       "problemMatcher": []
     },
     {

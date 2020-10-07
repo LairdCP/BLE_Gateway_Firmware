@@ -163,7 +163,7 @@
     {
       "label": "mcumgr upload signed app",
       "type": "shell",
-      "command": "sudo mcumgr ${input:mcumgr_cnx} image upload ${workspaceRoot}/build/${input:app}/zephyr/zephyr.signed.bin",
+      "command": "sudo mcumgr -t 20 -r 2 ${input:mcumgr_cnx} image upload ${workspaceRoot}/build/${input:app}/zephyr/zephyr.signed.bin",
       "problemMatcher": []
     },
     {
@@ -195,6 +195,12 @@
       "type": "shell",
       "command": "sudo mcumgr ${input:mcumgr_cnx} echo 'hello'",
       "problemMatcher": []
+    },
+    {
+      "label": "mcumgr upload file",
+      "type": "shell",
+      "command": "sudo mcumgr -t 5 -r 2 ${input:mcumgr_cnx} fs upload ${input:src_file_path} /lfs/${input:dst_file_name}",
+      "problemMatcher": []
     }
   ],
   "inputs": [
@@ -213,7 +219,7 @@
         // Change 'peer_name=' to match your device name
         "--conntype ble --connstring ctlr_name=hci0,peer_name='MG100-0303848'",
         // Change 'dev=' to match your serial device
-        "--conntype serial --connstring dev=/dev/tty.usbserial-A908JLEI"
+        "--conntype serial --connstring dev=/dev/tty.usbserial-FT4G5B9B"
       ]
     },
     {
@@ -221,6 +227,18 @@
       "description": "hash of firmware image",
       "type": "promptString",
       "default": "enter hash here"
+    },
+    {
+      "id": "src_file_path",
+      "description": "full path of file to upload",
+      "type": "promptString",
+      "default": "enter file path"
+    },
+    {
+      "id": "dst_file_name",
+      "description": "name of the destination file",
+      "type": "promptString",
+      "default": "enter file name"
     },
     {
       "id": "app_ver",

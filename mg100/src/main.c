@@ -826,24 +826,42 @@ void power_measurement_callback(uint8_t integer, uint8_t decimal)
 static int shell_decommission(const struct shell *shell, size_t argc,
 			      char **argv)
 {
+	int rc = 0;
+
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 
 	if (!appReady) {
 		printk("App is not ready\n");
-		return APP_ERR_NOT_READY;
+		rc =  APP_ERR_NOT_READY;
+		goto done;
 	}
 
 	aws_svc_save_clear_settings(false);
 	decommission();
-
-	return 0;
+done:
+	return rc;
 }
-#endif
+#endif /* CONFIG_BLUEGRASS */
 
-#endif /* CONFIG_SHELL */
+static int shell_send_at_cmd(const struct shell *shell, size_t argc,
+			     char **argv)
+{
+	int rc = 0;
 
-#ifdef CONFIG_SHELL
+	if ((argc == 2) && (argv[1] != NULL)) {
+		rc = mdm_hl7800_send_at_cmd(argv[1]);
+		if (rc < 0) {
+			shell_error(shell, "Command not accepted");
+		}
+	} else {
+		shell_error(shell, "Invalid parameter");
+		rc = -EINVAL;
+	}
+
+	return rc;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(
 	oob_cmds,
 #ifdef CONFIG_BLUEGRASS
@@ -854,23 +872,12 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 );
 SHELL_CMD_REGISTER(oob, &oob_cmds, "OOB Demo commands", NULL);
 
-static int shell_send_at_cmd(const struct shell *shell, size_t argc,
-			     char **argv)
-{
-	if ((argc == 2) && (argv[1] != NULL)) {
-		int result = mdm_hl7800_send_at_cmd(argv[1]);
-		if (result < 0) {
-			shell_error(shell, "Command not accepted");
-		}
-	} else {
-		shell_error(shell, "Invalid parameter");
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
-SHELL_CMD_REGISTER(at, NULL, "Send an AT command string to the HL7800",
-		   shell_send_at_cmd);
+SHELL_STATIC_SUBCMD_SET_CREATE(
+	hl_cmds,
+	SHELL_CMD(at, NULL, "Send AT command (only for advanced debug)",
+		  shell_send_at_cmd),
+	SHELL_SUBCMD_SET_END /* Array terminated. */
+);
+SHELL_CMD_REGISTER(hl, &hl_cmds, "HL7800 commands", NULL);
 
 #endif /* CONFIG_SHELL */

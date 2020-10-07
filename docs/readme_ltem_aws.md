@@ -243,13 +243,13 @@ _BT510 log_
 
 ## LED behavior
 
-The Blue LED (LED1) blinks once a second when the MG100 is searching for a BL654 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
+The Blue LED blinks once a second when the MG100 is searching for a BL654 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
 
-The Red LED (LED2) turns on when connected to AWS. When data is sent to AWS the LED turns off and then turns back on. When disconnected from AWS, the LED remains off.
+The Green LED turns on when connected to AWS. When data is sent to AWS the LED turns off and then turns back on. When disconnected from AWS, the LED remains off.
 
-The Green LED (LED3) blinks when the MG100 is searching for a cellular network. It remains on and does not blink when connected to a network. If there is an error with the SIM card or network registration, then the LED remains off.
+The Red LED blinks when the MG100 is searching for a cellular network. It remains on and does not blink when connected to a network. If there is an error with the SIM card or network registration, then the LED remains off.
 
-NOTE: In version 2.0.0 of the firmware, LED2 and LED1 operation are switched.
+NOTE: Before to version 3.x of the firmware, Red LED peformed the Blue LED function. Blue LED performed the Green LED function. Green LED performed the Red LED function.
 
 ## Development
 See [here](development.md) for help on getting started with custom development.

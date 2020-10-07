@@ -219,7 +219,7 @@
         // Change 'peer_name=' to match your device name
         "--conntype ble --connstring ctlr_name=hci0,peer_name='MG100-0303848'",
         // Change 'dev=' to match your serial device
-        "--conntype serial --connstring dev=/dev/tty.usbserial-FT4G5B9B"
+        "--conntype serial --connstring dev=/dev/tty.usbserial-FT4G5B9B,mtu=2048"
       ]
     },
     {

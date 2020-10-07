@@ -593,12 +593,12 @@ static void set_ble_state(enum ble_state state)
 
 	switch (state) {
 	case BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED:
-		led_turn_on(BLUE_LED1);
+		led_turn_on(BLUE_LED);
 		bt_scan_resume(scan_id);
 		break;
 
 	case BT_DEMO_APP_STATE_FINDING_DEVICE:
-		led_blink(BLUE_LED1, &LED_SENSOR_SEARCH_PATTERN);
+		led_blink(BLUE_LED, &LED_SENSOR_SEARCH_PATTERN);
 		bss_set_sensor_bt_addr(NULL);
 		bt_scan_restart(scan_id);
 		break;

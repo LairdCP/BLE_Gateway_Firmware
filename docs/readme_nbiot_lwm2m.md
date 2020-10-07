@@ -148,11 +148,11 @@ In addition to the steps in the [Using the Demo](#using-the-demo) section, the P
 
 ## LED behavior
 
-The Blue LED (LED1) blinks once a second when the MG100 is searching for a BL654 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
+The Blue LED blinks once a second when the MG100 is searching for a BL654 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
 
-The Green LED (LED2) can be controlled via the LwM2M server Light Control object.
+The Green LED can be controlled via the LwM2M server Light Control object.
 
-The Red LED (LED3) blinks when the MG100 is searching for a cellular network. It remains on and does not blink when connected to a network. If there is an error with the SIM card or network registration, then the LED remains off.
+The Red LED blinks when the MG100 is searching for a cellular network. It remains on and does not blink when connected to a network. If there is an error with the SIM card or network registration, then the LED remains off.
 
 ## Development
 The LwM2M demo is built with [this overlay config file](../mg100/overlay_lwm2m_dtls.conf). See [here](development.md) for help on getting started with custom development.

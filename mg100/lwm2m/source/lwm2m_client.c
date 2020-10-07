@@ -325,9 +325,9 @@ static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
 	uint8_t led_val = *(uint8_t *)data;
 	if (led_val != led_state) {
 		if (led_val) {
-			led_turn_on(GREEN_LED2);
+			led_turn_on(GREEN_LED);
 		} else {
-			led_turn_off(GREEN_LED2);
+			led_turn_off(GREEN_LED);
 		}
 		led_state = led_val;
 		/* reset time on counter */

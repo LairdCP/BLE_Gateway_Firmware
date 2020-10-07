@@ -480,7 +480,7 @@ static void appStateAwsSendSensorData(void)
 	if (!commissioned || !awsConnected())
 	{
 		appSetNextState(appStateAwsDisconnect);
-		led_turn_off(GREEN_LED2);
+		led_turn_off(GREEN_LED);
 		return;
 	}
 
@@ -507,7 +507,7 @@ static void awsMsgHandler(void)
 
 	while (rc == 0)
 	{
-		led_turn_on(GREEN_LED2);
+		led_turn_on(GREEN_LED);
 		/* Remove sensor/gateway data from queue and send it to cloud.
 		 * Block if there are not any messages.
 		 * The keep alive message (RSSI) occurs every ~30 seconds.
@@ -574,7 +574,7 @@ static void awsMsgHandler(void)
 		 * (sensor enabled in Bluegrass) the first subscription will result in
 		 * a disconnect. The second attempt will work.
 		 */
-		led_turn_off(GREEN_LED2);
+		led_turn_off(GREEN_LED);
 		if (rc == 0)
 		{
 			k_sleep(K_MSEC(
@@ -861,9 +861,9 @@ static void softwareReset(uint32_t DelayMs)
 static void configure_leds(void)
 {
 	struct led_configuration c[] = {
-		{BLUE_LED1, LED1_DEV, LED1, LED_ACTIVE_HIGH},
-		{GREEN_LED2, LED2_DEV, LED2, LED_ACTIVE_HIGH},
-		{RED_LED3, LED3_DEV, LED3, LED_ACTIVE_HIGH}};
+		{BLUE_LED, LED2_DEV, LED2, LED_ACTIVE_HIGH},
+		{GREEN_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH},
+		{RED_LED, LED1_DEV, LED1, LED_ACTIVE_HIGH}};
 	led_init(c, ARRAY_SIZE(c));
 }
 

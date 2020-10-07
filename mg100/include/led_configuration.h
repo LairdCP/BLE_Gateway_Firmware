@@ -34,11 +34,11 @@ extern "C" {
 #define LED3 DT_GPIO_PIN(LED3_NODE, gpios)
 
 enum led_index {
-	BLUE_LED1 = 0,
-	GREEN_LED2,
-	RED_LED3
+	BLUE_LED = 0,
+	GREEN_LED,
+	RED_LED
 };
-BUILD_ASSERT(CONFIG_NUMBER_OF_LEDS > RED_LED3, "LED object too small");
+BUILD_ASSERT(CONFIG_NUMBER_OF_LEDS > RED_LED, "LED object too small");
 
 #ifdef __cplusplus
 }

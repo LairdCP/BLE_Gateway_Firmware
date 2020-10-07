@@ -78,7 +78,7 @@ X                                X
 
 The following are required to use the MG100:
 
-- An activated SIM card. See [here](https://connectivity-staging.s3.us-east-2.amazonaws.com/2020-08/CS-AN-Truphone%20SIM%20Set%20Up%20v1_1.pdf) for instructions on activating the SIM card that came with your kit.
+- An activated SIM card. See [here](https://www.lairdconnect.com/documentation/truphone-sim-setup-guide) for instructions on activating the SIM card that came with your kit.
 - MG100 programmed with the latest LTE-M/AWS firmware. Releases available
 - Laird Pinnacle Connect app installed on a mobile device
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)

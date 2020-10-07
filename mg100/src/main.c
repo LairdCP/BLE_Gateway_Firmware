@@ -841,27 +841,6 @@ static int shell_decommission(const struct shell *shell, size_t argc,
 }
 #endif
 
-#ifdef CONFIG_REBOOT
-static int shell_reboot(const struct shell *shell, size_t argc, char **argv)
-{
-	ARG_UNUSED(argc);
-	ARG_UNUSED(argv);
-
-	power_reboot_module(REBOOT_TYPE_NORMAL);
-
-	return 0;
-}
-
-static int shell_bootloader(const struct shell *shell, size_t argc, char **argv)
-{
-	ARG_UNUSED(argc);
-	ARG_UNUSED(argv);
-
-	power_reboot_module(REBOOT_TYPE_BOOTLOADER);
-
-	return 0;
-}
-#endif /* CONFIG_REBOOT */
 #endif /* CONFIG_SHELL */
 
 #ifdef CONFIG_SHELL
@@ -870,11 +849,6 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 #ifdef CONFIG_BLUEGRASS
 	SHELL_CMD(reset, NULL, "Factory reset (decommission) device",
 		  shell_decommission),
-#endif
-#ifdef CONFIG_REBOOT
-	SHELL_CMD(reboot, NULL, "Reboot module", shell_reboot),
-	SHELL_CMD(bootloader, NULL, "Boot to UART bootloader",
-		  shell_bootloader),
 #endif
 	SHELL_SUBCMD_SET_END /* Array terminated. */
 );
@@ -898,16 +872,5 @@ static int shell_send_at_cmd(const struct shell *shell, size_t argc,
 
 SHELL_CMD_REGISTER(at, NULL, "Send an AT command string to the HL7800",
 		   shell_send_at_cmd);
-
-#ifdef CONFIG_PRINT_THREAD_LIST
-static int print_thread_cmd(const struct shell *shell, size_t argc, char **argv)
-{
-	print_thread_list();
-	return 0;
-}
-
-SHELL_CMD_REGISTER(print_threads, NULL, "Print list of threads",
-		   print_thread_cmd);
-#endif
 
 #endif /* CONFIG_SHELL */

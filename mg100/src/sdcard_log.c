@@ -278,16 +278,26 @@ int sdCardLogBL654Data(BL654SensorMsg_t * msg)
 			{
 				/* find the end of the file */
 				ret = fs_seek(&bl654LogFileZfp, bl654LogSeekOffset, 0);
-				/* append the timestamp and data */
-				snprintf(logData, totalLength, "%d,%d,%d,%d\n", Qrtc_GetEpoch(), (u32_t)(msg->temperatureC * 100),
-							(u32_t)(msg->humidityPercent * 100), (u32_t)(msg->pressurePa * 10));
-				ret = fs_write(&bl654LogFileZfp, logData, strlen(logData));
-				/* cleanup */
-				bl654LogSeekOffset += strlen(logData);
-				/* treat this as a circular buffer to limit log file growth */
-				if (bl654LogSeekOffset > bl654LogMaxLength)
+
+				/* only try to write if the seek succeeded. */
+				if (ret < 0)
 				{
-					bl654LogSeekOffset = 0;
+					/* append the timestamp and data */
+					snprintf(logData, totalLength, "%d,%d,%d,%d\n", Qrtc_GetEpoch(), (u32_t)(msg->temperatureC * 100),
+								(u32_t)(msg->humidityPercent * 100), (u32_t)(msg->pressurePa * 10));
+
+					ret = fs_write(&bl654LogFileZfp, logData, strlen(logData));
+
+					/* only update the offset if the write succeeded. */
+					if (ret >= 0)
+					{
+						bl654LogSeekOffset += strlen(logData);
+						/* treat this as a circular buffer to limit log file growth */
+						if (bl654LogSeekOffset > bl654LogMaxLength)
+						{
+							bl654LogSeekOffset = 0;
+						}
+					}
 				}
 				k_free(logData);
 				logData = 0;
@@ -335,17 +345,26 @@ int sdCardLogAdEvent(Bt510AdEvent_t * event)
 			{
 				/* find the end of the file */
 				ret = fs_seek(&sensorLogFileZfp, sensorLogSeekOffset, 0);
-				/* append the timestamp and data */
-				bt_addr_to_str(&event->addr, bleAddrStr, sizeof(bleAddrStr));
-				snprintf(logData, totalLength, "%s,%d,%d,%d,%d\n", bleAddrStr, event->epoch,
-							event->recordType, event->id, event->data);
-				ret = fs_write(&sensorLogFileZfp, logData, strlen(logData));
-				/* cleanup */
-				sensorLogSeekOffset += strlen(logData);
-				/* treat this as a circular buffer to limit log file growth */
-				if (sensorLogSeekOffset > sensorLogMaxLength)
+
+				/* only try to write if the seek succeeded. */
+				if(ret >= 0)
 				{
-					sensorLogSeekOffset = 0;
+					/* append the timestamp and data */
+					bt_addr_to_str(&event->addr, bleAddrStr, sizeof(bleAddrStr));
+					snprintf(logData, totalLength, "%s,%d,%d,%d,%d\n", bleAddrStr, event->epoch,
+								event->recordType, event->id, event->data);
+					ret = fs_write(&sensorLogFileZfp, logData, strlen(logData));
+
+					/* only update the offset if the write succeeded. */
+					if(ret >= 0)
+					{
+						sensorLogSeekOffset += strlen(logData);
+						/* treat this as a circular buffer to limit log file growth */
+						if (sensorLogSeekOffset > sensorLogMaxLength)
+						{
+							sensorLogSeekOffset = 0;
+						}
+					}
 				}
 				k_free(logData);
 				logData = 0;
@@ -393,15 +412,24 @@ int sdCardLogBatteryData(void * data, int length)
 			{
 				/* find the end of the file */
 				ret = fs_seek(&batteryLogZfp, batteryLogSeekOffset, 0);
-				/* append the timestamp and data */
-				snprintk(logData, totalLength, "%d,%s\n", Qrtc_GetEpoch(), (char *)data);
-				ret = fs_write(&batteryLogZfp, logData, strlen(logData));
-				/* cleanup */
-				batteryLogSeekOffset += strlen(logData);
-				/* treat this as a circular buffer to limit log file growth */
-				if (batteryLogSeekOffset > batteryLogMaxLength)
+
+				/* only try to write if the seek succeeded. */
+				if(ret >= 0)
 				{
-					batteryLogSeekOffset = 0;
+					/* append the timestamp and data */
+					snprintk(logData, totalLength, "%d,%s\n", Qrtc_GetEpoch(), (char *)data);
+					ret = fs_write(&batteryLogZfp, logData, strlen(logData));
+
+					/* only update the offset if the write succeeded. */
+					if(ret >= 0)
+					{
+						batteryLogSeekOffset += strlen(logData);
+						/* treat this as a circular buffer to limit log file growth */
+						if (batteryLogSeekOffset > batteryLogMaxLength)
+						{
+							batteryLogSeekOffset = 0;
+						}
+					}
 				}
 				k_free(logData);
 				logData = 0;

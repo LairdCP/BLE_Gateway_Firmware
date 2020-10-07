@@ -80,14 +80,9 @@ LOG_MODULE_REGISTER(mg100_main);
 
 #define NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME 7
 
-enum CREDENTIAL_TYPE
-{
-	CREDENTIAL_CERT,
-	CREDENTIAL_KEY
-};
+enum CREDENTIAL_TYPE { CREDENTIAL_CERT, CREDENTIAL_KEY };
 
-enum APP_ERROR
-{
+enum APP_ERROR {
 	APP_ERR_NOT_READY = -1,
 	APP_ERR_COMMISSION_DISALLOWED = -2,
 	APP_ERR_CRED_TOO_LARGE = -3,
@@ -130,14 +125,14 @@ struct motion_status *motionInfo;
 struct sdcard_status *sdcardInfo;
 
 K_MSGQ_DEFINE(cloudQ, FWK_QUEUE_ENTRY_SIZE, CONFIG_CLOUD_QUEUE_SIZE,
-			  FWK_QUEUE_ALIGNMENT);
+	      FWK_QUEUE_ALIGNMENT);
 
 #ifdef CONFIG_SCAN_FOR_BT510
 /* Sensor events are not received properly unless filter duplicates is OFF */
 static struct bt_le_scan_param scanParameters =
 	BT_LE_SCAN_PARAM_INIT(BT_LE_SCAN_TYPE_ACTIVE, BT_LE_SCAN_OPT_CODED,
-						  BT_GAP_SCAN_FAST_INTERVAL,
-						  BT_GAP_SCAN_FAST_WINDOW);
+			      BT_GAP_SCAN_FAST_INTERVAL,
+			      BT_GAP_SCAN_FAST_WINDOW);
 #endif
 
 /******************************************************************************/
@@ -198,8 +193,7 @@ void main(void)
 
 	/* Init NV storage */
 	rc = nvInit();
-	if (rc < 0)
-	{
+	if (rc < 0) {
 		MAIN_LOG_ERR("NV init (%d)", rc);
 		goto exit;
 	}
@@ -211,8 +205,7 @@ void main(void)
 	/* init LTE */
 	lteRegisterEventCallback(lteEvent);
 	rc = lteInit();
-	if (rc < 0)
-	{
+	if (rc < 0) {
 		MAIN_LOG_ERR("LTE init (%d)", rc);
 		goto exit;
 	}
@@ -221,8 +214,7 @@ void main(void)
 	/* init AWS */
 #ifdef CONFIG_BLUEGRASS
 	rc = awsInit();
-	if (rc != 0)
-	{
+	if (rc != 0) {
 		goto exit;
 	}
 
@@ -281,17 +273,13 @@ void main(void)
 
 #ifdef CONFIG_BLUEGRASS
 	rc = aws_svc_init(lteInfo->IMEI);
-	if (rc != 0)
-	{
+	if (rc != 0) {
 		goto exit;
 	}
 	aws_svc_set_event_callback(awsSvcEvent);
-	if (commissioned)
-	{
+	if (commissioned) {
 		aws_svc_set_status(NULL, AWS_STATUS_DISCONNECTED);
-	}
-	else
-	{
+	} else {
 		aws_svc_set_status(NULL, AWS_STATUS_NOT_PROVISIONED);
 	}
 #endif
@@ -313,8 +301,7 @@ void main(void)
 	print_thread_list();
 #endif
 
-	while (true)
-	{
+	while (true) {
 		appState();
 	}
 exit:
@@ -329,13 +316,12 @@ EXTERNED void Framework_AssertionHandler(char *file, int line)
 {
 	static atomic_t busy = ATOMIC_INIT(0);
 	/* prevent recursion (buffer alloc fail, ...) */
-	if (!busy)
-	{
+	if (!busy) {
 		atomic_set(&busy, 1);
 		LOG_ERR("\r\n!---> Framework Assertion <---! %s:%d\r\n", file,
-				line);
+			line);
 		LOG_ERR("Thread name: %s",
-				log_strdup(k_thread_name_get(k_current_get())));
+			log_strdup(k_thread_name_get(k_current_get())));
 	}
 
 #ifdef CONFIG_LAIRD_CONNECTIVITY_DEBUG
@@ -357,7 +343,7 @@ static void initializeCloudMsgReceiver(void)
 	cloudMsgReceiver.id = FWK_ID_CLOUD;
 	cloudMsgReceiver.pQueue = &cloudQ;
 	cloudMsgReceiver.rxBlockTicks = K_NO_WAIT; /* unused */
-	cloudMsgReceiver.pMsgDispatcher = NULL;	   /* unused */
+	cloudMsgReceiver.pMsgDispatcher = NULL; /* unused */
 	Framework_RegisterReceiver(&cloudMsgReceiver);
 }
 
@@ -365,13 +351,12 @@ static void initializeBle(const char *imei)
 {
 	int err;
 	static char bleDevName[sizeof(CONFIG_BT_DEVICE_NAME "-") +
-						   NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME];
+			       NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME];
 	int devNameEnd;
 	int imeiEnd;
 
 	err = bt_enable(NULL);
-	if (err)
-	{
+	if (err) {
 		LOG_ERR("Bluetooth init failed (err %d)", err);
 		return;
 	}
@@ -383,23 +368,19 @@ static void initializeBle(const char *imei)
 	devNameEnd = strlen(bleDevName);
 	imeiEnd = strlen(imei);
 	strncat(bleDevName + devNameEnd,
-			imei + imeiEnd - NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME,
-			NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME);
+		imei + imeiEnd - NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME,
+		NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME);
 	err = bt_set_name((const char *)bleDevName);
-	if (err)
-	{
+	if (err) {
 		LOG_ERR("Failed to set device name (%d)", err);
-	}
-	else
-	{
+	} else {
 		LOG_INF("BLE device name set to [%s]", log_strdup(bleDevName));
 	}
 }
 
 static void lteEvent(enum lte_event event)
 {
-	switch (event)
-	{
+	switch (event) {
 	case LTE_EVT_READY:
 		k_sem_give(&lte_ready_sem);
 		break;
@@ -434,7 +415,7 @@ static const char *getAppStateString(app_state_function_t state)
 static void appSetNextState(app_state_function_t next)
 {
 	MAIN_LOG_DBG("%s->%s", getAppStateString(appState),
-				 getAppStateString(next));
+		     getAppStateString(next));
 	appState = next;
 }
 
@@ -443,12 +424,9 @@ static void appStateStartup(void)
 #ifdef CONFIG_LWM2M
 	appSetNextState(appStateWaitForLte);
 #else
-	if (commissioned && setAwsCredentials() == 0)
-	{
+	if (commissioned && setAwsCredentials() == 0) {
 		appSetNextState(appStateWaitForLte);
-	}
-	else
-	{
+	} else {
 		appSetNextState(appStateCommissionDevice);
 	}
 #endif
@@ -460,8 +438,7 @@ static void appStateWaitForLte(void)
 	setAwsStatusWrapper(AWS_STATUS_DISCONNECTED);
 #endif
 
-	if (!lteIsReady())
-	{
+	if (!lteIsReady()) {
 		/* Wait for LTE ready evt */
 		k_sem_take(&lte_ready_sem, K_FOREVER);
 	}
@@ -477,8 +454,7 @@ static void appStateWaitForLte(void)
 static void appStateAwsSendSensorData(void)
 {
 	/* If decommissioned then disconnect. */
-	if (!commissioned || !awsConnected())
-	{
+	if (!commissioned || !awsConnected()) {
 		appSetNextState(appStateAwsDisconnect);
 		led_turn_off(GREEN_LED);
 		return;
@@ -487,10 +463,9 @@ static void appStateAwsSendSensorData(void)
 	/* Process messages until there is an error. */
 	awsMsgHandler();
 
-	if (k_msgq_num_used_get(&cloudQ) != 0)
-	{
+	if (k_msgq_num_used_get(&cloudQ) != 0) {
 		MAIN_LOG_WRN("%u unsent messages",
-					 k_msgq_num_used_get(&cloudQ));
+			     k_msgq_num_used_get(&cloudQ));
 	}
 }
 
@@ -505,8 +480,7 @@ static void awsMsgHandler(void)
 	FwkMsg_t *pMsg;
 	bool freeMsg;
 
-	while (rc == 0)
-	{
+	while (rc == 0) {
 		led_turn_on(GREEN_LED);
 		/* Remove sensor/gateway data from queue and send it to cloud.
 		 * Block if there are not any messages.
@@ -515,8 +489,7 @@ static void awsMsgHandler(void)
 		rc = -EINVAL;
 		pMsg = NULL;
 		Framework_Receive(cloudMsgReceiver.pQueue, &pMsg, K_FOREVER);
-		if (pMsg == NULL)
-		{
+		if (pMsg == NULL) {
 			return;
 		}
 		freeMsg = true;
@@ -525,32 +498,26 @@ static void awsMsgHandler(void)
 		 * then sensor data (BT510) is sent to individual topics.  It also allows
 		 * AWS to configure sensors.
 		 */
-		switch (pMsg->header.msgCode)
-		{
-		case FMC_BL654_SENSOR_EVENT:
-		{
+		switch (pMsg->header.msgCode) {
+		case FMC_BL654_SENSOR_EVENT: {
 			BL654SensorMsg_t *pBmeMsg = (BL654SensorMsg_t *)pMsg;
 			sdCardLogBL654Data(pBmeMsg);
 			rc = awsPublishBl654SensorData(pBmeMsg->temperatureC,
-										   pBmeMsg->humidityPercent,
-										   pBmeMsg->pressurePa);
-		}
-		break;
+						       pBmeMsg->humidityPercent,
+						       pBmeMsg->pressurePa);
+		} break;
 
-		case FMC_AWS_KEEP_ALIVE:
-		{
+		case FMC_AWS_KEEP_ALIVE: {
 			/* Periodically sending the RSSI keeps AWS connection open. */
 			lteInfo = lteGetStatus();
 			batteryInfo = batteryGetStatus();
 			motionInfo = motionGetStatus();
 			sdcardInfo = sdCardLogGetStatus();
-			rc = awsPublishPinnacleData(lteInfo->rssi, lteInfo->sinr,
-										batteryInfo,
-										motionInfo,
-										sdcardInfo);
+			rc = awsPublishPinnacleData(lteInfo->rssi,
+						    lteInfo->sinr, batteryInfo,
+						    motionInfo, sdcardInfo);
 			StartKeepAliveTimer();
-		}
-		break;
+		} break;
 
 		case FMC_AWS_DECOMMISSION:
 		case FMC_AWS_DISCONNECTED:
@@ -562,8 +529,7 @@ static void awsMsgHandler(void)
 			break;
 		}
 
-		if (freeMsg)
-		{
+		if (freeMsg) {
 			BufferPool_Free(pMsg);
 		}
 
@@ -575,8 +541,7 @@ static void awsMsgHandler(void)
 		 * a disconnect. The second attempt will work.
 		 */
 		led_turn_off(GREEN_LED);
-		if (rc == 0)
-		{
+		if (rc == 0) {
 			k_sleep(K_MSEC(
 				CONFIG_AWS_DATA_SEND_LED_OFF_DURATION_MILLISECONDS));
 		}
@@ -588,8 +553,7 @@ static void appStateAwsInitShadow(void)
 {
 	int rc = 0;
 
-	if (initShadow)
-	{
+	if (initShadow) {
 		awsGenerateGatewayTopics(lteInfo->IMEI);
 		/* Fill in base shadow info and publish */
 		awsSetShadowAppFirmwareVersion(APP_VERSION_STRING);
@@ -603,14 +567,11 @@ static void appStateAwsInitShadow(void)
 		rc = awsPublishShadowPersistentData();
 	}
 
-	if (rc != 0)
-	{
+	if (rc != 0) {
 		LOG_ERR("Could not publish shadow (%d)", rc);
 		appSetNextState(appStateAwsDisconnect);
 		k_sleep(WAIT_TIME_BEFORE_RETRY_TICKS);
-	}
-	else
-	{
+	} else {
 		initShadow = false;
 		appSetNextState(appStateAwsSendSensorData);
 		StartKeepAliveTimer();
@@ -621,27 +582,24 @@ static void appStateAwsInitShadow(void)
 void awsDisconnectCallback(void)
 {
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED, FWK_ID_CLOUD,
-								  FMC_AWS_DISCONNECTED);
+				      FMC_AWS_DISCONNECTED);
 }
 
 static void appStateAwsConnect(void)
 {
-	if ((devCertSet != true) || (devKeySet != true))
-	{
+	if ((devCertSet != true) || (devKeySet != true)) {
 		appSetNextState(appStateCommissionDevice);
 		return;
 	}
 
-	if (!lteIsReady())
-	{
+	if (!lteIsReady()) {
 		appSetNextState(appStateWaitForLte);
 		return;
 	}
 
 	setAwsStatusWrapper(AWS_STATUS_CONNECTING);
 
-	if (awsConnect() != 0)
-	{
+	if (awsConnect() != 0) {
 		MAIN_LOG_ERR("Could not connect to AWS");
 		setAwsStatusWrapper(AWS_STATUS_CONNECTION_ERR);
 
@@ -667,7 +625,7 @@ static void appStateAwsDisconnect(void)
 	setAwsStatusWrapper(AWS_STATUS_DISCONNECTED);
 
 	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED,
-									   FMC_AWS_DISCONNECTED);
+					   FMC_AWS_DISCONNECTED);
 
 	Bluegrass_DisconnectedCallback();
 
@@ -676,8 +634,7 @@ static void appStateAwsDisconnect(void)
 
 static void appStateAwsResolveServer(void)
 {
-	if (awsGetServerAddr() != 0)
-	{
+	if (awsGetServerAddr() != 0) {
 		MAIN_LOG_ERR("Could not get server address");
 		/* wait some time before trying to resolve address again */
 		k_sleep(WAIT_TIME_BEFORE_RETRY_TICKS);
@@ -689,16 +646,11 @@ static void appStateAwsResolveServer(void)
 
 static void appStateLteConnectedAws(void)
 {
-	if (resolveAwsServer && areCertsSet())
-	{
+	if (resolveAwsServer && areCertsSet()) {
 		appSetNextState(appStateAwsResolveServer);
-	}
-	else if (areCertsSet())
-	{
+	} else if (areCertsSet()) {
 		appSetNextState(appStateAwsConnect);
-	}
-	else
-	{
+	} else {
 		appSetNextState(appStateCommissionDevice);
 	}
 }
@@ -707,19 +659,17 @@ static int setAwsCredentials(void)
 {
 	int rc;
 
-	if (!aws_svc_client_cert_is_stored())
-	{
+	if (!aws_svc_client_cert_is_stored()) {
 		return APP_ERR_READ_CERT;
 	}
 
-	if (!aws_svc_client_key_is_stored())
-	{
+	if (!aws_svc_client_key_is_stored()) {
 		return APP_ERR_READ_KEY;
 	}
 	devCertSet = true;
 	devKeySet = true;
 	rc = awsSetCredentials(aws_svc_get_client_cert(),
-						   aws_svc_get_client_key());
+			       aws_svc_get_client_key());
 	return rc;
 }
 
@@ -730,8 +680,7 @@ static void appStateCommissionDevice(void)
 	allowCommissioning = true;
 
 	k_sem_take(&rx_cert_sem, K_FOREVER);
-	if (setAwsCredentials() == 0)
-	{
+	if (setAwsCredentials() == 0) {
 		appSetNextState(appStateWaitForLte);
 	}
 }
@@ -749,9 +698,9 @@ static void decommission(void)
 	 * in the BLE app before it is reprovisioned.
 	 */
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED, FWK_ID_SENSOR_TASK,
-								  FMC_AWS_DECOMMISSION);
+				      FMC_AWS_DECOMMISSION);
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED, FWK_ID_CLOUD,
-								  FMC_AWS_DECOMMISSION);
+				      FMC_AWS_DECOMMISSION);
 	printk("Device is decommissioned\n");
 }
 
@@ -767,8 +716,7 @@ static void set_commissioned(void)
 
 static void awsSvcEvent(enum aws_svc_event event)
 {
-	switch (event)
-	{
+	switch (event) {
 	case AWS_SVC_EVENT_SETTINGS_SAVED:
 		set_commissioned();
 		break;
@@ -786,14 +734,14 @@ static void setAwsStatusWrapper(enum aws_status status)
 static void StartKeepAliveTimer(void)
 {
 	k_timer_start(&awsKeepAliveTimer,
-				  K_SECONDS(CONFIG_AWS_KEEP_ALIVE_SECONDS), K_NO_WAIT);
+		      K_SECONDS(CONFIG_AWS_KEEP_ALIVE_SECONDS), K_NO_WAIT);
 }
 
 static void AwsKeepAliveTimerCallbackIsr(struct k_timer *timer_id)
 {
 	UNUSED_PARAMETER(timer_id);
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
-								  FMC_AWS_KEEP_ALIVE);
+				      FMC_AWS_KEEP_ALIVE);
 }
 #endif /* CONFIG_BLUEGRASS */
 
@@ -814,35 +762,29 @@ static void lwm2mMsgHandler(void)
 	int rc = 0;
 	FwkMsg_t *pMsg;
 
-	while (rc == 0)
-	{
+	while (rc == 0) {
 		/* Remove sensor/gateway data from queue and send it to cloud. */
 		rc = -EINVAL;
 		pMsg = NULL;
 		Framework_Receive(cloudMsgReceiver.pQueue, &pMsg, K_FOREVER);
-		if (pMsg == NULL)
-		{
+		if (pMsg == NULL) {
 			return;
 		}
 
-		switch (pMsg->header.msgCode)
-		{
-		case FMC_BL654_SENSOR_EVENT:
-		{
+		switch (pMsg->header.msgCode) {
+		case FMC_BL654_SENSOR_EVENT: {
 			BL654SensorMsg_t *pBmeMsg = (BL654SensorMsg_t *)pMsg;
 			rc = lwm2m_set_bl654_sensor_data(
 				pBmeMsg->temperatureC, pBmeMsg->humidityPercent,
 				pBmeMsg->pressurePa);
-		}
-		break;
+		} break;
 
 		default:
 			break;
 		}
 		BufferPool_Free(pMsg);
 
-		if (rc != 0)
-		{
+		if (rc != 0) {
 			MAIN_LOG_ERR("Could not send data (%d)", rc);
 		}
 	}
@@ -861,9 +803,10 @@ static void softwareReset(uint32_t DelayMs)
 static void configure_leds(void)
 {
 	struct led_configuration c[] = {
-		{BLUE_LED, LED2_DEV, LED2, LED_ACTIVE_HIGH},
-		{GREEN_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH},
-		{RED_LED, LED1_DEV, LED1, LED_ACTIVE_HIGH}};
+		{ BLUE_LED, LED2_DEV, LED2, LED_ACTIVE_HIGH },
+		{ GREEN_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH },
+		{ RED_LED, LED1_DEV, LED1, LED_ACTIVE_HIGH }
+	};
 	led_init(c, ARRAY_SIZE(c));
 }
 
@@ -880,15 +823,14 @@ void power_measurement_callback(uint8_t integer, uint8_t decimal)
 #ifdef CONFIG_SHELL
 #ifdef CONFIG_BLUEGRASS
 static int shell_decommission(const struct shell *shell, size_t argc,
-							  char **argv)
+			      char **argv)
 {
 	int rc = 0;
 
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 
-	if (!appReady)
-	{
+	if (!appReady) {
 		printk("App is not ready\n");
 		rc = APP_ERR_NOT_READY;
 		goto done;
@@ -902,7 +844,7 @@ done:
 #endif /* CONFIG_BLUEGRASS */
 
 static int shell_oob_ver_cmd(const struct shell *shell, size_t argc,
-							 char **argv)
+			     char **argv)
 {
 	int rc = 0;
 
@@ -913,21 +855,16 @@ static int shell_oob_ver_cmd(const struct shell *shell, size_t argc,
 
 #ifdef CONFIG_MODEM_HL7800
 #ifdef CONFIG_MODEM_HL7800_FW_UPDATE
-static int shell_hl_fup_cmd(const struct shell *shell, size_t argc,
-							char **argv)
+static int shell_hl_fup_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	int rc = 0;
 
-	if ((argc == 2) && (argv[1] != NULL))
-	{
+	if ((argc == 2) && (argv[1] != NULL)) {
 		rc = mdm_hl7800_update_fw(argv[1]);
-		if (rc < 0)
-		{
+		if (rc < 0) {
 			shell_error(shell, "Command error");
 		}
-	}
-	else
-	{
+	} else {
 		shell_error(shell, "Invalid parameter");
 		rc = -EINVAL;
 	}
@@ -937,20 +874,16 @@ static int shell_hl_fup_cmd(const struct shell *shell, size_t argc,
 #endif /* CONFIG_MODEM_HL7800_FW_UPDATE */
 
 static int shell_send_at_cmd(const struct shell *shell, size_t argc,
-							 char **argv)
+			     char **argv)
 {
 	int rc = 0;
 
-	if ((argc == 2) && (argv[1] != NULL))
-	{
+	if ((argc == 2) && (argv[1] != NULL)) {
 		rc = mdm_hl7800_send_at_cmd(argv[1]);
-		if (rc < 0)
-		{
+		if (rc < 0) {
 			shell_error(shell, "Command not accepted");
 		}
-	}
-	else
-	{
+	} else {
 		shell_error(shell, "Invalid parameter");
 		rc = -EINVAL;
 	}
@@ -959,7 +892,7 @@ static int shell_send_at_cmd(const struct shell *shell, size_t argc,
 }
 
 static int shell_hl_iccid_cmd(const struct shell *shell, size_t argc,
-							  char **argv)
+			      char **argv)
 {
 	int rc = 0;
 
@@ -969,7 +902,7 @@ static int shell_hl_iccid_cmd(const struct shell *shell, size_t argc,
 }
 
 static int shell_hl_imei_cmd(const struct shell *shell, size_t argc,
-							 char **argv)
+			     char **argv)
 {
 	int rc = 0;
 
@@ -997,15 +930,15 @@ static int shell_hl_ver_cmd(const struct shell *shell, size_t argc, char **argv)
 }
 #endif /* CONFIG_MODEM_HL7800 */
 
-SHELL_STATIC_SUBCMD_SET_CREATE(
-	oob_cmds,
+SHELL_STATIC_SUBCMD_SET_CREATE(oob_cmds,
 #ifdef CONFIG_BLUEGRASS
-	SHELL_CMD(reset, NULL, "Factory reset (decommission) device",
-			  shell_decommission),
+			       SHELL_CMD(reset, NULL,
+					 "Factory reset (decommission) device",
+					 shell_decommission),
 #endif
-	SHELL_CMD(ver, NULL, "Firmware version",
-			  shell_oob_ver_cmd),
-	SHELL_SUBCMD_SET_END /* Array terminated. */
+			       SHELL_CMD(ver, NULL, "Firmware version",
+					 shell_oob_ver_cmd),
+			       SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 SHELL_CMD_REGISTER(oob, &oob_cmds, "OOB Demo commands", NULL);
 
@@ -1013,7 +946,7 @@ SHELL_CMD_REGISTER(oob, &oob_cmds, "OOB Demo commands", NULL);
 SHELL_STATIC_SUBCMD_SET_CREATE(
 	hl_cmds,
 	SHELL_CMD(at, NULL, "Send AT command (only for advanced debug)",
-			  shell_send_at_cmd),
+		  shell_send_at_cmd),
 #ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 	SHELL_CMD(fup, NULL, "Update HL7800 firmware", shell_hl_fup_cmd),
 #endif

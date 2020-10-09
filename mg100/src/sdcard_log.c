@@ -68,13 +68,13 @@ static struct fs_file_t batteryLogZfp;
 static int batteryLogSeekOffset = 0;
 static int batteryLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static bool batteryLogFileOpened = false;
-static struct fs_file_t sensorLogFileZfp;
-static int sensorLogSeekOffset = 0;
 static int sensorLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static int bl654LogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static struct sdcard_status sdCardLogStatus;
 
 #ifdef CONFIG_BLUEGRASS
+static struct fs_file_t sensorLogFileZfp;
+static int sensorLogSeekOffset = 0;
 static bool sensorLogFileOpened = false;
 static struct fs_file_t bl654LogFileZfp;
 static int bl654LogSeekOffset = 0;

@@ -65,6 +65,10 @@ int nvReadAccelODR(int * Value);
 int nvReadAccelThresh(int * Value);
 int nvReadAccelScale(int * Value);
 int nvReadSDLogMaxSize(int * Value);
+#ifdef CONFIG_APP_AWS_CUSTOMIZATION
+int nvStoreAwsEnableCustom(bool Value);
+int nvReadAwsEnableCustom(bool *Value);
+#endif
 
 #ifdef __cplusplus
 }

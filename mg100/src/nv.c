@@ -50,7 +50,10 @@ enum SETTING_ID {
 	SETTING_ID_ACCEL_ODR,
 	SETTING_ID_ACCEL_THRESH,
 	SETTING_ID_ACCEL_SCALE,
-	SETTING_ID_SDLOG_MAX_SIZE
+	SETTING_ID_SDLOG_MAX_SIZE,
+#ifdef CONFIG_APP_AWS_CUSTOMIZATION
+	SETTING_ID_AWS_ENABLE_CUSTOM
+#endif
 };
 
 /******************************************************************************/
@@ -94,6 +97,9 @@ int nvInit(void)
 	struct flash_pages_info info;
 	uint16_t batteryData = 0;
 	int Value = 0;
+#ifdef CONFIG_APP_AWS_CUSTOMIZATION
+	bool bValue;
+#endif
 
 	/* define the nvs file system by settings with:
 	 *	sector_size equal to the pagesize,
@@ -244,6 +250,19 @@ int nvInit(void)
 			goto exit;
 		}
 	}
+
+#ifdef CONFIG_APP_AWS_CUSTOMIZATION
+	rc = nvReadAwsEnableCustom(&bValue);
+	if (rc <= 0) {
+		/* setting not found, init it */
+		rc = nvStoreAwsEnableCustom(false);
+		if (rc <= 0) {
+			NV_LOG_ERR("Could not write AWS enable custom (%d)",
+				   rc);
+			goto exit;
+		}
+	}
+#endif /* CONFIG_APP_AWS_CUSTOMIZATION */
 
 exit:
 	return rc;
@@ -463,3 +482,16 @@ int nvReadSDLogMaxSize(int * Value)
 {
 	return nvs_read(&fs, SETTING_ID_SDLOG_MAX_SIZE, Value, sizeof(int));
 }
+
+#ifdef CONFIG_APP_AWS_CUSTOMIZATION
+int nvStoreAwsEnableCustom(bool Value)
+{
+	return nvs_write(&fs, SETTING_ID_AWS_ENABLE_CUSTOM, &Value,
+			 sizeof(bool));
+}
+
+int nvReadAwsEnableCustom(bool *Value)
+{
+	return nvs_read(&fs, SETTING_ID_AWS_ENABLE_CUSTOM, Value, sizeof(bool));
+}
+#endif /* CONFIG_APP_AWS_CUSTOMIZATION */

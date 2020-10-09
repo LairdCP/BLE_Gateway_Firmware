@@ -23,6 +23,9 @@ LOG_MODULE_REGISTER(oob_aws_svc);
 #include <bluetooth/uuid.h>
 #include <bluetooth/gatt.h>
 #include <mbedtls/sha256.h>
+#ifdef CONFIG_APP_AWS_CUSTOMIZATION
+#include <fs/fs.h>
+#endif
 
 #include "ble_aws_service.h"
 #include "nv.h"
@@ -428,9 +431,59 @@ void aws_svc_set_status(struct bt_conn *conn, enum aws_status status)
 	}
 }
 
-int aws_svc_init(const char *clientId)
+#ifdef CONFIG_APP_AWS_CUSTOMIZATION
+static int read_cred_from_fs(char *file_path, uint8_t *dst, size_t dst_size)
 {
 	int rc;
+	struct fs_dirent file_info;
+	struct fs_file_t file;
+
+	/* get file info */
+	rc = fs_stat(file_path, &file_info);
+	if (rc >= 0) {
+		AWS_SVC_LOG_DBG("file '%s' size %u", log_strdup(file_info.name),
+				file_info.size);
+	} else {
+		AWS_SVC_LOG_ERR("Failed to get file [%s] info: %d",
+				log_strdup(file_path), rc);
+		goto done;
+	}
+
+	if (file_info.size > dst_size) {
+		AWS_SVC_LOG_ERR("File too large src: %d dst: %d",
+				file_info.size, dst_size);
+		rc = AWS_SVC_ERR_CRED_SIZE;
+		goto done;
+	}
+
+	rc = fs_open(&file, file_path);
+	if (rc < 0) {
+		AWS_SVC_LOG_ERR("%s open err: %d", log_strdup(file_path), rc);
+		goto done;
+	}
+
+	rc = fs_read(&file, dst, dst_size);
+	if (rc < 0) {
+		AWS_SVC_LOG_ERR("could not read %s [%d]", log_strdup(file_path),
+				rc);
+	} else if (rc < file_info.size) {
+		AWS_SVC_LOG_WRN("Did not read entire file %s",
+				log_strdup(file_path));
+	}
+
+	fs_close(&file);
+
+done:
+	return rc;
+}
+#endif /* CONFIG_APP_AWS_CUSTOMIZATION */
+
+int aws_svc_init(const char *clientId)
+{
+	int rc = AWS_SVC_ERR_NONE;
+#ifdef CONFIG_APP_AWS_CUSTOMIZATION
+	bool read_from_fs = false;
+#endif
 
 	rc = nvReadAwsEndpoint(endpoint_value, sizeof(endpoint_value));
 	if (rc <= 0) {
@@ -440,7 +493,8 @@ int aws_svc_init(const char *clientId)
 		if (rc <= 0) {
 			AWS_SVC_LOG_ERR("Could not write AWS endpoint (%d)",
 					rc);
-			return AWS_SVC_ERR_INIT_ENDPOINT;
+			rc = AWS_SVC_ERR_INIT_ENDPOINT;
+			goto done;
 		}
 		aws_svc_set_endpoint(AWS_DEFAULT_ENDPOINT);
 	}
@@ -457,33 +511,70 @@ int aws_svc_init(const char *clientId)
 		if (rc <= 0) {
 			AWS_SVC_LOG_ERR("Could not write AWS client ID (%d)",
 					rc);
-			return AWS_SVC_ERR_INIT_CLIENT_ID;
+			rc = AWS_SVC_ERR_INIT_CLIENT_ID;
+			goto done;
 		}
 	}
 	awsSetClientId(client_id_value);
 
-	rc = nvReadAwsRootCa(root_ca_value, sizeof(root_ca_value));
+#ifdef CONFIG_APP_AWS_CUSTOMIZATION
+	rc = nvReadAwsEnableCustom(&read_from_fs);
 	if (rc <= 0) {
-		/* Setting does not exist, init it */
-		rc = nvStoreAwsRootCa((uint8_t *)aws_root_ca,
-				      strlen(aws_root_ca) + 1);
-		if (rc <= 0) {
-			AWS_SVC_LOG_ERR("Could not write AWS client ID (%d)",
-					rc);
-			return AWS_SVC_ERR_INIT_CLIENT_ID;
+		AWS_SVC_LOG_ERR("Could not read setting (%d)", rc);
+		rc = AWS_SVC_ERR_READ_CRED_FS;
+		goto done;
+	}
+
+	if (read_from_fs) {
+		AWS_SVC_LOG_INF("Reading credentials from file system");
+
+		read_cred_from_fs("/lfs/" CONFIG_APP_AWS_ROOT_CA_FILE_NAME,
+				  root_ca_value, sizeof(root_ca_value));
+		awsSetRootCa(root_ca_value);
+
+		rc = read_cred_from_fs(
+			"/lfs/" CONFIG_APP_AWS_CLIENT_CERT_FILE_NAME,
+			client_cert_value, sizeof(client_cert_value));
+		if (rc >= 0) {
+			isClientCertStored = true;
 		}
-		aws_svc_set_root_ca(aws_root_ca);
-	}
-	awsSetRootCa(root_ca_value);
 
-	rc = nvReadDevCert(client_cert_value, sizeof(client_cert_value));
-	if (rc > 0) {
-		isClientCertStored = true;
-	}
+		rc = read_cred_from_fs(
+			"/lfs/" CONFIG_APP_AWS_CLIENT_KEY_FILE_NAME,
+			client_key_value, sizeof(client_key_value));
+		if (rc >= 0) {
+			isClientKeyStored = true;
+		}
 
-	rc = nvReadDevKey(client_key_value, sizeof(client_key_value));
-	if (rc > 0) {
-		isClientKeyStored = true;
+	} else
+#endif /* CONFIG_APP_AWS_CUSTOMIZATION */
+	{
+		rc = nvReadAwsRootCa(root_ca_value, sizeof(root_ca_value));
+		if (rc <= 0) {
+			/* Setting does not exist, init it */
+			rc = nvStoreAwsRootCa((uint8_t *)aws_root_ca,
+					      strlen(aws_root_ca) + 1);
+			if (rc <= 0) {
+				AWS_SVC_LOG_ERR(
+					"Could not write AWS client ID (%d)",
+					rc);
+				rc = AWS_SVC_ERR_INIT_CLIENT_ID;
+				goto done;
+			}
+			aws_svc_set_root_ca(aws_root_ca);
+		}
+		awsSetRootCa(root_ca_value);
+
+		rc = nvReadDevCert(client_cert_value,
+				   sizeof(client_cert_value));
+		if (rc > 0) {
+			isClientCertStored = true;
+		}
+
+		rc = nvReadDevKey(client_key_value, sizeof(client_key_value));
+		if (rc > 0) {
+			isClientKeyStored = true;
+		}
 	}
 
 	bt_gatt_service_register(&aws_svc);
@@ -491,8 +582,9 @@ int aws_svc_init(const char *clientId)
 	size_t gatt_size = (sizeof(aws_attrs) / sizeof(aws_attrs[0]));
 	svc_status_index = lbt_find_gatt_index(&aws_status_uuid.uuid, aws_attrs,
 					       gatt_size);
-
-	return AWS_SVC_ERR_NONE;
+	rc = AWS_SVC_ERR_NONE;
+done:
+	return rc;
 }
 
 bool aws_svc_client_cert_is_stored(void)

@@ -16,11 +16,11 @@ extern "C" {
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-#define AWS_CLIENT_ID_MAX_LENGTH 32
-#define AWS_ENDPOINT_MAX_LENGTH 256
-#define AWS_ROOT_CA_MAX_LENGTH 2048
-#define AWS_CLIENT_CERT_MAX_LENGTH 2048
-#define AWS_CLIENT_KEY_MAX_LENGTH 2048
+#define AWS_CLIENT_ID_MAX_LENGTH CONFIG_APP_AWS_CLIENT_ID_MAX_LENGTH
+#define AWS_ENDPOINT_MAX_LENGTH CONFIG_APP_AWS_ENDPOINT_MAX_LENGTH
+#define AWS_ROOT_CA_MAX_LENGTH CONFIG_APP_AWS_MAX_CREDENTIAL_SIZE
+#define AWS_CLIENT_CERT_MAX_LENGTH CONFIG_APP_AWS_MAX_CREDENTIAL_SIZE
+#define AWS_CLIENT_KEY_MAX_LENGTH CONFIG_APP_AWS_MAX_CREDENTIAL_SIZE
 #define AWS_CREDENTIAL_HEADER_SIZE 4
 
 enum aws_status {
@@ -36,6 +36,10 @@ enum aws_svc_err {
 	AWS_SVC_ERR_INIT_ENDPOINT = -1,
 	AWS_SVC_ERR_INIT_CLIENT_ID = -2,
 	AWS_SVC_ERR_INIT_ROOT_CA = -3,
+#ifdef CONFIG_APP_AWS_CUSTOMIZATION
+	AWS_SVC_ERR_READ_CRED_FS = -4,
+	AWS_SVC_ERR_CRED_SIZE = -5,
+#endif /* CONFIG_APP_AWS_CUSTOMIZATION */
 };
 
 enum aws_svc_event {

@@ -7,8 +7,8 @@
     "app_mcuboot_config_windows": "${workspaceRoot}\\..\\modules\\zephyr_lib\\mcumgr_wrapper\\config\\overlay-mcuboot.conf",
     "setup_static_partitions_unix": "cp ${workspaceRoot}/../modules/zephyr_lib/mcuboot_config/pm_static.pinnacle100.yml ${workspaceRoot}/mg100/pm_static.yml",
     "setup_static_partitions_windows": "copy ${workspaceRoot}\\..\\modules\\zephyr_lib\\mcuboot_config\\pm_static.pinnacle100.yml ${workspaceRoot}\\mg100\\pm_static.yml",
-    "clear_static_partitions_unix": "rm ${workspaceRoot}/oob_demo/pm_static.yml",
-    "clear_static_partitions_windows": "del ${workspaceRoot}\\oob_demo\\pm_static.yml",    
+    "clear_static_partitions_unix": "rm -f ${workspaceRoot}/mg100/pm_static.yml",
+    "clear_static_partitions_windows": "del ${workspaceRoot}\\mg100\\pm_static.yml",    
     "C_Cpp.errorSquiggles": "Disabled",
     "cmake.configureOnOpen": false
 }

@@ -38,6 +38,11 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src/aws.c
     ${CMAKE_SOURCE_DIR}/src/ble_aws_service.c
 )
+if(CONFIG_SHELL AND CONFIG_APP_AWS_CUSTOMIZATION)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/aws_config.c
+)
+endif()
 endif()
 
 if(CONFIG_BL654_SENSOR)

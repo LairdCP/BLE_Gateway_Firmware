@@ -132,6 +132,25 @@ config VSP_RX_ECHO
     help
         This occurs in task context because strings can be long
 
+config APP_AWS_MAX_CREDENTIAL_SIZE
+    int "AWS max credential size"
+    default 2048
+    help
+        Maxmimum size of a credential. Used to allocate a buffer for
+        storing credentials.
+
+config APP_AWS_CLIENT_ID_MAX_LENGTH
+    int "AWS clint ID max length"
+    default 32
+    help
+        Max length AWS client ID. This is used for the MQTT connection ID.
+
+config APP_AWS_ENDPOINT_MAX_LENGTH
+    int "AWS endpoint max length"
+    default 256
+    help
+        Max length of AWS endpoint hostname.
+
 endif # BLUEGRASS
 
 config JSON_LOG_PUBLISH
@@ -172,6 +191,35 @@ config LWM2M_CLIENT_ENDPOINT_MAX_SIZE
     default 64
 
 endif # LC_LWM2M
+
+config APP_AWS_CUSTOMIZATION
+    bool "Customize AWS connection"
+    help
+        Enabling this gives the user the ability to adjust all the pertinent AWS
+        connection options via UART commands. This gives the user the ability
+        to change what AWS server their device connects to.
+
+if APP_AWS_CUSTOMIZATION
+
+config APP_AWS_ROOT_CA_FILE_NAME
+    string "Root CA file name"
+    default "root_ca.pem"
+    help
+        Name of the file that the will be read from the filesystem
+
+config APP_AWS_CLIENT_CERT_FILE_NAME
+    string "Client cert file name"
+    default "client_cert.pem"
+    help
+        Name of the file that the will be read from the filesystem
+
+config APP_AWS_CLIENT_KEY_FILE_NAME
+    string "Client key file name"
+    default "client_key.pem"
+    help
+        Name of the file that the will be read from the filesystem
+
+endif # APP_AWS_CUSTOMIZATION
 
 endif # USER_APPLICATION
 

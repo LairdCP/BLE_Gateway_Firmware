@@ -271,6 +271,10 @@ void main(void)
 	bootloader_init();
 #endif
 
+#ifdef CONFIG_MCUMGR
+	mcumgr_wrapper_register_subsystems();
+#endif
+
 #ifdef CONFIG_BLUEGRASS
 	rc = aws_svc_init(lteInfo->IMEI);
 	if (rc != 0) {
@@ -292,14 +296,6 @@ void main(void)
 	printk("\n!!!!!!!! App is ready! !!!!!!!!\n");
 
 	appSetNextState(appStateStartup);
-
-#ifdef CONFIG_MCUMGR
-	mcumgr_wrapper_register_subsystems();
-#endif
-
-#ifdef CONFIG_PRINT_THREAD_LIST
-	print_thread_list();
-#endif
 
 	while (true) {
 		appState();
@@ -688,6 +684,7 @@ static void appStateCommissionDevice(void)
 static void decommission(void)
 {
 	nvStoreCommissioned(false);
+	nvStoreAwsEnableCustom(false);
 	devCertSet = false;
 	devKeySet = false;
 	commissioned = false;

@@ -41,6 +41,8 @@ LOG_MODULE_REGISTER(oob_lte);
 extern bool initShadow;
 #endif
 
+struct mdm_hl7800_apn *lte_apn_config;
+
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
@@ -237,7 +239,11 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_APN_UPDATE:
-		cell_svc_set_apn((struct mdm_hl7800_apn *)event_data);
+		/* event data points to static data stored in modem driver.
+		 * Store the pointer so we can access the APN elsewhere in our app.
+		 */
+		lte_apn_config = (struct mdm_hl7800_apn *)event_data;
+		cell_svc_set_apn(lte_apn_config);
 		break;
 
 	case HL7800_EVENT_RSSI:

@@ -93,11 +93,19 @@ enum APP_ERROR {
 
 typedef void (*app_state_function_t)(void);
 
+#if defined(CONFIG_SHELL) && defined(CONFIG_MODEM_HL7800)
+#define APN_MSG "APN: [%s]"
+#endif
+
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
 #ifdef CONFIG_BLUEGRASS
 bool initShadow = true; /* can be set by lte */
+#endif
+
+#if defined(CONFIG_SHELL) && defined(CONFIG_MODEM_HL7800)
+extern struct mdm_hl7800_apn *lte_apn_config;
 #endif
 
 /******************************************************************************/
@@ -851,6 +859,38 @@ static int shell_oob_ver_cmd(const struct shell *shell, size_t argc,
 }
 
 #ifdef CONFIG_MODEM_HL7800
+static int shell_hl_apn_cmd(const struct shell *shell, size_t argc, char **argv)
+{
+	int rc = 0;
+
+	size_t val_len;
+
+	if (argc == 2) {
+		/* set the value */
+		val_len = strlen(argv[1]);
+		if (val_len > MDM_HL7800_APN_MAX_SIZE) {
+			rc = -EINVAL;
+			shell_error(shell, "APN too long [%d]", val_len);
+			goto done;
+		}
+
+		rc = mdm_hl7800_update_apn(argv[1]);
+		if (rc >= 0) {
+			shell_print(shell, APN_MSG, argv[1]);
+		} else {
+			shell_error(shell, "Could not set APN [%d]", rc);
+		}
+	} else if (argc == 1) {
+		/* read the value */
+		shell_print(shell, APN_MSG, lte_apn_config->value);
+	} else {
+		shell_error(shell, "Invalid param");
+		rc = -EINVAL;
+	}
+done:
+	return rc;
+}
+
 #ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 static int shell_hl_fup_cmd(const struct shell *shell, size_t argc, char **argv)
 {
@@ -941,7 +981,7 @@ SHELL_CMD_REGISTER(oob, &oob_cmds, "OOB Demo commands", NULL);
 
 #ifdef CONFIG_MODEM_HL7800
 SHELL_STATIC_SUBCMD_SET_CREATE(
-	hl_cmds,
+	hl_cmds, SHELL_CMD(apn, NULL, "HL7800 APN", shell_hl_apn_cmd),
 	SHELL_CMD(at, NULL, "Send AT command (only for advanced debug)",
 		  shell_send_at_cmd),
 #ifdef CONFIG_MODEM_HL7800_FW_UPDATE

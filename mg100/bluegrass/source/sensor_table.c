@@ -331,8 +331,10 @@ DispatchResult_t SensorTable_AddConfigRequest(SensorCmdMsg_t *pMsg)
 		return DISPATCH_OK;
 	}
 
-	if (p->rsp.firmwareVersionMajor >=
-	    BT510_MAJOR_VERSION_RESET_NOT_REQUIRED) {
+	if (pMsg->dumpRequest) {
+		pMsg->resetRequest = false;
+	} else if (p->rsp.firmwareVersionMajor >=
+		   BT510_MAJOR_VERSION_RESET_NOT_REQUIRED) {
 		pMsg->resetRequest = false;
 	} else {
 		pMsg->resetRequest = SensorCmd_RequiresReset(pMsg->cmd);

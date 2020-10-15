@@ -6,8 +6,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#ifndef SENSOR_TASK_H
-#define SENSOR_TASK_H
+#ifndef __SENSOR_TASK_H__
+#define __SENSOR_TASK_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,15 +21,8 @@ extern "C" {
  */
 void SensorTask_Initialize(void);
 
-/**
- * @brief Accessor Function
- *
- * @retval returns connection handle use by sensor task.
- */
-struct bt_conn *SensorTask_GetConn(void);
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* __SENSOR_TASK_H__ */

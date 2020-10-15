@@ -275,11 +275,6 @@ void SensorTask_Initialize(void)
 	RegisterSecurityCallbacks();
 }
 
-struct bt_conn *SensorTask_GetConn(void)
-{
-	return st.conn;
-}
-
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/

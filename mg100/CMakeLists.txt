@@ -50,7 +50,3 @@ include_directories(${CMAKE_SOURCE_DIR}/bl654_sensor/include)
 target_sources(app PRIVATE ${CMAKE_SOURCE_DIR}/bl654_sensor/source/ble_sensor_service.c)
 target_sources(app PRIVATE ${CMAKE_SOURCE_DIR}/bl654_sensor/source/bl654_sensor.c)
 endif()
-
-if (CONFIG_LAIRDCONNECTIVITY_BLR)
-target_sources(app PRIVATE ${CMAKE_SOURCE_DIR}/src/bootloader.c)
-endif()

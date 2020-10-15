@@ -40,7 +40,6 @@ LOG_MODULE_REGISTER(mg100_main);
 #include "ble_power_service.h"
 #include "laird_power.h"
 #include "dis.h"
-#include "bootloader.h"
 #include "FrameworkIncludes.h"
 #include "laird_utility_macros.h"
 #include "single_peripheral.h"
@@ -278,10 +277,6 @@ void main(void)
 
 #ifdef CONFIG_LCZ_NFC
 	laird_connectivity_nfc_init();
-#endif
-
-#ifdef CONFIG_LAIRDCONNECTIVITY_BLR
-	bootloader_init();
 #endif
 
 #ifdef CONFIG_MCUMGR

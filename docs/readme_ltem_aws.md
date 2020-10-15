@@ -17,8 +17,9 @@
    [Power Settings](#power-settings)  
 6. **[Cloud Data](#cloud-data)**  
    [BT510 Sensor Data](#bt510-sensor-data)  
-7. **[LED behavior](#led-behavior)**
-8. **[Development](#development)**
+7. **[LED Behavior](#led-behavior)**
+8. **[Building the Firmware](#building-the-firmware)**
+9. **[Development](#development)**
 
 ## Introduction
 
@@ -241,7 +242,7 @@ _BT510 parameters_
 ![BT510 log](images/bt510_log.png)  
 _BT510 log_
 
-## LED behavior
+## LED Behavior
 
 The Blue LED blinks once a second when the MG100 is searching for a BL654 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
 
@@ -249,7 +250,50 @@ The Green LED turns on when connected to AWS. When data is sent to AWS the LED t
 
 The Red LED blinks when the MG100 is searching for a cellular network. It remains on and does not blink when connected to a network. If there is an error with the SIM card or network registration, then the LED remains off.
 
-NOTE: Before to version 3.x of the firmware, Red LED peformed the Blue LED function. Blue LED performed the Green LED function. Green LED performed the Red LED function.
+> **Note:** Before to version 3.x of the firmware, Red LED peformed the Blue LED function. Blue LED performed the Green LED function. Green LED performed the Red LED function.
+
+## Building the Firmware
+
+The firmware can be built to work with or without the mcuboot bootloader. Building without mcuboot is faster and easier for development and debug, but gives up the ability to update the Zephyr app via UART or BLE.
+
+Issue these commands **from the mg100_firmware directory**.
+
+Build without mcuboot:
+```
+# Linux and macOS
+
+rm -f mg100/pm_static.yml && west build -b mg100 -d build/mg100_aws mg100
+
+# Windows
+
+del mg100\pm_static.yml && west build -b mg100 -d build\mg100_aws mg100
+```
+
+> **Note:** When switching between builds with or without mcuboot, be sure to delete the build directory before building.
+
+Build with mcuboot:
+```
+# Linux and macOS
+
+cp ../modules/zephyr_lib/mcuboot_config/pm_static.pinnacle100.yml mg100/pm_static.yml && west build -b mg100 -d build/mg100_aws mg100 -- -DOVERLAY_CONFIG="${PWD}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf" -Dmcuboot_CONF_FILE="${PWD}/../modules/zephyr_lib/mcuboot_config/mcuboot-qspi.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/overlay-disable-hl7800-modem.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/mcuboot-serial-pinnacle100_dvk.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/disable-slot0-validate.conf"
+
+# Windows
+
+copy ..\modules\zephyr_lib\mcuboot_config\pm_static.pinnacle100.yml mg100\pm_static.yml && west build -b mg100 -d build\mg100_aws mg100 -- -DOVERLAY_CONFIG="%CD%\..\modules\zephyr_lib\mcumgr_wrapper\config\overlay-mcuboot.conf" -Dmcuboot_CONF_FILE="%CD%\..\modules\zephyr_lib\mcuboot_config\mcuboot-qspi.conf %CD%\..\modules\zephyr_lib\mcuboot_config\overlay-disable-hl7800-modem.conf %CD%\..\modules\zephyr_lib\mcuboot_config\mcuboot-serial-pinnacle100_dvk.conf %CD%\..\modules\zephyr_lib\mcuboot_config/disable-slot0-validate.conf"
+```
+
+After building the firmware, it can be flashed with the following command:
+```
+# Linux and macOS
+
+west flash -d build/mg100_aws
+
+# Windows
+
+west flash -d build\mg100_aws
+```
+
+If the firmware was built with mcuboot, `west flash` will program merged.hex which contains the mcuboot bootloader and app combined. 
 
 ## Development
 See [here](development.md) for help on getting started with custom development.

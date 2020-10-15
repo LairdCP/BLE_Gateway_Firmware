@@ -27,7 +27,7 @@ The default [build task](.vscode/tasks.json) is setup to build the demo source c
 
 ## NB-IoT and LwM2M
 
-The MG100 can be compiled to work with NB-IoT and LwM2M communication to the cloud with the `build-lwm2m` task in [tasks.json](.vscode/tasks.json).
+The MG100 can be compiled to work with NB-IoT and LwM2M communication to the cloud with the `build lwm2m` task in [tasks.json](.vscode/tasks.json).
 
 For more details on the LwM2M demo, [read here](docs/readme_nbiot_lwm2m.md).
 

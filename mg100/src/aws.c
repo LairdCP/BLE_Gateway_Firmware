@@ -114,11 +114,12 @@ static int publish_string(struct mqtt_client *client, enum mqtt_qos qos,
 static void client_init(struct mqtt_client *client);
 static int try_to_connect(struct mqtt_client *client);
 static void awsRxThread(void *arg1, void *arg2, void *arg3);
+static uint16_t rand16_nonzero_get(void);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-char * awsGetGatewayUpdateDeltaTopic()
+char *awsGetGatewayUpdateDeltaTopic()
 {
 	return (topics.update);
 }
@@ -389,9 +390,9 @@ int awsPublishBl654SensorData(float temperature, float humidity, float pressure)
 }
 
 int awsPublishPinnacleData(int radioRssi, int radioSinr,
-										struct battery_data * battery,
-										struct motion_status * motion,
-										struct sdcard_status * sdcard)
+			   struct battery_data *battery,
+			   struct motion_status *motion,
+			   struct sdcard_status *sdcard)
 {
 	char msg[strlen(SHADOW_REPORTED_START) + strlen(SHADOW_RADIO_RSSI) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_TEMP) +
@@ -415,18 +416,28 @@ int awsPublishPinnacleData(int radioRssi, int radioSinr,
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_SDCARD_FREE) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_REPORTED_END)];
 
-	snprintf(msg, sizeof(msg), "%s%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d%s", SHADOW_REPORTED_START,
-		 SHADOW_MG100_BATT_LEVEL, battery->batteryCapacity,
-		 SHADOW_MG100_BATT_VOLT, battery->batteryVoltage, SHADOW_MG100_PWR_STATE, battery->batteryChgState,
-		 SHADOW_MG100_BATT_0, battery->batteryThreshold0, SHADOW_MG100_BATT_1, battery->batteryThreshold1,
-		 SHADOW_MG100_BATT_2, battery->batteryThreshold2, SHADOW_MG100_BATT_3, battery->batteryThreshold3,
-		 SHADOW_MG100_BATT_4, battery->batteryThreshold4, SHADOW_MG100_BATT_GOOD, battery->batteryThresholdGood,
-		 SHADOW_MG100_BATT_BAD, battery->batteryThresholdBad, SHADOW_MG100_BATT_LOW, battery->batteryThresholdLow,
-		 SHADOW_MG100_TEMP, battery->ambientTemperature, SHADOW_MG100_ODR, motion->odr,
-		 SHADOW_MG100_SCALE, motion->scale, SHADOW_MG100_ACT_THS, motion->thr,
-		 SHADOW_MG100_MOVEMENT, motion->motion, SHADOW_MG100_MAX_LOG_SIZE, sdcard->maxLogSize,
-		 SHADOW_MG100_CURR_LOG_SIZE, sdcard->currLogSize, SHADOW_MG100_SDCARD_FREE, sdcard->freeSpace,
-		 SHADOW_RADIO_RSSI, radioRssi, SHADOW_RADIO_SINR, radioSinr, SHADOW_REPORTED_END);
+	snprintf(
+		msg, sizeof(msg),
+		"%s%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d%s",
+		SHADOW_REPORTED_START, SHADOW_MG100_BATT_LEVEL,
+		battery->batteryCapacity, SHADOW_MG100_BATT_VOLT,
+		battery->batteryVoltage, SHADOW_MG100_PWR_STATE,
+		battery->batteryChgState, SHADOW_MG100_BATT_0,
+		battery->batteryThreshold0, SHADOW_MG100_BATT_1,
+		battery->batteryThreshold1, SHADOW_MG100_BATT_2,
+		battery->batteryThreshold2, SHADOW_MG100_BATT_3,
+		battery->batteryThreshold3, SHADOW_MG100_BATT_4,
+		battery->batteryThreshold4, SHADOW_MG100_BATT_GOOD,
+		battery->batteryThresholdGood, SHADOW_MG100_BATT_BAD,
+		battery->batteryThresholdBad, SHADOW_MG100_BATT_LOW,
+		battery->batteryThresholdLow, SHADOW_MG100_TEMP,
+		battery->ambientTemperature, SHADOW_MG100_ODR, motion->odr,
+		SHADOW_MG100_SCALE, motion->scale, SHADOW_MG100_ACT_THS,
+		motion->thr, SHADOW_MG100_MOVEMENT, motion->motion,
+		SHADOW_MG100_MAX_LOG_SIZE, sdcard->maxLogSize,
+		SHADOW_MG100_CURR_LOG_SIZE, sdcard->currLogSize,
+		SHADOW_MG100_SDCARD_FREE, sdcard->freeSpace, SHADOW_RADIO_RSSI,
+		radioRssi, SHADOW_RADIO_SINR, radioSinr, SHADOW_REPORTED_END);
 
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
@@ -448,9 +459,7 @@ int awsSubscribe(uint8_t *topic, uint8_t subscribe)
 	mt.qos = MQTT_QOS_1_AT_LEAST_ONCE;
 	__ASSERT(mt.topic.size != 0, "Invalid topic");
 	struct mqtt_subscription_list list = {
-		.list = &mt,
-		.list_count = 1,
-		.message_id = (uint16_t)sys_rand32_get()
+		.list = &mt, .list_count = 1, .message_id = rand16_nonzero_get()
 	};
 	int rc = subscribe ? mqtt_subscribe(&client_ctx, &list) :
 			     mqtt_unsubscribe(&client_ctx, &list);
@@ -647,7 +656,7 @@ static int publish_string(struct mqtt_client *client, enum mqtt_qos qos,
 	param.message.topic.topic.size = strlen(param.message.topic.topic.utf8);
 	param.message.payload.data = data;
 	param.message.payload.len = strlen(param.message.payload.data);
-	param.message_id = sys_rand32_get();
+	param.message_id = rand16_nonzero_get();
 	param.dup_flag = 0U;
 	param.retain_flag = 0U;
 
@@ -750,6 +759,18 @@ static void awsRxThread(void *arg1, void *arg2, void *arg3)
 			k_sem_take(&connected_sem, K_FOREVER);
 		}
 	}
+}
+
+/* Message ID of zero is reserved as invalid. */
+static uint16_t rand16_nonzero_get(void)
+{
+	uint16_t r = 0;
+
+	do {
+		r = (uint16_t)sys_rand32_get();
+	} while (r == 0);
+
+	return r;
 }
 
 /******************************************************************************/

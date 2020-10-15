@@ -211,7 +211,7 @@ static void AwsFifoMonitorTimerCallbackIsr(struct k_timer *timer_id);
 static void SensorTickCallbackIsr(struct k_timer *timer_id);
 static void StartSensorTick(SensorTaskObj_t *pObj);
 
-#if CONFIG_SCAN_FOR_BT510
+#ifdef CONFIG_SCAN_FOR_BT510
 static void SensorTaskAdvHandler(const bt_addr_le_t *addr, int8_t rssi,
 				 uint8_t type, struct net_buf_simple *ad);
 #endif
@@ -295,7 +295,7 @@ static void SensorTaskThread(void *pArg1, void *pArg2, void *pArg3)
 	k_timer_init(&pObj->sensorTick, SensorTickCallbackIsr, NULL);
 	k_timer_user_data_set(&pObj->sensorTick, pObj);
 
-#if CONFIG_SCAN_FOR_BT510
+#ifdef CONFIG_SCAN_FOR_BT510
 	bt_scan_register(&pObj->scanUserId, SensorTaskAdvHandler);
 	bt_scan_start(pObj->scanUserId);
 #endif
@@ -641,7 +641,7 @@ static int Subscribe(void)
 
 static int WriteString(const char *str)
 {
-#if CONFIG_VSP_TX_ECHO
+#ifdef CONFIG_VSP_TX_ECHO
 	size_t len = strlen(str);
 	printk("VSP TX length: %d ", len);
 	size_t i;
@@ -887,7 +887,7 @@ static uint8_t NotificationCallback(struct bt_conn *conn,
 		}
 	}
 
-#if CONFIG_VSP_RX_ECHO
+#ifdef CONFIG_VSP_RX_ECHO
 	/* This data may be a partial string (and won't have a NULL) */
 	printk("VSP RX length: %d ", length);
 	for (i = 0; i < length; i++) {
@@ -969,7 +969,7 @@ static void SensorTickCallbackIsr(struct k_timer *timer_id)
 /******************************************************************************/
 /* Occurs in BT RX Thread context                                             */
 /******************************************************************************/
-#if CONFIG_SCAN_FOR_BT510
+#ifdef CONFIG_SCAN_FOR_BT510
 static void SensorTaskAdvHandler(const bt_addr_le_t *addr, int8_t rssi,
 				 uint8_t type, struct net_buf_simple *ad)
 {

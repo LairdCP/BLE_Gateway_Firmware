@@ -135,10 +135,15 @@ struct sdcard_status *sdcardInfo;
 K_MSGQ_DEFINE(cloudQ, FWK_QUEUE_ENTRY_SIZE, CONFIG_CLOUD_QUEUE_SIZE,
 	      FWK_QUEUE_ALIGNMENT);
 
-#ifdef CONFIG_SCAN_FOR_BT510
 /* Sensor events are not received properly unless filter duplicates is OFF */
+#if defined(CONFIG_SCAN_FOR_BT510_CODED)
 static struct bt_le_scan_param scanParameters =
 	BT_LE_SCAN_PARAM_INIT(BT_LE_SCAN_TYPE_ACTIVE, BT_LE_SCAN_OPT_CODED,
+			      BT_GAP_SCAN_FAST_INTERVAL,
+			      BT_GAP_SCAN_FAST_WINDOW);
+#elif defined(CONFIG_SCAN_FOR_BT510)
+static struct bt_le_scan_param scanParameters =
+	BT_LE_SCAN_PARAM_INIT(BT_LE_SCAN_TYPE_ACTIVE, BT_LE_SCAN_OPT_NONE,
 			      BT_GAP_SCAN_FAST_INTERVAL,
 			      BT_GAP_SCAN_FAST_WINDOW);
 #endif

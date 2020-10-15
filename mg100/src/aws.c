@@ -132,6 +132,11 @@ int awsInit(void)
 	shadow_persistent_data.state.reported.radio_version = "";
 	shadow_persistent_data.state.reported.IMEI = "";
 	shadow_persistent_data.state.reported.ICCID = "";
+#ifdef CONFIG_SCAN_FOR_BT510_CODED
+	shadow_persistent_data.state.reported.codedPhySupported = true;
+#else
+	shadow_persistent_data.state.reported.codedPhySupported = false;
+#endif
 	server_endpoint = AWS_DEFAULT_ENDPOINT;
 	mqtt_client_id = DEFAULT_MQTT_CLIENTID;
 

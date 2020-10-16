@@ -548,6 +548,12 @@ static void ParseArray(const char *pJson, int ExpectedSensors)
 	pMsg->sensorCount = sensorsFound;
 	FRAMEWORK_MSG_SEND(pMsg);
 
+	/* Once this has been processed (after reset) we can unsubscribe. */
+	if (getAcceptedTopic) {
+		FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
+						FMC_AWS_GET_ACCEPTED_RECEIVED);
+	}
+
 	LOG_INF("Processed %d of %d sensors in desired list from AWS",
 		sensorsFound, ExpectedSensors);
 }

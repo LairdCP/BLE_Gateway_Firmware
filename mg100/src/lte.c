@@ -32,6 +32,10 @@ LOG_MODULE_REGISTER(oob_lte);
 #include "led_configuration.h"
 #include "qrtc.h"
 
+#if CONFIG_COAP_FOTA
+#include "coap_fota_shadow.h"
+#endif
+
 #include "lte.h"
 
 /******************************************************************************/
@@ -288,11 +292,15 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_FOTA_STATE:
-		fota_state_handler(*((uint8_t *)event_data));
+		if (IS_ENABLED(CONFIG_FOTA_SERVICE)) {
+			fota_state_handler(*((uint8_t *)event_data));
+		}
 		break;
 
 	case HL7800_EVENT_FOTA_COUNT:
-		fota_set_count(*((uint32_t *)event_data));
+		if (IS_ENABLED(CONFIG_FOTA_SERVICE)) {
+			fota_set_count(*((uint32_t *)event_data));
+		}
 		break;
 
 	case HL7800_EVENT_REVISION:
@@ -300,6 +308,12 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 #ifdef CONFIG_BLUEGRASS
 		/* Update shadow because modem version has changed. */
 		initShadow = true;
+#endif
+#ifdef CONFIG_COAP_FOTA
+		/* This is duplicated for backwards compatability. */
+		coap_fota_set_running_version(MODEM_IMAGE_TYPE,
+					      (char *)event_data,
+					      strlen((char *)event_data));
 #endif
 		break;
 

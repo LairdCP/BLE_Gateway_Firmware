@@ -1,0 +1,146 @@
+# Copyright (c) 2020 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+config COAP_FOTA
+    bool "Support FOTA using Laird Connectivity CoAP Bridge"
+    depends on LCZ_DNS
+    depends on LCZ_QRTC
+    depends on FILE_SYSTEM_UTILITIES
+    depends on DNS_RESOLVER
+    depends on NET_SOCKETS
+    depends on NET_SOCKETS_ENABLE_DTLS
+    depends on MCUMGR_CMD_IMG_MGMT
+    depends on REBOOT
+    depends on MODEM_HL7800
+    depends on BLUEGRASS
+    default y
+
+if COAP_FOTA
+
+config COAP_FOTA_DEFAULT_BRIDGE
+    string "Default host name for retrieving firmware"
+    default "cali-test.na-crotalinae.com"
+    help
+        This value can be changed in the shadow.
+
+config COAP_FOTA_MAX_REQUEST_SIZE
+    int "Maximum CoAP FOTA request size"
+    default 192
+
+config COAP_FOTA_MAX_RESPONSE_SIZE
+    int "Maximum CoAP FOTA response size"
+    default 1056
+    help
+        This must be larger than the block size and header and
+        the size of any response message.
+
+config COAP_FOTA_MAX_BLOCK_SIZE
+    int "Maximum payload size (enumeration) for block-wise transfers"
+    range 0 6
+    default 6
+    help
+        0 is 16, 32, 64, 128, 256, 512, 6 is 1024
+
+config COAP_FOTA_BASE64
+    bool "Download is in Base64 format"
+
+config COAP_FOTA_BASE64_TO_BIN_SIZE
+    int
+    depends on COAP_FOTA_BASE64
+    default 12 if COAP_FOTA_MAX_BLOCK_SIZE = 0
+    default 24 if COAP_FOTA_MAX_BLOCK_SIZE = 1
+    default 48 if COAP_FOTA_MAX_BLOCK_SIZE = 2
+    default 96 if COAP_FOTA_MAX_BLOCK_SIZE = 3
+    default 192 if COAP_FOTA_MAX_BLOCK_SIZE = 4
+    default 384 if COAP_FOTA_MAX_BLOCK_SIZE = 5
+    default 768 if COAP_FOTA_MAX_BLOCK_SIZE = 6
+    help
+        3/4 of base64 size.
+
+config COAP_FOTA_HEXDUMP
+    bool "Dump Hex Rx/Tx messages"
+
+config COAP_FOTA_MAX_NAME_SIZE
+    int
+    default 16
+    help
+        The maximum size of any JSON name in the shadow.
+        The maximum size of the name string in &<name>=1.2.0 (app, hl7800)
+
+config COAP_FOTA_MAX_PARAMETER_SIZE
+    int "A generic max size for CoAP string parameters"
+    default 64
+    help
+        The maximum size of the parameter string in &release=<parameter>
+        The maximum size of the domain string in coap://<domain>/fw?
+        The maximum size of the path string in coap://domain.com/<path>?
+        The maximum size of the name of the CoAP bridge.
+
+config COAP_FOTA_RESPONSE_TIMEOUT_MS
+    int "The amount of time to wait for a response from the CoAP bridge"
+    default 4000
+
+config COAP_FOTA_PATH
+    string "Path used in query"
+    default "Stage/fw"
+
+config COAP_FOTA_PRODUCT
+    string "Product ID used in query"
+    default "pinnacle-mg100"
+    help
+        pinnacle-100-dvk
+        pinnacle-mg100
+
+config COAP_FOTA_PORT
+    int "Port used for CoAP communication"
+    default 5684
+
+config COAP_FOTA_CA_TAG
+    int "Tag used by TLS for referencing root CA credentials"
+    default 1
+    help
+        Should be unique in the system.
+
+config COAP_FOTA_CLIENT_TAG
+    int "Tag used by TLS for referencing device (CoAP client) credentials"
+    default 2
+    help
+        Should be unique in the system.
+
+config COAP_FOTA_USE_PSK
+    bool "Use shared key instead of certificates"
+
+if COAP_FOTA_USE_PSK
+
+config COAP_FOTA_PSK_ID
+    string
+    default "password"
+
+config COAP_FOTA_PSK
+    string
+    default "sesame"
+
+endif
+
+config COAP_FOTA_DELETE_FILE_AFTER_UPDATE
+    bool "Delete file after update is complete"
+    default y
+    help
+        Keeping files makes it easy to switch between versions.
+        However, currently files can only be deleted using a terminal
+        or Bluetooth application (phone).
+
+config COAP_FOTA_ERROR_DELAY
+    int "Seconds to wait before trying again after and error occurs."
+    default 60
+    help
+        This allows time for the shadow to be updated.
+
+config COAP_FOTA_MODEM_INSTALL_DELAY
+    int "Seconds to wait to allow modem to install update"
+    default 600
+    help
+        Used to prevent starting duplicate update cycle while the modem reboots by
+        keeping cloud state machine in FOTA state until modem has rebooted.
+
+endif # COAP_FOTA

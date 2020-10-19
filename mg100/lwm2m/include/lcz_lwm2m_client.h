@@ -1,13 +1,13 @@
 /**
- * @file lwm2m_client.h
+ * @file lcz_lwm2m_client.h
  * @brief
  *
  * Copyright (c) 2020 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#ifndef __LWM2M_CLIENT_H__
-#define __LWM2M_CLIENT_H__
+#ifndef __LCZ_LWM2M_CLIENT_H__
+#define __LCZ_LWM2M_CLIENT_H__
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -49,4 +49,4 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 }
 #endif
 
-#endif /* __LWM2M_CLIENT_H__ */
+#endif /* __LCZ_LWM2M_CLIENT_H__ */

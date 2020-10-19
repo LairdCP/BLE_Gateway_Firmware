@@ -17,6 +17,7 @@ LOG_MODULE_REGISTER(bluegrass);
 #include "aws.h"
 #include "sensor_task.h"
 #include "sensor_table.h"
+#include "coap_fota_shadow.h"
 #include "bluegrass.h"
 
 /******************************************************************************/
@@ -133,11 +134,12 @@ static int GatewaySubscriptionHandler(void)
 		rc = awsGetShadow();
 	}
 
-	if (getShadowProcessed) {
+	if (getShadowProcessed && !gatewaySubscribed) {
 		rc = awsSubscribe(GATEWAY_TOPIC, true);
 		if (rc == 0) {
 			gatewaySubscribed = true;
 			SensorTable_EnableGatewayShadowGeneration();
+			coap_fota_enable_shadow_generation();
 		}
 	}
 

@@ -25,7 +25,7 @@ LOG_MODULE_REGISTER(aws);
 #include <stdio.h>
 #include <kernel.h>
 
-#include "dns.h"
+#include "lcz_dns.h"
 #include "print_json.h"
 #include "aws.h"
 #include "lairdconnect_battery.h"
@@ -42,9 +42,6 @@ LOG_MODULE_REGISTER(aws);
 #ifndef CONFIG_MQTT_LIB_TLS
 #error "AWS must use MQTT with TLS"
 #endif
-
-#define APP_CA_CERT_TAG CA_TAG
-#define APP_DEVICE_CERT_TAG DEVICE_CERT_TAG
 
 #define CONVERSION_MAX_STR_LEN 10
 
@@ -88,7 +85,8 @@ static bool connected = false;
 
 static struct addrinfo *saddr;
 
-static sec_tag_t m_sec_tags[] = { APP_CA_CERT_TAG, APP_DEVICE_CERT_TAG };
+static sec_tag_t m_sec_tags[] = { CONFIG_APP_CA_CERT_TAG,
+				  CONFIG_APP_DEVICE_CERT_TAG };
 
 static struct shadow_reported_struct shadow_persistent_data;
 
@@ -485,17 +483,19 @@ static int tls_init(const uint8_t *cert, const uint8_t *key)
 {
 	int err = -EINVAL;
 
-	tls_credential_delete(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE);
-	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE,
-				 root_ca, strlen(root_ca) + 1);
+	tls_credential_delete(CONFIG_APP_CA_CERT_TAG,
+			      TLS_CREDENTIAL_CA_CERTIFICATE);
+	err = tls_credential_add(CONFIG_APP_CA_CERT_TAG,
+				 TLS_CREDENTIAL_CA_CERTIFICATE, root_ca,
+				 strlen(root_ca) + 1);
 	if (err < 0) {
 		AWS_LOG_ERR("Failed to register public certificate: %d", err);
 		return err;
 	}
 
-	tls_credential_delete(APP_DEVICE_CERT_TAG,
+	tls_credential_delete(CONFIG_APP_DEVICE_CERT_TAG,
 			      TLS_CREDENTIAL_SERVER_CERTIFICATE);
-	err = tls_credential_add(APP_DEVICE_CERT_TAG,
+	err = tls_credential_add(CONFIG_APP_DEVICE_CERT_TAG,
 				 TLS_CREDENTIAL_SERVER_CERTIFICATE, cert,
 				 strlen(cert) + 1);
 	if (err < 0) {
@@ -503,8 +503,9 @@ static int tls_init(const uint8_t *cert, const uint8_t *key)
 		return err;
 	}
 
-	tls_credential_delete(APP_DEVICE_CERT_TAG, TLS_CREDENTIAL_PRIVATE_KEY);
-	err = tls_credential_add(APP_DEVICE_CERT_TAG,
+	tls_credential_delete(CONFIG_APP_DEVICE_CERT_TAG,
+			      TLS_CREDENTIAL_PRIVATE_KEY);
+	err = tls_credential_add(CONFIG_APP_DEVICE_CERT_TAG,
 				 TLS_CREDENTIAL_PRIVATE_KEY, key,
 				 strlen(key) + 1);
 	if (err < 0) {
@@ -619,9 +620,9 @@ static int subscription_handler(struct mqtt_client *const client,
 		return 0;
 	}
 
-	memset(subscription_buffer, 0, CONFIG_SHADOW_IN_MAX_SIZE);
 	rc = mqtt_read_publish_payload(client, subscription_buffer, length);
 	if (rc == length) {
+		subscription_buffer[length] = 0; /* null terminate */
 #if CONFIG_JSON_LOG_MQTT_RX_DATA
 		print_json("MQTT Read data", rc, subscription_buffer);
 #endif
@@ -710,7 +711,7 @@ static void client_init(struct mqtt_client *client)
 	/* MQTT transport configuration */
 	client->transport.type = MQTT_TRANSPORT_SECURE;
 	struct mqtt_sec_config *tls_config = &client->transport.tls.config;
-	tls_config->peer_verify = MBEDTLS_SSL_VERIFY_REQUIRED;
+	tls_config->peer_verify = MBEDTLS_SSL_VERIFY_NONE;
 	tls_config->cipher_list = NULL;
 	tls_config->sec_tag_list = m_sec_tags;
 	tls_config->sec_tag_count = ARRAY_SIZE(m_sec_tags);
@@ -770,11 +771,9 @@ static void awsRxThread(void *arg1, void *arg2, void *arg3)
 static uint16_t rand16_nonzero_get(void)
 {
 	uint16_t r = 0;
-
 	do {
 		r = (uint16_t)sys_rand32_get();
 	} while (r == 0);
-
 	return r;
 }
 

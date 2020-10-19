@@ -18,13 +18,13 @@ LOG_MODULE_REGISTER(single_peripheral);
 #include <bluetooth/bluetooth.h>
 
 #include "laird_bluetooth.h"
+#include "single_peripheral.h"
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
 static void sp_disconnected(struct bt_conn *conn, uint8_t reason);
 static void sp_connected(struct bt_conn *conn, uint8_t err);
-static int start_advertising(void);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -56,6 +56,14 @@ void single_peripheral_initialize(void)
 struct bt_conn *single_peripheral_get_conn(void)
 {
 	return sp_conn;
+}
+
+int start_advertising(void)
+{
+	int err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL,
+				  0);
+	LOG_INF("Advertising start (%d)", err);
+	return err;
 }
 
 /******************************************************************************/
@@ -99,12 +107,4 @@ static void sp_disconnected(struct bt_conn *conn, uint8_t reason)
 	bt_conn_unref(conn);
 	sp_conn = NULL;
 	start_advertising();
-}
-
-static int start_advertising(void)
-{
-	int err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL,
-				  0);
-	LOG_INF("Advertising start (%d)", err);
-	return err;
 }

@@ -344,8 +344,8 @@ DispatchResult_t SensorTable_AddConfigRequest(SensorCmdMsg_t *pMsg)
 	    pMsg->dumpRequest) {
 		/* If AWS sends a second config message while the first
 		 * one is being processed, it must be saved so that it
-		 * isn't lost.  This is one negative of not keeping the
-		 * entire state of the BT510. The gateway isn't a
+	 	 * isn't lost.  This is one negative of not keeping the
+	 	 * entire state of the BT510. The gateway isn't a
 		 * passthrough device as previously intended.
 		 */
 		if (p->configBusy || p->pCmd != NULL) {
@@ -1269,7 +1269,7 @@ static uint32_t WhitelistByAddress(const char *pAddrString, bool NextState)
 	 */
 	if (NextState) {
 		/* The sensor wasn't found.  If we have just reset then
-		 * the shadow may have values that aren't in our table.
+	 	 * the shadow may have values that aren't in our table.
 		 */
 		bt_addr_t addr = BtAddrStringToStruct(pAddrString);
 		i = AddByAddress(&addr);

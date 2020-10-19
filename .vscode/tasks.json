@@ -106,7 +106,7 @@
       "type": "shell",
       "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100 -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
       "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100 -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'"
+        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100 -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
       },
       "problemMatcher": {
         "base": "$gcc",

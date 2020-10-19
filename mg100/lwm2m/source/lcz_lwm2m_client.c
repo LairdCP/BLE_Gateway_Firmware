@@ -1,5 +1,5 @@
 /**
- * @file lwm2m_client.c
+ * @file lcz_lwm2m_client.c
  * @brief
  *
  * Copyright (c) 2017 Linaro Limited
@@ -23,14 +23,14 @@ LOG_MODULE_REGISTER(lwm2m_client);
 #include <string.h>
 #include <stddef.h>
 
-#include "dns.h"
+#include "lcz_dns.h"
 #include "led_configuration.h"
 #include "dis.h"
 #include "qrtc.h"
 #include "laird_power.h"
 #include "ble_lwm2m_service.h"
 #include "lte.h"
-#include "lwm2m_client.h"
+#include "lcz_lwm2m_client.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -39,10 +39,8 @@ LOG_MODULE_REGISTER(lwm2m_client);
 #error LwM2M requires either IPV6 or IPV4 support
 #endif
 
-#define SERVER_ADDR_MAX_SIZE (6 * 3 + 1)
-
 #if defined(CONFIG_LWM2M_DTLS_SUPPORT)
-#define TLS_TAG 1
+#define TLS_TAG CONFIG_LWM2M_PSK_TAG
 #endif /* CONFIG_LWM2M_DTLS_SUPPORT */
 
 /******************************************************************************/
@@ -50,13 +48,9 @@ LOG_MODULE_REGISTER(lwm2m_client);
 /******************************************************************************/
 static uint8_t led_state;
 static uint32_t lwm2m_time;
-
 static struct lwm2m_ctx client;
-
 static bool lwm2m_initialized;
-
-static struct addrinfo *addr_info;
-static char server_addr[SERVER_ADDR_MAX_SIZE];
+static char server_addr[CONFIG_DNS_RESOLVER_ADDR_MAX_SIZE];
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -259,30 +253,17 @@ static void rd_client_event(struct lwm2m_ctx *client,
 static int resolve_server_address(void)
 {
 	struct addrinfo hints = {
-		.ai_family = AF_INET,
+		.ai_family = AF_UNSPEC,
 		.ai_socktype = SOCK_DGRAM,
 	};
 
+	static struct addrinfo *result;
 	int ret = dns_resolve_server_addr(ble_lwm2m_get_peer_url(), NULL,
-					  &hints, &addr_info);
+					  &hints, &result);
 	if (ret == 0) {
-#if CONFIG_NET_IPV6
-		snprintk(server_addr, SERVER_ADDR_MAX_SIZE - 1,
-			 "%u.%u.%u.%u.%u.%u", addr_info->ai_addr->data[0],
-			 addr_info->ai_addr->data[1],
-			 addr_info->ai_addr->data[2],
-			 addr_info->ai_addr->data[3],
-			 addr_info->ai_addr->data[4],
-			 addr_info->ai_addr->data[5]);
-#else
-		snprintk(server_addr, SERVER_ADDR_MAX_SIZE - 1, "%u.%u.%u.%u",
-			 addr_info->ai_addr->data[2],
-			 addr_info->ai_addr->data[3],
-			 addr_info->ai_addr->data[4],
-			 addr_info->ai_addr->data[5]);
-#endif
+		ret = dns_build_addr_string(server_addr, result);
 	}
-
+	freeaddrinfo(result);
 	return ret;
 }
 

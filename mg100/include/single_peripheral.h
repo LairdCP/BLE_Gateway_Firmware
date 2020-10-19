@@ -35,6 +35,12 @@ void single_peripheral_initialize(void);
  */
 struct bt_conn *single_peripheral_get_conn(void);
 
+/**
+ * @brief Advertise as connectable with name and 128-bit UUID of
+ * Laird Connectivity's Custom Cellular Service.
+ */
+int start_advertising(void);
+
 #ifdef __cplusplus
 }
 #endif

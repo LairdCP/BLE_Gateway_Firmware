@@ -25,9 +25,6 @@ extern "C" {
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-#define CA_TAG 1
-#define DEVICE_CERT_TAG 2
-
 /* AWS Root CA obtained from
 *  https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html
 */

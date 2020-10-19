@@ -9,7 +9,7 @@
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(mg100_main);
+LOG_MODULE_REGISTER(main);
 
 #define MAIN_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define MAIN_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
@@ -43,7 +43,6 @@ LOG_MODULE_REGISTER(mg100_main);
 #include "FrameworkIncludes.h"
 #include "laird_utility_macros.h"
 #include "single_peripheral.h"
-#include "print_thread.h"
 #include "string_util.h"
 #include "app_version.h"
 #include "bt_scan.h"
@@ -64,12 +63,16 @@ LOG_MODULE_REGISTER(mg100_main);
 #endif
 
 #ifdef CONFIG_LWM2M
-#include "lwm2m_client.h"
+#include "lcz_lwm2m_client.h"
 #include "ble_lwm2m_service.h"
 #endif
 
 #ifdef CONFIG_MCUMGR
 #include "mcumgr_wrapper.h"
+#endif
+
+#if defined(CONFIG_BLUEGRASS) && defined(CONFIG_COAP_FOTA)
+#include "coap_fota_task.h"
 #endif
 
 /******************************************************************************/
@@ -124,6 +127,9 @@ static bool devKeySet;
 static FwkMsgReceiver_t cloudMsgReceiver;
 static bool commissioned;
 static bool appReady = false;
+#if defined(CONFIG_BLUEGRASS) && defined(CONFIG_COAP_FOTA)
+static bool start_fota = false;
+#endif
 
 static app_state_function_t appState;
 struct lte_status *lteInfo;
@@ -147,6 +153,8 @@ static struct bt_le_scan_param scanParameters =
 			      BT_GAP_SCAN_FAST_WINDOW);
 #endif
 
+static struct k_timer fifo_timer;
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -164,11 +172,14 @@ static void appStateCommissionDevice(void);
 static void appStateLteConnectedAws(void);
 static void awsMsgHandler(void);
 static void awsSvcEvent(enum aws_svc_event event);
+static void set_commissioned(void);
+static void appStateWaitFota(void);
 #endif
 
 static void initializeCloudMsgReceiver(void);
 static void appStateWaitForLte(void);
 static void appStateStartup(void);
+static void appStateLteConnected(void);
 
 static void appSetNextState(app_state_function_t next);
 static const char *getAppStateString(app_state_function_t state);
@@ -185,10 +196,11 @@ static void lwm2mMsgHandler(void);
 
 static void configure_leds(void);
 
+static void cloud_fifo_monitor_isr(struct k_timer *timer_id);
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-
 void main(void)
 {
 	int rc;
@@ -259,7 +271,9 @@ void main(void)
 	cell_svc_set_iccid(lteInfo->ICCID);
 	cell_svc_set_serial_number(lteInfo->serialNumber);
 
+#ifdef CONFIG_FOTA_SERVICE
 	fota_init();
+#endif
 
 	/* Setup the power service */
 	power_svc_init();
@@ -268,7 +282,7 @@ void main(void)
 	/* Setup the battery service */
 	battery_svc_init();
 
-	/* Initialize the battery managment sub-system.
+	/* Initialize the battery management sub-system.
 	 * NOTE: This must be executed after nvInit.
 	 */
 	BatteryInit();
@@ -299,6 +313,15 @@ void main(void)
 #ifdef CONFIG_LWM2M
 	ble_lwm2m_service_init();
 #endif
+
+#if defined(CONFIG_BLUEGRASS) && defined(CONFIG_COAP_FOTA)
+	coap_fota_task_initialize();
+#endif
+
+	k_timer_init(&fifo_timer, cloud_fifo_monitor_isr, NULL);
+	k_timer_start(&fifo_timer,
+		      K_SECONDS(CONFIG_CLOUD_FIFO_CHECK_RATE_SECONDS),
+		      K_SECONDS(CONFIG_CLOUD_FIFO_CHECK_RATE_SECONDS));
 
 	appReady = true;
 	printk("\n!!!!!!!! App is ready! !!!!!!!!\n");
@@ -410,9 +433,11 @@ static const char *getAppStateString(app_state_function_t state)
 	IF_RETURN_STRING(state, appStateAwsInitShadow);
 	IF_RETURN_STRING(state, appStateLteConnectedAws);
 	IF_RETURN_STRING(state, appStateCommissionDevice);
+	IF_RETURN_STRING(state, appStateWaitFota);
 #endif
 	IF_RETURN_STRING(state, appStateStartup);
 	IF_RETURN_STRING(state, appStateWaitForLte);
+	IF_RETURN_STRING(state, appStateLteConnected);
 	return "appStateUnknown";
 }
 
@@ -425,14 +450,16 @@ static void appSetNextState(app_state_function_t next)
 
 static void appStateStartup(void)
 {
-#ifdef CONFIG_LWM2M
+#if defined(CONFIG_LWM2M)
 	appSetNextState(appStateWaitForLte);
-#else
+#elif defined(CONFIG_BLUEGRASS)
 	if (commissioned && setAwsCredentials() == 0) {
 		appSetNextState(appStateWaitForLte);
 	} else {
 		appSetNextState(appStateCommissionDevice);
 	}
+#else
+	appSetNextState(appStateWaitForLte);
 #endif
 }
 
@@ -447,18 +474,25 @@ static void appStateWaitForLte(void)
 		k_sem_take(&lte_ready_sem, K_FOREVER);
 	}
 
-#ifdef CONFIG_LWM2M
+#if defined(CONFIG_LWM2M)
 	appSetNextState(appStateInitLwm2mClient);
-#else
+#elif defined(CONFIG_BLUEGRASS)
 	appSetNextState(appStateLteConnectedAws);
+#else
+	appSetNextState(appStateLteConnected);
 #endif
+}
+
+static void appStateLteConnected(void)
+{
+	k_sleep(K_SECONDS(1));
 }
 
 #ifdef CONFIG_BLUEGRASS
 static void appStateAwsSendSensorData(void)
 {
 	/* If decommissioned then disconnect. */
-	if (!commissioned || !awsConnected()) {
+	if (!commissioned || !awsConnected() || start_fota) {
 		appSetNextState(appStateAwsDisconnect);
 		led_turn_off(GREEN_LED);
 		return;
@@ -484,18 +518,14 @@ static void awsMsgHandler(void)
 	FwkMsg_t *pMsg;
 	bool freeMsg;
 
-	while (rc == 0) {
+	while (rc == 0 && !start_fota) {
 		led_turn_on(GREEN_LED);
 		/* Remove sensor/gateway data from queue and send it to cloud.
 		 * Block if there are not any messages.
 		 * The keep alive message (RSSI) occurs every ~30 seconds.
 		 */
 		rc = -EINVAL;
-		pMsg = NULL;
 		Framework_Receive(cloudMsgReceiver.pQueue, &pMsg, K_FOREVER);
-		if (pMsg == NULL) {
-			return;
-		}
 		freeMsg = true;
 
 		/* BL654 data is sent to the gateway topic.  If Bluegrass is enabled,
@@ -526,6 +556,13 @@ static void awsMsgHandler(void)
 		case FMC_AWS_DECOMMISSION:
 		case FMC_AWS_DISCONNECTED:
 			/* Message is used to unblock queue. */
+			break;
+
+		case FMC_FOTA_START:
+			start_fota = true;
+			FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED,
+						      FWK_ID_COAP_FOTA_TASK,
+						      FMC_FOTA_START_ACK);
 			break;
 
 		default:
@@ -633,7 +670,36 @@ static void appStateAwsDisconnect(void)
 
 	Bluegrass_DisconnectedCallback();
 
-	appSetNextState(appStateAwsConnect);
+	if (start_fota) {
+		appSetNextState(appStateWaitFota);
+	} else {
+		appSetNextState(appStateAwsConnect);
+	}
+}
+
+static void appStateWaitFota(void)
+{
+	FwkMsg_t *pMsg;
+	bool fota_busy = true;
+	start_fota = false;
+	while (fota_busy) {
+		/* wait for a message from another task */
+		Framework_Receive(cloudMsgReceiver.pQueue, &pMsg, K_FOREVER);
+
+		switch (pMsg->header.msgCode) {
+		case FMC_FOTA_DONE:
+			/* FOTA is done for now, re-connect to AWS */
+			fota_busy = false;
+			appSetNextState(appStateAwsConnect);
+			break;
+
+		default:
+			/* discard other messages */
+			break;
+		}
+
+		BufferPool_Free(pMsg);
+	}
 }
 
 static void appStateAwsResolveServer(void)
@@ -770,11 +836,7 @@ static void lwm2mMsgHandler(void)
 	while (rc == 0) {
 		/* Remove sensor/gateway data from queue and send it to cloud. */
 		rc = -EINVAL;
-		pMsg = NULL;
 		Framework_Receive(cloudMsgReceiver.pQueue, &pMsg, K_FOREVER);
-		if (pMsg == NULL) {
-			return;
-		}
 
 		switch (pMsg->header.msgCode) {
 		case FMC_BL654_SENSOR_EVENT: {
@@ -859,6 +921,25 @@ static int shell_oob_ver_cmd(const struct shell *shell, size_t argc,
 }
 
 #ifdef CONFIG_MODEM_HL7800
+
+static int shell_send_at_cmd(const struct shell *shell, size_t argc,
+			     char **argv)
+{
+	int rc = 0;
+
+	if ((argc == 2) && (argv[1] != NULL)) {
+		rc = mdm_hl7800_send_at_cmd(argv[1]);
+		if (rc < 0) {
+			shell_error(shell, "Command not accepted");
+		}
+	} else {
+		shell_error(shell, "Invalid parameter");
+		rc = -EINVAL;
+	}
+
+	return rc;
+}
+
 static int shell_hl_apn_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	int rc = 0;
@@ -910,24 +991,6 @@ static int shell_hl_fup_cmd(const struct shell *shell, size_t argc, char **argv)
 }
 #endif /* CONFIG_MODEM_HL7800_FW_UPDATE */
 
-static int shell_send_at_cmd(const struct shell *shell, size_t argc,
-			     char **argv)
-{
-	int rc = 0;
-
-	if ((argc == 2) && (argv[1] != NULL)) {
-		rc = mdm_hl7800_send_at_cmd(argv[1]);
-		if (rc < 0) {
-			shell_error(shell, "Command not accepted");
-		}
-	} else {
-		shell_error(shell, "Invalid parameter");
-		rc = -EINVAL;
-	}
-
-	return rc;
-}
-
 static int shell_hl_iccid_cmd(const struct shell *shell, size_t argc,
 			      char **argv)
 {
@@ -972,7 +1035,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(oob_cmds,
 			       SHELL_CMD(reset, NULL,
 					 "Factory reset (decommission) device",
 					 shell_decommission),
-#endif
+#endif /* CONFIG_BLUEGRASS */
 			       SHELL_CMD(ver, NULL, "Firmware version",
 					 shell_oob_ver_cmd),
 			       SHELL_SUBCMD_SET_END /* Array terminated. */
@@ -996,3 +1059,22 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 SHELL_CMD_REGISTER(hl, &hl_cmds, "HL7800 commands", NULL);
 #endif /* CONFIG_MODEM_HL7800 */
 #endif /* CONFIG_SHELL */
+
+/******************************************************************************/
+/* Interrupt Service Routines                                                 */
+/******************************************************************************/
+/* The cloud (AWS) queue isn't checked in all states.  Therefore, it needs to
+ * be periodically checked so that other tasks don't overfill it
+ */
+static void cloud_fifo_monitor_isr(struct k_timer *timer_id)
+{
+	ARG_UNUSED(timer_id);
+
+	uint32_t numUsed = k_msgq_num_used_get(cloudMsgReceiver.pQueue);
+	if (numUsed > CONFIG_CLOUD_PURGE_THRESHOLD) {
+		size_t flushed = Framework_Flush(FWK_ID_CLOUD);
+		if (flushed > 0) {
+			LOG_WRN("Flushed %u cloud messages", flushed);
+		}
+	}
+}

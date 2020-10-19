@@ -10,7 +10,7 @@
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(sensor_task);
-#define FWK_FNAME "sensor_task"
+#define FWK_FNAME "sensor"
 
 #define ST_LOG_DEV(...)
 
@@ -53,16 +53,6 @@ LOG_MODULE_REGISTER(sensor_task);
 #define SENSOR_TASK_MAX_OUTSTANDING_ADS (SENSOR_TASK_QUEUE_DEPTH / 2)
 #endif
 
-/** This is the timer rate for how often the AWS state is checked */
-#ifndef AWS_FIFO_CHECK_RATE_SECONDS
-#define AWS_FIFO_CHECK_RATE_SECONDS 10
-#endif
-
-/** If the AWS connection is down for this long, then the AWS fifo is purged. */
-#ifndef AWS_FIFO_PURGE_THRESHOLD_SECONDS
-#define AWS_FIFO_PURGE_THRESHOLD_SECONDS 60
-#endif
-
 /** At 1 second there are duplicate requests for shadow information. */
 #define SENSOR_TICK_RATE_SECONDS 3
 
@@ -89,7 +79,6 @@ typedef struct SensorTask {
 	BracketObj_t *pBracket;
 	SensorCmdMsg_t *pCmdMsg;
 	bool awsReady;
-	struct k_timer fifoTimer;
 	struct k_timer resetTimer;
 	struct k_timer sensorTick;
 	uint32_t fifoTicks;
@@ -207,7 +196,6 @@ static void MtuCallback(struct bt_conn *conn, uint8_t err,
 			struct bt_gatt_exchange_params *params);
 
 static void SendSensorResetTimerCallbackIsr(struct k_timer *timer_id);
-static void AwsFifoMonitorTimerCallbackIsr(struct k_timer *timer_id);
 static void SensorTickCallbackIsr(struct k_timer *timer_id);
 static void StartSensorTick(SensorTaskObj_t *pObj);
 
@@ -283,11 +271,6 @@ static void SensorTaskThread(void *pArg1, void *pArg2, void *pArg3)
 	SensorTaskObj_t *pObj = (SensorTaskObj_t *)pArg1;
 
 	SensorTable_Initialize();
-
-	k_timer_init(&pObj->fifoTimer, AwsFifoMonitorTimerCallbackIsr, NULL);
-	k_timer_user_data_set(&pObj->fifoTimer, pObj);
-	k_timer_start(&pObj->fifoTimer, K_SECONDS(AWS_FIFO_CHECK_RATE_SECONDS),
-		      K_SECONDS(AWS_FIFO_CHECK_RATE_SECONDS));
 
 	k_timer_init(&pObj->resetTimer, SendSensorResetTimerCallbackIsr, NULL);
 	k_timer_user_data_set(&pObj->resetTimer, pObj);
@@ -932,32 +915,6 @@ static void SendSensorResetTimerCallbackIsr(struct k_timer *timer_id)
 {
 	UNUSED_PARAMETER(timer_id);
 	FRAMEWORK_MSG_SEND_TO_SELF(FWK_ID_SENSOR_TASK, FMC_SEND_RESET);
-}
-
-/* If AWS isn't connected after multiple checks, then flush AWS fifo
- * so that system doesn't run out of buffers.
- * This is done in interrupt context because a badly behaving system
- * may prevent the sensor task from running.
- */
-static void AwsFifoMonitorTimerCallbackIsr(struct k_timer *timer_id)
-{
-	SensorTaskObj_t *pObj =
-		(SensorTaskObj_t *)k_timer_user_data_get(timer_id);
-
-	if (pObj->awsReady) {
-		pObj->fifoTicks = 0;
-	} else {
-		pObj->fifoTicks += (AWS_FIFO_CHECK_RATE_SECONDS * MSEC_PER_SEC);
-	}
-
-	if (pObj->fifoTicks >=
-	    (AWS_FIFO_PURGE_THRESHOLD_SECONDS * MSEC_PER_SEC)) {
-		pObj->fifoTicks = 0;
-		size_t flushed = Framework_Flush(FWK_ID_CLOUD);
-		if (flushed > 0) {
-			LOG_WRN("Flushed %u cloud messages", flushed);
-		}
-	}
 }
 
 static void SensorTickCallbackIsr(struct k_timer *timer_id)

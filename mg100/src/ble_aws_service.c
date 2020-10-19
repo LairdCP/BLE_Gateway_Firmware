@@ -582,6 +582,7 @@ int aws_svc_init(const char *clientId)
 	size_t gatt_size = (sizeof(aws_attrs) / sizeof(aws_attrs[0]));
 	svc_status_index = lbt_find_gatt_index(&aws_status_uuid.uuid, aws_attrs,
 					       gatt_size);
+
 	rc = AWS_SVC_ERR_NONE;
 done:
 	return rc;

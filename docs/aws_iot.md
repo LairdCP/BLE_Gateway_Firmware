@@ -12,6 +12,7 @@
    [Prerequisites](#prerequisites)  
    [Provisioning the MG100 Via UART](#provisioning-the-mg100-via-uart)  
    [Monitor AWS Messages](#monitor-aws-messages)  
+5. **[AWS Topics](aws_topics.md)**  
 
 ## Introduction
 

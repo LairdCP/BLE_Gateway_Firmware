@@ -43,6 +43,7 @@ int nvReadAwsRootCa(uint8_t *cert, uint16_t size);
 int nvDeleteAwsRootCa(void);
 int nvInitLwm2mConfig(void *data, void *init_value, uint16_t size);
 int nvWriteLwm2mConfig(void *data, uint16_t size);
+#ifdef CONFIG_BOARD_MG100
 int nvReadBatteryLow(uint16_t * batteryData);
 int nvReadBatteryAlarm(uint16_t * batteryData);
 int nvReadBattery4(uint16_t * batteryData);
@@ -65,6 +66,7 @@ int nvReadAccelODR(int * Value);
 int nvReadAccelThresh(int * Value);
 int nvReadAccelScale(int * Value);
 int nvReadSDLogMaxSize(int * Value);
+#endif /* CONFIG_BOARD_MG100 */
 #ifdef CONFIG_APP_AWS_CUSTOMIZATION
 int nvStoreAwsEnableCustom(bool Value);
 int nvReadAwsEnableCustom(bool *Value);

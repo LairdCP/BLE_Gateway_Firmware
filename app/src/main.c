@@ -32,10 +32,8 @@ LOG_MODULE_REGISTER(main);
 #include "led_configuration.h"
 #include "lte.h"
 #include "nv.h"
-#include "lairdconnect_battery.h"
-#include "ble_battery_service.h"
+
 #include "ble_cellular_service.h"
-#include "ble_motion_service.h"
 #include "ble_aws_service.h"
 #include "ble_power_service.h"
 #include "laird_power.h"
@@ -47,7 +45,13 @@ LOG_MODULE_REGISTER(main);
 #include "app_version.h"
 #include "bt_scan.h"
 #include "fota.h"
+
+#ifdef CONFIG_BOARD_MG100
+#include "lairdconnect_battery.h"
+#include "ble_battery_service.h"
+#include "ble_motion_service.h"
 #include "sdcard_log.h"
+#endif
 
 #ifdef CONFIG_LCZ_NFC
 #include "laird_connectivity_nfc.h"
@@ -133,9 +137,11 @@ static bool start_fota = false;
 
 static app_state_function_t appState;
 struct lte_status *lteInfo;
+#ifdef CONFIG_BOARD_MG100
 struct battery_data *batteryInfo;
 struct motion_status *motionInfo;
 struct sdcard_status *sdcardInfo;
+#endif
 
 K_MSGQ_DEFINE(cloudQ, FWK_QUEUE_ENTRY_SIZE, CONFIG_CLOUD_QUEUE_SIZE,
 	      FWK_QUEUE_ALIGNMENT);
@@ -206,9 +212,9 @@ void main(void)
 	int rc;
 
 #ifdef CONFIG_LWM2M
-	printk("\nMG100 - LwM2M v%s\n", APP_VERSION_STRING);
+	printk("\n" CONFIG_BOARD " - LwM2M v%s\n", APP_VERSION_STRING);
 #else
-	printk("\nMG100 - AWS v%s\n", APP_VERSION_STRING);
+	printk("\n" CONFIG_BOARD " - AWS v%s\n", APP_VERSION_STRING);
 #endif
 
 	configure_leds();
@@ -222,7 +228,9 @@ void main(void)
 		goto exit;
 	}
 
+#ifdef CONFIG_BOARD_MG100
 	sdCardLogInit();
+#endif
 
 	nvReadCommissioned(&commissioned);
 
@@ -279,6 +287,7 @@ void main(void)
 	power_svc_init();
 	power_init();
 
+#ifdef CONFIG_BOARD_MG100
 	/* Setup the battery service */
 	battery_svc_init();
 
@@ -288,6 +297,7 @@ void main(void)
 	BatteryInit();
 
 	motion_svc_init();
+#endif
 
 #ifdef CONFIG_LCZ_NFC
 	laird_connectivity_nfc_init();
@@ -535,7 +545,9 @@ static void awsMsgHandler(void)
 		switch (pMsg->header.msgCode) {
 		case FMC_BL654_SENSOR_EVENT: {
 			BL654SensorMsg_t *pBmeMsg = (BL654SensorMsg_t *)pMsg;
+#ifdef CONFIG_BOARD_MG100
 			sdCardLogBL654Data(pBmeMsg);
+#endif
 			rc = awsPublishBl654SensorData(pBmeMsg->temperatureC,
 						       pBmeMsg->humidityPercent,
 						       pBmeMsg->pressurePa);
@@ -544,12 +556,17 @@ static void awsMsgHandler(void)
 		case FMC_AWS_KEEP_ALIVE: {
 			/* Periodically sending the RSSI keeps AWS connection open. */
 			lteInfo = lteGetStatus();
+#ifdef CONFIG_BOARD_MG100
 			batteryInfo = batteryGetStatus();
 			motionInfo = motionGetStatus();
 			sdcardInfo = sdCardLogGetStatus();
 			rc = awsPublishPinnacleData(lteInfo->rssi,
 						    lteInfo->sinr, batteryInfo,
 						    motionInfo, sdcardInfo);
+#else
+			rc = awsPublishPinnacleData(lteInfo->rssi,
+						    lteInfo->sinr);
+#endif
 			StartKeepAliveTimer();
 		} break;
 
@@ -869,19 +886,34 @@ static void softwareReset(uint32_t DelayMs)
 
 static void configure_leds(void)
 {
+#ifdef CONFIG_BOARD_MG100
 	struct led_configuration c[] = {
 		{ BLUE_LED, LED2_DEV, LED2, LED_ACTIVE_HIGH },
 		{ GREEN_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH },
 		{ RED_LED, LED1_DEV, LED1, LED_ACTIVE_HIGH }
 	};
+#else
+	struct led_configuration c[] = {
+		{ BLUE_LED, LED1_DEV, LED1, LED_ACTIVE_HIGH },
+		{ GREEN_LED, LED2_DEV, LED2, LED_ACTIVE_HIGH },
+		{ RED_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH },
+		{ GREEN_LED2, LED4_DEV, LED4, LED_ACTIVE_HIGH }
+	};
+#endif
 	led_init(c, ARRAY_SIZE(c));
 }
 
 /* Override weak implementation in laird_power.c */
 void power_measurement_callback(uint8_t integer, uint8_t decimal)
 {
-	u16_t Voltage = (integer * BATTERY_MV_PER_V) + decimal;
+#ifdef CONFIG_BOARD_MG100
+	u16_t Voltage;
+
+	Voltage = (integer * BATTERY_MV_PER_V) + decimal;
 	BatteryCalculateRemainingCapacity(Voltage);
+#else
+	power_svc_set_voltage(integer, decimal);
+#endif
 }
 
 /******************************************************************************/

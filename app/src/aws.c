@@ -28,9 +28,11 @@ LOG_MODULE_REGISTER(aws);
 #include "lcz_dns.h"
 #include "print_json.h"
 #include "aws.h"
+#ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
 #include "ble_motion_service.h"
 #include "sdcard_log.h"
+#endif
 
 #if CONFIG_BLUEGRASS
 #include "sensor_gateway_parser.h"
@@ -392,12 +394,18 @@ int awsPublishBl654SensorData(float temperature, float humidity, float pressure)
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
 
+#ifdef CONFIG_BOARD_MG100
 int awsPublishPinnacleData(int radioRssi, int radioSinr,
 			   struct battery_data *battery,
 			   struct motion_status *motion,
 			   struct sdcard_status *sdcard)
+#else
+int awsPublishPinnacleData(int radioRssi, int radioSinr)
+#endif
 {
 	char msg[strlen(SHADOW_REPORTED_START) + strlen(SHADOW_RADIO_RSSI) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_RADIO_SINR) +
+#ifdef CONFIG_BOARD_MG100
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_TEMP) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_LEVEL) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_VOLT) +
@@ -417,8 +425,10 @@ int awsPublishPinnacleData(int radioRssi, int radioSinr,
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_MAX_LOG_SIZE) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_CURR_LOG_SIZE) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_SDCARD_FREE) +
+#endif
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_REPORTED_END)];
 
+#ifdef CONFIG_BOARD_MG100
 	snprintf(
 		msg, sizeof(msg),
 		"%s%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d%s",
@@ -441,7 +451,11 @@ int awsPublishPinnacleData(int radioRssi, int radioSinr,
 		SHADOW_MG100_CURR_LOG_SIZE, sdcard->currLogSize,
 		SHADOW_MG100_SDCARD_FREE, sdcard->freeSpace, SHADOW_RADIO_RSSI,
 		radioRssi, SHADOW_RADIO_SINR, radioSinr, SHADOW_REPORTED_END);
-
+#else
+	snprintf(msg, sizeof(msg), "%s%s%d,%s%d%s", SHADOW_REPORTED_START,
+		 SHADOW_RADIO_RSSI, radioRssi, SHADOW_RADIO_SINR, radioSinr,
+		 SHADOW_REPORTED_END);
+#endif
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
 

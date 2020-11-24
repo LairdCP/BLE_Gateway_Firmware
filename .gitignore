@@ -1,4 +1,3 @@
 app/*pm_static*.yml
 build/*
-
-boards/
+boards/arm

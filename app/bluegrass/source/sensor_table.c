@@ -33,8 +33,9 @@ LOG_MODULE_REGISTER(sensor_table);
 #include "bt510_flags.h"
 #include "lte.h"
 #include "sensor_table.h"
+#ifdef CONFIG_BOARD_MG100
 #include "sdcard_log.h"
-
+#endif
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
@@ -683,9 +684,9 @@ static void AdEventHandler(Bt510AdEvent_t *p, int8_t Rssi, uint32_t Index)
 		/* If event occurs before epoch is set, then AWS shows ~1970. */
 		sensorTable[Index].rxEpoch = Qrtc_GetEpoch();
 		ShadowMaker(&sensorTable[Index]);
-
+#ifdef CONFIG_BOARD_MG100
 		sdCardLogAdEvent(p);
-
+#endif
 		/* The cloud uses the RX epoch (in the table) for filtering. */
 		GatewayShadowMaker(false);
 	}

@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.13.1)
 set(BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR}/../)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(mg100)
+project(oob_demo)
 
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src/main.c
@@ -13,15 +13,20 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src/nv.c
     ${CMAKE_SOURCE_DIR}/src/single_peripheral.c
     ${CMAKE_SOURCE_DIR}/src/jsmn_share.c
-    ${CMAKE_SOURCE_DIR}/src/lairdconnect_battery.c
-    ${CMAKE_SOURCE_DIR}/src/ble_battery_service.c
-    ${CMAKE_SOURCE_DIR}/src/ble_motion_service.c
-    ${CMAKE_SOURCE_DIR}/src/sdcard_log.c
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/framework_config)
 include_directories(${CMAKE_SOURCE_DIR}/../../modules/jsmn)
+
+if(CONFIG_BOARD_MG100)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/lairdconnect_battery.c
+    ${CMAKE_SOURCE_DIR}/src/ble_battery_service.c
+    ${CMAKE_SOURCE_DIR}/src/ble_motion_service.c
+    ${CMAKE_SOURCE_DIR}/src/sdcard_log.c
+)
+endif()
 
 if(CONFIG_LWM2M)
 include_directories(${CMAKE_SOURCE_DIR}/lwm2m/include)

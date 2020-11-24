@@ -22,10 +22,11 @@ LOG_MODULE_REGISTER(sensor_gateway_parser);
 #include <stdbool.h>
 
 #include "aws.h"
+#ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
 #include "ble_motion_service.h"
 #include "sdcard_log.h"
-
+#endif
 #define JSMN_PARENT_LINKS
 #define JSMN_HEADER
 #include "jsmn.h"
@@ -56,6 +57,7 @@ LOG_MODULE_REGISTER(sensor_gateway_parser);
 #define MAX_CONVERSION_STR_SIZE 11
 #define MAX_CONVERSION_STR_LEN (MAX_CONVERSION_STR_SIZE - 1)
 
+#ifdef CONFIG_BOARD_MG100
 #define MAX_WRITEABLE_LOCAL_OBJECTS 11
 
 #define LOCAL_UPDATE_BIT_BATTERY_0 BIT(0)
@@ -83,6 +85,7 @@ static const char ACT_THRESH_STRING[] = "activationThreshold";
 static const char MAX_LOG_SIZE_STRING[] = "maxLogSizeMB";
 
 #define JSON_DEFAULT_BUF_SIZE (1536)
+#endif /* CONFIG_BOARD_MG100 */
 
 /******************************************************************************/
 /* Global                                                                     */
@@ -99,6 +102,8 @@ static int nextParent;
 static int jsonIndex;
 
 static bool getAcceptedTopic;
+
+#ifdef CONFIG_BOARD_MG100
 static u16_t local_updates = 0;
 
 /* NOTE: Order matters. The order of the string array must match
@@ -148,6 +153,7 @@ static int (*LocalConfigGet[MAX_WRITEABLE_LOCAL_OBJECTS])() = {
 	GetActivityThreshold,
 	GetMaxLogSize
 };
+#endif /* CONFIG_BOARD_MG100 */
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -155,7 +161,6 @@ static int (*LocalConfigGet[MAX_WRITEABLE_LOCAL_OBJECTS])() = {
 static void JsonParse(const char *pJson);
 static bool JsonValid(void);
 static void GatewayParser(const char *pTopic, const char *pJson);
-static void MiniGatewayParser(const char *pTopic, const char *pJson);
 static void SensorParser(const char *pTopic, const char *pJson);
 static void SensorDeltaParser(const char *pTopic, const char *pJson);
 static void SensorEventLogParser(const char *pTopic, const char *pJson);
@@ -173,12 +178,16 @@ static void ParseArray(const char *pJson, int ExpectedSensors);
 
 static jsmntok_t *FindState(const char *pJson);
 static bool FindConfigVersion(const char *pJson, uint32_t *pVersion);
-static bool FindVersion(const char *pJson, u32_t *pVersion);
 static uint32_t ConvertUint(const char *pJson, int Index);
 static uint32_t ConvertHex(const char *pJson, int Index);
+
+#ifdef CONFIG_BOARD_MG100
+static void MiniGatewayParser(const char *pTopic, const char *pJson);
+static bool FindVersion(const char *pJson, u32_t *pVersion);
 static bool ValuesUpdated(uint16_t Value);
 static void BuildAndSendLocalConfigResponse();
 static void BuildAndSendLocalConfigNullResponse();
+#endif /* CONFIG_BOARD_MG100 */
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -196,7 +205,9 @@ void SensorGatewayParser(const char *pTopic, const char *pJson)
 	getAcceptedTopic = strstr(pTopic, GET_ACCEPTED_SUB_STR) != NULL;
 	if (strstr(pTopic, GATEWAY_TOPIC_SUB_STR) != NULL) {
 		GatewayParser(pTopic, pJson);
+#ifdef CONFIG_BOARD_MG100
 		MiniGatewayParser(pTopic, pJson);
+#endif
 		FotaParser(pTopic, pJson, APP_IMAGE_TYPE);
 		FotaParser(pTopic, pJson, MODEM_IMAGE_TYPE);
 		FotaHostParser(pTopic, pJson);
@@ -212,6 +223,7 @@ void SensorGatewayParser(const char *pTopic, const char *pJson)
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
+#ifdef CONFIG_BOARD_MG100
 static void BuildAndSendLocalConfigNullResponse()
 {
 	size_t size = JSON_DEFAULT_BUF_SIZE;
@@ -238,6 +250,7 @@ static void BuildAndSendLocalConfigNullResponse()
 
 	FRAMEWORK_MSG_SEND(pMsg);
 }
+
 static void BuildAndSendLocalConfigResponse()
 {
 	int Index = 0;
@@ -316,6 +329,83 @@ static int ParseLocalConfig(const char *pJson, const char *ObjectName)
 	return (ObjectData);
 }
 
+static void MiniGatewayParser(const char *pTopic, const char *pJson)
+{
+	ARG_UNUSED(pTopic);
+	int ObjectData = 0;
+	int ObjectIndex = 0;
+	bool ValueUpdated = false;
+	bool ConfigRequestHandled = false;
+
+	if (!getAcceptedTopic) {
+		/* Now search for anything under the root of the JSON string. The root will
+		* contain the data for any local configuration items. Names are based on
+		* the MG100 schema.
+		*/
+		jsonIndex = 1;
+		nextParent = 0;
+
+		/* Now try to find the desired local state for the gateway */
+		uint32_t version = 0;
+		jsmntok_t *pState = FindState(pJson);
+
+		if (FindVersion(pJson, &version) && (pState != NULL)) {
+			local_updates = 0;
+			do {
+				ObjectData = ParseLocalConfig(
+					pJson,
+					WriteableLocalObject[ObjectIndex]);
+				if (ObjectData > 0) {
+					/* flag values that have update requests */
+					local_updates |= LocalConfigUpdateBits
+						[ObjectIndex];
+					/* execute the local updates */
+					ValueUpdated =
+						(*LocalConfigUpdate[ObjectIndex])(
+							ObjectData);
+					/* clear the flags of values that were not updated */
+					if (!ValueUpdated) {
+						local_updates &=
+							LocalConfigUpdateBits
+								[ObjectIndex];
+					}
+					ConfigRequestHandled = true;
+				}
+			} while (++ObjectIndex < MAX_WRITEABLE_LOCAL_OBJECTS);
+		}
+
+		if (ConfigRequestHandled) {
+			BuildAndSendLocalConfigResponse();
+			LOG_INF("Local gateway configuration update successful.");
+		} else {
+			/* null the desired object so it doesn't get repeatedly sent by the server */
+			BuildAndSendLocalConfigNullResponse();
+			LOG_INF("No local gateway configuration updates found.");
+		}
+	}
+
+	return;
+}
+
+/**
+ * @retval true if version found, otherwise false
+ * @note sets jsonIndex to 1
+ */
+static bool FindVersion(const char *pJson, uint32_t *pVersion)
+{
+	jsonIndex = 1;
+	int versionLocation = FindType(pJson, "version", JSMN_PRIMITIVE, 0);
+	if (versionLocation > 0) {
+		versionLocation += 1; /* index of data */
+		*pVersion = ConvertUint(pJson, versionLocation);
+		return true;
+	}
+	*pVersion = 0;
+	return false;
+}
+
+#endif /* CONFIG_BOARD_MG100 */
+
 static void JsonParse(const char *pJson)
 {
 	jsmn_init(&jsmn);
@@ -377,64 +467,6 @@ static void GatewayParser(const char *pTopic, const char *pJson)
 		 * shouldn't be.
 		 */
 	}
-}
-
-static void MiniGatewayParser(const char *pTopic, const char *pJson)
-{
-	ARG_UNUSED(pTopic);
-	int ObjectData = 0;
-	int ObjectIndex = 0;
-	bool ValueUpdated = false;
-	bool ConfigRequestHandled = false;
-
-	if (!getAcceptedTopic) {
-		/* Now search for anything under the root of the JSON string. The root will
-		* contain the data for any local configuration items. Names are based on
-		* the MG100 schema.
-		*/
-		jsonIndex = 1;
-		nextParent = 0;
-
-		/* Now try to find the desired local state for the gateway */
-		uint32_t version = 0;
-		jsmntok_t *pState = FindState(pJson);
-
-		if (FindVersion(pJson, &version) && (pState != NULL)) {
-			local_updates = 0;
-			do {
-				ObjectData = ParseLocalConfig(
-					pJson,
-					WriteableLocalObject[ObjectIndex]);
-				if (ObjectData > 0) {
-					/* flag values that have update requests */
-					local_updates |= LocalConfigUpdateBits
-						[ObjectIndex];
-					/* execute the local updates */
-					ValueUpdated =
-						(*LocalConfigUpdate[ObjectIndex])(
-							ObjectData);
-					/* clear the flags of values that were not updated */
-					if (!ValueUpdated) {
-						local_updates &=
-							LocalConfigUpdateBits
-								[ObjectIndex];
-					}
-					ConfigRequestHandled = true;
-				}
-			} while (++ObjectIndex < MAX_WRITEABLE_LOCAL_OBJECTS);
-		}
-
-		if (ConfigRequestHandled) {
-			BuildAndSendLocalConfigResponse();
-			LOG_INF("Local gateway configuration update successful.");
-		} else {
-			/* null the desired object so it doesn't get repeatedly sent by the server */
-			BuildAndSendLocalConfigNullResponse();
-			LOG_INF("No local gateway configuration updates found.");
-		}
-	}
-
-	return;
 }
 
 static void UnsubscribeToGetAcceptedHandler(void)
@@ -787,23 +819,6 @@ static bool FindConfigVersion(const char *pJson, uint32_t *pVersion)
 	jsonIndex = 1;
 	int versionLocation =
 		FindType(pJson, "configVersion", JSMN_PRIMITIVE, 0);
-	if (versionLocation > 0) {
-		versionLocation += 1; /* index of data */
-		*pVersion = ConvertUint(pJson, versionLocation);
-		return true;
-	}
-	*pVersion = 0;
-	return false;
-}
-
-/**
- * @retval true if version found, otherwise false
- * @note sets jsonIndex to 1
- */
-static bool FindVersion(const char *pJson, uint32_t *pVersion)
-{
-	jsonIndex = 1;
-	int versionLocation = FindType(pJson, "version", JSMN_PRIMITIVE, 0);
 	if (versionLocation > 0) {
 		versionLocation += 1; /* index of data */
 		*pVersion = ConvertUint(pJson, versionLocation);

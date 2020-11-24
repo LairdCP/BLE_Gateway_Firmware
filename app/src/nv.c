@@ -8,8 +8,7 @@
  */
 
 #include <logging/log.h>
-#define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(mg100_nv);
+LOG_MODULE_REGISTER(nv, LOG_LEVEL_DBG);
 
 #define NV_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define NV_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
@@ -25,10 +24,13 @@ LOG_MODULE_REGISTER(mg100_nv);
 #include <storage/flash_map.h>
 #include <fs/nvs.h>
 
-#include "lairdconnect_battery.h"
 #include "nv.h"
+#ifdef CONFIG_BOARD_MG100
+#include "lairdconnect_battery.h"
 #include "sdcard_log.h"
 #include "ble_motion_service.h"
+#endif
+
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
@@ -40,6 +42,7 @@ enum SETTING_ID {
 	SETTING_ID_AWS_CLIENT_ID,
 	SETTING_ID_AWS_ROOT_CA,
 	SETTING_ID_LWM2M_CONFIG,
+#ifdef CONFIG_BOARD_MG100
 	SETTING_ID_BATTERY_LOW,
 	SETTING_ID_BATTERY_ALARM,
 	SETTING_ID_BATTERY_4,
@@ -51,6 +54,7 @@ enum SETTING_ID {
 	SETTING_ID_ACCEL_THRESH,
 	SETTING_ID_ACCEL_SCALE,
 	SETTING_ID_SDLOG_MAX_SIZE,
+#endif
 #ifdef CONFIG_APP_AWS_CUSTOMIZATION
 	SETTING_ID_AWS_ENABLE_CUSTOM
 #endif
@@ -70,7 +74,7 @@ int nvReadCommissioned(bool *commissioned)
 	int rc;
 	*commissioned = nvCommissioned;
 	rc = nvs_read(&fs, SETTING_ID_COMMISSIONED, &nvCommissioned,
-			sizeof(nvCommissioned));
+		      sizeof(nvCommissioned));
 	if (rc <= 0) {
 		*commissioned = false;
 	}
@@ -83,7 +87,7 @@ int nvStoreCommissioned(bool commissioned)
 	int rc;
 	nvCommissioned = commissioned;
 	rc = nvs_write(&fs, SETTING_ID_COMMISSIONED, &nvCommissioned,
-			sizeof(nvCommissioned));
+		       sizeof(nvCommissioned));
 	if (rc < 0) {
 		NV_LOG_ERR("Error writing commissioned (%d)", rc);
 	}
@@ -95,8 +99,10 @@ int nvInit(void)
 {
 	int rc = 0;
 	struct flash_pages_info info;
+#ifdef CONFIG_BOARD_MG100
 	uint16_t batteryData = 0;
 	int Value = 0;
+#endif
 #ifdef CONFIG_APP_AWS_CUSTOMIZATION
 	bool bValue;
 #endif
@@ -133,14 +139,15 @@ int nvInit(void)
 			goto exit;
 		}
 	}
-
+#ifdef CONFIG_BOARD_MG100
 	batteryData = BatteryGetThresholds(BATTERY_IDX_4);
 	rc = nvReadBattery4(&batteryData);
 	if ((rc <= 0) || (batteryData == 0)) {
 		rc = nvStoreBattery4(&batteryData);
 		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery threshold 4 data (%d)",
-				   rc);
+			NV_LOG_ERR(
+				"Could not write battery threshold 4 data (%d)",
+				rc);
 			goto exit;
 		}
 	}
@@ -150,8 +157,9 @@ int nvInit(void)
 	if ((rc <= 0) || (batteryData == 0)) {
 		rc = nvStoreBattery3(&batteryData);
 		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery threshold 3 data (%d)",
-				   rc);
+			NV_LOG_ERR(
+				"Could not write battery threshold 3 data (%d)",
+				rc);
 			goto exit;
 		}
 	}
@@ -161,8 +169,9 @@ int nvInit(void)
 	if ((rc <= 0) || (batteryData == 0)) {
 		rc = nvStoreBattery2(&batteryData);
 		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery threshold 2 data (%d)",
-				   rc);
+			NV_LOG_ERR(
+				"Could not write battery threshold 2 data (%d)",
+				rc);
 			goto exit;
 		}
 	}
@@ -172,8 +181,9 @@ int nvInit(void)
 	if ((rc <= 0) || (batteryData == 0)) {
 		rc = nvStoreBattery1(&batteryData);
 		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery threshold 1 data (%d)",
-				   rc);
+			NV_LOG_ERR(
+				"Could not write battery threshold 1 data (%d)",
+				rc);
 			goto exit;
 		}
 	}
@@ -183,8 +193,9 @@ int nvInit(void)
 	if ((rc <= 0) || (batteryData == 0)) {
 		rc = nvStoreBattery0(&batteryData);
 		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery threshold 0 data (%d)",
-				   rc);
+			NV_LOG_ERR(
+				"Could not write battery threshold 0 data (%d)",
+				rc);
 			goto exit;
 		}
 	}
@@ -194,10 +205,11 @@ int nvInit(void)
 	if ((rc <= 0) || (batteryData == 0)) {
 		rc = nvStoreBatteryLow(&batteryData);
 		if (rc <= 0) {
-				NV_LOG_ERR("Could not write battery low threshold data (%d)",
-					rc);
-				goto exit;
-			}
+			NV_LOG_ERR(
+				"Could not write battery low threshold data (%d)",
+				rc);
+			goto exit;
+		}
 	}
 
 	batteryData = BatteryGetThresholds(BATTERY_IDX_ALARM);
@@ -205,8 +217,9 @@ int nvInit(void)
 	if ((rc <= 0) || (batteryData == 0)) {
 		rc = nvStoreBatteryAlarm(&batteryData);
 		if (rc <= 0) {
-			NV_LOG_ERR("Could not write battery low alarm data (%d)",
-				   rc);
+			NV_LOG_ERR(
+				"Could not write battery low alarm data (%d)",
+				rc);
 			goto exit;
 		}
 	}
@@ -215,8 +228,7 @@ int nvInit(void)
 	if ((rc <= 0) || (Value == 0)) {
 		rc = nvStoreAccelODR(MOTION_DEFAULT_ODR);
 		if (rc <= 0) {
-			NV_LOG_ERR("Could not write Accel ODR (%d)",
-				   rc);
+			NV_LOG_ERR("Could not write Accel ODR (%d)", rc);
 			goto exit;
 		}
 	}
@@ -225,8 +237,7 @@ int nvInit(void)
 	if ((rc <= 0) || (Value == 0)) {
 		rc = nvStoreAccelThresh(MOTION_DEFAULT_THS);
 		if (rc <= 0) {
-			NV_LOG_ERR("Could not write Accel Threshold (%d)",
-				   rc);
+			NV_LOG_ERR("Could not write Accel Threshold (%d)", rc);
 			goto exit;
 		}
 	}
@@ -235,8 +246,7 @@ int nvInit(void)
 	if ((rc <= 0) || (Value == 0)) {
 		rc = nvStoreAccelScale(MOTION_DEFAULT_SCALE);
 		if (rc <= 0) {
-			NV_LOG_ERR("Could not write Accel Scale (%d)",
-				   rc);
+			NV_LOG_ERR("Could not write Accel Scale (%d)", rc);
 			goto exit;
 		}
 	}
@@ -245,12 +255,11 @@ int nvInit(void)
 	if ((rc <= 0) || (Value == 0)) {
 		rc = nvStoreSDLogMaxSize(SDCARD_LOG_DEFAULT_MAX_LENGTH);
 		if (rc <= 0) {
-			NV_LOG_ERR("Could not write SD log max size (%d)",
-				   rc);
+			NV_LOG_ERR("Could not write SD log max size (%d)", rc);
 			goto exit;
 		}
 	}
-
+#endif /* CONFIG_BOARD_MG100 */
 #ifdef CONFIG_APP_AWS_CUSTOMIZATION
 	rc = nvReadAwsEnableCustom(&bValue);
 	if (rc <= 0) {
@@ -361,84 +370,87 @@ int nvWriteLwm2mConfig(void *data, uint16_t size)
 	return nvs_write(&fs, SETTING_ID_LWM2M_CONFIG, data, size);
 }
 
-int nvReadBatteryData(enum SETTING_ID id, uint16_t * batteryData)
+#ifdef CONFIG_BOARD_MG100
+int nvReadBatteryData(enum SETTING_ID id, uint16_t *batteryData)
 {
 	int rc = -1;
-	if ((id <= SETTING_ID_BATTERY_LOW) && (id >= SETTING_ID_BATTERY_0))
-	{
-		rc = nvs_read(&fs, id, batteryData,
-		      sizeof(uint16_t));
+	if ((id <= SETTING_ID_BATTERY_LOW) && (id >= SETTING_ID_BATTERY_0)) {
+		rc = nvs_read(&fs, id, batteryData, sizeof(uint16_t));
 	}
 
 	return rc;
 }
 
-int nvReadBatteryLow(uint16_t * batteryData)
+int nvReadBatteryLow(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_LOW, batteryData, sizeof(u16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_LOW, batteryData,
+			sizeof(u16_t));
 }
 
-int nvReadBatteryAlarm(uint16_t * batteryData)
+int nvReadBatteryAlarm(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_ALARM, batteryData, sizeof(u16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_ALARM, batteryData,
+			sizeof(u16_t));
 }
 
-int nvReadBattery4(uint16_t * batteryData)
+int nvReadBattery4(uint16_t *batteryData)
 {
 	return nvs_read(&fs, SETTING_ID_BATTERY_4, batteryData, sizeof(u16_t));
 }
 
-int nvReadBattery3(uint16_t * batteryData)
+int nvReadBattery3(uint16_t *batteryData)
 {
 	return nvs_read(&fs, SETTING_ID_BATTERY_3, batteryData, sizeof(u16_t));
 }
 
-int nvReadBattery2(uint16_t * batteryData)
+int nvReadBattery2(uint16_t *batteryData)
 {
-	return nvs_read(&fs,SETTING_ID_BATTERY_2, batteryData, sizeof(u16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_2, batteryData, sizeof(u16_t));
 }
 
-int nvReadBattery1(uint16_t * batteryData)
+int nvReadBattery1(uint16_t *batteryData)
 {
 	return nvs_read(&fs, SETTING_ID_BATTERY_1, batteryData, sizeof(u16_t));
 }
 
-int nvReadBattery0(uint16_t * batteryData)
+int nvReadBattery0(uint16_t *batteryData)
 {
 	return nvs_read(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(u16_t));
 }
 
-int nvStoreBatteryLow(uint16_t * batteryData)
+int nvStoreBatteryLow(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_LOW, batteryData, sizeof(u16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_LOW, batteryData,
+			 sizeof(u16_t));
 }
 
-int nvStoreBatteryAlarm(uint16_t * batteryData)
+int nvStoreBatteryAlarm(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_ALARM, batteryData, sizeof(u16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_ALARM, batteryData,
+			 sizeof(u16_t));
 }
 
-int nvStoreBattery4(uint16_t * batteryData)
+int nvStoreBattery4(uint16_t *batteryData)
 {
 	return nvs_write(&fs, SETTING_ID_BATTERY_4, batteryData, sizeof(u16_t));
 }
 
-int nvStoreBattery3(uint16_t * batteryData)
+int nvStoreBattery3(uint16_t *batteryData)
 {
 	return nvs_write(&fs, SETTING_ID_BATTERY_3, batteryData, sizeof(u16_t));
 }
 
-int nvStoreBattery2(uint16_t * batteryData)
+int nvStoreBattery2(uint16_t *batteryData)
 {
-	return nvs_write(&fs,SETTING_ID_BATTERY_2, batteryData, sizeof(u16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_2, batteryData, sizeof(u16_t));
 }
 
-int nvStoreBattery1(uint16_t * batteryData)
+int nvStoreBattery1(uint16_t *batteryData)
 {
 	return nvs_write(&fs, SETTING_ID_BATTERY_1, batteryData, sizeof(u16_t));
 }
 
-int nvStoreBattery0(uint16_t * batteryData)
+int nvStoreBattery0(uint16_t *batteryData)
 {
 	return nvs_write(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(u16_t));
 }
@@ -463,26 +475,26 @@ int nvStoreSDLogMaxSize(int Value)
 	return nvs_write(&fs, SETTING_ID_SDLOG_MAX_SIZE, &Value, sizeof(int));
 }
 
-int nvReadAccelODR(int * Value)
+int nvReadAccelODR(int *Value)
 {
 	return nvs_read(&fs, SETTING_ID_ACCEL_ODR, Value, sizeof(int));
 }
 
-int nvReadAccelThresh(int * Value)
+int nvReadAccelThresh(int *Value)
 {
 	return nvs_read(&fs, SETTING_ID_ACCEL_THRESH, Value, sizeof(int));
 }
 
-int nvReadAccelScale(int * Value)
+int nvReadAccelScale(int *Value)
 {
 	return nvs_read(&fs, SETTING_ID_ACCEL_SCALE, Value, sizeof(int));
 }
 
-int nvReadSDLogMaxSize(int * Value)
+int nvReadSDLogMaxSize(int *Value)
 {
 	return nvs_read(&fs, SETTING_ID_SDLOG_MAX_SIZE, Value, sizeof(int));
 }
-
+#endif /* CONFIG_BOARD_MG100 */
 #ifdef CONFIG_APP_AWS_CUSTOMIZATION
 int nvStoreAwsEnableCustom(bool Value)
 {

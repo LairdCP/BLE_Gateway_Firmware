@@ -14,9 +14,11 @@
 /******************************************************************************/
 #include <data/json.h>
 
+#ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
 #include "ble_motion_service.h"
 #include "sdcard_log.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,41 +64,43 @@ static const unsigned char aws_root_ca[] =
 
 #define APP_MQTT_BUFFER_SIZE 1024
 
+#ifdef CONFIG_BOARD_MG100
 #define DEFAULT_MQTT_CLIENTID "mg100"
+#else
+#define DEFAULT_MQTT_CLIENTID "pinnacle100_oob"
+#endif
 #define AWS_MQTT_ID_MAX_SIZE 128
 
-#define SHADOW_STATE_NULL			"{\"state\":null}"
-#define SHADOW_REPORTED_START		"{\"state\":{\"reported\":{"
-#define SHADOW_REPORTED_END			"}}}"
-#define SHADOW_TEMPERATURE			"\"temperature\":"
-#define SHADOW_HUMIDITY				"\"humidity\":"
-#define SHADOW_PRESSURE				"\"pressure\":"
-#define SHADOW_RADIO_RSSI			"\"radio_rssi\":"
-#define SHADOW_RADIO_SINR			"\"radio_sinr\":"
-#define SHADOW_TEMPERATURE			"\"temperature\":"
-#define SHADOW_HUMIDITY				"\"humidity\":"
-#define SHADOW_PRESSURE				"\"pressure\":"
-#define SHADOW_RADIO_RSSI			"\"radio_rssi\":"
-#define SHADOW_RADIO_SINR			"\"radio_sinr\":"
-#define SHADOW_MG100_TEMP			"\"tempC\":"
-#define SHADOW_MG100_BATT_LEVEL		"\"batteryLevel\":"
-#define SHADOW_MG100_BATT_VOLT		"\"batteryVoltageMv\":"
-#define SHADOW_MG100_PWR_STATE		"\"powerState\":"
-#define SHADOW_MG100_BATT_LOW		"\"batteryLowThreshold\":"
-#define SHADOW_MG100_BATT_0			"\"battery0\":"
-#define SHADOW_MG100_BATT_1			"\"battery1\":"
-#define SHADOW_MG100_BATT_2			"\"battery2\":"
-#define SHADOW_MG100_BATT_3			"\"battery3\":"
-#define SHADOW_MG100_BATT_4			"\"battery4\":"
-#define SHADOW_MG100_BATT_GOOD		"\"batteryGood\":"
-#define SHADOW_MG100_BATT_BAD		"\"batteryBadThreshold\":"
-#define SHADOW_MG100_ODR			"\"odr\":"
-#define SHADOW_MG100_SCALE			"\"scale\":"
-#define SHADOW_MG100_ACT_THS		"\"activationThreshold\":"
-#define SHADOW_MG100_MOVEMENT		"\"movement\":"
-#define SHADOW_MG100_MAX_LOG_SIZE	"\"maxLogSizeMB\":"
-#define SHADOW_MG100_SDCARD_FREE	"\"sdCardFreeMB\":"
-#define SHADOW_MG100_CURR_LOG_SIZE	"\"logSizeMB\":"
+#define SHADOW_STATE_NULL "{\"state\":null}"
+#define SHADOW_REPORTED_START "{\"state\":{\"reported\":{"
+#define SHADOW_REPORTED_END "}}}"
+
+#define SHADOW_TEMPERATURE "\"temperature\":"
+#define SHADOW_HUMIDITY "\"humidity\":"
+#define SHADOW_PRESSURE "\"pressure\":"
+#define SHADOW_RADIO_RSSI "\"radio_rssi\":"
+#define SHADOW_RADIO_SINR "\"radio_sinr\":"
+#ifdef CONFIG_BOARD_MG100
+#define SHADOW_MG100_TEMP "\"tempC\":"
+#define SHADOW_MG100_BATT_LEVEL "\"batteryLevel\":"
+#define SHADOW_MG100_BATT_VOLT "\"batteryVoltageMv\":"
+#define SHADOW_MG100_PWR_STATE "\"powerState\":"
+#define SHADOW_MG100_BATT_LOW "\"batteryLowThreshold\":"
+#define SHADOW_MG100_BATT_0 "\"battery0\":"
+#define SHADOW_MG100_BATT_1 "\"battery1\":"
+#define SHADOW_MG100_BATT_2 "\"battery2\":"
+#define SHADOW_MG100_BATT_3 "\"battery3\":"
+#define SHADOW_MG100_BATT_4 "\"battery4\":"
+#define SHADOW_MG100_BATT_GOOD "\"batteryGood\":"
+#define SHADOW_MG100_BATT_BAD "\"batteryBadThreshold\":"
+#define SHADOW_MG100_ODR "\"odr\":"
+#define SHADOW_MG100_SCALE "\"scale\":"
+#define SHADOW_MG100_ACT_THS "\"activationThreshold\":"
+#define SHADOW_MG100_MOVEMENT "\"movement\":"
+#define SHADOW_MG100_MAX_LOG_SIZE "\"maxLogSizeMB\":"
+#define SHADOW_MG100_SDCARD_FREE "\"sdCardFreeMB\":"
+#define SHADOW_MG100_CURR_LOG_SIZE "\"logSizeMB\":"
+#endif /* CONFIG_BOARD_MG100 */
 
 #define AWS_RX_THREAD_STACK_SIZE 4096
 #define AWS_RX_THREAD_PRIORITY K_PRIO_COOP(15)
@@ -173,10 +177,14 @@ int awsSetShadowRadioFirmwareVersion(const char *version);
 int awsSetShadowAppFirmwareVersion(const char *version);
 int awsPublishBl654SensorData(float temperature, float humidity,
 			      float pressure);
+#ifdef CONFIG_BOARD_MG100
 int awsPublishPinnacleData(int radioRssi, int radioSinr,
-										struct battery_data * battery,
-										struct motion_status * motion,
-										struct sdcard_status * sdcard);
+			   struct battery_data *battery,
+			   struct motion_status *motion,
+			   struct sdcard_status *sdcard);
+#else
+int awsPublishPinnacleData(int radioRssi, int radioSinr);
+#endif
 int awsSubscribe(uint8_t *topic, uint8_t subscribe);
 int awsGetShadow(void);
 int awsGetAcceptedSubscribe(void);

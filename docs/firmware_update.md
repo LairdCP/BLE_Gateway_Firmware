@@ -2,7 +2,7 @@
 
 ## Prerequisites
 1. [mcumgr CLI](https://github.com/apache/mynewt-mcumgr#command-line-tool) (cross platform)
-2. MG100 running firmware part number 480-00070 v3.x or greater. See [here](https://github.com/LairdCP/MG100_firmware/releases/tag/v3.0.0) for instructions on updating to 3.0.0.
+2. MG100 running firmware part number 480-00070 v3.x or greater. See [here](https://github.com/LairdCP/Pinnacle_100_firmware/releases/tag/v3.0.0) for instructions on updating to 3.0.0.
 3. Terminal program: Putty (Windows,Linux,macOS), Teraterm (Windows), Serial (macOS)
 
 ## Update Zephyr App Via UART

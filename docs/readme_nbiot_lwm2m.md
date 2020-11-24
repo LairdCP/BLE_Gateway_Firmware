@@ -159,17 +159,17 @@ The Red LED blinks when the MG100 is searching for a cellular network. It remain
 
 The firmware can be built to work with or without the mcuboot bootloader. Building without mcuboot is faster and easier for development and debug, but gives up the ability to update the Zephyr app via UART or BLE.
 
-Issue these commands **from the mg100_firmware directory**.
+Issue these commands **from the pinnacle_100_firmware directory**.
 
 Build without mcuboot:
 ```
 # Linux and macOS
 
-rm -f mg100/pm_static.yml && west build -b mg100 -d build/mg100_lwm2m mg100
+rm -f app/pm_static.yml && west build -b mg100 -d build/mg100_lwm2m app
 
 # Windows
 
-del mg100\pm_static.yml && west build -b mg100 -d build\mg100_lwm2m mg100
+del app\pm_static.yml && west build -b mg100 -d build\mg100_lwm2m app
 ```
 
 > **Note:** When switching between builds with or without mcuboot, be sure to delete the build directory before building.
@@ -178,11 +178,11 @@ Build with mcuboot:
 ```
 # Linux and macOS
 
-cp ../modules/zephyr_lib/mcuboot_config/pm_static.pinnacle100.yml mg100/pm_static.yml && west build -b mg100 -d build/mg100_lwm2m mg100 -- -DOVERLAY_CONFIG="${PWD}/mg100/overlay_lwm2m_dtls.conf ${PWD}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf" -Dmcuboot_CONF_FILE="${PWD}/../modules/zephyr_lib/mcuboot_config/mcuboot-qspi.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/overlay-disable-hl7800-modem.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/mcuboot-serial-pinnacle100_dvk.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/disable-slot0-validate.conf"
+cp ../modules/zephyr_lib/mcuboot_config/pm_static.pinnacle100.yml app/pm_static.yml && west build -b mg100 -d build/mg100_lwm2m app -- -DOVERLAY_CONFIG="${PWD}/app/overlay_lwm2m_dtls.conf ${PWD}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf" -Dmcuboot_CONF_FILE="${PWD}/../modules/zephyr_lib/mcuboot_config/mcuboot-qspi.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/overlay-disable-hl7800-modem.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/mcuboot-serial-pinnacle100_dvk.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/disable-slot0-validate.conf"
 
 # Windows
 
-copy ..\modules\zephyr_lib\mcuboot_config\pm_static.pinnacle100.yml mg100\pm_static.yml && west build -b mg100 -d build\mg100_lwm2m mg100 -- -DOVERLAY_CONFIG="%CD%\mg100\overlay_lwm2m_dtls.conf %CD%\..\modules\zephyr_lib\mcumgr_wrapper\config\overlay-mcuboot.conf" -Dmcuboot_CONF_FILE="%CD%\..\modules\zephyr_lib\mcuboot_config\mcuboot-qspi.conf %CD%\..\modules\zephyr_lib\mcuboot_config\overlay-disable-hl7800-modem.conf %CD%\..\modules\zephyr_lib\mcuboot_config\mcuboot-serial-pinnacle100_dvk.conf %CD%\..\modules\zephyr_lib\mcuboot_config\disable-slot0-validate.conf"
+copy ..\modules\zephyr_lib\mcuboot_config\pm_static.pinnacle100.yml app\pm_static.yml && west build -b mg100 -d build\mg100_lwm2m app -- -DOVERLAY_CONFIG="%CD%\app\overlay_lwm2m_dtls.conf %CD%\..\modules\zephyr_lib\mcumgr_wrapper\config\overlay-mcuboot.conf" -Dmcuboot_CONF_FILE="%CD%\..\modules\zephyr_lib\mcuboot_config\mcuboot-qspi.conf %CD%\..\modules\zephyr_lib\mcuboot_config\overlay-disable-hl7800-modem.conf %CD%\..\modules\zephyr_lib\mcuboot_config\mcuboot-serial-pinnacle100_dvk.conf %CD%\..\modules\zephyr_lib\mcuboot_config\disable-slot0-validate.conf"
 ```
 
 After building the firmware, it can be flashed with the following command:

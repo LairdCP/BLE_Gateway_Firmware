@@ -15,7 +15,7 @@ The MG100 firmware can operate in two modes:
 
 These two modes are selected at compile time. See the following sections for documentation on the demo and how it operates.
 
-Download firmware releases from [here!](https://github.com/LairdCP/MG100_firmware/releases)
+Download firmware releases from [here!](https://github.com/LairdCP/Pinnacle_100_firmware/releases)
 
 ## LTE-M and AWS
 
@@ -39,7 +39,7 @@ MG100 units with version 3.x or greater support firmware updates via UART, BLE o
 
 ### Cloning and Building the Source
 
-This is a Zephyr-based repository, **DO NOT** `git clone` this repo. To clone and build the project properly, please see the instructions in the [MG100_firmware_manifest](https://github.com/LairdCP/MG100_firmware_manifest) repository.
+This is a Zephyr-based repository, **DO NOT** `git clone` this repo. To clone and build the project properly, please see the instructions in the [Pinnacle_100_firmware_manifest](https://github.com/LairdCP/Pinnacle_100_firmware_manifest) repository.
 
 ### BLE Profiles
 

@@ -14,9 +14,9 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "${config:clear_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100",
+      "command": "${config:clear_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/app",
       "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100"
+        "command": "${config:clear_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\app"
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -26,9 +26,9 @@
     {
       "label": "re-build",
       "type": "shell",
-      "command": "${config:clear_static_partitions_unix} && west build -p -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100",
+      "command": "${config:clear_static_partitions_unix} && west build -p -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/app",
       "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -p -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100"
+        "command": "${config:clear_static_partitions_windows} && west build -p -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\app"
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -65,18 +65,18 @@
     {
       "label": "menuconfig",
       "type": "shell",
-      "command": "west build -t menuconfig -d ${workspaceRoot}/build/${input:app} ${workspaceRoot}/mg100",
+      "command": "west build -t menuconfig -d ${workspaceRoot}/build/${input:app} ${workspaceRoot}/app",
       "windows": {
-        "command": "west build -t menuconfig -d ${workspaceRoot}\\build\\${input:app} ${workspaceRoot}\\mg100"
+        "command": "west build -t menuconfig -d ${workspaceRoot}\\build\\${input:app} ${workspaceRoot}\\app"
       },
       "problemMatcher": []
     },
     {
       "label": "build lwm2m",
       "type": "shell",
-      "command": "${config:clear_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_lwm2m ${workspaceRoot}/mg100 -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix}\"",
+      "command": "${config:clear_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix}\"",
       "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_lwm2m ${workspaceRoot}\\mg100 -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows}\""
+        "command": "${config:clear_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows}\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -86,27 +86,27 @@
     {
       "label": "app ram_report",
       "type": "shell",
-      "command": "west build -d ${workspaceRoot}/build/${input:app} ${workspaceRoot}/mg100 --target ram_report > ${workspaceRoot}/build/${input:app}/ram_report",
+      "command": "west build -d ${workspaceRoot}/build/${input:app} ${workspaceRoot}/app --target ram_report > ${workspaceRoot}/build/${input:app}/ram_report",
       "windows": {
-        "command": "west build -d ${workspaceRoot}\\build\\${input:app} ${workspaceRoot}\\mg100 --target ram_report > ${workspaceRoot}\\build\\${input:app}\\ram_report"
+        "command": "west build -d ${workspaceRoot}\\build\\${input:app} ${workspaceRoot}\\app --target ram_report > ${workspaceRoot}\\build\\${input:app}\\ram_report"
       },
       "problemMatcher": []
     },
     {
       "label": "app rom_report",
       "type": "shell",
-      "command": "west build -d ${workspaceRoot}/build/${input:app} ${workspaceRoot}/mg100 --target rom_report > ${workspaceRoot}/build/${input:app}/rom_report",
+      "command": "west build -d ${workspaceRoot}/build/${input:app} ${workspaceRoot}/app --target rom_report > ${workspaceRoot}/build/${input:app}/rom_report",
       "windows": {
-        "command": "west build -d ${workspaceRoot}\\build\\${input:app} ${workspaceRoot}\\mg100 --target rom_report > ${workspaceRoot}\\build\\${input:app}\\rom_report"
+        "command": "west build -d ${workspaceRoot}\\build\\${input:app} ${workspaceRoot}\\app --target rom_report > ${workspaceRoot}\\build\\${input:app}\\rom_report"
       },
       "problemMatcher": []
     },
     {
       "label": "build with mcuboot",
       "type": "shell",
-      "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/mg100 -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
+      "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_aws ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
       "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\mg100 -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
+        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_aws ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -116,9 +116,9 @@
     {
       "label": "build lwm2m with mcuboot",
       "type": "shell",
-      "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_lwm2m ${workspaceRoot}/mg100 -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
+      "command": "${config:setup_static_partitions_unix} && west build -b mg100 -d ${workspaceRoot}/build/mg100_lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
       "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_lwm2m ${workspaceRoot}\\mg100 -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
+        "command": "${config:setup_static_partitions_windows} && west build -b mg100 -d ${workspaceRoot}\\build\\mg100_lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
       },
       "problemMatcher": {
         "base": "$gcc",

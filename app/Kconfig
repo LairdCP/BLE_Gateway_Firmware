@@ -263,7 +263,7 @@ config APP_AWS_CLIENT_KEY_FILE_NAME
 
 endif # APP_AWS_CUSTOMIZATION
 
-source "../mg100_firmware/mg100/coap/Kconfig"
+source "../pinnacle_100_firmware/app/coap/Kconfig"
 
 endif # USER_APPLICATION
 

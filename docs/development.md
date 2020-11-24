@@ -2,7 +2,7 @@
 The out of box demo source code can be used as a starting point for your own IoT cloud applications!
 This document will explain how to use Visual Studio Code to build and debug the application.
 
->**Note:** These instructions assume you already have the Zephyr tools installed and can build the app successfully.  Please see [here](https://github.com/LairdCP/MG100_firmware_manifest#preparing-to-build) if you have not completed those steps.
+>**Note:** These instructions assume you already have the Zephyr tools installed and can build the app successfully.  Please see [here](https://github.com/LairdCP/Pinnacle_100_firmware_manifest#preparing-to-build) if you have not completed those steps.
 
 ## Prerequisites
 1. Install [J-Link Software and Documentation Pack](https://www.segger.com/downloads/jlink/#J-LinkSoftwareAndDocumentationPack) for J-Link drivers and software.
@@ -19,7 +19,7 @@ After cloning this repository with `west` the directory structure should look li
 ![Demo folder](images/demo_folder.png)  
 *Demo folder*
 
-Open the *mg100_firmware* folder with VS Code.  The source code is then viewable in the *mg100* folder.
+Open the *pinnacle_100_firmware* folder with VS Code.  The source code is then viewable in the *app* folder.
 
 ![Source code](images/oob_demo_source.png)  
 *Source code*
@@ -60,7 +60,7 @@ Add the following lines to the settings.json file:
 >The paths shown above are Windows compatible paths.  If on Linux or macOS the paths should use single '/' characters.
 
 ### Firmware Setup
-In order to debug the firmware properly, it is recommended to change the optimization settings of the firmware when it is compiled.  This allows better breakpoint support and viewing temporary variable values. In [prj.conf](../mg100/prj.conf) look for:
+In order to debug the firmware properly, it is recommended to change the optimization settings of the firmware when it is compiled.  This allows better breakpoint support and viewing temporary variable values. In [prj.conf](../app/prj.conf) look for:
 ```
 CONFIG_NO_OPTIMIZATIONS
 CONFIG_DEBUG_OPTIMIZATIONS

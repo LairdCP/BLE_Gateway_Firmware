@@ -1,9 +1,10 @@
-﻿# BLE Services and information used in the MG100 OOB Demo
+﻿# BLE Services and information used in the AWS OOB Demo
 
 ## Advertisement
 
 The advertisement includes the UUID of the Cellular Profile. The complete local name is included in the scan response.
-The complete local name is "MG100 OOB-1234567", where "1234567" are replaced with the last 7 digits of the IMEI.
+The complete local name for an MG100 is `MG100 OOB-1234567`, where `1234567` are replaced with the last 7 digits of the IMEI.
+For a DVK the complete local name will look like `Pinnacle 100 OOB-1234567`.
 
 ## Device Information Service
 
@@ -116,6 +117,7 @@ Characteristics:
 | Reboot               | dc1c0002-f3d7-559e-f24e-78fb67b2b7eb | write      | One bytes. Writing to this will reboot the module, writing a value of 0x01 will stay in the UART bootloader, any other value will reboot to the user application |
 
 ## Battery Profile
+> **Note:** Only available on an MG100
 
 ### UUID: 6d4a06b0-9641-11ea-ab12-0800200c9a66
 
@@ -136,6 +138,7 @@ Characteristics:
 | Battery Low Alarm       | 6d4a06bb-9641-11ea-ab12-0800200c9a66 | notify      | unsigned 8-bit value indicating the low battery alarm state. 0 = no alarm, 1 = alarm.                                                                                                  |
 
 ## Motion Profile
+> **Note:** Only available on an MG100
 
 ### UUID: adce0a30-ac1a-11ea-8b6e-0800200c9a66
 

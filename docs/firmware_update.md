@@ -2,7 +2,7 @@
 
 ## Prerequisites
 1. [mcumgr CLI](https://github.com/apache/mynewt-mcumgr#command-line-tool) (cross platform)
-2. MG100 running firmware part number 480-00070 v3.x or greater. See [here](https://github.com/LairdCP/Pinnacle_100_firmware/releases/tag/v3.0.0) for instructions on updating to 3.0.0.
+2. Pinnacle 100 device running firmware v3.x or greater. See [here](https://github.com/LairdCP/Pinnacle_100_firmware/releases/tag/v3.0.0) for instructions on updating to 3.0.0.
 3. Terminal program: Putty (Windows,Linux,macOS), Teraterm (Windows), Serial (macOS)
 
 ## Update Zephyr App Via UART
@@ -14,7 +14,7 @@
     log halt
     ```
 
-2. Disconnect the terminal program from the console UART and transfer the update file to the MG100 using the mcumgr CLI via the console UART.
+2. Disconnect the terminal program from the console UART and transfer the update file to the device using the mcumgr CLI via the console UART.
 
     ```
     # Linux/macOS
@@ -124,7 +124,7 @@
 
 Using mcumgr CLI and BLE is only supported on Linux or macOS.
 
-1. Transfer the update file to the MG100 using the mcumgr CLI via BLE.
+1. Transfer the update file to the device using the mcumgr CLI via BLE.
 
     ```
     mcumgr -t 20 -r 3 --conntype ble --connstring ctlr_name=hci0,peer_name='MG100-0303848' image upload /Users/ryan/Desktop/mg100_v3.0.103.bin
@@ -201,7 +201,7 @@ Using mcumgr CLI and BLE is only supported on Linux or macOS.
     log halt
     ```
 
-2. Disconnect the terminal program from the console UART and transfer the update file to the MG100 using the mcumgr CLI via the console UART.
+2. Disconnect the terminal program from the console UART and transfer the update file to the device using the mcumgr CLI via the console UART.
 
     ```
     # Linux/macOS

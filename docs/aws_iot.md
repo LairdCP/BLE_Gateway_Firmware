@@ -8,19 +8,19 @@
    [Account Setup](#account-setup)  
    [Setup a Policy](#setup-a-policy)  
    [Create a Thing](#create-a-thing)  
-4. **[Configure MG100 for AWS Connection](#configure-mg100-for-aws-connection)**  
+4. **[Configure Device for AWS Connection](#configure-device-for-aws-connection)**  
    [Prerequisites](#prerequisites)  
-   [Provisioning the MG100 Via UART](#provisioning-the-mg100-via-uart)  
+   [Provisioning the Device Via UART](#provisioning-the-device-via-uart)  
    [Monitor AWS Messages](#monitor-aws-messages)  
 5. **[AWS Topics](aws_topics.md)**  
 
 ## Introduction
 
-The MG100 firmware connects to the Laird Connectivity Bluegrass cloud by default. This document will describe how to setup a new AWS IoT core server and reconfigure the firmware to connect to it.
+The AWS Out-of-Box (OOB) Demo firmware connects to the Laird Connectivity Bluegrass cloud by default. This document will describe how to setup a new AWS IoT core account and reconfigure the firmware to connect to it.
 
 ## Prerequisites
 
-* MG100 firmware 3.x or later
+* AWS OOB demo firmware 3.x or later
 
 ## AWS IoT Core Setup
 
@@ -60,6 +60,7 @@ In the left-hand menu, navigate to Manage -> Things and click Create on the far 
 Click Create a single thing.
 
 Enter a name and click Next.
+> **Note:** The OOB demo firmware expects the thing name to be in this format `deviceId-<IMEI>` where `<IMEI>` should be replaced by the IMEI of your device.
 
 ![Thing Name](images/aws/thing_name.png)  
 *Thing Name*
@@ -81,17 +82,17 @@ Select the policy that was created previously and click Register Thing.
 ![Attach Policy](images/aws/attach_policy.png)  
 *Attach Policy*
 
-## Configure MG100 for AWS Connection
+## Configure Device for AWS Connection
 
-The MG100 can be provisioned to communicate with the Bluegrass AWS demo site via the mobile app. In order to connect to an alternate AWS IoT Core instance, the MG100 can be provisioned via UART.
+The Pinnacle 100 device can be provisioned to communicate with the Bluegrass AWS demo site via the mobile app. In order to connect to an alternate AWS IoT Core instance, the device can be provisioned via UART.
 
 ### Prerequisites
 
 1. [mcumgr CLI](https://github.com/apache/mynewt-mcumgr#command-line-tool) (cross platform)
-2. MG100 running firmware part number 480-00070 v3.x or greater
+2. Pinnacle 100 device running AWS OOB demo firmware v3.x or greater
 3. Terminal program: Putty (Windows,Linux,macOS), Teraterm (Windows), Serial (macOS)
 
-### Provisioning the MG100 Via UART
+### Provisioning the Device Via UART
 1. Connect a terminal program to the console UART and turn off log messages. Log messages output by the firmware can interfere with the file transfer process.
 
     Issue command:
@@ -99,7 +100,7 @@ The MG100 can be provisioned to communicate with the Bluegrass AWS demo site via
     log halt
     ```
 
-2. Disconnect the terminal program from the console UART and transfer the credentials to the MG100 using the mcumgr CLI via the console UART. Three files need to be transfered to the MG100, the root CA, client certificate, and client key.
+2. Disconnect the terminal program from the console UART and transfer the credentials to the device using the mcumgr CLI via the console UART. Three files need to be transferred to the device, the root CA, client certificate, and client key.
 
     ```
     # Linux/macOS
@@ -124,7 +125,7 @@ The MG100 can be provisioned to communicate with the Bluegrass AWS demo site via
 
 4. Set AWS endpoint
 
-    To direct the MG100 which AWS instance to connect to, the endpoint must be set. To determine the correct endpoint login to the [AWS IoT console](https://console.aws.amazon.com/iot/) and click on the thing that was just registered. Go to the section labeled Interact and copy the endpoint listed under the HTTPS section.
+    To direct the Pinnacle 100 device which AWS instance to connect to, the endpoint must be set. To determine the correct endpoint login to the [AWS IoT console](https://console.aws.amazon.com/iot/) and click on the thing that was just registered. Go to the section labeled Interact and copy the endpoint listed under the HTTPS section.
 
     ![AWS Endpoint](images/aws/endpoint.png)  
     *AWS Endpoint*

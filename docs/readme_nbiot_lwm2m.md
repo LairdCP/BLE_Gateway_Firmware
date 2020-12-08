@@ -1,4 +1,4 @@
-# Pinnacle 100 NB-IoT LwM2M Out of Box Demo
+# LwM2M Demo
 
 ## Table of Contents
 
@@ -18,11 +18,11 @@
 ## Introduction
 
 When using NB-IoT, we do not recommend using the TCP protocol due to the network latencies inherent to NB-IoT. UDP is recommended for NB-IoT data transfer.
-In this configuration, the MG100 is configured to use LwM2M and DTLS with pre-shared keys.  [LightweightM2M (LwM2M)](http://www.openmobilealliance.org/wp/Overviews/lightweightm2m_overview.html) is a protocol that runs on top of [CoAP](https://coap.technology/).
+In this configuration, the Pinnacle 100 device is configured to use LwM2M and DTLS with pre-shared keys.  [LightweightM2M (LwM2M)](http://www.openmobilealliance.org/wp/Overviews/lightweightm2m_overview.html) is a protocol that runs on top of [CoAP](https://coap.technology/).
 
-A [Leshan Server](https://www.eclipse.org/leshan/) is used to display information about the MG100 and a connected BL654 BME280 sensor.
+A [Leshan Server](https://www.eclipse.org/leshan/) is used to display information about the Pinnacle 100 device and a connected BL654 BME280 BLE sensor.
 
-The software version, model, manufacturer, serial number, and current time can be read. If a BME280 sensor is connected, then temperature, humidity, and pressure can be read. In addition, the green LED on the DVK can be turned on and off using the light control object.
+The software version, model, manufacturer, serial number, and current time can be read. If a BME280 sensor is connected, then temperature, humidity, and pressure can be read. In addition, the green LED on the Pinnacle 100 device can be turned on and off using the light control object.
 
 ```
                 XXXXX
@@ -44,7 +44,7 @@ X                                X
                v
      +---------+----------+
      |                    |
-     |       MG100        |
+     |     DVK/MG100      |
      |                    |
      +---------+----------+
                ^
@@ -63,36 +63,37 @@ X                                X
 ## Resources
 
 - [MG100 product page](https://www.lairdconnect.com/iot-devices/iot-gateways/sentrius-mg100-gateway-lte-mnb-iot-and-bluetooth-5)
+- [Pinnacle 100 Modem product page](https://www.lairdconnect.com/wireless-modules/cellular-solutions/pinnacle-100-cellular-modem)
 
 ## Prerequisites
 
-The following are required to use the MG100:
+The following are required to fully exercise this demo firmware:
 
-- An activated SIM card. The Truphone SIM card that comes with the DVK does not currently support NB-IoT. If you have purchased a MG100 in Europe, then please contact [sales](mailto:sales@lairdconnect.com) to obtain a SIM card that is NB-IoT capable.
-- MG100 programmed with NB-IoT/LwM2M MG100 firmware.
+- An activated SIM card. The Truphone SIM card that comes with the DVK does not currently support NB-IoT. If you have purchased a DVK in Europe, then please contact [sales](mailto:sales@lairdconnect.com) to obtain a SIM card that is NB-IoT capable.
+- Pinnacle 100 device programmed with NB-IoT/LwM2M demo firmware.
 - Laird Pinnacle Connect app installed on a mobile device
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)
   - [iOS app](https://apps.apple.com/us/app/laird-pinnacle-connect/id1481075861?ls=1)
 
 ## Setup
 
-To set up the MG100, follow these steps:
+To set up the Pinnacle 100 device, follow these steps:
 
-1. Ensure an *activated* SIM card is inserted into the MG100 SIM slot.
+1. Ensure an *activated* SIM card is inserted into the Pinnacle 100 SIM slot.
 2. On your phone, launch the Pinnacle mobile app and follow the on-screen prompts.
 
 ## Using the Demo
-If the Laird Connectivity Leshan server is used, then the MG100 should be configured to something other than its default settings. This allows multiple MG100 devices to connect to the same server.
+If the Laird Connectivity Leshan server is used, then the Pinnacle 100 device should be configured to something other than its default settings. This allows multiple devices to connect to the same server.
 
 ### Auto Commissioning
 
 1. Open the mobile app, connect to your device and go to the LwM2M Settings page.
-2. Click the Auto-commission device button.  This will automatically add the MG100 as a unique device to the Leshan LwM2M server.
+2. Click the Auto-commission device button.  This will automatically add the Pinnacle 100 device with a unique ID to the Leshan LwM2M server.
 
 ![Auto-commission device](images/lwm2m_auto_commission.png)  
 _Auto-commission device_
 
-3. Skip to [View Cloud Data](#view-cloud-data) for instuctions on interacting with your device.
+3. Skip to [View Cloud Data](#view-cloud-data) for instructions on interacting with your device.
 
 ### Manual Commissioning
 
@@ -149,11 +150,11 @@ In addition to the steps in the [Using the Demo](#using-the-demo) section, the P
 
 ## LED Behavior
 
-The Blue LED blinks once a second when the MG100 is searching for a BL654 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
+The Blue LED blinks once a second when the Pinnacle 100 device is searching for a BL654 BME280 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
 
 The Green LED can be controlled via the LwM2M server Light Control object.
 
-The Red LED blinks when the MG100 is searching for a cellular network. It remains on and does not blink when connected to a network. If there is an error with the SIM card or network registration, then the LED remains off.
+The Red LED blinks when the Pinnacle 100 device is searching for a cellular network. It remains on and does not blink when connected to a network. If there is an error with the SIM card or network registration, then the LED remains off.
 
 ## Building the Firmware
 
@@ -162,41 +163,44 @@ The firmware can be built to work with or without the mcuboot bootloader. Buildi
 Issue these commands **from the pinnacle_100_firmware directory**.
 
 Build without mcuboot:
+> **Note:** `[board]` should be replaced with `mg100` or `pinnacle_100_dvk`
 ```
 # Linux and macOS
 
-rm -f app/pm_static.yml && west build -b mg100 -d build/mg100_lwm2m app
+rm -f app/pm_static.yml && west build -b [board] -d build/[board]_lwm2m app
 
 # Windows
 
-del app\pm_static.yml && west build -b mg100 -d build\mg100_lwm2m app
+del app\pm_static.yml && west build -b [board] -d build\[board]_lwm2m app
 ```
 
 > **Note:** When switching between builds with or without mcuboot, be sure to delete the build directory before building.
 
 Build with mcuboot:
+> **Note:** `[board]` should be replaced with `mg100` or `pinnacle_100_dvk`
 ```
 # Linux and macOS
 
-cp ../modules/zephyr_lib/mcuboot_config/pm_static.pinnacle100.yml app/pm_static.yml && west build -b mg100 -d build/mg100_lwm2m app -- -DOVERLAY_CONFIG="${PWD}/app/overlay_lwm2m_dtls.conf ${PWD}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf" -Dmcuboot_CONF_FILE="${PWD}/../modules/zephyr_lib/mcuboot_config/mcuboot-qspi.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/overlay-disable-hl7800-modem.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/mcuboot-serial-pinnacle100_dvk.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/disable-slot0-validate.conf"
+cp ../modules/zephyr_lib/mcuboot_config/pm_static.pinnacle100.yml app/pm_static.yml && west build -b [board] -d build/[board]_lwm2m app -- -DOVERLAY_CONFIG="${PWD}/app/overlay_lwm2m_dtls.conf ${PWD}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf" -Dmcuboot_CONF_FILE="${PWD}/../modules/zephyr_lib/mcuboot_config/mcuboot-qspi.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/overlay-disable-hl7800-modem.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/mcuboot-serial-pinnacle100_dvk.conf ${PWD}/../modules/zephyr_lib/mcuboot_config/disable-slot0-validate.conf"
 
 # Windows
 
-copy ..\modules\zephyr_lib\mcuboot_config\pm_static.pinnacle100.yml app\pm_static.yml && west build -b mg100 -d build\mg100_lwm2m app -- -DOVERLAY_CONFIG="%CD%\app\overlay_lwm2m_dtls.conf %CD%\..\modules\zephyr_lib\mcumgr_wrapper\config\overlay-mcuboot.conf" -Dmcuboot_CONF_FILE="%CD%\..\modules\zephyr_lib\mcuboot_config\mcuboot-qspi.conf %CD%\..\modules\zephyr_lib\mcuboot_config\overlay-disable-hl7800-modem.conf %CD%\..\modules\zephyr_lib\mcuboot_config\mcuboot-serial-pinnacle100_dvk.conf %CD%\..\modules\zephyr_lib\mcuboot_config\disable-slot0-validate.conf"
+copy ..\modules\zephyr_lib\mcuboot_config\pm_static.pinnacle100.yml app\pm_static.yml && west build -b [board] -d build\[board]_lwm2m app -- -DOVERLAY_CONFIG="%CD%\app\overlay_lwm2m_dtls.conf %CD%\..\modules\zephyr_lib\mcumgr_wrapper\config\overlay-mcuboot.conf" -Dmcuboot_CONF_FILE="%CD%\..\modules\zephyr_lib\mcuboot_config\mcuboot-qspi.conf %CD%\..\modules\zephyr_lib\mcuboot_config\overlay-disable-hl7800-modem.conf %CD%\..\modules\zephyr_lib\mcuboot_config\mcuboot-serial-pinnacle100_dvk.conf %CD%\..\modules\zephyr_lib\mcuboot_config\disable-slot0-validate.conf"
 ```
 
 After building the firmware, it can be flashed with the following command:
+> **Note:** `[board]` should be replaced with `mg100` or `pinnacle_100_dvk`
 ```
 # Linux and macOS
 
-west flash -d build/mg100_lwm2m
+west flash -d build/[board]_lwm2m
 
 # Windows
 
-west flash -d build\mg100_lwm2m
+west flash -d build\[board]_lwm2m
 ```
 
-If the firmware was built with mcuboot, `west flash` will program merged.hex which contains the mcuboot bootloader and app combined. 
+If the firmware was built with mcuboot, `west flash` will program merged.hex which contains the mcuboot bootloader and app in a combined image.
 
 ## Development
 See [here](development.md) for help on getting started with custom development.

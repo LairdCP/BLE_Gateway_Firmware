@@ -28,6 +28,7 @@ There are VS Code tasks already setup to make building and flashing the firmware
 >**Note:** To view or edit the tasks.  Look at [.vscode/tasks.json](../.vscode/tasks.json).
 
 To build the firmware, run the build task by selecting **Terminal -> Run Build Task...**
+>**Note:** This builds the firmware without the mcuboot bootloader. This is the best method for debugging.
 
 ![Run build task](images/run_build_task.png)  
 *Run build task*
@@ -40,7 +41,7 @@ Select **Terminal -> Run Task...**, then select **flash application**.
 *Run flash task*
 
 ## Debugging the Firmware
-Debugging the firmware on the MG100 requires a J-Link debugger and the Cortex-Debug extension for VS Code.
+Debugging the firmware on the device requires a J-Link debugger and the Cortex-Debug extension for VS Code.
 
 ### Cortex-Debug Setup
 Before debugging, some simple setup is required for Cortex-Debug.  Go to **File -> Preferences -> Settings**.
@@ -52,12 +53,16 @@ At the top of settings type `cortex-debug` to display the settings for that exte
 
 Add the following lines to the settings.json file:
 ```
+# Linux/macOS
+
+"cortex-debug.armToolchainPath": "/usr/local/Caskroom/gcc-arm-embedded/9-2019-q4-major/gcc-arm-none-eabi-9-2019-q4-major/bin",
+
+# Windows
+
 "cortex-debug.JLinkGDBServerPath": "C:\\Program Files (x86)\\SEGGER\\JLink\\JLinkGDBServerCL.exe",
 "cortex-debug.armToolchainPath": "C:\\GNU_Tools_Arm_Embedded\\8_2019-q3-update\\bin",
 ```
 >**Notes:** The paths may be different based on your installations of those tools.
->
->The paths shown above are Windows compatible paths.  If on Linux or macOS the paths should use single '/' characters.
 
 ### Firmware Setup
 In order to debug the firmware properly, it is recommended to change the optimization settings of the firmware when it is compiled.  This allows better breakpoint support and viewing temporary variable values. In [prj.conf](../app/prj.conf) look for:
@@ -67,13 +72,12 @@ CONFIG_DEBUG_OPTIMIZATIONS
 ```
 You can uncomment **one** of the lines and re-build the firmware.
 
-`CONFIG_NO_OPTIMIZATIONS` is equivalent to -O0 in gcc.  See [here](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html)
+`CONFIG_NO_OPTIMIZATIONS` is equivalent to `-O0` in gcc.  See [here](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html)
 
-`CONFIG_DEBUG_OPTIMIZATIONS` is equivalent to -Og.
+`CONFIG_DEBUG_OPTIMIZATIONS` is equivalent to `-Og`.
 
 ### Starting the Debugger
 Once the firmware is built, debugging can be started by going to **Debug -> Start Debugging**
 >**Note:** Debugger settings for VS Code are setup in [.vscode/launch.json](../.vscode/launch.json).  That file is already setup to work with Cortex-Debug and this demo.
 
 More info on debugging in VS Code can be found [here](https://code.visualstudio.com/docs/editor/debugging)
-

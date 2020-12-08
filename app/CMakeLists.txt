@@ -12,7 +12,7 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src/lte.c
     ${CMAKE_SOURCE_DIR}/src/nv.c
     ${CMAKE_SOURCE_DIR}/src/single_peripheral.c
-    ${CMAKE_SOURCE_DIR}/src/jsmn_share.c
+    ${CMAKE_SOURCE_DIR}/src/jsmn_json.c
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/include)

@@ -69,9 +69,9 @@ typedef struct fota_shadow {
 	"\"" SHADOW_FOTA_DESIRED_STR "\":\"%s\","                              \
 	"\"" SHADOW_FOTA_DESIRED_FILENAME_STR "\":\"%s\","                     \
 	"\"" SHADOW_FOTA_DOWNLOADED_FILENAME_STR "\":\"%s\","                  \
-	"\"" SHADOW_FOTA_START_STR "\":%d,"                                    \
-	"\"" SHADOW_FOTA_SWITCHOVER_STR "\":%d,"                               \
-	"\"" SHADOW_FOTA_ERROR_STR "\":%d"                                     \
+	"\"" SHADOW_FOTA_START_STR "\":%u,"                                    \
+	"\"" SHADOW_FOTA_SWITCHOVER_STR "\":%u,"                               \
+	"\"" SHADOW_FOTA_ERROR_STR "\":%u"                                     \
 	"}"
 
 #define SHADOW_FOTA_FMT_STR                                                    \
@@ -80,7 +80,7 @@ typedef struct fota_shadow {
 	"\"" SHADOW_FOTA_MODEM_STR "\":" SHADOW_FOTA_IMAGE_FMT_STR ","         \
 	"\"" SHADOW_FOTA_BRIDGE_STR "\":\"%s\","                               \
 	"\"" SHADOW_FOTA_PRODUCT_STR "\":\"%s\","                              \
-	"\"" SHADOW_FOTA_BLOCKSIZE_STR "\":%d" SHADOW_FOTA_END
+	"\"" SHADOW_FOTA_BLOCKSIZE_STR "\":%u" SHADOW_FOTA_END
 
 #define SHADOW_FOTA_FMT_STR_MAX_CONVERSION_SIZE                                \
 	(sizeof(SHADOW_FOTA_FMT_STR) +                                         \

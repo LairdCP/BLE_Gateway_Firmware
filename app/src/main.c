@@ -303,7 +303,7 @@ void main(void)
 	laird_connectivity_nfc_init();
 #endif
 
-#ifdef CONFIG_MCUMGR
+#ifdef CONFIG_LCZ_MCUMGR_WRAPPER
 	mcumgr_wrapper_register_subsystems();
 #endif
 
@@ -504,7 +504,7 @@ static void appStateAwsSendSensorData(void)
 	/* If decommissioned then disconnect. */
 	if (!commissioned || !awsConnected() || start_fota) {
 		appSetNextState(appStateAwsDisconnect);
-		led_turn_off(GREEN_LED);
+		lcz_led_turn_off(GREEN_LED);
 		return;
 	}
 
@@ -529,7 +529,7 @@ static void awsMsgHandler(void)
 	bool freeMsg;
 
 	while (rc == 0 && !start_fota) {
-		led_turn_on(GREEN_LED);
+		lcz_led_turn_on(GREEN_LED);
 		/* Remove sensor/gateway data from queue and send it to cloud.
 		 * Block if there are not any messages.
 		 * The keep alive message (RSSI) occurs every ~30 seconds.
@@ -598,7 +598,7 @@ static void awsMsgHandler(void)
 		 * (sensor enabled in Bluegrass) the first subscription will result in
 		 * a disconnect. The second attempt will work.
 		 */
-		led_turn_off(GREEN_LED);
+		lcz_led_turn_off(GREEN_LED);
 		if (rc == 0) {
 			k_sleep(K_MSEC(
 				CONFIG_AWS_DATA_SEND_LED_OFF_DURATION_MILLISECONDS));
@@ -887,27 +887,27 @@ static void softwareReset(uint32_t DelayMs)
 static void configure_leds(void)
 {
 #ifdef CONFIG_BOARD_MG100
-	struct led_configuration c[] = {
+	struct lcz_led_configuration c[] = {
 		{ BLUE_LED, LED2_DEV, LED2, LED_ACTIVE_HIGH },
 		{ GREEN_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH },
 		{ RED_LED, LED1_DEV, LED1, LED_ACTIVE_HIGH }
 	};
 #else
-	struct led_configuration c[] = {
+	struct lcz_led_configuration c[] = {
 		{ BLUE_LED, LED1_DEV, LED1, LED_ACTIVE_HIGH },
 		{ GREEN_LED, LED2_DEV, LED2, LED_ACTIVE_HIGH },
 		{ RED_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH },
 		{ GREEN_LED2, LED4_DEV, LED4, LED_ACTIVE_HIGH }
 	};
 #endif
-	led_init(c, ARRAY_SIZE(c));
+	lcz_led_init(c, ARRAY_SIZE(c));
 }
 
 /* Override weak implementation in laird_power.c */
 void power_measurement_callback(uint8_t integer, uint8_t decimal)
 {
 #ifdef CONFIG_BOARD_MG100
-	u16_t Voltage;
+	uint16_t Voltage;
 
 	Voltage = (integer * BATTERY_MV_PER_V) + decimal;
 	BatteryCalculateRemainingCapacity(Voltage);

@@ -176,11 +176,11 @@ int sdCardLogInit()
 {
 	int ret = 0;
 	int LogLength = 0;
-	u32_t blockCount = 0;
-	u32_t blockSize = 0;
-	u64_t sdCardSize = 0;
+	uint32_t blockCount = 0;
+	uint32_t blockSize = 0;
+	uint64_t sdCardSize = 0;
 	static const char *diskPdrv = "SD";
-	struct device * sdcardEnable = 0;
+	const struct device * sdcardEnable = 0;
 
 	/* initialize the log size based on the stored log size */
 	ret = nvReadSDLogMaxSize(&LogLength);
@@ -224,8 +224,8 @@ int sdCardLogInit()
 		}
 		LOG_INF("Block size %u\n", blockSize);
 
-		sdCardSize = (u64_t)blockCount * blockSize;
-		LOG_INF("Memory Size(MB) %u\n", (u32_t)sdCardSize>>20);
+		sdCardSize = (uint64_t)blockCount * blockSize;
+		LOG_INF("Memory Size(MB) %u\n", (uint32_t)sdCardSize>>20);
 
 		mp.mnt_point = mountPoint;
 
@@ -269,7 +269,7 @@ int sdCardLogBL654Data(BL654SensorMsg_t * msg)
 		/* open and close the file every time to help ensure integrity
 		*	of the file system if power were to be lost in between writes.
 		*/
-		ret = fs_open(&bl654LogFileZfp, bl654FilePath);
+		ret = fs_open(&bl654LogFileZfp, bl654FilePath, FS_O_RDWR | FS_O_CREATE);
 		if (ret >= 0)
 		{
 			totalLength = EVENT_MAX_STR_LEN + EVENT_FMT_CHAR_LEN;
@@ -283,8 +283,8 @@ int sdCardLogBL654Data(BL654SensorMsg_t * msg)
 				if (ret >= 0)
 				{
 					/* append the timestamp and data */
-					snprintf(logData, totalLength, "%d,%d,%d,%d\n", Qrtc_GetEpoch(), (u32_t)(msg->temperatureC * 100),
-								(u32_t)(msg->humidityPercent * 100), (u32_t)(msg->pressurePa * 10));
+					snprintf(logData, totalLength, "%d,%d,%d,%d\n", Qrtc_GetEpoch(), (uint32_t)(msg->temperatureC * 100),
+								(uint32_t)(msg->humidityPercent * 100), (uint32_t)(msg->pressurePa * 10));
 
 					ret = fs_write(&bl654LogFileZfp, logData, strlen(logData));
 
@@ -336,7 +336,7 @@ int sdCardLogAdEvent(Bt510AdEvent_t * event)
 		/* open and close the file every time to help ensure integrity
 		*	of the file system if power were to be lost in between writes.
 		*/
-		ret = fs_open(&sensorLogFileZfp, sensorFilePath);
+		ret = fs_open(&sensorLogFileZfp, sensorFilePath, FS_O_RDWR | FS_O_CREATE);
 		if (ret >= 0)
 		{
 			totalLength = EVENT_MAX_STR_LEN + EVENT_FMT_CHAR_LEN + BT_ADDR_STR_LEN;
@@ -403,7 +403,7 @@ int sdCardLogBatteryData(void * data, int length)
 		/* open and close the file every time to help ensure integrity
 		*	of the file system if power were to be lost in between writes.
 		*/
-		ret = fs_open(&batteryLogZfp, batteryFilePath);
+		ret = fs_open(&batteryLogZfp, batteryFilePath, FS_O_RDWR | FS_O_CREATE);
 		if (ret >= 0)
 		{
 			totalLength = length + TIMESTAMP_LEN + FMT_CHAR_LEN;

@@ -34,7 +34,7 @@ struct motion_status {
 	int scale;
 	int odr;
 	int thr;
-	u8_t motion;
+	uint8_t motion;
 };
 /**
  * @brief this function retrieves the latest motion status
@@ -106,7 +106,7 @@ int GetScale();
 int GetActivityThreshold();
 
 void motion_svc_init();
-void motion_svc_set_alarm_state(u8_t alarmState);
+void motion_svc_set_alarm_state(uint8_t alarmState);
 
 #ifdef __cplusplus
 }

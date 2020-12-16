@@ -384,75 +384,75 @@ int nvReadBatteryData(enum SETTING_ID id, uint16_t *batteryData)
 int nvReadBatteryLow(uint16_t *batteryData)
 {
 	return nvs_read(&fs, SETTING_ID_BATTERY_LOW, batteryData,
-			sizeof(u16_t));
+			sizeof(uint16_t));
 }
 
 int nvReadBatteryAlarm(uint16_t *batteryData)
 {
 	return nvs_read(&fs, SETTING_ID_BATTERY_ALARM, batteryData,
-			sizeof(u16_t));
+			sizeof(uint16_t));
 }
 
 int nvReadBattery4(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_4, batteryData, sizeof(u16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_4, batteryData, sizeof(uint16_t));
 }
 
 int nvReadBattery3(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_3, batteryData, sizeof(u16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_3, batteryData, sizeof(uint16_t));
 }
 
 int nvReadBattery2(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_2, batteryData, sizeof(u16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_2, batteryData, sizeof(uint16_t));
 }
 
 int nvReadBattery1(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_1, batteryData, sizeof(u16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_1, batteryData, sizeof(uint16_t));
 }
 
 int nvReadBattery0(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(u16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(uint16_t));
 }
 
 int nvStoreBatteryLow(uint16_t *batteryData)
 {
 	return nvs_write(&fs, SETTING_ID_BATTERY_LOW, batteryData,
-			 sizeof(u16_t));
+			 sizeof(uint16_t));
 }
 
 int nvStoreBatteryAlarm(uint16_t *batteryData)
 {
 	return nvs_write(&fs, SETTING_ID_BATTERY_ALARM, batteryData,
-			 sizeof(u16_t));
+			 sizeof(uint16_t));
 }
 
 int nvStoreBattery4(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_4, batteryData, sizeof(u16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_4, batteryData, sizeof(uint16_t));
 }
 
 int nvStoreBattery3(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_3, batteryData, sizeof(u16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_3, batteryData, sizeof(uint16_t));
 }
 
 int nvStoreBattery2(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_2, batteryData, sizeof(u16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_2, batteryData, sizeof(uint16_t));
 }
 
 int nvStoreBattery1(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_1, batteryData, sizeof(u16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_1, batteryData, sizeof(uint16_t));
 }
 
 int nvStoreBattery0(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(u16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(uint16_t));
 }
 
 int nvStoreAccelODR(int Value)

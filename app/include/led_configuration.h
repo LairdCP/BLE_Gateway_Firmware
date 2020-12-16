@@ -12,7 +12,7 @@
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
-#include "laird_led.h"
+#include "lcz_led.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,9 +50,9 @@ enum led_index {
 };
 
 #ifdef CONFIG_BOARD_PINNACLE_100_DVK
-BUILD_ASSERT(CONFIG_NUMBER_OF_LEDS > GREEN_LED2, "LED object too small");
+BUILD_ASSERT(CONFIG_LCZ_NUMBER_OF_LEDS > GREEN_LED2, "LED object too small");
 #else
-BUILD_ASSERT(CONFIG_NUMBER_OF_LEDS > RED_LED, "LED object too small");
+BUILD_ASSERT(CONFIG_LCZ_NUMBER_OF_LEDS > RED_LED, "LED object too small");
 #endif
 
 #ifdef __cplusplus

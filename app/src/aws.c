@@ -24,6 +24,7 @@ LOG_MODULE_REGISTER(aws);
 #include <net/mqtt.h>
 #include <stdio.h>
 #include <kernel.h>
+#include <random/rand32.h>
 
 #include "lcz_dns.h"
 #include "print_json.h"

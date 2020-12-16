@@ -139,7 +139,7 @@ void ShadowBuilder_AddPair(JsonMsg_t *pJsonMsg, const char *restrict pKey,
 
 	JSON_APPEND_KEY(pKey);
 	if (IsNotString) {
-		JSON_APPEND_STRING(pValue); /* us32_t, int32_t, float, ... */
+		JSON_APPEND_STRING(pValue); /* uint32_t, int32_t, float, ... */
 	} else {
 		JSON_APPEND_VALUE_STRING(pValue);
 	}

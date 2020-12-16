@@ -102,7 +102,7 @@ static const unsigned char aws_root_ca[] =
 #define SHADOW_MG100_CURR_LOG_SIZE "\"logSizeMB\":"
 #endif /* CONFIG_BOARD_MG100 */
 
-#define AWS_RX_THREAD_STACK_SIZE 4096
+#define AWS_RX_THREAD_STACK_SIZE 2048
 #define AWS_RX_THREAD_PRIORITY K_PRIO_COOP(15)
 
 #define GATEWAY_TOPIC NULL

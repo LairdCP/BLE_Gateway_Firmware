@@ -101,7 +101,7 @@ extern jsmntok_t tokens[CONFIG_JSMN_NUMBER_OF_TOKENS];
 static bool getAcceptedTopic;
 
 #ifdef CONFIG_BOARD_MG100
-static u16_t local_updates = 0;
+static uint16_t local_updates = 0;
 
 /* NOTE: Order matters. The order of the string array must match
  * the corresponding handler function array below it. Names are
@@ -114,7 +114,7 @@ static const char *WriteableLocalObject[MAX_WRITEABLE_LOCAL_OBJECTS] = {
 	ACT_THRESH_STRING,  MAX_LOG_SIZE_STRING
 };
 
-static const u16_t LocalConfigUpdateBits[MAX_WRITEABLE_LOCAL_OBJECTS] = {
+static const uint16_t LocalConfigUpdateBits[MAX_WRITEABLE_LOCAL_OBJECTS] = {
 	LOCAL_UPDATE_BIT_BATTERY_BAD,  LOCAL_UPDATE_BIT_BATTERY_0,
 	LOCAL_UPDATE_BIT_BATTERY_1,    LOCAL_UPDATE_BIT_BATTERY_2,
 	LOCAL_UPDATE_BIT_BATTERY_3,    LOCAL_UPDATE_BIT_BATTERY_4,

@@ -1,8 +1,8 @@
 {
     "app_lwm2m_config_unix": "${workspaceRoot}/app/overlay_lwm2m_dtls.conf",
     "app_lwm2m_config_windows": "${workspaceRoot}\\app\\overlay_lwm2m_dtls.conf",
-    "mcuboot_config_unix": "${workspaceRoot}/../modules/zephyr_lib/mcuboot_config/mcuboot-qspi.conf ${workspaceRoot}/../modules/zephyr_lib/mcuboot_config/overlay-disable-hl7800-modem.conf ${workspaceRoot}/../modules/zephyr_lib/mcuboot_config/mcuboot-serial-pinnacle100_dvk.conf ${workspaceRoot}/../modules/zephyr_lib/mcuboot_config/disable-slot0-validate.conf",
-    "mcuboot_config_windows": "${workspaceRoot}\\..\\modules\\zephyr_lib\\mcuboot_config\\mcuboot-qspi.conf ${workspaceRoot}\\..\\modules\\zephyr_lib\\mcuboot_config\\overlay-disable-hl7800-modem.conf ${workspaceRoot}\\..\\modules\\zephyr_lib\\mcuboot_config\\mcuboot-serial-pinnacle100_dvk.conf ${workspaceRoot}\\..\\modules\\zephyr_lib\\mcuboot_config\\disable-slot0-validate.conf",
+    "mcuboot_config_unix": "${workspaceRoot}/../modules/zephyr_lib/mcuboot_config/pinnacle_100.conf",
+    "mcuboot_config_windows": "${workspaceRoot}\\..\\modules\\zephyr_lib\\mcuboot_config\\pinnacle_100.conf",
     "app_mcuboot_config_unix": "${workspaceRoot}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf",
     "app_mcuboot_config_windows": "${workspaceRoot}\\..\\modules\\zephyr_lib\\mcumgr_wrapper\\config\\overlay-mcuboot.conf",
     "setup_static_partitions_unix": "cp ${workspaceRoot}/../modules/zephyr_lib/mcuboot_config/pm_static.pinnacle100.yml ${workspaceRoot}/app/pm_static.yml",

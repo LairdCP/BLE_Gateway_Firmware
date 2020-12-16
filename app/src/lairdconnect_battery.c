@@ -76,33 +76,33 @@ LOG_MODULE_REGISTER(battery_task);
 /* Local Data Definitions                                                     */
 /******************************************************************************/
 static enum battery_status batteryCapacity = BATTERY_STATUS_0;
-static u16_t batteryThresholds[BATTERY_IDX_MAX] = { BATTERY_THRESH_0,
+static uint16_t batteryThresholds[BATTERY_IDX_MAX] = { BATTERY_THRESH_0,
 												BATTERY_THRESH_1,
 												BATTERY_THRESH_2,
 												BATTERY_THRESH_3,
 												BATTERY_THRESH_4,
 												BATTERY_THRESH_LOW,
 												BATTERY_THRESH_ALARM };
-static u16_t previousVoltageReadings[BATTERY_NUM_READINGS];
+static uint16_t previousVoltageReadings[BATTERY_NUM_READINGS];
 static struct battery_data batteryStatus;
-static u8_t lastVoltageReadingIdx = 0;
-static u8_t batteryAlarmState = BATTERY_ALARM_INACTIVE;
+static uint8_t lastVoltageReadingIdx = 0;
+static uint8_t batteryAlarmState = BATTERY_ALARM_INACTIVE;
 
 static struct k_work chgStateWork;
-static struct device * batteryChgStateDev;
+static const struct device * batteryChgStateDev;
 static struct gpio_callback batteryChgStateCb;
-static struct device * batteryPwrStateDev;
+static const struct device * batteryPwrStateDev;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
 static int ReadTempSensor();
-static enum battery_status CalculateRemainingCapacity(s16_t Voltage);
-static s16_t DetermineTempOffset(s32_t Temperature);
+static enum battery_status CalculateRemainingCapacity(int16_t Voltage);
+static int16_t DetermineTempOffset(int32_t Temperature);
 static void ChgStateHandler(struct k_work *Item);
 static void BatteryGpioInit();
 #ifdef CONFIG_BATTERY_LOGGING
-static void BatteryLogData(s16_t voltage, s32_t temp);
+static void BatteryLogData(int16_t voltage, int32_t temp);
 #endif
 
 /******************************************************************************/
@@ -206,10 +206,11 @@ struct battery_data *batteryGetStatus()
 	batteryStatus.batteryChgState = BatteryGetChgState();
 	return (&batteryStatus);
 }
-u8_t BatteryGetChgState()
+
+uint8_t BatteryGetChgState()
 {
 	int pinState = 0;
-	u8_t pwrState = 0;
+	uint8_t pwrState = 0;
 
 	pinState = gpio_pin_get(batteryPwrStateDev, PWR_STATE_PIN);
 	if (pinState == PWR_PIN_PWR_PRESENT)
@@ -236,13 +237,13 @@ u8_t BatteryGetChgState()
 
 void BatteryInit()
 {
-	u16_t batteryData = 0;
+	uint16_t batteryData = 0;
 
 	BatteryGpioInit();
 
 	/* zero out the array of previous voltage readings */
 	lastVoltageReadingIdx = 0;
-	memset(previousVoltageReadings, 0, sizeof(u16_t) * BATTERY_NUM_READINGS);
+	memset(previousVoltageReadings, 0, sizeof(uint16_t) * BATTERY_NUM_READINGS);
 
 	/* initialize the battery thresholds from NVM */
 	nvReadBatteryLow(&batteryData);
@@ -269,9 +270,9 @@ void BatteryInit()
 	return;
 }
 
-u8_t BatterySetThresholds(enum battery_thresh_idx Thresh, u16_t Value)
+uint8_t BatterySetThresholds(enum battery_thresh_idx Thresh, uint16_t Value)
 {
-	u8_t status = BATTERY_FAIL;
+	uint8_t status = BATTERY_FAIL;
 
 	if (Thresh < BATTERY_IDX_MAX)
 	{
@@ -307,9 +308,9 @@ u8_t BatterySetThresholds(enum battery_thresh_idx Thresh, u16_t Value)
 	return (status);
 }
 
-u16_t BatteryGetThresholds(enum battery_thresh_idx Thresh)
+uint16_t BatteryGetThresholds(enum battery_thresh_idx Thresh)
 {
-	u16_t threshValue = 0;
+	uint16_t threshValue = 0;
 
 	if (Thresh < BATTERY_IDX_MAX)
 	{
@@ -319,11 +320,11 @@ u16_t BatteryGetThresholds(enum battery_thresh_idx Thresh)
 	return (threshValue);
 }
 
-u16_t BatteryCalculateRunningAvg(u16_t Voltage)
+uint16_t BatteryCalculateRunningAvg(uint16_t Voltage)
 {
-	u32_t total = 0;
-	u16_t ret = 0;
-	u8_t idx = 0;
+	uint32_t total = 0;
+	uint16_t ret = 0;
+	uint8_t idx = 0;
 
 	/* store the latest voltage reading */
 	previousVoltageReadings[lastVoltageReadingIdx] = Voltage;
@@ -364,7 +365,7 @@ static int ReadTempSensor()
 	int status = 0;
 	int temp = INVALID_TEMPERATURE;
 	struct sensor_value val;
-	struct device *sensor = device_get_binding(DT_LABEL(DT_INST(0, st_lis2dh)));
+	const struct device *sensor = device_get_binding(DT_LABEL(DT_INST(0, st_lis2dh)));
 
 	status = sensor_sample_fetch_chan(sensor, SENSOR_CHAN_AMBIENT_TEMP);
 
@@ -383,11 +384,11 @@ static int ReadTempSensor()
 	return (temp);
 }
 
-enum battery_status BatteryCalculateRemainingCapacity(u16_t Volts)
+enum battery_status BatteryCalculateRemainingCapacity(uint16_t Volts)
 {
-	s32_t Temperature = 0;
-	s16_t vOffset = 0;
-	s16_t Voltage = 0;
+	int32_t Temperature = 0;
+	int16_t vOffset = 0;
+	int16_t Voltage = 0;
 
 	Voltage = BatteryCalculateRunningAvg(Volts);
 
@@ -443,7 +444,7 @@ enum battery_status BatteryCalculateRemainingCapacity(u16_t Volts)
 /* Local Function Definitions                                                 */
 /******************************************************************************/
 #ifdef CONFIG_BATTERY_LOGGING
-static void BatteryLogData(s16_t voltage, s32_t temp)
+static void BatteryLogData(int16_t voltage, int32_t temp)
 {
 	char * logStr = k_malloc(MAX_LOG_STR_SIZE);
 	logStr = k_malloc(MAX_LOG_STR_SIZE);
@@ -457,8 +458,8 @@ static void BatteryLogData(s16_t voltage, s32_t temp)
 }
 #endif
 
-static void BatteryChgStateChanged(struct device *Dev,
-			   struct gpio_callback *Cb, u32_t Pins)
+static void BatteryChgStateChanged(const struct device *Dev,
+			   struct gpio_callback *Cb, uint32_t Pins)
 {
 	k_work_submit(&chgStateWork);
 }
@@ -483,11 +484,11 @@ static void BatteryGpioInit()
 	gpio_add_callback(batteryPwrStateDev, &batteryChgStateCb);
 }
 
-static s16_t DetermineTempOffset(s32_t Temperature)
+static int16_t DetermineTempOffset(int32_t Temperature)
 {
-	s16_t tempOffset;
-	s16_t offsetPerDegree = BATTERY_VOLT_OFFSET / BASE_TEMP;
-	s16_t voltageOffset;
+	int16_t tempOffset;
+	int16_t offsetPerDegree = BATTERY_VOLT_OFFSET / BASE_TEMP;
+	int16_t voltageOffset;
 
 	tempOffset = BASE_TEMP - Temperature;
 	voltageOffset = offsetPerDegree * tempOffset;
@@ -497,13 +498,13 @@ static s16_t DetermineTempOffset(s32_t Temperature)
 
 static void ChgStateHandler(struct k_work *Item)
 {
-	u8_t state = BatteryGetChgState();
+	uint8_t state = BatteryGetChgState();
 	battery_svc_set_chg_state(state);
 
 	return;
 }
 
-static enum battery_status CalculateRemainingCapacity(s16_t Voltage)
+static enum battery_status CalculateRemainingCapacity(int16_t Voltage)
 {
 	enum battery_status battStat;
 

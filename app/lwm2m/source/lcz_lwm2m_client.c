@@ -171,6 +171,20 @@ static int lwm2m_setup(const char *serial_number, const char *imei)
 				CONFIG_LWM2M_PSK_SIZE);
 #endif /* CONFIG_LWM2M_DTLS_SUPPORT */
 
+#if defined(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP)
+	/* Mark 1st instance of security object as a bootstrap server */
+	lwm2m_engine_set_u8("0/0/1", 1);
+
+	/* Create 2nd instance of security object needed for bootstrap */
+	lwm2m_engine_create_obj_inst("0/1");
+#else
+	/* Match Security object instance with a Server object instance with
+	 * Short Server ID.
+	 */
+	lwm2m_engine_set_u16("0/0/10", 101);
+	lwm2m_engine_set_u16("1/0/0", 101);
+#endif
+
 	/* setup SERVER object */
 
 	/* setup DEVICE object */
@@ -269,9 +283,15 @@ static int resolve_server_address(void)
 
 static void lwm2m_client_init_internal(void)
 {
-	lwm2m_initialized = false;
+	uint32_t flags;
 	struct lte_status *lte_status = lteGetStatus();
 	int ret;
+
+	lwm2m_initialized = false;
+
+	flags = IS_ENABLED(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP) ?
+			LWM2M_RD_CLIENT_FLAG_BOOTSTRAP :
+			0;
 
 	ret = resolve_server_address();
 	if (ret < 0) {
@@ -295,7 +315,7 @@ static void lwm2m_client_init_internal(void)
 	snprintk(endpoint_name, CONFIG_LWM2M_CLIENT_ENDPOINT_MAX_SIZE, "%s_%s",
 		 dis_get_model_number(), lte_status->IMEI);
 	LOG_DBG("Endpoint name: %s", log_strdup(endpoint_name));
-	lwm2m_rd_client_start(&client, endpoint_name, rd_client_event);
+	lwm2m_rd_client_start(&client, endpoint_name, flags, rd_client_event);
 	lwm2m_initialized = true;
 }
 
@@ -306,9 +326,9 @@ static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
 	uint8_t led_val = *(uint8_t *)data;
 	if (led_val != led_state) {
 		if (led_val) {
-			led_turn_on(GREEN_LED);
+			lcz_led_turn_on(GREEN_LED);
 		} else {
-			led_turn_off(GREEN_LED);
+			lcz_led_turn_off(GREEN_LED);
 		}
 		led_state = led_val;
 		/* reset time on counter */

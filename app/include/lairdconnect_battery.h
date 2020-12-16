@@ -101,7 +101,7 @@ void BatteryInit();
  * @retval an enum value indicating the remaining battery capacity as a
  *          threshold value.
  */
-enum battery_status BatteryCalculateRemainingCapacity(u16_t Voltage);
+enum battery_status BatteryCalculateRemainingCapacity(uint16_t Voltage);
 
 /**
  * @brief this function sets the various thresholds used for battery metering.
@@ -109,20 +109,20 @@ enum battery_status BatteryCalculateRemainingCapacity(u16_t Voltage);
  *          for a firmware update.
  *
  * @param Thresh - an enumerated value indicating which threshold is being set
- * @param Value - a u16_t value indicating the voltage level for the threshold
+ * @param Value - a uint16_t value indicating the voltage level for the threshold
  *
  * @retval u8 error code - 0 Success, 1 Failure
  */
-u8_t BatterySetThresholds(enum battery_thresh_idx Thresh, u16_t Value);
+uint8_t BatterySetThresholds(enum battery_thresh_idx Thresh, uint16_t Value);
 
 /**
  * @brief this function gets the various thresholds used for battery metering.
  *
  * @param Thresh - an enumerated value indicating which threshold is being retrieved
  *
- * @retval a u16_t value indicating the voltage level for the threshold
+ * @retval a uint16_t value indicating the voltage level for the threshold
  */
-u16_t BatteryGetThresholds(enum battery_thresh_idx Thresh);
+uint16_t BatteryGetThresholds(enum battery_thresh_idx Thresh);
 
 /**
  * @brief this function selects which threshold triggers a warning
@@ -131,18 +131,18 @@ u16_t BatteryGetThresholds(enum battery_thresh_idx Thresh);
  *
  * @retval u8 error code - 0 Success, 1 Failure
  */
-u8_t BatterySetWarning(enum battery_status Thresh);
+uint8_t BatterySetWarning(enum battery_status Thresh);
 
 /**
  * @brief this function gets the state of the battery charger.
  *
  * @param none
  *
- * @retval u8_t value indicating the state of the battery charger.
+ * @retval uint8_t value indicating the state of the battery charger.
  *          bit 0 - power state: 0 = no external power, 1 = external power is present
  *          bit 1 - charger state: 0 = discharging, 1 = charging
  */
-u8_t BatteryGetChgState();
+uint8_t BatteryGetChgState();
 
 /**
  * @brief this function is called by the gateway JSON parser to set a battery theshold.

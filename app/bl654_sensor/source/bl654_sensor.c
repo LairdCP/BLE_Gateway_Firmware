@@ -49,7 +49,7 @@ enum ble_state {
 	BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED
 };
 
-static const struct led_blink_pattern LED_SENSOR_SEARCH_PATTERN = {
+static const struct lcz_led_blink_pattern LED_SENSOR_SEARCH_PATTERN = {
 	.on_time = CONFIG_DEFAULT_LED_ON_TIME_FOR_1_SECOND_BLINK,
 	.off_time = CONFIG_DEFAULT_LED_OFF_TIME_FOR_1_SECOND_BLINK,
 	.repeat_count = REPEAT_INDEFINITELY
@@ -444,7 +444,7 @@ static uint8_t char_discover_func(struct bt_conn *conn,
 				  struct bt_gatt_discover_params *params)
 {
 	bool found = false;
-	u16_t value_handle = 0;
+	uint16_t value_handle = 0;
 
 	if (conn != sensor_conn) {
 		return BT_GATT_ITER_CONTINUE;
@@ -593,12 +593,12 @@ static void set_ble_state(enum ble_state state)
 
 	switch (state) {
 	case BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED:
-		led_turn_on(BLUE_LED);
+		lcz_led_turn_on(BLUE_LED);
 		bt_scan_resume(scan_id);
 		break;
 
 	case BT_DEMO_APP_STATE_FINDING_DEVICE:
-		led_blink(BLUE_LED, &LED_SENSOR_SEARCH_PATTERN);
+		lcz_led_blink(BLUE_LED, &LED_SENSOR_SEARCH_PATTERN);
 		bss_set_sensor_bt_addr(NULL);
 		bt_scan_restart(scan_id);
 		break;

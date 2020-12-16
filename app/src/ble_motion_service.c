@@ -44,8 +44,8 @@ static struct bt_uuid_128 MOTION_SVC_UUID = MOTION_SVC_BASE_UUID_128(0x0a30);
 static struct bt_uuid_128 MOTION_ALARM_UUID = MOTION_SVC_BASE_UUID_128(0x0a31);
 
 struct ble_motion_service {
-	u16_t motion_alarm_index;
-	u8_t motion_alarm;
+	uint16_t motion_alarm_index;
+	uint8_t motion_alarm;
 };
 
 struct ccc_table {
@@ -76,8 +76,8 @@ static uint16_t lis2dh_odr_map[] = {0, 1, 10, 25, 50, 100, 200, 400, 1620,
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
 static void motion_alarm_ccc_handler(const struct bt_gatt_attr *attr,
-					u16_t value);
-static void motion_sensor_trig_handler(struct device *dev,
+					uint16_t value);
+static void motion_sensor_trig_handler(const struct device *dev,
 					struct sensor_trigger *trigger);
 static void motion_timer_callback(struct k_timer *timer_id);
 static void motion_svc_connected(struct bt_conn *conn, uint8_t err);
@@ -100,7 +100,7 @@ static struct bt_gatt_attr motion_attrs[] = {
 };
 
 static struct bt_gatt_service motion_svc = BT_GATT_SERVICE(motion_attrs);
-static struct device *sensor = NULL;
+static const struct device *sensor = NULL;
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -223,7 +223,7 @@ struct motion_status *motionGetStatus()
 	return (&motionStatus);
 }
 
-static void motion_svc_notify(bool notify, u16_t index, u16_t length)
+static void motion_svc_notify(bool notify, uint16_t index, uint16_t length)
 {
 	struct bt_conn *connection_handle = motion_svc_get_conn();
 	if (connection_handle != NULL) {
@@ -236,7 +236,7 @@ static void motion_svc_notify(bool notify, u16_t index, u16_t length)
 	}
 }
 
-void motion_svc_set_alarm_state(u8_t alarmState)
+void motion_svc_set_alarm_state(uint8_t alarmState)
 {
 	bms.motion_alarm = alarmState;
 	motion_svc_notify(ccc.motion_alarm.notify, bms.motion_alarm_index,
@@ -312,7 +312,7 @@ void motion_svc_init()
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static void motion_alarm_ccc_handler(const struct bt_gatt_attr *attr, u16_t value)
+static void motion_alarm_ccc_handler(const struct bt_gatt_attr *attr, uint16_t value)
 {
 	ccc.motion_alarm.notify = IS_NOTIFIABLE(value);
 }
@@ -323,7 +323,7 @@ static void motion_timer_callback(struct k_timer *timer_id)
 	motion_svc_set_alarm_state(MOTION_ALARM_INACTIVE);
 }
 
-void motion_sensor_trig_handler(struct device *dev,
+void motion_sensor_trig_handler(const struct device *dev,
 					 struct sensor_trigger *trigger)
 {
 	k_timer_stop(&motion_timer);

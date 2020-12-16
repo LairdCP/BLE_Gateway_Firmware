@@ -456,7 +456,7 @@ static int read_cred_from_fs(char *file_path, uint8_t *dst, size_t dst_size)
 		goto done;
 	}
 
-	rc = fs_open(&file, file_path);
+	rc = fs_open(&file, file_path, FS_O_READ);
 	if (rc < 0) {
 		AWS_SVC_LOG_ERR("%s open err: %d", log_strdup(file_path), rc);
 		goto done;

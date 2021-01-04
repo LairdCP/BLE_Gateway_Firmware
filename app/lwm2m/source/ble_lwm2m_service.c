@@ -139,11 +139,16 @@ static ssize_t generate_psk(struct bt_conn *conn,
 {
 #if CONFIG_LWM2M_ENABLE_PSK_GENERATION
 	uint8_t value = *((uint8_t *)buf);
+	uint32_t rand;
 	if (value) {
+		if (CONFIG_LWM2M_PSK_SIZE % 4 != 0) {
+			LOG_ERR("PSK length must be divisible by 4");
+			return BT_GATT_ERR(BT_ATT_ERR_NOT_SUPPORTED);
+		}
 		LOG_WRN("Generating a new LwM2M PSK");
-		size_t i;
-		for (i = 0; i < CONFIG_LWM2M_PSK_SIZE; i++) {
-			lwm2m.client_psk[i] = (uint8_t)sys_rand32_get();
+		for (uint8_t i = 0; i < CONFIG_LWM2M_PSK_SIZE; i += 4) {
+			rand = sys_rand32_get();
+			memcpy(lwm2m.client_psk + i, &rand, sizeof(rand));
 		}
 	} else {
 		LOG_WRN("Setting LwM2M config to defaults");

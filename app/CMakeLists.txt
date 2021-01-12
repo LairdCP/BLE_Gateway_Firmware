@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.13.1)
 # $ZEPHYR_BASE to this directory.
 set(BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR}/../)
 
+list(APPEND ZEPHYR_EXTRA_MODULES $ENV{ZEPHYR_BASE}/../modules/memfault-firmware-sdk/ports/nrf-connect-sdk)
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(oob_demo)
 

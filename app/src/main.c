@@ -79,9 +79,19 @@ LOG_MODULE_REGISTER(main);
 #include "coap_fota_task.h"
 #endif
 
+#ifdef CONFIG_LCZ_MEMFAULT
+#include "lcz_memfault.h"
+#endif
+
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
+#ifdef CONFIG_LCZ_MEMFAULT
+#define PROJECT_API_KEY "lMq1riPv0YbLsfpCiUMfxClU1oLVVjH1"
+#define BUILD_ID_SIZE 9
+#define BUILD_ID_DELIM "+"
+#endif
+
 #define WAIT_TIME_BEFORE_RETRY_TICKS K_SECONDS(10)
 
 #define NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME 7
@@ -117,6 +127,12 @@ extern struct mdm_hl7800_apn *lte_apn_config;
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
+#ifdef CONFIG_LCZ_MEMFAULT
+static char build_id[BUILD_ID_SIZE];
+static char software_ver[sizeof(APP_VERSION_STRING) + sizeof(BUILD_ID_DELIM) +
+			 sizeof(build_id)];
+#endif
+
 K_SEM_DEFINE(lte_ready_sem, 0, 1);
 K_SEM_DEFINE(rx_cert_sem, 0, 1);
 
@@ -184,7 +200,6 @@ static void appStateWaitFota(void);
 
 static void initializeCloudMsgReceiver(void);
 static void appStateWaitForLte(void);
-static void appStateStartup(void);
 static void appStateLteConnected(void);
 
 static void appSetNextState(app_state_function_t next);
@@ -210,6 +225,10 @@ static void cloud_fifo_monitor_isr(struct k_timer *timer_id);
 void main(void)
 {
 	int rc;
+
+#ifdef CONFIG_LCZ_MEMFAULT
+	lcz_memfault_init(PROJECT_API_KEY);
+#endif
 
 #ifdef CONFIG_LWM2M
 	printk("\n" CONFIG_BOARD " - LwM2M v%s\n", APP_VERSION_STRING);
@@ -336,7 +355,7 @@ void main(void)
 	appReady = true;
 	printk("\n!!!!!!!! App is ready! !!!!!!!!\n");
 
-	appSetNextState(appStateStartup);
+	appSetNextState(appStateWaitForLte);
 
 	while (true) {
 		appState();
@@ -345,6 +364,29 @@ exit:
 	MAIN_LOG_ERR("Exiting main thread");
 	return;
 }
+
+#ifdef CONFIG_LCZ_MEMFAULT
+void memfault_platform_get_device_info(sMemfaultDeviceInfo *info)
+{
+	memset(software_ver, 0, sizeof(software_ver));
+	memfault_build_id_get_string(build_id, sizeof(build_id));
+	strcat(software_ver, APP_VERSION_STRING);
+	strcat(software_ver, BUILD_ID_DELIM);
+	strcat(software_ver, build_id);
+
+	/* platform specific version information */
+	*info = (sMemfaultDeviceInfo){
+		.device_serial = lteInfo->IMEI,
+#ifdef CONFIG_LWM2M
+		.software_type = "OOB_demo_LwM2M",
+#else
+		.software_type = "OOB_demo_AWS",
+#endif
+		.software_version = software_ver,
+		.hardware_version = CONFIG_BOARD,
+	};
+}
+#endif /* CONFIG_LCZ_MEMFAULT */
 
 /******************************************************************************/
 /* Framework                                                                  */
@@ -445,7 +487,6 @@ static const char *getAppStateString(app_state_function_t state)
 	IF_RETURN_STRING(state, appStateCommissionDevice);
 	IF_RETURN_STRING(state, appStateWaitFota);
 #endif
-	IF_RETURN_STRING(state, appStateStartup);
 	IF_RETURN_STRING(state, appStateWaitForLte);
 	IF_RETURN_STRING(state, appStateLteConnected);
 	return "appStateUnknown";
@@ -456,21 +497,6 @@ static void appSetNextState(app_state_function_t next)
 	MAIN_LOG_DBG("%s->%s", getAppStateString(appState),
 		     getAppStateString(next));
 	appState = next;
-}
-
-static void appStateStartup(void)
-{
-#if defined(CONFIG_LWM2M)
-	appSetNextState(appStateWaitForLte);
-#elif defined(CONFIG_BLUEGRASS)
-	if (commissioned && setAwsCredentials() == 0) {
-		appSetNextState(appStateWaitForLte);
-	} else {
-		appSetNextState(appStateCommissionDevice);
-	}
-#else
-	appSetNextState(appStateWaitForLte);
-#endif
 }
 
 static void appStateWaitForLte(void)
@@ -484,10 +510,18 @@ static void appStateWaitForLte(void)
 		k_sem_take(&lte_ready_sem, K_FOREVER);
 	}
 
+#ifdef CONFIG_LCZ_MEMFAULT
+	lcz_memfault_post_data();
+#endif
+
 #if defined(CONFIG_LWM2M)
 	appSetNextState(appStateInitLwm2mClient);
 #elif defined(CONFIG_BLUEGRASS)
-	appSetNextState(appStateLteConnectedAws);
+	if (commissioned && setAwsCredentials() == 0) {
+		appSetNextState(appStateLteConnectedAws);
+	} else {
+		appSetNextState(appStateCommissionDevice);
+	}
 #else
 	appSetNextState(appStateLteConnected);
 #endif
@@ -768,7 +802,7 @@ static void appStateCommissionDevice(void)
 
 	k_sem_take(&rx_cert_sem, K_FOREVER);
 	if (setAwsCredentials() == 0) {
-		appSetNextState(appStateWaitForLte);
+		appSetNextState(appStateLteConnectedAws);
 	}
 }
 

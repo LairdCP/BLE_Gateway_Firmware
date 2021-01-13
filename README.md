@@ -3,7 +3,7 @@
 # Pinnacle 100 Modem and MG100 Firmware
 [![Pinnacle 100 Modem](docs/images/pinnacle_100_modem.png)](https://www.lairdconnect.com/wireless-modules/cellular-solutions/pinnacle-100-cellular-modem) [![MG100](docs/images/MG100-Starter-Kit.png)](https://www.lairdconnect.com/iot-devices/iot-gateways/sentrius-mg100-gateway-lte-mnb-iot-and-bluetooth-5)
 
->**Note:** This readme file and associated documentation should be viewed on GitHub selecting the desired branch. The master branch will always be up to date with the latest features. Viewing documentation from a release GA branch is recommended to get documentation for the specific feature set of that release.
+>**Note:** This readme file and associated documentation should be viewed on GitHub selecting the desired branch. The main branch will always be up to date with the latest features. Viewing documentation from a release GA branch is recommended to get documentation for the specific feature set of that release.
 
 This repository contains firmware that can run on the Pinnacle 100 Modem development kit (DVK) or the Sentrius MG100 gateway.
 

@@ -299,6 +299,7 @@ Issue these commands **from the pinnacle_100_firmware directory**.
 
 Build without mcuboot:
 > **Note:** `[board]` should be replaced with `mg100` or `pinnacle_100_dvk`
+
 ```
 # Linux and macOS
 
@@ -313,6 +314,7 @@ del app\pm_static.yml && west build -b [board] -d build\[board]_aws app
 
 Build with mcuboot:
 > **Note:** `[board]` should be replaced with `mg100` or `pinnacle_100_dvk`
+
 ```
 # Linux and macOS
 
@@ -325,6 +327,7 @@ copy ..\modules\zephyr_lib\mcuboot_config\pm_static.pinnacle100.yml app\pm_stati
 
 After building the firmware, it can be flashed with the following command:
 > **Note:** `[board]` should be replaced with `mg100` or `pinnacle_100_dvk`
+
 ```
 # Linux and macOS
 

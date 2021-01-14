@@ -21,7 +21,6 @@ LOG_MODULE_REGISTER(aws);
 /******************************************************************************/
 #include <mbedtls/ssl.h>
 #include <net/socket.h>
-#include <net/mqtt.h>
 #include <stdio.h>
 #include <kernel.h>
 #include <random/rand32.h>
@@ -489,6 +488,11 @@ int awsSubscribe(uint8_t *topic, uint8_t subscribe)
 		AWS_LOG_DBG("%s to %s", s, t);
 	}
 	return rc;
+}
+
+struct mqtt_client *awsGetMqttClient(void)
+{
+	return &client_ctx;
 }
 
 /******************************************************************************/

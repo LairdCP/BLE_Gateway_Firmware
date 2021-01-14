@@ -87,7 +87,6 @@ LOG_MODULE_REGISTER(main);
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
 #ifdef CONFIG_LCZ_MEMFAULT
-#define PROJECT_API_KEY "lMq1riPv0YbLsfpCiUMfxClU1oLVVjH1"
 #define BUILD_ID_SIZE 9
 #define BUILD_ID_DELIM "+"
 #endif
@@ -131,6 +130,9 @@ extern struct mdm_hl7800_apn *lte_apn_config;
 static char build_id[BUILD_ID_SIZE];
 static char software_ver[sizeof(APP_VERSION_STRING) + sizeof(BUILD_ID_DELIM) +
 			 sizeof(build_id)];
+#endif
+#ifdef CONFIG_LCZ_MEMFAULT_MQTT_TRANSPORT
+static char memfault_topic[CONFIG_AWS_TOPIC_MAX_SIZE];
 #endif
 
 K_SEM_DEFINE(lte_ready_sem, 0, 1);
@@ -226,8 +228,8 @@ void main(void)
 {
 	int rc;
 
-#ifdef CONFIG_LCZ_MEMFAULT
-	lcz_memfault_init(PROJECT_API_KEY);
+#ifdef CONFIG_LCZ_MEMFAULT_HTTP_TRANSPORT
+	lcz_memfault_http_init(CONFIG_LCZ_MEMFAULT_PROJECT_API_KEY);
 #endif
 
 #ifdef CONFIG_LWM2M
@@ -261,6 +263,11 @@ void main(void)
 		goto exit;
 	}
 	lteInfo = lteGetStatus();
+
+#ifdef CONFIG_LCZ_MEMFAULT_MQTT_TRANSPORT
+	snprintk(memfault_topic, sizeof(memfault_topic),
+		 CONFIG_LCZ_MEMFAULT_MQTT_TOPIC, CONFIG_BOARD, lteInfo->IMEI);
+#endif
 
 	/* init AWS */
 #ifdef CONFIG_BLUEGRASS
@@ -510,7 +517,7 @@ static void appStateWaitForLte(void)
 		k_sem_take(&lte_ready_sem, K_FOREVER);
 	}
 
-#ifdef CONFIG_LCZ_MEMFAULT
+#ifdef CONFIG_LCZ_MEMFAULT_HTTP_TRANSPORT
 	lcz_memfault_post_data();
 #endif
 
@@ -571,6 +578,10 @@ static void awsMsgHandler(void)
 		rc = -EINVAL;
 		Framework_Receive(cloudMsgReceiver.pQueue, &pMsg, K_FOREVER);
 		freeMsg = true;
+
+#ifdef CONFIG_LCZ_MEMFAULT_MQTT_TRANSPORT
+		lcz_memfault_publish_data(awsGetMqttClient(), memfault_topic);
+#endif
 
 		/* BL654 data is sent to the gateway topic.  If Bluegrass is enabled,
 		 * then sensor data (BT510) is sent to individual topics.  It also allows

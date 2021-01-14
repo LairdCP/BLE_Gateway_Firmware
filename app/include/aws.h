@@ -13,6 +13,7 @@
 /* Includes                                                                   */
 /******************************************************************************/
 #include <data/json.h>
+#include <net/mqtt.h>
 
 #ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
@@ -192,6 +193,7 @@ int awsGetAcceptedUnsub(void);
 void awsGenerateGatewayTopics(const char *imei);
 void awsDisconnectCallback(void);
 char *awsGetGatewayUpdateDeltaTopic(void);
+struct mqtt_client *awsGetMqttClient(void);
 
 #ifdef __cplusplus
 }

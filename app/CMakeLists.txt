@@ -9,6 +9,10 @@ list(APPEND ZEPHYR_EXTRA_MODULES $ENV{ZEPHYR_BASE}/../modules/memfault-firmware-
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(oob_demo)
 
+if(CONFIG_LCZ_MEMFAULT)
+zephyr_include_directories(${CMAKE_SOURCE_DIR}/memfault)
+endif()
+
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src/main.c
     ${CMAKE_SOURCE_DIR}/src/lte.c

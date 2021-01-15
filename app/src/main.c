@@ -518,6 +518,10 @@ static void appStateWaitForLte(void)
 	}
 
 #ifdef CONFIG_LCZ_MEMFAULT_HTTP_TRANSPORT
+#ifdef CONFIG_LCZ_MEMFAULT_METRICS
+	/* force metric data flush to report anything thats ready at this point */
+	memfault_metrics_heartbeat_debug_trigger();
+#endif
 	lcz_memfault_post_data();
 #endif
 

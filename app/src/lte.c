@@ -92,10 +92,6 @@ struct k_work localTimeWork;
 static struct tm localTime;
 static int32_t localOffset;
 
-#ifdef CONFIG_LCZ_MEMFAULT_METRICS
-bool get_lte_ttf = true;
-#endif
-
 static struct mgmt_events iface_events[] = {
 	{ .event = NET_EVENT_DNS_SERVER_ADD,
 	  .handler = iface_ready_evt_handler },
@@ -228,24 +224,20 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		case HL7800_HOME_NETWORK:
 		case HL7800_ROAMING:
 			lcz_led_turn_on(RED_LED);
-#ifdef CONFIG_LCZ_MEMFAULT_METRICS
-			/* only log time to fix for the first time we get on the network */
-			if (get_lte_ttf) {
-				get_lte_ttf = false;
-				MFLT_METRICS_ADD(lte_ttf, k_uptime_get());
-			}
-#endif
+			MFLT_METRICS_TIMER_STOP(lte_ttf);
 			break;
 
 		case HL7800_REGISTRATION_DENIED:
 		case HL7800_UNABLE_TO_CONFIGURE:
 		case HL7800_OUT_OF_COVERAGE:
 			lcz_led_turn_off(RED_LED);
+			MFLT_METRICS_TIMER_START(lte_ttf);
 			break;
 
 		case HL7800_NOT_REGISTERED:
 		case HL7800_SEARCHING:
 			lcz_led_blink(RED_LED, &NETWORK_SEARCH_LED_PATTERN);
+			MFLT_METRICS_TIMER_START(lte_ttf);
 			break;
 
 		case HL7800_EMERGENCY:
@@ -265,13 +257,13 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 
 	case HL7800_EVENT_RSSI:
 		cell_svc_set_rssi(*((int *)event_data));
-		MFLT_METRICS_ADD(lte_rsrp, *((int *)event_data));
+		MFLT_METRICS_SET_SIGNED(lte_rsrp, *((int *)event_data));
 
 		break;
 
 	case HL7800_EVENT_SINR:
 		cell_svc_set_sinr(*((int *)event_data));
-		MFLT_METRICS_ADD(lte_sinr, *((int *)event_data));
+		MFLT_METRICS_SET_SIGNED(lte_sinr, *((int *)event_data));
 
 		break;
 

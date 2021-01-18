@@ -1,3 +1,3 @@
-MEMFAULT_METRICS_KEY_DEFINE(lte_ttf, kMemfaultMetricType_Unsigned)
+MEMFAULT_METRICS_KEY_DEFINE(lte_ttf, kMemfaultMetricType_Timer)
 MEMFAULT_METRICS_KEY_DEFINE(lte_rsrp, kMemfaultMetricType_Signed)
 MEMFAULT_METRICS_KEY_DEFINE(lte_sinr, kMemfaultMetricType_Signed)

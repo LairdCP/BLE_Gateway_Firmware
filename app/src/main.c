@@ -79,9 +79,7 @@ LOG_MODULE_REGISTER(main);
 #include "coap_fota_task.h"
 #endif
 
-#ifdef CONFIG_LCZ_MEMFAULT
 #include "lcz_memfault.h"
-#endif
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -227,6 +225,8 @@ static void cloud_fifo_monitor_isr(struct k_timer *timer_id);
 void main(void)
 {
 	int rc;
+
+	MFLT_METRICS_TIMER_START(lte_ttf);
 
 #ifdef CONFIG_LCZ_MEMFAULT_HTTP_TRANSPORT
 	lcz_memfault_http_init(CONFIG_LCZ_MEMFAULT_PROJECT_API_KEY);

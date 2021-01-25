@@ -91,6 +91,7 @@ static uint8_t batteryAlarmState = BATTERY_ALARM_INACTIVE;
 static struct k_work chgStateWork;
 static const struct device * batteryChgStateDev;
 static struct gpio_callback batteryChgStateCb;
+static struct gpio_callback batteryPwrStateCb;
 static const struct device * batteryPwrStateDev;
 
 /******************************************************************************/
@@ -458,7 +459,7 @@ static void BatteryLogData(int16_t voltage, int32_t temp)
 }
 #endif
 
-static void BatteryChgStateChanged(const struct device *Dev,
+static void BatteryStateChanged(const struct device *Dev,
 			   struct gpio_callback *Cb, uint32_t Pins)
 {
 	k_work_submit(&chgStateWork);
@@ -472,7 +473,7 @@ static void BatteryGpioInit()
 	gpio_pin_configure(batteryChgStateDev, CHG_STATE_PIN,
 			   (GPIO_INPUT | GPIO_INT_ENABLE | GPIO_INT_EDGE | GPIO_INT_EDGE_BOTH |
 				GPIO_ACTIVE_HIGH));
-	gpio_init_callback(&batteryChgStateCb, BatteryChgStateChanged, BIT(CHG_STATE_PIN));
+	gpio_init_callback(&batteryChgStateCb, BatteryStateChanged, BIT(CHG_STATE_PIN));
 	gpio_add_callback(batteryChgStateDev, &batteryChgStateCb);
 
 	/* configure the power state gpio */
@@ -480,8 +481,8 @@ static void BatteryGpioInit()
 	gpio_pin_configure(batteryPwrStateDev, PWR_STATE_PIN,
 			   (GPIO_INPUT | GPIO_INT_ENABLE | GPIO_INT_EDGE | GPIO_INT_EDGE_BOTH |
 				GPIO_ACTIVE_HIGH));
-	gpio_init_callback(&batteryChgStateCb, BatteryChgStateChanged, BIT(PWR_STATE_PIN));
-	gpio_add_callback(batteryPwrStateDev, &batteryChgStateCb);
+	gpio_init_callback(&batteryPwrStateCb, BatteryStateChanged, BIT(PWR_STATE_PIN));
+	gpio_add_callback(batteryPwrStateDev, &batteryPwrStateCb);
 }
 
 static int16_t DetermineTempOffset(int32_t Temperature)

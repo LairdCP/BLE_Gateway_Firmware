@@ -1,0 +1,131 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig CONTACT_TRACING
+    bool "Config Contact Tracing"
+    depends on BLUEGRASS
+    depends on MCUMGR
+    depends on MCUMGR_CMD_FS_MGMT
+    depends on MCUMGR_SMP_BT
+    depends on !LWM2M
+    depends on !SCAN_FOR_BT510
+    depends on !BL654_SENSOR
+    depends on !SINGLE_PERIPHERAL
+    depends on SHELL_BACKEND_DUMMY
+    select BLE_SENSOR_SERVICE
+
+if CONTACT_TRACING
+
+config CT_AWS_PUBLISH_ENTRIES
+    bool "Publish each CT Entry to AWS"
+    default y
+
+config CT_AWS_DUMMY_ENTRY_SIZE
+    int
+    default 24
+
+config SCAN_FOR_BT510_CT
+    bool "Parse Bluetooth advertisements for BT510 CT Sensor"
+    default y
+
+config CT_BLE_LOG_LEVEL
+    int "Log level for BLE contact tracing module"
+    range 0 4
+    default 3
+
+config CT_DEBUG_SMP_TRANSFERS
+    bool "Extra debug print statements for SMP transfers"
+    depends on CT_BLE_LOG_LEVEL = 4
+
+config CT_VERBOSE
+    bool "Verbose debug print statements (mostly SMP transfers)"
+    depends on CT_BLE_LOG_LEVEL = 4
+
+config CT_SHELL
+    bool "Enable contact tracing shell"
+    depends on SHELL
+    default y
+
+config CT_WDT
+    bool "Enable the CT system work queue watchdog"
+    default y
+    imply WATCHDOG
+    help
+        Enable-to-Disable requires power cycle
+
+config CT_WDT_LOG_LEVEL
+    int "Log level for BLE contact tracing watchdog module"
+    range 0 4
+    default 3
+
+config CT_BLE_LOG_LEVEL
+    int "Contact Tracing BLE Module Log level"
+    range 0 4
+    default 3
+
+config CT_APP_LOG_LEVEL
+    int "Contact Tracing App module Log level"
+    range 0 4
+    default 3
+
+config CT_APP_TICK_RATE_SECONDS
+    int "Tick rate for Contact Tracing app module"
+    default 1
+    help
+        Controls watchdog, AWS CT log publisher, and SD Log publisher.
+
+config CT_APP_SD_CARD_LOG_PUBLISH_RATE_SECONDS
+    int "Publish rate for SD Card log"
+    default 5
+
+config CT_ADV_WATCHDOG_SECONDS
+    int "Maximum amount of time that is allowed for not receiving adverts before reset"
+    default 3600
+    help
+        Disabled when 0
+
+config CT_ADV_LOG_FILTER_CNT
+    int "After this many advertisements are seen a debug message will be printed"
+    depends on CT_BLE_LOG_LEVEL >= 3
+    default 1000
+
+config CT_CONN_INACTIVITY_TICK_RATE_SECONDS
+    int "Tick rate for sensor inactivity check"
+    default 60
+    help
+        Disabled when 0
+
+config CT_CONN_INACTIVITY_WATCHDOG_TIMEOUT
+    int "Number of seconds of inactivity required to disconnect CT sensor"
+    default 120
+
+config CT_CONNECTABLE_ADV_DURATION_SECONDS
+    int "Duration to advertise as connectable when button is pressed"
+    default 30
+    help
+        Disabled when 0 (always advertise as connectable)
+
+config CT_AD_RATE_MS
+    int "Contact tracing advertisement rate"
+    range 100 10000
+    default 1000
+    help
+        Default is to update advert every second to keep epoch time up to date
+
+config CT_FS_INTERCEPT_LOG_LEVEL
+    int "Contact Tracing File System Intercept module log level"
+    range 0 4
+    default 3
+
+config CT_AWS_BUF_SIZE
+    int "Size of the buffer for sending to AWS"
+    default 2048
+
+config CT_LOG_DOWNLOAD_BUFFER_SIZE
+    int "Size of the buffer used to hold logs downloaded from Contact Tracing sensors"
+    default 1152
+
+#define LOG_DOWNLOAD_BUFFER_SIZE 1152
+
+
+endif # CONTACT_TRACING

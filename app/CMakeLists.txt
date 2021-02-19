@@ -17,8 +17,33 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src/main.c
     ${CMAKE_SOURCE_DIR}/src/lte.c
     ${CMAKE_SOURCE_DIR}/src/nv.c
-    ${CMAKE_SOURCE_DIR}/src/single_peripheral.c
     ${CMAKE_SOURCE_DIR}/src/jsmn_json.c
+    ${CMAKE_SOURCE_DIR}/src/button.c
+    ${CMAKE_SOURCE_DIR}/src/sensor_state.c
+    ${CMAKE_SOURCE_DIR}/src/ble.c
+)
+
+
+if(CONFIG_CONTACT_TRACING)
+zephyr_include_directories(${CMAKE_SOURCE_DIR}/contact_tracing/include)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/contact_tracing/src/ct_ble.c
+    ${CMAKE_SOURCE_DIR}/contact_tracing/src/ct_app.c
+    ${CMAKE_SOURCE_DIR}/contact_tracing/src/rpc_params.c
+    ${CMAKE_SOURCE_DIR}/contact_tracing/src/dfu_smp_c.c
+    ${CMAKE_SOURCE_DIR}/contact_tracing/src/ct_fs_intercept.c
+)
+endif()
+
+target_sources_ifdef(CONFIG_CT_WDT app PRIVATE
+    ${CMAKE_SOURCE_DIR}/contact_tracing/src/ct_wdt.c)
+
+target_sources_ifdef(CONFIG_CT_SHELL app PRIVATE
+    ${CMAKE_SOURCE_DIR}/contact_tracing/src/ct_shell.c
+)
+
+target_sources_ifdef(CONFIG_SINGLE_PERIPHERAL app PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/single_peripheral.c
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -44,24 +69,39 @@ endif()
 
 if(CONFIG_BLUEGRASS)
 include_directories(${CMAKE_SOURCE_DIR}/bluegrass/include)
-FILE(GLOB bluegrass_sources ${CMAKE_SOURCE_DIR}/bluegrass/source/*.c)
 target_sources(app PRIVATE
-    ${bluegrass_sources}
+    ${CMAKE_SOURCE_DIR}/bluegrass/source/bluegrass.c
+    ${CMAKE_SOURCE_DIR}/bluegrass/source/sensor_cmd.c
+    ${CMAKE_SOURCE_DIR}/bluegrass/source/sensor_gateway_parser.c
+    ${CMAKE_SOURCE_DIR}/bluegrass/source/shadow_builder.c
+    ${CMAKE_SOURCE_DIR}/bluegrass/source/to_string.c
     ${CMAKE_SOURCE_DIR}/src/aws.c
     ${CMAKE_SOURCE_DIR}/src/ble_aws_service.c
 )
+
+if(CONFIG_SENSOR_TASK)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/bluegrass/source/sensor_log.c
+    ${CMAKE_SOURCE_DIR}/bluegrass/source/sensor_table.c
+    ${CMAKE_SOURCE_DIR}/bluegrass/source/sensor_task.c
+)
+endif()
+
 if(CONFIG_SHELL AND CONFIG_APP_AWS_CUSTOMIZATION)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src/aws_config.c
 )
 endif()
-endif()
+endif() # CONFIG BLUEGRASS
 
 if(CONFIG_BL654_SENSOR)
 include_directories(${CMAKE_SOURCE_DIR}/bl654_sensor/include)
-target_sources(app PRIVATE ${CMAKE_SOURCE_DIR}/bl654_sensor/source/ble_sensor_service.c)
 target_sources(app PRIVATE ${CMAKE_SOURCE_DIR}/bl654_sensor/source/bl654_sensor.c)
 endif()
+
+target_sources_ifdef(CONFIG_BLE_SENSOR_SERVICE app PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/ble_sensor_service.c
+)
 
 if (CONFIG_COAP_FOTA)
 include_directories(${CMAKE_SOURCE_DIR}/coap/include)

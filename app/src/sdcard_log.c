@@ -2,14 +2,13 @@
  * @file sdcard_log.c
  * @brief
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
-#define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(sdcard_log);
+LOG_MODULE_REGISTER(sdcard_log, CONFIG_SD_CARD_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -21,14 +20,13 @@ LOG_MODULE_REGISTER(sdcard_log);
 #include <ff.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
 #include "FrameworkIncludes.h"
 #include "nv.h"
 #include "sdcard_log.h"
-#include "qrtc.h"
+#include "lcz_qrtc.h"
 
-#ifdef CONFIG_BLUEGRASS
-#include "sensor_log.h"
-#endif
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
@@ -45,9 +43,13 @@ LOG_MODULE_REGISTER(sdcard_log);
 #define B_PER_KB 1024
 #define KB_PER_MB 1024
 #define B_PER_MB (B_PER_KB * KB_PER_MB)
+
+#define SD_ACCESS_SEM_TIMEOUT K_MSEC(2000)
+
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
+K_SEM_DEFINE(sd_card_access_sem, 1, 1);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -72,13 +74,20 @@ static int sensorLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static int bl654LogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static struct sdcard_status sdCardLogStatus;
 
-#ifdef CONFIG_BLUEGRASS
+#ifdef CONFIG_SCAN_FOR_BT510
 static struct fs_file_t sensorLogFileZfp;
 static int sensorLogSeekOffset = 0;
 static bool sensorLogFileOpened = false;
+#endif
+
+#ifdef CONFIG_BL654_SENSOR
 static struct fs_file_t bl654LogFileZfp;
 static int bl654LogSeekOffset = 0;
 static bool bl654LogFileOpened = false;
+#endif
+
+#ifdef CONFIG_CONTACT_TRACING
+static struct fs_file_t sdLogZfp;
 #endif
 
 /******************************************************************************/
@@ -232,7 +241,7 @@ int sdCardLogInit()
 	return ret;
 }
 
-#ifdef CONFIG_BLUEGRASS
+#ifdef CONFIG_BL654_SENSOR
 int sdCardLogBL654Data(BL654SensorMsg_t *msg)
 {
 	int ret = -ENODEV;
@@ -271,7 +280,7 @@ int sdCardLogBL654Data(BL654SensorMsg_t *msg)
 					/* append the timestamp and data */
 					snprintf(logData, totalLength,
 						 "%d,%d,%d,%d\n",
-						 Qrtc_GetEpoch(),
+						 lcz_qrtc_get_epoch(),
 						 (uint32_t)(msg->temperatureC *
 							    100),
 						 (uint32_t)(
@@ -305,7 +314,10 @@ int sdCardLogBL654Data(BL654SensorMsg_t *msg)
 
 	return ret;
 }
-int sdCardLogAdEvent(Bt510AdEvent_t *event)
+#endif
+
+#ifdef CONFIG_SCAN_FOR_BT510
+int sdCardLogAdEvent(LczSensorAdEvent_t *event)
 {
 	int ret = 0;
 	int totalLength = 0;
@@ -349,7 +361,7 @@ int sdCardLogAdEvent(Bt510AdEvent_t *event)
 						 "%s,%d,%d,%d,%d\n", bleAddrStr,
 						 event->epoch,
 						 event->recordType, event->id,
-						 event->data);
+						 event->data.u16);
 					ret = fs_write(&sensorLogFileZfp,
 						       logData,
 						       strlen(logData));
@@ -376,6 +388,7 @@ int sdCardLogAdEvent(Bt510AdEvent_t *event)
 	return ret;
 }
 #endif
+
 int sdCardLogBatteryData(void *data, int length)
 {
 	int ret = 0;
@@ -413,7 +426,8 @@ int sdCardLogBatteryData(void *data, int length)
 				if (ret >= 0) {
 					/* append the timestamp and data */
 					snprintk(logData, totalLength,
-						 "%d,%s\n", Qrtc_GetEpoch(),
+						 "%d,%s\n",
+						 lcz_qrtc_get_epoch(),
 						 (char *)data);
 					ret = fs_write(&batteryLogZfp, logData,
 						       strlen(logData));
@@ -440,3 +454,385 @@ int sdCardLogBatteryData(void *data, int length)
 
 	return ret;
 }
+
+#ifdef CONFIG_CONTACT_TRACING
+
+int sdCardCleanup(void)
+{
+	/* if there are more than 256 entries, delete the oldest files beyond 256 */
+
+	int ret, i;
+	struct fs_dir_t dirp;
+	struct fs_dirent entry;
+	char full_path[32] = "/SD:/";
+	int total_files = 0;
+	int delete_idx = 0;
+	uint32_t *dir_listing;
+
+	if (k_sem_take(&sd_card_access_sem, SD_ACCESS_SEM_TIMEOUT) != 0) {
+		return -1;
+	}
+
+	ret = fs_opendir(&dirp, full_path);
+	if (ret) {
+		k_sem_give(&sd_card_access_sem);
+		return ret;
+	}
+
+	dir_listing = (uint32_t *)k_malloc(4 * 256);
+	if (!dir_listing) {
+		k_sem_give(&sd_card_access_sem);
+		return -1;
+	}
+
+	memset(dir_listing, 0, 4 * 256);
+
+	for (;;) {
+		ret = fs_readdir(&dirp, &entry);
+
+		/* entry.name[0] == 0 means end-of-dir */
+		if (ret || entry.name[0] == 0) {
+			break;
+		}
+
+		if (entry.type == FS_DIR_ENTRY_FILE) {
+			if (strstr(entry.name, ".LOG") != NULL) {
+				if (total_files < 256) {
+					dir_listing[total_files] =
+						strtoul(entry.name, NULL, 10) &
+						0xFFFFFFFF;
+				}
+				total_files++;
+			}
+		}
+	}
+	ret = fs_closedir(&dirp);
+	k_sem_give(&sd_card_access_sem);
+
+	if (total_files > 255) {
+		LOG_WRN("cleaning up SD card, too many log files (%d)",
+			total_files);
+	} else {
+		k_free(dir_listing);
+		return 0;
+	}
+
+	if (k_sem_take(&sd_card_access_sem, SD_ACCESS_SEM_TIMEOUT) != 0) {
+		k_free(dir_listing);
+		return -1;
+	}
+
+	/* now, delete the oldest file (lowest numbered file) */
+	delete_idx = -1;
+	int min = 0xFFFFFFFF;
+	for (i = 0; i < 255; i++) {
+		if (dir_listing[i] < min && dir_listing[i]) {
+			min = dir_listing[i];
+			delete_idx = i;
+		}
+	}
+
+	if (delete_idx >= 0) {
+		snprintf(full_path, sizeof(full_path), "/SD:/%08u.log",
+			 dir_listing[delete_idx]);
+		fs_unlink(full_path);
+	}
+
+	k_free(dir_listing);
+	k_sem_give(&sd_card_access_sem);
+	LOG_WRN("removed %s", log_strdup(full_path));
+	return 0;
+}
+
+int sdCardLsDir(const char *path)
+{
+	int ret;
+	struct fs_dir_t dirp;
+	struct fs_dirent entry;
+	char full_path[128] = "/SD:";
+
+	if (!path)
+		return -1;
+
+	strncat(full_path, path, sizeof(full_path) - strlen(full_path) - 1);
+
+	if (k_sem_take(&sd_card_access_sem, SD_ACCESS_SEM_TIMEOUT) != 0) {
+		return -1;
+	}
+
+	ret = fs_opendir(&dirp, full_path);
+	if (ret) {
+		LOG_ERR("Error opening dir %s [%d]", full_path, ret);
+		k_sem_give(&sd_card_access_sem);
+		return ret;
+	}
+
+	printk("Listing dir %s:\n", full_path);
+	for (;;) {
+		ret = fs_readdir(&dirp, &entry);
+
+		/* entry.name[0] == 0 means end-of-dir */
+		if (ret || entry.name[0] == 0) {
+			break;
+		}
+
+		if (entry.type == FS_DIR_ENTRY_DIR) {
+			printk("[DIR ] %s\n", entry.name);
+		} else {
+			printk("[FILE] %s (size = %zu)\n", entry.name,
+			       entry.size);
+		}
+	}
+
+	ret = fs_closedir(&dirp);
+	k_sem_give(&sd_card_access_sem);
+
+	return ret;
+}
+
+int sdCardLsDirToString(const char *path, char *buf, int maxlen)
+{
+	/* ("/", sd_log_publish_buf, SD_LOG_PUBLISH_MAX_CHUNK_LEN); */
+	int ret, i;
+	struct fs_dir_t dirp;
+	struct fs_dirent entry;
+	char full_path[128] = "/SD:";
+	uint32_t dir_index = 0;
+	uint32_t *dir_listing;
+	uint32_t *dir_fsize;
+
+	if (!path)
+		return -1;
+	if (!buf)
+		return -1;
+	if (maxlen < 64)
+		return -1;
+
+	strncat(full_path, path, sizeof(full_path) - strlen(full_path) - 1);
+	memset(buf, 0, maxlen);
+
+	if (k_sem_take(&sd_card_access_sem, SD_ACCESS_SEM_TIMEOUT) != 0) {
+		return -1;
+	}
+
+	ret = fs_opendir(&dirp, full_path);
+	if (ret) {
+		k_sem_give(&sd_card_access_sem);
+		return ret;
+	}
+
+	dir_listing = (uint32_t *)k_malloc(4 * 256);
+	if (!dir_listing) {
+		k_sem_give(&sd_card_access_sem);
+		return -1;
+	}
+
+	dir_fsize = (uint32_t *)k_malloc(4 * 256);
+	if (!dir_fsize) {
+		k_free(dir_listing);
+		k_sem_give(&sd_card_access_sem);
+		return -1;
+	}
+
+	memset(dir_listing, 0, 4 * 256);
+
+	for (;;) {
+		ret = fs_readdir(&dirp, &entry);
+
+		/* entry.name[0] == 0 means end-of-dir */
+		if (ret || entry.name[0] == 0) {
+			break;
+		}
+
+		if (entry.type == FS_DIR_ENTRY_FILE) {
+			if (strstr(entry.name, ".LOG") != NULL) {
+				dir_listing[dir_index] =
+					strtoul(entry.name, NULL, 10) &
+					0xFFFFFFFF;
+				dir_fsize[dir_index++] = entry.size;
+				dir_index = (dir_index & 0xFF);
+			}
+		}
+	}
+
+	ret = fs_closedir(&dirp);
+
+	int bytes_written = 0;
+	int part = 0;
+	uint32_t max;
+	uint32_t max_idx;
+	while (1) {
+		/* find the maximum integer in the list */
+		max = 0;
+		max_idx = 0xFFFFFFFF;
+		for (i = 0; i < 255; i++) {
+			if (dir_listing[i] > max && dir_listing[i]) {
+				max = dir_listing[i];
+				max_idx = i;
+			}
+		}
+
+		if (max_idx < 0xFFFFFFFF) {
+			if ((maxlen - bytes_written) > 32 &&
+			    dir_listing[max_idx] && dir_fsize[max_idx]) {
+				part = snprintf(&buf[bytes_written], 32,
+						"%08u.log %u\n",
+						dir_listing[max_idx],
+						dir_fsize[max_idx]);
+				/* set this entry to 0 so it is no longer the max */
+				dir_listing[max_idx] = 0;
+				if (part > 0) {
+					bytes_written += part;
+				} else {
+					break;
+				}
+			} else {
+				break;
+			}
+		} else {
+			break;
+		}
+	}
+
+	k_free(dir_listing);
+	k_free(dir_fsize);
+	k_sem_give(&sd_card_access_sem);
+
+	return ret;
+}
+
+int sdCardLogGet(char *pbuf, log_get_state_t *lstate, uint32_t maxlen)
+{
+	int ret;
+	char full_path[128] = "/SD:/";
+	struct fs_dirent fileStat;
+
+	/* start by indicating no bytes ready to send */
+	lstate->bytes_ready = 0;
+	strncat(full_path, lstate->rpc_params.filename, sizeof(full_path) - 1);
+	memset(pbuf, 0, maxlen);
+
+	/* Use lstate->rpc_params.whence and lstate->rpc_params.offset to determine
+     * where to seek in the file. Then based on lstate->rpc_params.length and
+     * lstate->bytes_remaining read the next bytes into pbuf.
+     */
+	if (lstate->rpc_params.length == lstate->bytes_remaining) {
+		/* calculate the "cur_seek" value before any bytes are read */
+		if (k_sem_take(&sd_card_access_sem, SD_ACCESS_SEM_TIMEOUT) ==
+		    0) {
+			ret = fs_stat(full_path, &fileStat);
+			if (ret == 0) {
+				/* cap the size being requested to length of file */
+				if (lstate->rpc_params.length > fileStat.size) {
+					lstate->rpc_params.length =
+						fileStat.size;
+					lstate->bytes_remaining =
+						lstate->rpc_params.length;
+				}
+				if (lstate->rpc_params.offset > fileStat.size) {
+					lstate->rpc_params.offset =
+						fileStat.size;
+				}
+				if (strncmp(lstate->rpc_params.whence, "end",
+					    3) == 0) {
+					/* offset is bytes from end of file */
+					lstate->cur_seek =
+						fileStat.size -
+						lstate->rpc_params.offset;
+				} else {
+					/* offset is bytes from start of file */
+					lstate->cur_seek =
+						lstate->rpc_params.offset;
+				}
+
+				/* cap the bytes remaining after seek offset is applied */
+				if (lstate->bytes_remaining >
+				    (fileStat.size - lstate->cur_seek)) {
+					lstate->bytes_remaining =
+						fileStat.size -
+						lstate->cur_seek;
+				}
+			} else {
+				/* file does not exist */
+				k_sem_give(&sd_card_access_sem);
+				/* returning 0 with 0 bytes ready effectively aborts the send */
+				return 0;
+			}
+			k_sem_give(&sd_card_access_sem);
+		}
+	}
+
+	if (lstate->bytes_remaining > 0) {
+		if (k_sem_take(&sd_card_access_sem, SD_ACCESS_SEM_TIMEOUT) ==
+		    0) {
+			if (maxlen > lstate->bytes_remaining) {
+				maxlen = lstate->bytes_remaining;
+			}
+
+			ret = fs_open(&sdLogZfp, full_path, FS_O_RDWR);
+			if (ret >= 0) {
+				ret = fs_seek(&sdLogZfp, lstate->cur_seek,
+					      FS_SEEK_SET);
+
+				/* read the log data */
+				lstate->bytes_ready =
+					fs_read(&sdLogZfp, pbuf, maxlen);
+				if (lstate->bytes_ready < maxlen) {
+					lstate->bytes_remaining = 0;
+				} else {
+					lstate->bytes_remaining -=
+						lstate->bytes_ready;
+				}
+				lstate->cur_seek += lstate->bytes_ready;
+
+				/* close the file */
+				ret = fs_close(&sdLogZfp);
+			} else {
+				k_sem_give(&sd_card_access_sem);
+				return 0;
+			}
+			k_sem_give(&sd_card_access_sem);
+		} else {
+			/* no bytes to send */
+			/* returning 0 with 0 bytes ready effectively aborts the send */
+			return 0;
+		}
+	}
+
+	return lstate->bytes_remaining;
+}
+
+void sdCardLogTest(void)
+{
+	int ret = 0, i;
+	char sdTestFilePath[32] = { 0 };
+
+	if (sdCardPresent && lcz_qrtc_epoch_was_set()) {
+		if (k_sem_take(&sd_card_access_sem, SD_ACCESS_SEM_TIMEOUT) ==
+		    0) {
+			time_t now = lcz_qrtc_get_epoch();
+			struct tm now_tm;
+			gmtime_r(&now, &now_tm);
+			uint32_t ts = (now_tm.tm_year % 100) * 1000000;
+			ts += (now_tm.tm_mon + 1) * 10000;
+			ts += (now_tm.tm_mday) * 100;
+			ts += now_tm.tm_hour;
+
+			for (i = 0; i < 255; i++) {
+				sprintf(sdTestFilePath, "/SD:/%08u.log",
+					ts - i - 1);
+				ret = fs_open(&sdLogZfp, sdTestFilePath,
+					      FS_O_RDWR);
+				if (ret >= 0) {
+					ret = fs_write(&sdLogZfp, "test", 4);
+					ret = fs_close(&sdLogZfp);
+				} else {
+					break;
+				}
+			}
+
+			k_sem_give(&sd_card_access_sem);
+		}
+	}
+}
+#endif

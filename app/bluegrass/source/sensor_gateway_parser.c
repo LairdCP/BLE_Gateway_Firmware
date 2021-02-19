@@ -3,7 +3,7 @@
  * @brief Uses jsmn to parse JSON from AWS that controls gateway functionality
  * and sensor configuration.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -21,10 +21,15 @@ LOG_MODULE_REGISTER(sensor_gateway_parser, LOG_LEVEL_INF);
 #include <stdbool.h>
 
 #include "aws.h"
+
 #ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
 #include "ble_motion_service.h"
 #include "sdcard_log.h"
+#endif
+
+#ifdef CONFIG_CONTACT_TRACING
+#include "rpc_params.h"
 #endif
 
 #define JSMN_PARENT_LINKS
@@ -89,13 +94,6 @@ static const char MAX_LOG_SIZE_STRING[] = "maxLogSizeMB";
 #endif /* CONFIG_BOARD_MG100 */
 
 /******************************************************************************/
-/* Global                                                                     */
-/******************************************************************************/
-extern struct k_mutex jsmn_mutex;
-extern jsmn_parser jsmn;
-extern jsmntok_t tokens[CONFIG_JSMN_NUMBER_OF_TOKENS];
-
-/******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
 static bool getAcceptedTopic;
@@ -155,19 +153,24 @@ static int (*LocalConfigGet[MAX_WRITEABLE_LOCAL_OBJECTS])() = {
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static void GatewayParser(const char *pTopic);
-static void SensorParser(const char *pTopic);
-static void SensorDeltaParser(const char *pTopic);
-static void SensorEventLogParser(const char *pTopic);
-static void ParseEventArray(const char *pTopic);
 static void FotaParser(const char *pTopic, enum fota_image_type Type);
 static void FotaHostParser(const char *pTopic);
 static void FotaBlockSizeParser(const char *pTopic);
 static void UnsubscribeToGetAcceptedHandler(void);
 
+#ifdef CONFIG_SENSOR_TASK
+static void GatewayParser(const char *pTopic);
+static void SensorParser(const char *pTopic);
+static void SensorDeltaParser(const char *pTopic);
+static void SensorEventLogParser(const char *pTopic);
+static void ParseEventArray(const char *pTopic);
 static void ParseArray(int ExpectedSensors);
+#endif
+
+#if defined(CONFIG_SENSOR_TASK) || defined(CONFIG_BOARD_MG100)
 static int FindState(void);
 static bool FindUint(uint32_t *pVersion, const char *key);
+#endif
 
 #ifdef CONFIG_BOARD_MG100
 static void MiniGatewayParser(const char *pTopic);
@@ -189,9 +192,14 @@ void SensorGatewayParser(const char *pTopic, const char *pJson)
 
 	getAcceptedTopic = strstr(pTopic, GET_ACCEPTED_SUB_STR) != NULL;
 	if (strstr(pTopic, GATEWAY_TOPIC_SUB_STR) != NULL) {
+#ifdef CONFIG_SENSOR_TASK
 		GatewayParser(pTopic);
+#endif
 #ifdef CONFIG_BOARD_MG100
 		MiniGatewayParser(pTopic);
+#endif
+#ifdef CONFIG_CONTACT_TRACING
+		rpc_params_gateway_parser(getAcceptedTopic);
 #endif
 		FotaParser(pTopic, APP_IMAGE_TYPE);
 		FotaParser(pTopic, MODEM_IMAGE_TYPE);
@@ -199,7 +207,9 @@ void SensorGatewayParser(const char *pTopic, const char *pJson)
 		FotaBlockSizeParser(pTopic);
 		UnsubscribeToGetAcceptedHandler();
 	} else {
+#ifdef CONFIG_SENSOR_TASK
 		SensorParser(pTopic);
+#endif
 	}
 
 	jsmn_end();
@@ -348,6 +358,7 @@ static void MiniGatewayParser(const char *pTopic)
  * @note This function assumes that the AWS task acknowledges the publish so
  * that it isn't repeatedly sent to the gateway.
  */
+#ifdef CONFIG_SENSOR_TASK
 static void GatewayParser(const char *pTopic)
 {
 	jsmn_reset_index();
@@ -373,6 +384,7 @@ static void GatewayParser(const char *pTopic)
 		 */
 	}
 }
+#endif
 
 static void UnsubscribeToGetAcceptedHandler(void)
 {
@@ -479,6 +491,7 @@ static void FotaBlockSizeParser(const char *pTopic)
 	}
 }
 
+#ifdef CONFIG_SENSOR_TASK
 static void SensorParser(const char *pTopic)
 {
 	if (getAcceptedTopic) {
@@ -655,7 +668,9 @@ static void ParseEventArray(const char *pTopic)
 		expectedLogs);
 	FRAMEWORK_MSG_SEND(pMsg);
 }
+#endif
 
+#if defined(CONFIG_SENSOR_TASK) || defined(CONFIG_BOARD_MG100)
 /**
  * @note sets jsonIndex to 1
  *
@@ -688,3 +703,4 @@ static bool FindUint(uint32_t *pValue, const char *key)
 		return false;
 	}
 }
+#endif

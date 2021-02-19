@@ -2,7 +2,7 @@
  * @file nv.c
  * @brief Non-volatile storage for the app
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -42,7 +42,6 @@ enum SETTING_ID {
 	SETTING_ID_AWS_CLIENT_ID,
 	SETTING_ID_AWS_ROOT_CA,
 	SETTING_ID_LWM2M_CONFIG,
-#ifdef CONFIG_BOARD_MG100
 	SETTING_ID_BATTERY_LOW,
 	SETTING_ID_BATTERY_ALARM,
 	SETTING_ID_BATTERY_4,
@@ -54,10 +53,10 @@ enum SETTING_ID {
 	SETTING_ID_ACCEL_THRESH,
 	SETTING_ID_ACCEL_SCALE,
 	SETTING_ID_SDLOG_MAX_SIZE,
-#endif
-#ifdef CONFIG_APP_AWS_CUSTOMIZATION
-	SETTING_ID_AWS_ENABLE_CUSTOM
-#endif
+	SETTING_ID_AWS_ENABLE_CUSTOM,
+	SETTING_ID_AWS_TOPIC_PREFIX,
+	SETTING_ID_BLE_NETWORK_ID,
+	SETTING_ID_AES_KEY
 };
 
 /******************************************************************************/
@@ -395,27 +394,32 @@ int nvReadBatteryAlarm(uint16_t *batteryData)
 
 int nvReadBattery4(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_4, batteryData, sizeof(uint16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_4, batteryData,
+			sizeof(uint16_t));
 }
 
 int nvReadBattery3(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_3, batteryData, sizeof(uint16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_3, batteryData,
+			sizeof(uint16_t));
 }
 
 int nvReadBattery2(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_2, batteryData, sizeof(uint16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_2, batteryData,
+			sizeof(uint16_t));
 }
 
 int nvReadBattery1(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_1, batteryData, sizeof(uint16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_1, batteryData,
+			sizeof(uint16_t));
 }
 
 int nvReadBattery0(uint16_t *batteryData)
 {
-	return nvs_read(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(uint16_t));
+	return nvs_read(&fs, SETTING_ID_BATTERY_0, batteryData,
+			sizeof(uint16_t));
 }
 
 int nvStoreBatteryLow(uint16_t *batteryData)
@@ -432,27 +436,32 @@ int nvStoreBatteryAlarm(uint16_t *batteryData)
 
 int nvStoreBattery4(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_4, batteryData, sizeof(uint16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_4, batteryData,
+			 sizeof(uint16_t));
 }
 
 int nvStoreBattery3(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_3, batteryData, sizeof(uint16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_3, batteryData,
+			 sizeof(uint16_t));
 }
 
 int nvStoreBattery2(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_2, batteryData, sizeof(uint16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_2, batteryData,
+			 sizeof(uint16_t));
 }
 
 int nvStoreBattery1(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_1, batteryData, sizeof(uint16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_1, batteryData,
+			 sizeof(uint16_t));
 }
 
 int nvStoreBattery0(uint16_t *batteryData)
 {
-	return nvs_write(&fs, SETTING_ID_BATTERY_0, batteryData, sizeof(uint16_t));
+	return nvs_write(&fs, SETTING_ID_BATTERY_0, batteryData,
+			 sizeof(uint16_t));
 }
 
 int nvStoreAccelODR(int Value)
@@ -507,3 +516,48 @@ int nvReadAwsEnableCustom(bool *Value)
 	return nvs_read(&fs, SETTING_ID_AWS_ENABLE_CUSTOM, Value, sizeof(bool));
 }
 #endif /* CONFIG_APP_AWS_CUSTOMIZATION */
+
+#ifdef CONFIG_CONTACT_TRACING
+int nvStoreAwsTopicPrefix(uint8_t *prefix, uint16_t size)
+{
+	return nvs_write(&fs, SETTING_ID_AWS_TOPIC_PREFIX, prefix, size);
+}
+
+int nvReadAwsTopicPrefix(uint8_t *prefix, uint16_t size)
+{
+	return nvs_read(&fs, SETTING_ID_AWS_TOPIC_PREFIX, prefix, size);
+}
+
+int nvDeleteAwsTopicPrefix(void)
+{
+	return nvs_delete(&fs, SETTING_ID_AWS_TOPIC_PREFIX);
+}
+
+int nvStoreBleNetworkId(uint16_t *networkId)
+{
+	return nvs_write(&fs, SETTING_ID_BLE_NETWORK_ID, networkId,
+			 sizeof(uint16_t));
+}
+
+int nvReadBleNetworkId(uint16_t *networkId)
+{
+	return nvs_read(&fs, SETTING_ID_BLE_NETWORK_ID, networkId,
+			sizeof(uint16_t));
+}
+
+int nvStoreAesKey(uint8_t *key)
+{
+	return nvs_write(&fs, SETTING_ID_AES_KEY, key, AES_KEY_SIZE);
+}
+
+int nvReadAesKey(uint8_t *key)
+{
+	return nvs_read(&fs, SETTING_ID_AES_KEY, key, AES_KEY_SIZE);
+}
+
+int nvDeleteAesKey(void)
+{
+	return nvs_delete(&fs, SETTING_ID_AES_KEY);
+}
+
+#endif /* CONFIG_CONTACT_TRACING */

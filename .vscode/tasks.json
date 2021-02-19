@@ -84,6 +84,19 @@
       }
     },
     {
+      "label": "build contact tracing",
+      "type": "shell",
+      "dependsOn": ["apply contact tracing patches"],
+      "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix}\"",
+      "windows": {
+        "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows}\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
       "label": "app ram_report",
       "type": "shell",
       "command": "west build -d ${workspaceRoot}/build/${input:board}/${input:app} ${workspaceRoot}/app --target ram_report > ${workspaceRoot}/build/${input:board}/${input:app}/ram_report",
@@ -119,6 +132,19 @@
       "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
       "windows": {
         "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
+      "label": "build ct with mcuboot",
+      "type": "shell",
+      "dependsOn": ["apply contact tracing patches"],
+      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
+      "windows": {
+        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -180,7 +206,17 @@
       "type": "shell",
       "command": "sudo mcumgr -t 5 -r 2 ${input:mcumgr_cnx} fs upload ${input:src_file_path} /lfs/${input:dst_file_name}",
       "problemMatcher": []
-    }
+    },
+    {
+      "label": "apply contact tracing patches",
+      "type": "shell",
+      // Linux based command is not tested
+      "command": "cp -R ./app/contact_tracing_patch/* ../",
+      "windows": {
+        "command": "Xcopy /E /I /Y .\\app\\contact_tracing_patch ..\\"
+      },
+      "problemMatcher": []
+  },
   ],
   "inputs": [
     {
@@ -188,7 +224,7 @@
       "description": "Select an app",
       "default": "aws",
       "type": "pickString",
-      "options": ["aws", "lwm2m"]
+      "options": ["aws", "lwm2m", "ct"]
     },
     {
       "id": "board",

@@ -1,24 +1,27 @@
 /**
  * @file sdcard_log.h
- * @brief this file implements a framework for logging data to the sdcard.
- * 
- * Copyright (c) 2020 Laird Connectivity
+ * @brief This file implements a framework for logging data to the sdcard.
+ *
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef __SDCARD_LOG_H__
 #define __SDCARD_LOG_H__
 
-/* (Remove Empty Sections) */
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
 #include <zephyr/types.h>
 #include <stddef.h>
+
+#if defined(CONFIG_SCAN_FOR_BT510) || defined(CONFIG_BL654_SENSOR)
 #include "FrameworkIncludes.h"
-#ifdef CONFIG_BLUEGRASS
-# include "sensor_adv_format.h"
-# include "sensor_log.h"
+#include "lcz_sensor_adv_format.h"
+#endif
+
+#ifdef CONFIG_CONTACT_TRACING
+#include "rpc_params.h"
 #endif
 
 #ifdef __cplusplus
@@ -28,16 +31,23 @@ extern "C" {
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-#define SDCARD_LOG_DEFAULT_MAX_LENGTH	32
+#define SDCARD_LOG_DEFAULT_MAX_LENGTH 32
 
-/******************************************************************************/
-/* Global Data Definitions                                                    */
-/******************************************************************************/
+#ifdef CONFIG_CONTACT_TRACING
+typedef struct log_get_state_s {
+	rpc_params_log_get_t rpc_params;
+	uint32_t cur_seek;
+	uint32_t bytes_remaining;
+	uint32_t bytes_ready;
+} log_get_state_t;
+#endif
+
 struct sdcard_status {
 	int currLogSize;
 	int maxLogSize;
 	int freeSpace;
 };
+
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
@@ -71,9 +81,9 @@ int sdCardLogInit(void);
  *
  * @retval int - Write status - Values < 0 are errors, 0 = success.
  */
-int sdCardLogBatteryData(void * data, int length);
+int sdCardLogBatteryData(void *data, int length);
 
-#ifdef CONFIG_BLUEGRASS
+#ifdef CONFIG_SCAN_FOR_BT510
 /**
  * @brief this function writes data to the log. It will append data to
  *    the end of the file until the log limit is reached. when
@@ -86,8 +96,10 @@ int sdCardLogBatteryData(void * data, int length);
  *
  * @retval int - Write status - Values < 0 are errors, 0 = success.
  */
-int sdCardLogAdEvent(Bt510AdEvent_t * event);
+int sdCardLogAdEvent(LczSensorAdEvent_t *event);
+#endif
 
+#ifdef CONFIG_BL654_SENSOR
 /**
  * @brief this function writes data to the log. It will append data to
  *    the end of the file until the log limit is reached. when
@@ -100,7 +112,7 @@ int sdCardLogAdEvent(Bt510AdEvent_t * event);
  *
  * @retval int - Write status - Values < 0 are errors, 0 = success.
  */
-int sdCardLogBL654Data(BL654SensorMsg_t * msg);
+int sdCardLogBL654Data(BL654SensorMsg_t *msg);
 #endif
 /**
  * @brief this function is called by the gateway JSON parser to set the maximum log size.
@@ -130,13 +142,32 @@ int GetMaxLogSize();
 int GetLogSize();
 
 /**
- * @brief this function is called by the gateway JSON parser to get the sdcard's free spce.
+ * @brief this function is called by the gateway JSON parser to get the sdcard's free space.
  *
  * @param none
  *
  * @retval int Value - the freespace in MB.
  */
 int GetFSFree();
+
+/**
+ * @brief list the contents of a directory on the SD card
+ *
+ * @param path path to list, e.g. "/SD:/"
+ *
+ * @retval int zero on success
+ */
+int sdCardLsDir(const char *path);
+
+#ifdef CONFIG_CONTACT_TRACING
+int sdCardCleanup(void);
+
+int sdCardLsDirToString(const char *path, char *buf, int maxlen);
+
+int sdCardLogGet(char *pbuf, log_get_state_t *lstate, uint32_t maxlen);
+
+void sdCardLogTest(void);
+#endif
 
 #ifdef __cplusplus
 }

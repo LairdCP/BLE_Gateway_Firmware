@@ -2,14 +2,13 @@
  * @file ble_aws_service.c
  * @brief BLE AWS Service
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
-#define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(oob_aws_svc);
+LOG_MODULE_REGISTER(ble_aws_service, CONFIG_BLE_AWS_SERVICE_LOG_LEVEL);
 
 #define AWS_SVC_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define AWS_SVC_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
@@ -20,11 +19,14 @@ LOG_MODULE_REGISTER(oob_aws_svc);
 /* Includes                                                                   */
 /******************************************************************************/
 #include <errno.h>
-#include <bluetooth/uuid.h>
-#include <bluetooth/gatt.h>
 #include <mbedtls/sha256.h>
+
 #ifdef CONFIG_APP_AWS_CUSTOMIZATION
 #include <fs/fs.h>
+#endif
+
+#ifdef CONFIG_CONTACT_TRACING
+#include "ct_ble.h"
 #endif
 
 #include "ble_aws_service.h"
@@ -71,6 +73,14 @@ static struct bt_uuid_128 aws_status_uuid =
 
 #define SHA256_SIZE 32
 
+#define AWS_DEFAULT_TOPIC_PREFIX "mg100-ct/dev/gw/"
+
+/******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
+static void aws_svc_connected(struct bt_conn *conn, uint8_t err);
+static void aws_svc_disconnected(struct bt_conn *conn, uint8_t reason);
+
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
@@ -82,6 +92,7 @@ static char client_cert_value[AWS_CLIENT_CERT_MAX_LENGTH + 1];
 static uint8_t client_cert_sha256[SHA256_SIZE];
 static char client_key_value[AWS_CLIENT_KEY_MAX_LENGTH + 1];
 static uint8_t client_key_sha256[SHA256_SIZE];
+static char topic_prefix_value[AWS_TOPIC_PREFIX_MAX_LENGTH + 1];
 
 static uint8_t save_clear_value;
 
@@ -94,18 +105,16 @@ static uint32_t lastCredOffset;
 
 static uint16_t svc_status_index;
 
-static aws_svc_event_function_t eventCallbackFunc = NULL;
+static struct bt_conn *aws_svc_conn = NULL;
+
+static struct bt_conn_cb aws_svc_conn_callbacks = {
+	.connected = aws_svc_connected,
+	.disconnected = aws_svc_disconnected,
+};
 
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static void onAwsSvcEvent(enum aws_svc_event event)
-{
-	if (eventCallbackFunc != NULL) {
-		eventCallbackFunc(event);
-	}
-}
-
 static bool isCommissioned(void)
 {
 	if (status_value == AWS_STATUS_NOT_PROVISIONED) {
@@ -316,10 +325,10 @@ static ssize_t write_save_clear(struct bt_conn *conn,
 			return BT_GATT_ERR(BT_ATT_ERR_WRITE_NOT_PERMITTED);
 		}
 		aws_svc_save_clear_settings(true);
-		onAwsSvcEvent(AWS_SVC_EVENT_SETTINGS_SAVED);
+		awsSvcEvent(AWS_SVC_EVENT_SETTINGS_SAVED);
 	} else if (save_clear_value == CLEAR_SETTINGS) {
 		aws_svc_save_clear_settings(false);
-		onAwsSvcEvent(AWS_SVC_EVENT_SETTINGS_CLEARED);
+		awsSvcEvent(AWS_SVC_EVENT_SETTINGS_CLEARED);
 	}
 
 	return len;
@@ -417,7 +426,53 @@ void aws_svc_set_client_key(const char *cred)
 	}
 }
 
-void aws_svc_set_status(struct bt_conn *conn, enum aws_status status)
+void aws_svc_set_root_ca_partial(const char *cred, int offset, int len)
+{
+	if (cred && (offset + len < sizeof(root_ca_value))) {
+		if (offset == 0) {
+			memset(root_ca_value, 0, sizeof(root_ca_value));
+		}
+		strncpy(&root_ca_value[offset], cred, len);
+	}
+}
+
+void aws_svc_set_client_cert_partial(const char *cred, int offset, int len)
+{
+	if (cred && (offset + len < sizeof(client_cert_value))) {
+		if (offset == 0) {
+			memset(client_cert_value, 0, sizeof(client_cert_value));
+		}
+		strncpy(&client_cert_value[offset], cred, len);
+	}
+}
+
+void aws_svc_set_client_key_partial(const char *cred, int offset, int len)
+{
+	if (cred && (offset + len < sizeof(client_key_value))) {
+		if (offset == 0) {
+			memset(client_key_value, 0, sizeof(client_key_value));
+		}
+		strncpy(&client_key_value[offset], cred, len);
+	}
+}
+
+void aws_svc_set_topic_prefix(const char *prefix)
+{
+	if (prefix) {
+		strncpy(topic_prefix_value, prefix, sizeof(topic_prefix_value));
+		AWS_SVC_LOG_DBG("Set topic prefix: %s", topic_prefix_value);
+#ifdef CONFIG_CONTACT_TRACING
+		ct_ble_topic_builder();
+#endif
+	}
+}
+
+const char *aws_svc_get_topic_prefix(void)
+{
+	return topic_prefix_value;
+}
+
+void aws_svc_set_status(enum aws_status status)
 {
 	bool notify = false;
 
@@ -425,9 +480,9 @@ void aws_svc_set_status(struct bt_conn *conn, enum aws_status status)
 		notify = true;
 		status_value = status;
 	}
-	if ((conn != NULL) && status_notify && notify) {
-		bt_gatt_notify(conn, &aws_svc.attrs[svc_status_index], &status,
-			       sizeof(status));
+	if ((aws_svc_conn != NULL) && status_notify && notify) {
+		bt_gatt_notify(aws_svc_conn, &aws_svc.attrs[svc_status_index],
+			       &status, sizeof(status));
 	}
 }
 
@@ -575,6 +630,24 @@ int aws_svc_init(const char *clientId)
 		if (rc > 0) {
 			isClientKeyStored = true;
 		}
+
+#if CONFIG_CONTACT_TRACING
+		rc = nvReadAwsTopicPrefix(topic_prefix_value,
+					  sizeof(topic_prefix_value));
+		if (rc <= 0) {
+			/* Setting does not exist, init it */
+			rc = nvStoreAwsTopicPrefix(
+				AWS_DEFAULT_TOPIC_PREFIX,
+				strlen(AWS_DEFAULT_TOPIC_PREFIX) + 1);
+			if (rc <= 0) {
+				AWS_SVC_LOG_ERR(
+					"Could not write AWS topic prefix (%d)",
+					rc);
+				return AWS_SVC_ERR_INIT_TOPIC_PREFIX;
+			}
+			aws_svc_set_topic_prefix(AWS_DEFAULT_TOPIC_PREFIX);
+		}
+#endif
 	}
 
 	bt_gatt_service_register(&aws_svc);
@@ -582,6 +655,8 @@ int aws_svc_init(const char *clientId)
 	size_t gatt_size = (sizeof(aws_attrs) / sizeof(aws_attrs[0]));
 	svc_status_index = lbt_find_gatt_index(&aws_status_uuid.uuid, aws_attrs,
 					       gatt_size);
+
+	bt_conn_cb_register(&aws_svc_conn_callbacks);
 
 	rc = AWS_SVC_ERR_NONE;
 done:
@@ -641,6 +716,13 @@ int aws_svc_save_clear_settings(bool save)
 		} else if (rc > 0) {
 			isClientKeyStored = true;
 		}
+#ifdef CONFIG_CONTACT_TRACING
+		rc = nvStoreAwsTopicPrefix(topic_prefix_value,
+					   strlen(topic_prefix_value) + 1);
+		if (rc < 0) {
+			goto exit;
+		}
+#endif
 		AWS_SVC_LOG_INF("Saved AWS settings");
 	} else {
 		AWS_SVC_LOG_INF("Cleared AWS settings");
@@ -649,6 +731,9 @@ int aws_svc_save_clear_settings(bool save)
 		nvDeleteAwsRootCa();
 		nvDeleteDevCert();
 		nvDeleteDevKey();
+#ifdef CONFIG_CONTACT_TRACING
+		nvDeleteAwsTopicPrefix();
+#endif
 		isClientCertStored = true;
 		isClientKeyStored = true;
 	}
@@ -656,7 +741,34 @@ exit:
 	return rc;
 }
 
-void aws_svc_set_event_callback(aws_svc_event_function_t func)
+static void aws_svc_connected(struct bt_conn *conn, uint8_t err)
 {
-	eventCallbackFunc = func;
+	if (err) {
+		return;
+	}
+
+	if (!lbt_slave_role(conn)) {
+		return;
+	}
+
+	aws_svc_conn = bt_conn_ref(conn);
+}
+
+static void aws_svc_disconnected(struct bt_conn *conn, uint8_t reason)
+{
+	if (!lbt_slave_role(conn)) {
+		return;
+	}
+
+	if (aws_svc_conn) {
+		bt_conn_unref(aws_svc_conn);
+		aws_svc_conn = NULL;
+	}
+}
+
+__weak void awsSvcEvent(enum aws_svc_event event)
+{
+	ARG_UNUSED(event);
+
+	return;
 }

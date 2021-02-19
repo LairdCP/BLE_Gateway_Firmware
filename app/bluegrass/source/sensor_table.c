@@ -545,7 +545,6 @@ void SensorTable_ProcessShadowInitMsg(SensorShadowInitMsg_t *pMsg)
 		}
 		p->pLog = SensorLog_Allocate(CONFIG_SENSOR_LOG_MAX_SIZE);
 		for (i = 0; i < pMsg->eventCount; i++) {
-			FRAMEWORK_ASSERT(pMsg->events[i].epoch != 0);
 			SensorLog_Add(p->pLog, &pMsg->events[i]);
 		}
 	}

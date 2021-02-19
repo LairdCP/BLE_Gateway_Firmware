@@ -59,7 +59,7 @@ LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 #endif
 
 #ifndef CONFIG_SENSOR_TTL_SECONDS
-#define CONFIG_SENSOR_TTL_SECONDS (60 * 60 * 2)
+#define CONFIG_SENSOR_TTL_SECONDS (60 * 2)
 #endif
 
 #define JSON_DEFAULT_BUF_SIZE (1536)
@@ -670,7 +670,10 @@ static void FreeEntryBuffers(SensorEntry_t *pEntry)
 
 static void AdEventHandler(LczSensorAdEvent_t *p, int8_t Rssi, uint32_t Index)
 {
-	sensorTable[Index].ttl = CONFIG_SENSOR_TTL_SECONDS;
+	if (sensorTable[Index].whitelisted) {
+		sensorTable[Index].ttl = CONFIG_SENSOR_TTL_SECONDS;
+	}
+
 	if (NewEvent(p->id, Index)) {
 		sensorTable[Index].validAd = true;
 		LOG_DBG("New Event for [%u] '%s' (%s) RSSI: %d", Index,
@@ -800,6 +803,7 @@ static size_t AddByAddress(const bt_addr_t *pAddr)
 static void AddEntry(SensorEntry_t *pEntry, const bt_addr_t *pAddr, int8_t Rssi)
 {
 	tableCount += 1;
+	pEntry->ttl = CONFIG_SENSOR_TTL_SECONDS;
 	pEntry->inUse = true;
 	pEntry->rssi = Rssi;
 	memcpy(pEntry->ad.addr.val, pAddr->val, sizeof(bt_addr_t));

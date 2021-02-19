@@ -1,15 +1,14 @@
 /**
  * @file laird_battery.h
- * @brief this module implements the battery metering and managment task.
+ * @brief this module implements the battery metering and management task.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef __BATTERY_H__
 #define __BATTERY_H__
 
-/* (Remove Empty Sections) */
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
@@ -42,8 +41,7 @@ struct battery_data {
 /* Global Data Definitions                                                    */
 /******************************************************************************/
 /* values used to report remaining battery capacity */
-enum battery_status
-{
+enum battery_status {
 	BATTERY_STATUS_0 = 0,
 	BATTERY_STATUS_1,
 	BATTERY_STATUS_2,
@@ -52,8 +50,7 @@ enum battery_status
 };
 
 /* values used to access the threshold voltages */
-enum battery_thresh_idx
-{
+enum battery_thresh_idx {
 	BATTERY_IDX_0 = 0,
 	BATTERY_IDX_1,
 	BATTERY_IDX_2,
@@ -70,7 +67,7 @@ enum battery_thresh_idx
 #define BATTERY_ALARM_ACTIVE 1
 #define BATTERY_ALARM_INACTIVE 0
 
-#define BATTERY_MV_PER_V	1000
+#define BATTERY_MV_PER_V 1000
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
 /******************************************************************************/

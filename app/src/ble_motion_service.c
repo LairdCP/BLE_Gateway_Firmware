@@ -2,25 +2,18 @@
  * @file ble_motion_service.c
  * @brief
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
-#include <drivers/sensor.h>
-
-#define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(mg100_motion_svc);
+LOG_MODULE_REGISTER(ble_motion_svc, CONFIG_BLE_MOTION_SVC_LOG_LEVEL);
 
 #define MOTION_SVC_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define MOTION_SVC_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
 #define MOTION_SVC_LOG_INF(...) LOG_INF(__VA_ARGS__)
 #define MOTION_SVC_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
-
-#define MOTION_ALARM_ACTIVE 1
-#define MOTION_ALARM_INACTIVE 0
-#define INACTIVITY_TIMER_PERIOD K_MSEC(30000)
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -28,6 +21,7 @@ LOG_MODULE_REGISTER(mg100_motion_svc);
 #include <bluetooth/uuid.h>
 #include <bluetooth/gatt.h>
 #include <bluetooth/bluetooth.h>
+#include <drivers/sensor.h>
 
 #include "laird_bluetooth.h"
 #include "ble_motion_service.h"
@@ -36,6 +30,10 @@ LOG_MODULE_REGISTER(mg100_motion_svc);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
+#define MOTION_ALARM_ACTIVE 1
+#define MOTION_ALARM_INACTIVE 0
+#define INACTIVITY_TIMER_PERIOD K_MSEC(30000)
+
 #define MOTION_SVC_BASE_UUID_128(_x_)                                          \
 	BT_UUID_INIT_128(0x66, 0x9a, 0x0c, 0x20, 0x00, 0x08, 0x6e, 0x8b, 0xea, \
 			 0x11, 0x1a, 0xac, LSB_16(_x_), MSB_16(_x_), 0xce,     \
@@ -265,7 +263,9 @@ void motion_svc_init()
 
 	/* configure the sensor */
 
-	/* NOTE: the zephyr sensor framework expects a frequency value rather than ODR value directly */
+	/* NOTE: the zephyr sensor framework expects a frequency value rather
+	 * than ODR value directly
+	 */
 	sVal.val1 = lis2dh_odr_map[GetOdr()];
 	sVal.val2 = 0;
 	status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ,

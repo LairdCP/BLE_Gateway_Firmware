@@ -2,7 +2,7 @@
  * @file sensor_cmd.h
  * @brief JSON command strings for Laird BT sensors.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -21,6 +21,8 @@ extern "C" {
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
+#define BT510_RESET_ACK_TO_DUMP_DELAY_TICKS K_SECONDS(10)
+#define BT510_WRITE_TO_RESET_DELAY_TICKS K_MSEC(1500)
 
 /* prefix + AWS string + suffix => JSON command that can be sent to sensor */
 extern const char SENSOR_CMD_SET_PREFIX[];

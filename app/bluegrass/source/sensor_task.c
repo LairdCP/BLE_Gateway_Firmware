@@ -2,14 +2,13 @@
  * @file sensor_task.c
  * @brief
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
-#define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(sensor_task);
+LOG_MODULE_REGISTER(sensor_task, CONFIG_SENSOR_TASK_LOG_LEVEL);
 #define FWK_FNAME "sensor"
 
 #define ST_LOG_DEV(...)
@@ -24,9 +23,9 @@ LOG_MODULE_REGISTER(sensor_task);
 #include "FrameworkIncludes.h"
 #include "Bracket.h"
 #include "laird_bluetooth.h"
-#include "bt_scan.h"
+#include "lcz_bt_scan.h"
 #include "vsp_definitions.h"
-#include "qrtc.h"
+#include "lcz_qrtc.h"
 #include "sensor_cmd.h"
 #include "sensor_table.h"
 #include "sensor_task.h"
@@ -279,8 +278,8 @@ static void SensorTaskThread(void *pArg1, void *pArg2, void *pArg3)
 	k_timer_user_data_set(&pObj->sensorTick, pObj);
 
 #ifdef CONFIG_SCAN_FOR_BT510
-	bt_scan_register(&pObj->scanUserId, SensorTaskAdvHandler);
-	bt_scan_start(pObj->scanUserId);
+	lcz_bt_scan_register(&pObj->scanUserId, SensorTaskAdvHandler);
+	lcz_bt_scan_start(pObj->scanUserId);
 #endif
 
 	while (true) {
@@ -426,7 +425,7 @@ static void SendSetEpochCommand(void)
 			 SENSOR_CMD_MAX_EPOCH_SIZE + 1;
 	char *buf = BufferPool_Take(maxSize);
 	if (buf != NULL) {
-		uint32_t epoch = Qrtc_GetEpoch();
+		uint32_t epoch = lcz_qrtc_get_epoch();
 		snprintk(buf, maxSize, SENSOR_CMD_SET_EPOCH_FMT_STR, epoch);
 		WriteString(buf);
 		LOG_DBG("%u", epoch);
@@ -497,7 +496,7 @@ static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 	SensorTaskObj_t *pObj = FWK_TASK_CONTAINER(SensorTaskObj_t);
 
 	if (pObj->pCmdMsg == NULL && pObj->conn == NULL) { /* not busy */
-		bt_scan_stop(pObj->scanUserId);
+		lcz_bt_scan_stop(pObj->scanUserId);
 		Bracket_Reset(pObj->pBracket);
 		pObj->pCmdMsg = (SensorCmdMsg_t *)pMsg;
 		pObj->connected = false;
@@ -506,8 +505,8 @@ static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 		pObj->configComplete = false;
 		err = bt_conn_le_create(&pObj->pCmdMsg->addr,
 					pObj->pCmdMsg->useCodedPhy ?
-						BT_CONN_CODED_CREATE_CONN :
-						BT_CONN_LE_CREATE_CONN,
+						      BT_CONN_CODED_CREATE_CONN :
+						      BT_CONN_LE_CREATE_CONN,
 					BT_LE_CONN_PARAM_DEFAULT, &pObj->conn);
 
 		LOG_INF("Connection Request (%u): '%s' (%s) %x-%u",
@@ -554,7 +553,7 @@ static DispatchResult_t DisconnectMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 
 	bt_conn_unref(pObj->conn);
 	pObj->conn = NULL;
-	bt_scan_restart(pObj->scanUserId);
+	lcz_bt_scan_restart(pObj->scanUserId);
 
 	return DISPATCH_OK;
 }

@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2017 Linaro Limited
  * Copyright (c) 2017-2019 Foundries.io
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -26,7 +26,7 @@ LOG_MODULE_REGISTER(lwm2m_client);
 #include "lcz_dns.h"
 #include "led_configuration.h"
 #include "dis.h"
-#include "qrtc.h"
+#include "lcz_qrtc.h"
 #include "laird_power.h"
 #include "ble_lwm2m_service.h"
 #include "lte.h"
@@ -136,7 +136,7 @@ static void *current_time_read_cb(uint16_t obj_inst_id, uint16_t res_id,
 	/* The device object doesn't allow this to be set because
 	 * reads are intercepted */
 	ARG_UNUSED(obj_inst_id);
-	lwm2m_time = Qrtc_GetEpoch();
+	lwm2m_time = lcz_qrtc_get_epoch();
 	*data_len = sizeof(lwm2m_time);
 	return &lwm2m_time;
 }
@@ -290,8 +290,8 @@ static void lwm2m_client_init_internal(void)
 	lwm2m_initialized = false;
 
 	flags = IS_ENABLED(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP) ?
-			LWM2M_RD_CLIENT_FLAG_BOOTSTRAP :
-			0;
+			      LWM2M_RD_CLIENT_FLAG_BOOTSTRAP :
+			      0;
 
 	ret = resolve_server_address();
 	if (ret < 0) {

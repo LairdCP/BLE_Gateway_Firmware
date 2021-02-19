@@ -2,7 +2,7 @@
  * @file aws.h
  * @brief Amazon Web Services API
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -59,11 +59,7 @@ static const unsigned char aws_root_ca[] =
 
 #define APP_SLEEP_MSECS 500
 
-#define PUBLISH_TIMEOUT_TICKS K_SECONDS(5)
-
 #define APP_CONNECT_TRIES 1
-
-#define APP_MQTT_BUFFER_SIZE 1024
 
 #ifdef CONFIG_BOARD_MG100
 #define DEFAULT_MQTT_CLIENTID "mg100"
@@ -107,8 +103,6 @@ static const unsigned char aws_root_ca[] =
 #define AWS_RX_THREAD_PRIORITY K_PRIO_COOP(15)
 
 #define GATEWAY_TOPIC NULL
-
-#define CLEAR_SHADOW_ON_STARTUP 0
 
 struct shadow_persistent_values {
 	const char *firmware_version;
@@ -166,9 +160,10 @@ void awsSetClientId(const char *id);
 int awsGetServerAddr(void);
 int awsConnect(void);
 bool awsConnected(void);
+bool awsPublished(void);
 void awsDisconnect(void);
-int awsKeepAlive(void);
 int awsSendData(char *data, uint8_t *topic);
+int awsSendBinData(char *data, uint32_t len, uint8_t *topic);
 int awsPublishShadowPersistentData(void);
 int awsSetShadowKernelVersion(const char *version);
 int awsSetShadowIMEI(const char *imei);

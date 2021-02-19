@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Laird Connectivity
+# Copyright (c) 2021 Laird Connectivity
 # SPDX-License-Identifier: Apache-2.0
 
 menuconfig USER_APPLICATION
@@ -20,7 +20,6 @@ config SENSOR_MAX_AD_SIZE
 
 menuconfig BL654_SENSOR
     bool "BL654 sensor support"
-    default y
 
 if BL654_SENSOR
 
@@ -38,14 +37,17 @@ config BL654_SENSOR_NAME
 
 endif # BL654_SENSOR
 
+config SENSOR_TASK
+    bool
+    default n
+
 config SCAN_FOR_BT510
     bool "Parse Bluetooth advertisements for BT510 Sensor"
-    default y
+    select SENSOR_TASK
 
 config SCAN_FOR_BT510_CODED
     bool "Scan for coded PHY and 1M advertisements from BT510"
-    default y
-    depends on SCAN_FOR_BT510
+    default y if SCAN_FOR_BT510
     depends on BT_EXT_ADV
     depends on BT_LL_NRFXLIB_VS_INCLUDE
     depends on BT_LL_NRFXLIB_DEFAULT
@@ -68,8 +70,17 @@ config AWS_TOPIC_MAX_SIZE
     int "Maximum size for AWS topic strings"
     default 64
 
+config MQTT_RX_BUFFER_SIZE
+    int "Size of buffer for MQTT rx path"
+    default 1024
+
+config MQTT_TX_BUFFER_SIZE
+    int "Size of buffer for MQTT tx path"
+    default 1536
+
 menuconfig BLUEGRASS
     bool "Laird Connectivity Bluegrass cloud"
+    depends on MQTT_LIB
     help
         Send sensor data to Bluegrass cloud platform
 
@@ -86,11 +97,26 @@ config AWS_DATA_SEND_LED_OFF_DURATION_MILLISECONDS
         Subscription processing doesn't blink green LED.
 
 config AWS_KEEP_ALIVE_SECONDS
-    int "The modem's RSSI is sent at this rate to keep AWS connection alive"
+    int "MQTT pings are sent at this rate to keep AWS connection alive"
     default 30
-    range 1 80
+
+config AWS_PUBLISH_TIMEOUT_SECONDS
+    int "Number of seconds to wait for MQTT QOS_1 ack"
+    default 15
+
+config AWS_PUBLISH_WATCHDOG_SECONDS
+    int "Watchdog timeout for successful AWS publish"
+    default 3600
     help
-        This can't be more than the AWS connection timeout.
+        Disabled when 0
+        Not enabled until first successful publish
+        Timeout causes a reset
+
+config AWS_MAX_CONSECUTIVE_CONNECTION_FAILURES
+    int "Maximum consecutive connection failures before reset"
+    default 0
+    help
+        Disabled when 0
 
 config USE_SINGLE_AWS_TOPIC
     bool "Send all sensor data to gateway topic"
@@ -100,6 +126,9 @@ config USE_SINGLE_AWS_TOPIC
         When using a single topic [BT510] temperature data is sent to the
         gateway's topic vs. the individual sensor topic.
         BL654 sensor data is always sent to the gateway topic.
+
+config AWS_CLEAR_SHADOW_ON_STARTUP
+    bool "Null shadow state on first connection"
 
 config APP_CA_CERT_TAG
     int "mbedTLS tag for CA"
@@ -176,6 +205,11 @@ config APP_AWS_ENDPOINT_MAX_LENGTH
     default 256
     help
         Max length of AWS endpoint hostname.
+
+config BLUEGRASS_LOG_LEVEL
+    int "Bluegrass Log level"
+    range 0 4
+    default 3
 
 endif # BLUEGRASS
 
@@ -268,7 +302,57 @@ config APP_AWS_CLIENT_KEY_FILE_NAME
 
 endif # APP_AWS_CUSTOMIZATION
 
+config BLE_MOTION_SVC_LOG_LEVEL
+    int "Log level for BLE motion service"
+    range 0 4
+    default 3
+
+config BLE_BATTERY_SERVICE_LOG_LEVEL
+    int "Log level for BLE battery service"
+    range 0 4
+    default 3
+
+config AWS_LOG_LEVEL
+    int "AWS Log level"
+    range 0 4
+    default 3
+
+config AWS_PUBACK_LOG_LEVEL
+    int "Log level for publish acknowledgements"
+    range 0 4
+    default 3
+
+config BLE_AWS_SERVICE_LOG_LEVEL
+    int "BLE AWS Log level"
+    range 0 4
+    default 3
+
+config LTE_LOG_LEVEL
+    int "LTE Log level"
+    range 0 4
+    default 3
+
+config SENSOR_TASK_LOG_LEVEL
+    int "Sensor Task Log level"
+    range 0 4
+    default 3
+
+config SENSOR_TABLE_LOG_LEVEL
+    int "Sensor Table Log level"
+    range 0 4
+    default 3
+
+config SD_CARD_LOG_LEVEL
+    int "SD Card Log level"
+    range 0 4
+    default 3
+
+rsource "./Kconfig.ble"
+rsource "./Kconfig.single_peripheral"
+rsource "./Kconfig.lairdconnect_battery"
+rsource "./Kconfig.button"
 rsource "./coap/Kconfig"
+rsource "./contact_tracing/Kconfig"
 
 endif # USER_APPLICATION
 

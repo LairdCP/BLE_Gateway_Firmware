@@ -1,0 +1,8 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+config BUTTON_LOG_LEVEL
+    int "Log level for button"
+    range 0 4
+    default 3
+

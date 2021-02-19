@@ -12,12 +12,12 @@ For a DVK the complete local name will look like `Pinnacle 100 OOB-1234567`.
 
 Characteristics:
 
-| Name               | UUID | Properties  | Description                           |
-| ------------------ | ---- | ----------- | ------------------------------------- |
-| Model Number       | 2a24 | read        | Model number of the device (string)   |
-| Firmware Revision  | 2a26 | read        | Zephyr RTOS version (string)          |
-| Software Revision  | 2a28 | read        | OOB demo application version (string) |
-| Manufacturer       | 2a29 | read        | Manufacturer (string)                 |
+| Name              | UUID | Properties | Description                           |
+| ----------------- | ---- | ---------- | ------------------------------------- |
+| Model Number      | 2a24 | read       | Model number of the device (string)   |
+| Firmware Revision | 2a26 | read       | Zephyr RTOS version (string)          |
+| Software Revision | 2a28 | read       | OOB demo application version (string) |
+| Manufacturer      | 2a29 | read       | Manufacturer (string)                 |
 
 ## AWS Provisioning Profile
 
@@ -45,42 +45,6 @@ Though not technically required to be written in order, the procedure for writin
 
 Reads of the same characteristics will always return a 32-byte SHA256 hash of the contents of the characteristic. This allows for the verification that certificates and keys were programmed correctly with a high degree of certainty without having to allow the characteristic to be read. Allowing future reads of the private key are especially undesirable.
 
-## Bootloader Profile
-
-### UUID: e52b0000-7a7a-f5e0-d304-2cb8844fe3a0
-
-Characteristics:
-
-| Name                                | UUID                                 | Properties | Description                                                                                                                                                                                                                                                                                                                        |
-| ----------------------------------- | ------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bootloader present                  | e52b0001-7a7a-f5e0-d304-2cb8844fe3a0 | read       | One byte. 0 = bootloader not present, 1 = bootloader present                                                                                                                                                                                                                                                                       |
-| Header checked                      | e52b0002-7a7a-f5e0-d304-2cb8844fe3a0 | read       | One byte. 0 = header not checked, 1 = header checked                                                                                                                                                                                                                                                                               |
-| Error code                          | e52b0003-7a7a-f5e0-d304-2cb8844fe3a0 | read       | One byte. 0 = uninitialised, 1 = initialised, 2 = invalid checksum, 3 = invalid size, 4 = invalid section areas, 5 = invalid function version, 6 = invalid function address, 7 = checksum mismatch                                                                                                                                 |
-| Bootloader version                  | e52b0004-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 16-bit integer. Version of bootloader                                                                                                                                                                                                                                                                                     |
-| Ext. header version                 | e52b0005-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 16-bit integer. Version of external header                                                                                                                                                                                                                                                                                |
-| Ext. function version               | e52b0006-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 16-bit integer. Version of external function                                                                                                                                                                                                                                                                              |
-| Public key set                      | e52b0007-7a7a-f5e0-d304-2cb8844fe3a0 | read       | One byte. 0 = public key not set, 1 = public key set                                                                                                                                                                                                                                                                               |
-| Public key                          | e52b0008-7a7a-f5e0-d304-2cb8844fe3a0 | read       | ASCII string with the public key, if it is set (64 bytes)                                                                                                                                                                                                                                                                          |
-| Readback protection                 | e52b0009-7a7a-f5e0-d304-2cb8844fe3a0 | read       | One byte. 0 = readback protection not enabled, 1 = readback protection enabled                                                                                                                                                                                                                                                     |
-| CPU debug protection                | e52b000a-7a7a-f5e0-d304-2cb8844fe3a0 | read       | One byte. 0 = CPU debug protection not enabled, 1 = CPU debug protection enabled.                                                                                                                                                                                                                                                  |
-| QSPI checked                        | e52b000b-7a7a-f5e0-d304-2cb8844fe3a0 | read       | One byte. 0 = unchecked/untrusted, 1 = public key not set - customer key signed signed sections are not validated, 2 = all data validated                                                                                                                                                                                          |
-| QSPI header CRC                     | e52b000c-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 32-bit integer. Checksum of QSPI header data                                                                                                                                                                                                                                                                              |
-| QSPI header SHA256                  | e52b000d-7a7a-f5e0-d304-2cb8844fe3a0 | read       | ASCII string with the SHA256 hash of the QSPI header data (32 bytes)                                                                                                                                                                                                                                                               |
-| Bootloader type                     | e52b000e-7a7a-f5e0-d304-2cb8844fe3a0 | read       | One byte. 0 = debug build, 1 = release build                                                                                                                                                                                                                                                                                       |
-| Bootloader update failures          | e52b000f-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 8-bit integer. Number of bootloader update failures                                                                                                                                                                                                                                                                       |
-| Bootloader update last fail version | e52b0010-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 16-bit integer. Last bootloader update failure version number                                                                                                                                                                                                                                                             |
-| Bootloader update last fail code    | e52b0011-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 8-bit integer. Last bootloader update failure error code                                                                                                                                                                                                                                                                  |
-| Bootloader updates applied          | e52b0012-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 16-bit integer. Number of successful bootloader updates                                                                                                                                                                                                                                                                   |
-| Section updates applied             | e52b0013-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 16-bit integer. Number of successful section updates                                                                                                                                                                                                                                                                      |
-| Modem updates applied               | e52b0014-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 16-bit integer. Number of successful modem firmware updates                                                                                                                                                                                                                                                               |
-| Modem update last fail version      | e52b0015-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 16-bit integer. Last modem update failure version number                                                                                                                                                                                                                                                                  |
-| Modem update last fail code         | e52b0016-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 8-bit integer. Last modem update failure error code                                                                                                                                                                                                                                                                       |
-| Compression errors                  | e52b0017-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 8-bit integer. Number of compression system errors                                                                                                                                                                                                                                                                        |
-| Compression last error code         | e52b0018-7a7a-f5e0-d304-2cb8844fe3a0 | read       | Unsigned 16-bit integer. Last compression system failure error code                                                                                                                                                                                                                                                                |
-| Module build date                   | e52b0019-7a7a-f5e0-d304-2cb8844fe3a0 | read       | ASCII string containing the build date of the module (11 bytes)                                                                                                                                                                                                                                                                    |
-| Bootloader firmware build date      | e52b001a-7a7a-f5e0-d304-2cb8844fe3a0 | read       | ASCII string containing the build date of the bootloader firmware (11 bytes)                                                                                                                                                                                                                                                       |
-| Boot verification                   | e52b001b-7a7a-f5e0-d304-2cb8844fe3a0 | read       | One byte. Bitmask consisting of: 1 = check MBR, 2 = check bootloader, 4 = check external function, 8 = check main application, 16 = check softdevice, 32 = prevent boot if MBR/bootloader verification fails, 64 = do not boot unverified code, 128 = prevent entering bootloader if verification fails and stay in low power mode |
-
 ## Cellular Profile
 
 ### UUID: 43787c60-9e84-4eb1-a669-70b6404da336
@@ -102,7 +66,7 @@ Characteristics:
 | RAT              | 43787c6b-9e84-4eb1-a669-70b6404da336 | read/write/notify | One byte for Radio Access Technology: 0 - CAT M1, 1 = CAT NB1                                                                                                                     |
 | ICCID            | 43787c6c-9e84-4eb1-a669-70b6404da336 | read              | 20-digit ASCII string                                                                                                                                                             |
 | Serial Number    | 43787c6d-9e84-4eb1-a669-70b6404da336 | read              | 14 character ASCII string                                                                                                                                                         |
-| Bands            | 43787c6e-9e84-4eb1-a669-70b6404da336 | read              | 20 character ASCII string representing LTE band configuration.  See section 5.19 of HL7800 AT command guide for more information.                                                 |
+| Bands            | 43787c6e-9e84-4eb1-a669-70b6404da336 | read              | 20 character ASCII string representing LTE band configuration. See section 5.19 of HL7800 AT command guide for more information.                                                  |
 | Active Bands     | 43787c6f-9e84-4eb1-a669-70b6404da336 | read/notify       | 20 character ASCII string representing the Active LTE band configuration.                                                                                                         |
 
 ## Power Profile
@@ -117,6 +81,7 @@ Characteristics:
 | Reboot               | dc1c0002-f3d7-559e-f24e-78fb67b2b7eb | write      | One bytes. Writing to this will reboot the module, writing a value of 0x01 will stay in the UART bootloader, any other value will reboot to the user application |
 
 ## Battery Profile
+
 > **Note:** Only available on an MG100
 
 ### UUID: 6d4a06b0-9641-11ea-ab12-0800200c9a66
@@ -138,15 +103,16 @@ Characteristics:
 | Battery Low Alarm       | 6d4a06bb-9641-11ea-ab12-0800200c9a66 | notify      | unsigned 8-bit value indicating the low battery alarm state. 0 = no alarm, 1 = alarm.                                                                                                  |
 
 ## Motion Profile
+
 > **Note:** Only available on an MG100
 
 ### UUID: adce0a30-ac1a-11ea-8b6e-0800200c9a66
 
 Characteristics:
 
-| Name                     | UUID                                 | Properties  | Description                                                                                  |
-| ------------------------ | ------------------------------------ | ----------- | -------------------------------------------------------------------------------------------- |
-| Motion Alarm             | adce0a31-ac1a-11ea-8b6e-0800200c9a66 | notify      | One Byte. Motion State: 1 - Motion, 0 - No Motion                                            |
+| Name         | UUID                                 | Properties | Description                                       |
+| ------------ | ------------------------------------ | ---------- | ------------------------------------------------- |
+| Motion Alarm | adce0a31-ac1a-11ea-8b6e-0800200c9a66 | notify     | One Byte. Motion State: 1 - Motion, 0 - No Motion |
 
 ## Sensor Profile
 
@@ -167,13 +133,12 @@ This service is only available for the LwM2M example.
 
 Characteristics:
 
-| Name                     | UUID                                 | Properties  | Description                                                                                  |
-| ------------------------ | ------------------------------------ | ----------- | -------------------------------------------------------------------------------------------- |
-| Generate                 | 07fd0001-d320-768c-364a-c405518f724c | write       | One Byte. Write zero to set to defaults.  Write non-zero to generate new PSK.                |
-| Client PSK               | 07fd0002-d320-768c-364a-c405518f724c | read        | 16 bytes.  Private shared key used to talk to Leshan server.                                 |
-| Client ID                | 07fd0003-d320-768c-364a-c405518f724c | read/write  | Maximum of a 32 character string.  Unique ID associated with PSK.                            |
-| Peer URL                 | 07fd0004-d320-768c-364a-c405518f724c | read/write  | Maximum of a 128 character string.  URL of Leshan server.                                    |
-
+| Name       | UUID                                 | Properties | Description                                                                  |
+| ---------- | ------------------------------------ | ---------- | ---------------------------------------------------------------------------- |
+| Generate   | 07fd0001-d320-768c-364a-c405518f724c | write      | One Byte. Write zero to set to defaults. Write non-zero to generate new PSK. |
+| Client PSK | 07fd0002-d320-768c-364a-c405518f724c | read       | 16 bytes. Private shared key used to talk to Leshan server.                  |
+| Client ID  | 07fd0003-d320-768c-364a-c405518f724c | read/write | Maximum of a 32 character string. Unique ID associated with PSK.             |
+| Peer URL   | 07fd0004-d320-768c-364a-c405518f724c | read/write | Maximum of a 128 character string. URL of Leshan server.                     |
 
 ## FOTA Profile
 
@@ -181,11 +146,11 @@ Characteristics:
 
 Characteristics:
 
-| Name             | UUID                                 | Properties        | Description
-| ---------------- | ------------------------------------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Control Point    | 3e12f001-0a2a-324b-2685-8349747c5745 | read/write/notify | One byte for controlling the FOTA service. 0 - NOP, 1 - List Files, 2 - Modem Start, 3 - Delete Files, 4 - Compute SHA256                                                                                                                                                   |
-| Status           | 3e12f002-0a2a-324b-2685-8349747c5745 | read/notify       | Integer. A negative value - indicates system error code, 0 - Success, 1 - Busy, 2 - Unspecific error code.  Any value other than 1 can be considered Idle. Busy will always be notified. Any subsequent commands issued before a success or error response will be ignored. |
-| Count            | 3e12f003-0a2a-324b-2685-8349747c5745 | read/notify       | The number of bytes that have been transferred in the current FOTA update. This may be larger than the size if data is padded during transfer.                                                                                                                              |
-| Size             | 3e12f004-0a2a-324b-2685-8349747c5745 | read/notify       | The size of the file in bytes.                                                                                                                                                                                                                                              |
-| File Name        | 3e12f005-0a2a-324b-2685-8349747c5745 | read/write/notify | The file name of the current operation. File names are pattern matched. An empty string will match all files. The filesystem is not traversed.                                                                                                                              |
-| Hash             | 3e12f006-0a2a-324b-2685-8349747c5745 | read/notify       | The 32-byte SHA256 hash of the current file.                                                                                                                                                                                                                                |
+| Name          | UUID                                 | Properties        | Description                                                                                                                                                                                                                                                                |
+| ------------- | ------------------------------------ | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Control Point | 3e12f001-0a2a-324b-2685-8349747c5745 | read/write/notify | One byte for controlling the FOTA service. 0 - NOP, 1 - List Files, 2 - Modem Start, 3 - Delete Files, 4 - Compute SHA256                                                                                                                                                  |
+| Status        | 3e12f002-0a2a-324b-2685-8349747c5745 | read/notify       | Integer. A negative value - indicates system error code, 0 - Success, 1 - Busy, 2 - Unspecific error code. Any value other than 1 can be considered Idle. Busy will always be notified. Any subsequent commands issued before a success or error response will be ignored. |
+| Count         | 3e12f003-0a2a-324b-2685-8349747c5745 | read/notify       | The number of bytes that have been transferred in the current FOTA update. This may be larger than the size if data is padded during transfer.                                                                                                                             |
+| Size          | 3e12f004-0a2a-324b-2685-8349747c5745 | read/notify       | The size of the file in bytes.                                                                                                                                                                                                                                             |
+| File Name     | 3e12f005-0a2a-324b-2685-8349747c5745 | read/write/notify | The file name of the current operation. File names are pattern matched. An empty string will match all files. The filesystem is not traversed.                                                                                                                             |
+| Hash          | 3e12f006-0a2a-324b-2685-8349747c5745 | read/notify       | The 32-byte SHA256 hash of the current file.                                                                                                                                                                                                                               |

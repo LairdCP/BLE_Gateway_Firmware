@@ -2,8 +2,7 @@
  * @file coap_fota_shadow.c
  * @brief
  *
- *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -19,7 +18,7 @@ LOG_MODULE_REGISTER(coap_fota_shadow, LOG_LEVEL_DBG);
 #include <stdio.h>
 
 #include "aws.h"
-#include "qrtc.h"
+#include "lcz_qrtc.h"
 #include "app_version.h"
 #include "string_util.h"
 #include "file_system_utilities.h"
@@ -342,7 +341,7 @@ bool coap_fota_request(enum fota_image_type type)
 	if ((strlen(p->desired) != 0) && (strlen(p->running) != 0) &&
 	    (strlen(p->desired_filename) != 0)) {
 		if (strcmp(p->desired, p->running) != 0) {
-			if (Qrtc_GetEpoch() >= p->start) {
+			if (lcz_qrtc_get_epoch() >= p->start) {
 				request = true;
 			}
 		}
@@ -364,7 +363,7 @@ bool coap_fota_ready(enum fota_image_type type)
 		if (strcmp(p->desired, p->running) != 0) {
 			if (strcmp(p->desired_filename,
 				   p->downloaded_filename) == 0) {
-				if (Qrtc_GetEpoch() >= p->switchover) {
+				if (lcz_qrtc_get_epoch() >= p->switchover) {
 					ready = true;
 				}
 			}

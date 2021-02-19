@@ -2,14 +2,13 @@
  * @file sensor_table.c
  * @brief
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
-#define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(sensor_table);
+LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 #define FWK_FNAME "sensor_table"
 
 #define VERBOSE_AD_LOG(...)
@@ -23,12 +22,12 @@ LOG_MODULE_REGISTER(sensor_table);
 #include <bluetooth/bluetooth.h>
 
 #include "laird_bluetooth.h"
-#include "qrtc.h"
+#include "lcz_qrtc.h"
 #include "ad_find.h"
 #include "shadow_builder.h"
 #include "sensor_cmd.h"
-#include "sensor_adv_format.h"
-#include "sensor_event.h"
+#include "lcz_sensor_adv_format.h"
+#include "lcz_sensor_event.h"
 #include "sensor_log.h"
 #include "bt510_flags.h"
 #include "lte.h"
@@ -95,8 +94,8 @@ typedef struct SensorEntry {
 	bool updatedRsp;
 	char name[SENSOR_NAME_MAX_SIZE];
 	char addrString[SENSOR_ADDR_STR_SIZE];
-	Bt510AdEvent_t ad;
-	Bt510Rsp_t rsp;
+	LczSensorAdEvent_t ad;
+	LczSensorRsp_t rsp;
 	int8_t rssi;
 	uint8_t lastRecordType;
 	uint32_t rxEpoch;
@@ -142,19 +141,19 @@ static bool FindBt510ScanResponse(AdHandle_t *pHandle);
 static bool FindBt510CodedAdvertisement(AdHandle_t *pHandle);
 
 static size_t AddByScanResponse(const bt_addr_le_t *pAddr,
-				AdHandle_t *pNameHandle, Bt510Rsp_t *pRsp,
+				AdHandle_t *pNameHandle, LczSensorRsp_t *pRsp,
 				int8_t Rssi);
 static size_t AddByAddress(const bt_addr_t *pAddr);
 static void AddEntry(SensorEntry_t *pEntry, const bt_addr_t *pAddr,
 		     int8_t Rssi);
 static size_t FindTableIndex(const bt_addr_le_t *pAddr);
 static size_t FindFirstFree(void);
-static void AdEventHandler(Bt510AdEvent_t *p, int8_t Rssi, uint32_t Index);
+static void AdEventHandler(LczSensorAdEvent_t *p, int8_t Rssi, uint32_t Index);
 
 static bool AddrMatch(const void *p, size_t Index);
 static bool AddrStringMatch(const char *str, size_t Index);
 static bool NameMatch(const char *p, size_t Index);
-static bool RspMatch(const Bt510Rsp_t *p, size_t Index);
+static bool RspMatch(const LczSensorRsp_t *p, size_t Index);
 static bool NewEvent(uint16_t Id, size_t Index);
 
 static void SensorAddrToString(SensorEntry_t *pEntry);
@@ -243,8 +242,8 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 	 */
 	if (FindBt510ScanResponse(&manHandle)) {
 		if (nameHandle.pPayload != NULL) {
-			Bt510RspWithHeader_t *pRspPacket =
-				(Bt510RspWithHeader_t *)manHandle.pPayload;
+			LczSensorRspWithHeader_t *pRspPacket =
+				(LczSensorRspWithHeader_t *)manHandle.pPayload;
 			tableIndex = AddByScanResponse(pAddr, &nameHandle,
 						       &pRspPacket->rsp, rssi);
 		}
@@ -265,8 +264,8 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 		}
 
 		if (tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
-			Bt510AdEvent_t *pAd =
-				(Bt510AdEvent_t *)manHandle.pPayload;
+			LczSensorAdEvent_t *pAd =
+				(LczSensorAdEvent_t *)manHandle.pPayload;
 			AdEventHandler(pAd, rssi, tableIndex);
 		}
 	}
@@ -274,7 +273,8 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 	/* The coded PHY ad (superset) is processed using the 1M PHY pieces. */
 	if (FindBt510CodedAdvertisement(&manHandle)) {
 		coded = true;
-		Bt510Coded_t *pCoded = (Bt510Coded_t *)manHandle.pPayload;
+		LczSensorAdCoded_t *pCoded =
+			(LczSensorAdCoded_t *)manHandle.pPayload;
 		if (nameHandle.pPayload != NULL) {
 			tableIndex = AddByScanResponse(pAddr, &nameHandle,
 						       &pCoded->rsp, rssi);
@@ -614,7 +614,7 @@ void SensorTable_TimeToLiveHandler(void)
 		if (p->inUse) {
 			p->ttl = (p->ttl > deltaS) ? (p->ttl - deltaS) : 0;
 			if (p->ttl == 0 && !p->whitelisted) {
-				LOG_WRN("Removing '%s' sensor %s from table",
+				LOG_DBG("Removing '%s' sensor %s from table",
 					log_strdup(p->name),
 					log_strdup(p->addrString));
 				ClearEntry(p);
@@ -669,7 +669,7 @@ static void FreeEntryBuffers(SensorEntry_t *pEntry)
 	}
 }
 
-static void AdEventHandler(Bt510AdEvent_t *p, int8_t Rssi, uint32_t Index)
+static void AdEventHandler(LczSensorAdEvent_t *p, int8_t Rssi, uint32_t Index)
 {
 	sensorTable[Index].ttl = CONFIG_SENSOR_TTL_SECONDS;
 	if (NewEvent(p->id, Index)) {
@@ -679,10 +679,10 @@ static void AdEventHandler(Bt510AdEvent_t *p, int8_t Rssi, uint32_t Index)
 			log_strdup(sensorTable[Index].addrString), Rssi);
 		sensorTable[Index].lastRecordType =
 			sensorTable[Index].ad.recordType;
-		memcpy(&sensorTable[Index].ad, p, sizeof(Bt510AdEvent_t));
+		memcpy(&sensorTable[Index].ad, p, sizeof(LczSensorAdEvent_t));
 		sensorTable[Index].rssi = Rssi;
 		/* If event occurs before epoch is set, then AWS shows ~1970. */
-		sensorTable[Index].rxEpoch = Qrtc_GetEpoch();
+		sensorTable[Index].rxEpoch = lcz_qrtc_get_epoch();
 		ShadowMaker(&sensorTable[Index]);
 #ifdef CONFIG_BOARD_MG100
 		sdCardLogAdEvent(p);
@@ -699,9 +699,9 @@ static void AdEventHandler(Bt510AdEvent_t *p, int8_t Rssi, uint32_t Index)
 static bool FindBt510Advertisement(AdHandle_t *pHandle)
 {
 	if (pHandle->pPayload != NULL) {
-		if ((pHandle->size == BT510_MSD_AD_PAYLOAD_LENGTH)) {
-			if (memcmp(pHandle->pPayload, BT510_AD_HEADER,
-				   sizeof(BT510_AD_HEADER)) == 0) {
+		if ((pHandle->size == LCZ_SENSOR_MSD_AD_PAYLOAD_LENGTH)) {
+			if (memcmp(pHandle->pPayload, BTXXX_AD_HEADER,
+				   sizeof(BTXXX_AD_HEADER)) == 0) {
 				return true;
 			}
 		}
@@ -712,9 +712,9 @@ static bool FindBt510Advertisement(AdHandle_t *pHandle)
 static bool FindBt510ScanResponse(AdHandle_t *pHandle)
 {
 	if (pHandle->pPayload != NULL) {
-		if ((pHandle->size == BT510_MSD_RSP_PAYLOAD_LENGTH)) {
-			if (memcmp(pHandle->pPayload, BT510_RSP_HEADER,
-				   sizeof(BT510_RSP_HEADER)) == 0) {
+		if ((pHandle->size == LCZ_SENSOR_MSD_RSP_PAYLOAD_LENGTH)) {
+			if (memcmp(pHandle->pPayload, BTXXX_RSP_HEADER,
+				   sizeof(BTXXX_RSP_HEADER)) == 0) {
 				return true;
 			}
 		}
@@ -725,9 +725,9 @@ static bool FindBt510ScanResponse(AdHandle_t *pHandle)
 static bool FindBt510CodedAdvertisement(AdHandle_t *pHandle)
 {
 	if (pHandle->pPayload != NULL) {
-		if ((pHandle->size == BT510_MSD_CODED_PAYLOAD_LENGTH)) {
-			if (memcmp(pHandle->pPayload, BT510_CODED_HEADER,
-				   sizeof(BT510_CODED_HEADER)) == 0) {
+		if ((pHandle->size == LCZ_SENSOR_MSD_CODED_PAYLOAD_LENGTH)) {
+			if (memcmp(pHandle->pPayload, BTXXX_CODED_HEADER,
+				   sizeof(BTXXX_CODED_HEADER)) == 0) {
 				return true;
 			}
 		}
@@ -736,7 +736,7 @@ static bool FindBt510CodedAdvertisement(AdHandle_t *pHandle)
 }
 
 static size_t AddByScanResponse(const bt_addr_le_t *pAddr,
-				AdHandle_t *pNameHandle, Bt510Rsp_t *pRsp,
+				AdHandle_t *pNameHandle, LczSensorRsp_t *pRsp,
 				int8_t Rssi)
 {
 	if (pNameHandle->pPayload == NULL) {
@@ -773,7 +773,7 @@ static size_t AddByScanResponse(const bt_addr_le_t *pAddr,
 		pEntry->validRsp = true;
 		if (add || updateRsp) {
 			pEntry->updatedRsp = true;
-			memcpy(&pEntry->rsp, pRsp, sizeof(Bt510Rsp_t));
+			memcpy(&pEntry->rsp, pRsp, sizeof(LczSensorRsp_t));
 		}
 		if (add || updateName) {
 			pEntry->updatedName = true;
@@ -859,9 +859,10 @@ static bool NameMatch(const char *p, size_t Index)
 		0);
 }
 
-static bool RspMatch(const Bt510Rsp_t *p, size_t Index)
+static bool RspMatch(const LczSensorRsp_t *p, size_t Index)
 {
-	return (memcmp(p, &sensorTable[Index].rsp, sizeof(Bt510Rsp_t)) == 0);
+	return (memcmp(p, &sensorTable[Index].rsp, sizeof(LczSensorRsp_t)) ==
+		0);
 }
 
 static bool NewEvent(uint16_t Id, size_t Index)
@@ -1016,12 +1017,12 @@ static void ShadowRspHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
  */
 static int32_t GetTemperature(SensorEntry_t *pEntry)
 {
-	return (int32_t)((int16_t)pEntry->ad.data);
+	return (int32_t)((int16_t)pEntry->ad.data.u16);
 }
 
 static uint32_t GetBattery(SensorEntry_t *pEntry)
 {
-	return (uint32_t)((uint16_t)pEntry->ad.data);
+	return (uint32_t)((uint16_t)pEntry->ad.data.u16);
 }
 
 static bool LowBatteryAlarm(SensorEntry_t *pEntry)
@@ -1051,8 +1052,8 @@ static void ShadowTemperatureHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 		ShadowBuilder_AddSigned32(
 			pMsg,
 			MangleKey(pEntry->name, CONFIG_USE_SINGLE_AWS_TOPIC ?
-							"temperature" :
-							"tempCc"),
+							      "temperature" :
+							      "tempCc"),
 			temperature);
 		break;
 	default:
@@ -1067,13 +1068,13 @@ static void ShadowEventHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 	case SENSOR_EVENT_BATTERY_GOOD:
 	case SENSOR_EVENT_BATTERY_BAD:
 		ShadowBuilder_AddUint32(pMsg, "batteryVoltageMv",
-					(uint32_t)pEntry->ad.data);
+					(uint32_t)pEntry->ad.data.u16);
 		break;
 	case SENSOR_EVENT_RESET:
-		ShadowBuilder_AddPair(
-			pMsg, "resetReason",
-			lbt_get_nrf52_reset_reason_string(pEntry->ad.data),
-			false);
+		ShadowBuilder_AddPair(pMsg, "resetReason",
+				      lcz_sensor_event_get_reset_reason_string(
+					      pEntry->ad.data.u16),
+				      false);
 		break;
 	default:
 		break;
@@ -1172,7 +1173,7 @@ static void ShadowFlagHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 static void ShadowLogHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 {
 	SensorLogEvent_t event = { .epoch = pEntry->ad.epoch,
-				   .data = pEntry->ad.data,
+				   .data = pEntry->ad.data.u16,
 				   .recordType = pEntry->ad.recordType,
 				   .idLsb = (uint8_t)pEntry->ad.id };
 

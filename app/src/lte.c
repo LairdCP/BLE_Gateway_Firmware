@@ -2,14 +2,13 @@
  * @file lte.c
  * @brief LTE management
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
-#define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(oob_lte);
+LOG_MODULE_REGISTER(lte, CONFIG_LTE_LOG_LEVEL);
 
 #define LTE_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define LTE_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
@@ -30,10 +29,14 @@ LOG_MODULE_REGISTER(oob_lte);
 #include "ble_cellular_service.h"
 #include "fota.h"
 #include "led_configuration.h"
-#include "qrtc.h"
+#include "lcz_qrtc.h"
 
-#if CONFIG_COAP_FOTA
+#ifdef CONFIG_COAP_FOTA
 #include "coap_fota_shadow.h"
+#endif
+
+#ifdef CONFIG_CONTACT_TRACING
+#include "ct_ble.h"
 #endif
 
 #include "lte.h"
@@ -79,6 +82,8 @@ static void setup_iface_events(void);
 static void modemEventCallback(enum mdm_hl7800_event event, void *event_data);
 
 static void getLocalTimeFromModemWorkHandler(struct k_work *item);
+
+static void lteSyncQrtc(void);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -165,6 +170,13 @@ struct lte_status *lteGetStatus(void)
 	return &lteStatus;
 }
 
+void lcz_qrtc_sync_handler(void)
+{
+	if (lteIsReady()) {
+		lteSyncQrtc();
+	}
+}
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
@@ -185,7 +197,7 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 	LTE_LOG_DBG("LTE is ready!");
 	lcz_led_turn_on(RED_LED);
 	onLteEvent(LTE_EVT_READY);
-	k_work_submit(&localTimeWork);
+	lteSyncQrtc();
 }
 
 static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
@@ -336,12 +348,17 @@ static void getLocalTimeFromModemWorkHandler(struct k_work *item)
 {
 	ARG_UNUSED(item);
 
-	if (!Qrtc_EpochWasSet()) {
-		int32_t status =
-			mdm_hl7800_get_local_time(&localTime, &localOffset);
-		if (status == 0) {
-			LOG_INF("Epoch set to %u",
-				Qrtc_SetEpochFromTm(&localTime, localOffset));
-		}
+	int32_t status = mdm_hl7800_get_local_time(&localTime, &localOffset);
+
+	if (status == 0) {
+		LOG_INF("Epoch set to %u",
+			lcz_qrtc_set_epoch_from_tm(&localTime, localOffset));
+	} else {
+		LOG_WRN("Get local time from modem failed! (%d)", status);
 	}
+}
+
+static void lteSyncQrtc(void)
+{
+	k_work_submit(&localTimeWork);
 }

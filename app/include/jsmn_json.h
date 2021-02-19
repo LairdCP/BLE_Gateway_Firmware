@@ -2,8 +2,7 @@
  * @file jsmn_json.h
  * @brief Wrap jsmn JSON parser so that it can be used by multiple modules.
  *
- *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -13,10 +12,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
 #include <stdbool.h>
+#include <string.h>
 
 /**
  * @note The jasmine library is a header file.  Therefore users of this file
@@ -38,6 +39,13 @@ extern "C" {
 #error "Unsupported JSMN configuration"
 #endif
 #endif
+
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
+/* JSON strings aren't null terminated. */
+#define JSMN_STRNCPY(str, idx)                                                 \
+	strncpy(str, jsmn_string(idx), MIN(jsmn_strlen(idx), sizeof(str) - 1))
 
 /******************************************************************************/
 /* Global Function Prototypes                                                 */

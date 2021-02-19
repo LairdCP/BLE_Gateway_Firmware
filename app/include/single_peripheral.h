@@ -1,9 +1,9 @@
 /**
  * @file single_peripheral.h
  * @brief Connection handler for a device that supports 1 connection as a
- * a peripheral.
+ * a peripheral.  This module is initialized during system initialization.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -23,14 +23,8 @@ extern "C" {
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
-
 /**
- * @brief Starts advertising.
- */
-void single_peripheral_initialize(void);
-
-/**
- * @brief Get connection handle for a connection where this device is the
+ * @brief Get connection handle for a connection in which this device is the
  * peripheral (a central has connected to this device).
  */
 struct bt_conn *single_peripheral_get_conn(void);
@@ -38,8 +32,18 @@ struct bt_conn *single_peripheral_get_conn(void);
 /**
  * @brief Advertise as connectable with name and 128-bit UUID of
  * Laird Connectivity's Custom Cellular Service.
+ *
+ * @note Request is pushed to system workqueue.  This can be called from
+ * interrupt context.
  */
-int start_advertising(void);
+void single_peripheral_start_advertising(void);
+
+/**
+ * @brief Helper function
+ *
+ * @note This can be called from interrupt context.
+ */
+void single_peripheral_stop_advertising(void);
 
 #ifdef __cplusplus
 }

@@ -1,0 +1,10 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+config LAIRD_CONNECT_BATTERY_LOG_LEVEL
+    int "Laird Connectivity Battery Module Log level"
+    range 0 4
+    default 3
+
+config LAIRD_CONNECT_BATTERY_LOGGING
+    bool "Enable battery logging to SD card"

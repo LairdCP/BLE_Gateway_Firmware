@@ -2,7 +2,7 @@
  * @file ble_sensor_service.c
  * @brief
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -34,7 +34,7 @@ static struct bt_uuid_128 SENSOR_STATE_UUID = BSS_BASE_UUID_128(0x0001);
 static struct bt_uuid_128 SENSOR_BT_ADDR_UUID = BSS_BASE_UUID_128(0x0002);
 
 struct ble_sensor_service {
-	uint8_t sensor_state;
+	enum sensor_state sensor_state;
 	char sensor_bt_addr[BT_ADDR_LE_STR_LEN + 1];
 
 	uint16_t sensor_state_index;
@@ -98,7 +98,7 @@ static struct bt_conn_cb bss_conn_callbacks = {
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-void bss_set_sensor_state(uint8_t state)
+void bss_set_sensor_state(enum sensor_state state)
 {
 	bss.sensor_state = state;
 	bss_notify(ccc.sensor_state.notify, bss.sensor_state_index,

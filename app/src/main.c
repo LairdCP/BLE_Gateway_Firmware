@@ -2,7 +2,7 @@
  * @file main.c
  * @brief Application main entry point
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -32,7 +32,7 @@ LOG_MODULE_REGISTER(main);
 #include "led_configuration.h"
 #include "lte.h"
 #include "nv.h"
-
+#include "ble.h"
 #include "ble_cellular_service.h"
 #include "ble_aws_service.h"
 #include "ble_power_service.h"
@@ -40,11 +40,14 @@ LOG_MODULE_REGISTER(main);
 #include "dis.h"
 #include "FrameworkIncludes.h"
 #include "laird_utility_macros.h"
+#include "laird_bluetooth.h"
 #include "single_peripheral.h"
 #include "string_util.h"
 #include "app_version.h"
-#include "bt_scan.h"
+#include "lcz_bt_scan.h"
 #include "fota.h"
+#include "button.h"
+#include "lcz_software_reset.h"
 
 #ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
@@ -81,6 +84,11 @@ LOG_MODULE_REGISTER(main);
 
 #include "lcz_memfault.h"
 
+#ifdef CONFIG_CONTACT_TRACING
+#include "ct_app.h"
+#include "ct_ble.h"
+#endif
+
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
@@ -90,8 +98,6 @@ LOG_MODULE_REGISTER(main);
 #endif
 
 #define WAIT_TIME_BEFORE_RETRY_TICKS K_SECONDS(10)
-
-#define NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME 7
 
 enum CREDENTIAL_TYPE { CREDENTIAL_CERT, CREDENTIAL_KEY };
 
@@ -137,7 +143,6 @@ K_SEM_DEFINE(lte_ready_sem, 0, 1);
 K_SEM_DEFINE(rx_cert_sem, 0, 1);
 
 #ifdef CONFIG_BLUEGRASS
-static struct k_timer awsKeepAliveTimer;
 static bool resolveAwsServer = true;
 static bool allowCommissioning = false;
 static bool devCertSet;
@@ -186,14 +191,10 @@ static void appStateAwsInitShadow(void);
 static void appStateAwsConnect(void);
 static void appStateAwsDisconnect(void);
 static void appStateAwsResolveServer(void);
-static void setAwsStatusWrapper(enum aws_status status);
-static void AwsKeepAliveTimerCallbackIsr(struct k_timer *timer_id);
 static int setAwsCredentials(void);
-static void StartKeepAliveTimer(void);
 static void appStateCommissionDevice(void);
 static void appStateLteConnectedAws(void);
 static void awsMsgHandler(void);
-static void awsSvcEvent(enum aws_svc_event event);
 static void set_commissioned(void);
 static void appStateWaitFota(void);
 #endif
@@ -205,9 +206,7 @@ static void appStateLteConnected(void);
 static void appSetNextState(app_state_function_t next);
 static const char *getAppStateString(app_state_function_t state);
 
-static void initializeBle(const char *imei);
 static void lteEvent(enum lte_event event);
-static void softwareReset(uint32_t DelayMs);
 
 #ifdef CONFIG_LWM2M
 static void appStateInitLwm2mClient(void);
@@ -218,6 +217,14 @@ static void lwm2mMsgHandler(void);
 static void configure_leds(void);
 
 static void cloud_fifo_monitor_isr(struct k_timer *timer_id);
+
+#ifndef CONFIG_CONTACT_TRACING
+static int adv_on_button_isr(void);
+#endif
+
+static void configure_button(void);
+static void reset_reason_handler(void);
+static char *get_app_type(void);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -232,11 +239,10 @@ void main(void)
 	lcz_memfault_http_init(CONFIG_LCZ_MEMFAULT_PROJECT_API_KEY);
 #endif
 
-#ifdef CONFIG_LWM2M
-	printk("\n" CONFIG_BOARD " - LwM2M v%s\n", APP_VERSION_STRING);
-#else
-	printk("\n" CONFIG_BOARD " - AWS v%s\n", APP_VERSION_STRING);
-#endif
+	printk("\n" CONFIG_BOARD " - %s v%s\n", get_app_type(),
+	       APP_VERSION_STRING);
+
+	reset_reason_handler();
 
 	configure_leds();
 
@@ -250,7 +256,14 @@ void main(void)
 	}
 
 #ifdef CONFIG_BOARD_MG100
-	sdCardLogInit();
+	rc = sdCardLogInit();
+#if 0 /* Bug 18504 - Fix SD card initialization with NCS1.4 */
+#ifdef CONFIG_CONTACT_TRACING
+	if (rc == 0) {
+		sdCardCleanup();
+	}
+#endif
+#endif
 #endif
 
 	nvReadCommissioned(&commissioned);
@@ -275,17 +288,25 @@ void main(void)
 	if (rc != 0) {
 		goto exit;
 	}
-
-	k_timer_init(&awsKeepAliveTimer, AwsKeepAliveTimerCallbackIsr, NULL);
 #endif
 
 	initializeCloudMsgReceiver();
 
-	initializeBle(lteInfo->IMEI);
-	single_peripheral_initialize();
+	ble_update_name(lteInfo->IMEI);
+	configure_button();
+
+	/* Advertise on startup after setting name.
+	 * This allows image confirmation from the mobile application during FOTA.
+	 * Button handling normally happens in ISR context, but in this case it does not.
+	 */
+#ifdef CONFIG_CONTACT_TRACING
+	ct_adv_on_button_isr();
+#else
+	adv_on_button_isr();
+#endif
 
 #ifdef CONFIG_SCAN_FOR_BT510
-	bt_scan_set_parameters(&scanParameters);
+	lcz_bt_scan_set_parameters(&scanParameters);
 #endif
 
 #ifdef CONFIG_BL654_SENSOR
@@ -338,11 +359,11 @@ void main(void)
 	if (rc != 0) {
 		goto exit;
 	}
-	aws_svc_set_event_callback(awsSvcEvent);
+
 	if (commissioned) {
-		aws_svc_set_status(NULL, AWS_STATUS_DISCONNECTED);
+		aws_svc_set_status(AWS_STATUS_DISCONNECTED);
 	} else {
-		aws_svc_set_status(NULL, AWS_STATUS_NOT_PROVISIONED);
+		aws_svc_set_status(AWS_STATUS_NOT_PROVISIONED);
 	}
 #endif
 
@@ -352,6 +373,10 @@ void main(void)
 
 #if defined(CONFIG_BLUEGRASS) && defined(CONFIG_COAP_FOTA)
 	coap_fota_task_initialize();
+#endif
+
+#ifdef CONFIG_CONTACT_TRACING
+	ct_app_init();
 #endif
 
 	k_timer_init(&fifo_timer, cloud_fifo_monitor_isr, NULL);
@@ -417,7 +442,7 @@ EXTERNED void Framework_AssertionHandler(char *file, int line)
 		;
 #endif
 
-	softwareReset(CONFIG_FWK_RESET_DELAY_MS);
+	lcz_software_reset(CONFIG_FWK_RESET_DELAY_MS);
 }
 
 /******************************************************************************/
@@ -431,37 +456,6 @@ static void initializeCloudMsgReceiver(void)
 	cloudMsgReceiver.rxBlockTicks = K_NO_WAIT; /* unused */
 	cloudMsgReceiver.pMsgDispatcher = NULL; /* unused */
 	Framework_RegisterReceiver(&cloudMsgReceiver);
-}
-
-static void initializeBle(const char *imei)
-{
-	int err;
-	static char bleDevName[sizeof(CONFIG_BT_DEVICE_NAME "-") +
-			       NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME];
-	int devNameEnd;
-	int imeiEnd;
-
-	err = bt_enable(NULL);
-	if (err) {
-		LOG_ERR("Bluetooth init failed (err %d)", err);
-		return;
-	}
-
-	LOG_INF("Bluetooth initialized");
-
-	/* add digits of IMEI to dev name */
-	strncpy(bleDevName, CONFIG_BT_DEVICE_NAME "-", sizeof(bleDevName) - 1);
-	devNameEnd = strlen(bleDevName);
-	imeiEnd = strlen(imei);
-	strncat(bleDevName + devNameEnd,
-		imei + imeiEnd - NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME,
-		NUMBER_OF_IMEI_DIGITS_TO_USE_IN_DEV_NAME);
-	err = bt_set_name((const char *)bleDevName);
-	if (err) {
-		LOG_ERR("Failed to set device name (%d)", err);
-	} else {
-		LOG_INF("BLE device name set to [%s]", log_strdup(bleDevName));
-	}
 }
 
 static void lteEvent(enum lte_event event)
@@ -509,7 +503,7 @@ static void appSetNextState(app_state_function_t next)
 static void appStateWaitForLte(void)
 {
 #ifdef CONFIG_BLUEGRASS
-	setAwsStatusWrapper(AWS_STATUS_DISCONNECTED);
+	aws_svc_set_status(AWS_STATUS_DISCONNECTED);
 #endif
 
 	if (!lteIsReady()) {
@@ -594,7 +588,7 @@ static void awsMsgHandler(void)
 		switch (pMsg->header.msgCode) {
 		case FMC_BL654_SENSOR_EVENT: {
 			BL654SensorMsg_t *pBmeMsg = (BL654SensorMsg_t *)pMsg;
-#ifdef CONFIG_BOARD_MG100
+#if defined(CONFIG_BOARD_MG100) && defined(CONFIG_BL654_SENSOR)
 			sdCardLogBL654Data(pBmeMsg);
 #endif
 			rc = awsPublishBl654SensorData(pBmeMsg->temperatureC,
@@ -616,7 +610,6 @@ static void awsMsgHandler(void)
 			rc = awsPublishPinnacleData(lteInfo->rssi,
 						    lteInfo->sinr);
 #endif
-			StartKeepAliveTimer();
 		} break;
 
 		case FMC_AWS_DECOMMISSION:
@@ -681,8 +674,12 @@ static void appStateAwsInitShadow(void)
 	} else {
 		initShadow = false;
 		appSetNextState(appStateAwsSendSensorData);
-		StartKeepAliveTimer();
 		Bluegrass_ConnectedCallback();
+#ifdef CONFIG_CONTACT_TRACING
+		ct_ble_publish_dummy_data_to_aws();
+		/* Try to send stashed entries immediately on re-connect */
+		ct_ble_check_stashed_log_entries();
+#endif
 	}
 }
 
@@ -704,18 +701,18 @@ static void appStateAwsConnect(void)
 		return;
 	}
 
-	setAwsStatusWrapper(AWS_STATUS_CONNECTING);
+	aws_svc_set_status(AWS_STATUS_CONNECTING);
 
 	if (awsConnect() != 0) {
 		MAIN_LOG_ERR("Could not connect to AWS");
-		setAwsStatusWrapper(AWS_STATUS_CONNECTION_ERR);
+		aws_svc_set_status(AWS_STATUS_CONNECTION_ERR);
 
 		/* wait some time before trying to re-connect */
 		k_sleep(WAIT_TIME_BEFORE_RETRY_TICKS);
 		return;
 	}
 
-	setAwsStatusWrapper(AWS_STATUS_CONNECTED);
+	aws_svc_set_status(AWS_STATUS_CONNECTED);
 
 	appSetNextState(appStateAwsInitShadow);
 }
@@ -729,7 +726,7 @@ static void appStateAwsDisconnect(void)
 {
 	awsDisconnect();
 
-	setAwsStatusWrapper(AWS_STATUS_DISCONNECTED);
+	aws_svc_set_status(AWS_STATUS_DISCONNECTED);
 
 	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED,
 					   FMC_AWS_DISCONNECTED);
@@ -812,7 +809,7 @@ static int setAwsCredentials(void)
 static void appStateCommissionDevice(void)
 {
 	printk("\n\nWaiting to commission device\n\n");
-	setAwsStatusWrapper(AWS_STATUS_NOT_PROVISIONED);
+	aws_svc_set_status(AWS_STATUS_NOT_PROVISIONED);
 	allowCommissioning = true;
 
 	k_sem_take(&rx_cert_sem, K_FOREVER);
@@ -831,13 +828,18 @@ static void decommission(void)
 	allowCommissioning = true;
 	initShadow = true;
 	appSetNextState(appStateAwsDisconnect);
+
 	/* If the device is deleted from AWS it must be decommissioned
 	 * in the BLE app before it is reprovisioned.
 	 */
+#ifdef CONFIG_SENSOR_TASK
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED, FWK_ID_SENSOR_TASK,
 				      FMC_AWS_DECOMMISSION);
+#endif
+
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED, FWK_ID_CLOUD,
 				      FMC_AWS_DECOMMISSION);
+
 	printk("Device is decommissioned\n");
 }
 
@@ -846,12 +848,13 @@ static void set_commissioned(void)
 	nvStoreCommissioned(true);
 	commissioned = true;
 	allowCommissioning = false;
-	setAwsStatusWrapper(AWS_STATUS_DISCONNECTED);
+	aws_svc_set_status(AWS_STATUS_DISCONNECTED);
 	k_sem_give(&rx_cert_sem);
 	printk("Device is commissioned\n");
 }
 
-static void awsSvcEvent(enum aws_svc_event event)
+#ifdef CONFIG_BLUEGRASS
+void awsSvcEvent(enum aws_svc_event event)
 {
 	switch (event) {
 	case AWS_SVC_EVENT_SETTINGS_SAVED:
@@ -862,24 +865,7 @@ static void awsSvcEvent(enum aws_svc_event event)
 		break;
 	}
 }
-
-static void setAwsStatusWrapper(enum aws_status status)
-{
-	aws_svc_set_status(single_peripheral_get_conn(), status);
-}
-
-static void StartKeepAliveTimer(void)
-{
-	k_timer_start(&awsKeepAliveTimer,
-		      K_SECONDS(CONFIG_AWS_KEEP_ALIVE_SECONDS), K_NO_WAIT);
-}
-
-static void AwsKeepAliveTimerCallbackIsr(struct k_timer *timer_id)
-{
-	UNUSED_PARAMETER(timer_id);
-	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
-				      FMC_AWS_KEEP_ALIVE);
-}
+#endif
 #endif /* CONFIG_BLUEGRASS */
 
 #ifdef CONFIG_LWM2M
@@ -924,15 +910,6 @@ static void lwm2mMsgHandler(void)
 }
 #endif
 
-static void softwareReset(uint32_t DelayMs)
-{
-#ifdef CONFIG_REBOOT
-	LOG_ERR("Software Reset in %d milliseconds", DelayMs);
-	k_sleep(K_MSEC(DelayMs));
-	power_reboot_module(REBOOT_TYPE_NORMAL);
-#endif
-}
-
 static void configure_leds(void)
 {
 #ifdef CONFIG_BOARD_MG100
@@ -952,6 +929,29 @@ static void configure_leds(void)
 	lcz_led_init(c, ARRAY_SIZE(c));
 }
 
+#ifndef CONFIG_CONTACT_TRACING
+static int adv_on_button_isr(void)
+{
+	single_peripheral_start_advertising();
+	return 0;
+}
+#endif
+
+static void configure_button(void)
+{
+#ifdef CONFIG_CONTACT_TRACING
+	static const button_config_t BUTTON_CONFIG[] = {
+		{ 0, 0, ct_adv_on_button_isr }
+	};
+#else
+	static const button_config_t BUTTON_CONFIG[] = {
+		{ 0, 0, adv_on_button_isr }
+	};
+#endif
+
+	button_initialize(BUTTON_CONFIG, ARRAY_SIZE(BUTTON_CONFIG), NULL);
+}
+
 /* Override weak implementation in laird_power.c */
 void power_measurement_callback(uint8_t integer, uint8_t decimal)
 {
@@ -962,6 +962,26 @@ void power_measurement_callback(uint8_t integer, uint8_t decimal)
 	BatteryCalculateRemainingCapacity(Voltage);
 #else
 	power_svc_set_voltage(integer, decimal);
+#endif
+}
+
+static void reset_reason_handler(void)
+{
+	uint32_t reset_reason = lbt_get_and_clear_nrf52_reset_reason_register();
+
+	LOG_WRN("reset reason: %s (%08X)",
+		lbt_get_nrf52_reset_reason_string_from_register(reset_reason),
+		reset_reason);
+}
+
+static char *get_app_type(void)
+{
+#ifdef CONFIG_LWM2M
+	return "LwM2M";
+#elif defined CONFIG_CONTACT_TRACING
+	return "Contact Tracing";
+#else
+	return "AWS";
 #endif
 }
 
@@ -991,8 +1011,7 @@ done:
 }
 #endif /* CONFIG_BLUEGRASS */
 
-static int shell_oob_ver_cmd(const struct shell *shell, size_t argc,
-			     char **argv)
+static int shell_ver_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	int rc = 0;
 
@@ -1118,7 +1137,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(oob_cmds,
 					 shell_decommission),
 #endif /* CONFIG_BLUEGRASS */
 			       SHELL_CMD(ver, NULL, "Firmware version",
-					 shell_oob_ver_cmd),
+					 shell_ver_cmd),
 			       SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 SHELL_CMD_REGISTER(oob, &oob_cmds, "OOB Demo commands", NULL);

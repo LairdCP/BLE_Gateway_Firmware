@@ -2,14 +2,13 @@
  * @file bluegrass.c
  * @brief
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
-#define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(bluegrass);
+LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -49,8 +48,11 @@ static int GatewaySubscriptionHandler(void);
 void Bluegrass_Initialize(FwkQueue_t *pQ)
 {
 	pMsgQueue = pQ;
-	SensorTask_Initialize();
 	k_timer_init(&gatewayInitTimer, GatewayInitTimerCallbackIsr, NULL);
+
+#ifdef CONFIG_SENSOR_TASK
+	SensorTask_Initialize();
+#endif
 }
 
 /* This caller of this function may throw away sensor data
@@ -64,8 +66,8 @@ int Bluegrass_MsgHandler(FwkMsg_t *pMsg, bool *pFreeMsg)
 	case FMC_SENSOR_PUBLISH: {
 		JsonMsg_t *pJsonMsg = (JsonMsg_t *)pMsg;
 		rc = awsSendData(pJsonMsg->buffer, CONFIG_USE_SINGLE_AWS_TOPIC ?
-							   GATEWAY_TOPIC :
-							   pJsonMsg->topic);
+								 GATEWAY_TOPIC :
+								 pJsonMsg->topic);
 	} break;
 
 	case FMC_GATEWAY_OUT: {
@@ -112,6 +114,11 @@ void Bluegrass_DisconnectedCallback(void)
 					   FMC_AWS_DISCONNECTED);
 }
 
+bool Bluegrass_ReadyForPublish(void)
+{
+	return (awsConnected() && getShadowProcessed && gatewaySubscribed);
+}
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
@@ -138,7 +145,9 @@ static int GatewaySubscriptionHandler(void)
 		rc = awsSubscribe(GATEWAY_TOPIC, true);
 		if (rc == 0) {
 			gatewaySubscribed = true;
+#ifdef CONFIG_SENSOR_TASK
 			SensorTable_EnableGatewayShadowGeneration();
+#endif
 			coap_fota_enable_shadow_generation();
 		}
 	}

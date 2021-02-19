@@ -2,7 +2,7 @@
  * @file bluegrass.h
  * @brief Bluegrass is Laird Connectivity's AWS interface.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -20,14 +20,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/******************************************************************************/
-/* Global Constants, Macros and Type Definitions                              */
-/******************************************************************************/
-
-/******************************************************************************/
-/* Global Data Definitions                                                    */
-/******************************************************************************/
 
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
@@ -62,6 +54,13 @@ void Bluegrass_ConnectedCallback(void);
  * @brief The sensor task can discard data if the connection to AWS is lost.
  */
 void Bluegrass_DisconnectedCallback(void);
+
+/**
+ * @brief Accessor function
+ *
+ * @retval true if system is ready for publishing to AWS/Bluegrass
+ */
+bool Bluegrass_ReadyForPublish(void);
 
 #ifdef __cplusplus
 }

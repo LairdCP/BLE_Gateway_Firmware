@@ -4,7 +4,7 @@
  *
  * Once configured the BT510 sends all state information in advertisements.
  * This allows connectionless operation.
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <bluetooth/bluetooth.h>
 
-#include "sensor_adv_format.h"
+#include "lcz_sensor_adv_format.h"
 #include "sensor_log.h"
 #include "FrameworkIncludes.h"
 

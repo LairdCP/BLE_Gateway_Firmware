@@ -2,7 +2,7 @@
  * @file bl654_sensor.c
  * @brief Connects to BL654 Sensor and configures ESS service for notification.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -25,29 +25,15 @@ LOG_MODULE_REGISTER(bl654_sensor);
 #include "laird_bluetooth.h"
 #include "led_configuration.h"
 #include "ad_find.h"
-#include "bt_scan.h"
+#include "lcz_bt_scan.h"
 #include "ble_sensor_service.h"
+#include "sensor_state.h"
 #include "bl654_sensor.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
 #define DISCOVER_SERVICES_DELAY_SECONDS 1
-
-enum ble_state {
-	/* Scanning for remote sensor */
-	BT_DEMO_APP_STATE_FINDING_DEVICE = 0,
-	/* Searching for ESS service */
-	BT_DEMO_APP_STATE_FINDING_SERVICE,
-	/* Searching for ESS Temperature characteristic */
-	BT_DEMO_APP_STATE_FINDING_TEMP_CHAR,
-	/* Searching for ESS Humidity characteristic */
-	BT_DEMO_APP_STATE_FINDING_HUMIDITY_CHAR,
-	/* Searching for ESS Pressure characteristic */
-	BT_DEMO_APP_STATE_FINDING_PRESSURE_CHAR,
-	/* All characteristics were found and subscribed to */
-	BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED
-};
 
 static const struct lcz_led_blink_pattern LED_SENSOR_SEARCH_PATTERN = {
 	.on_time = CONFIG_DEFAULT_LED_ON_TIME_FOR_1_SECOND_BLINK,
@@ -116,7 +102,7 @@ static int find_char(struct bt_conn *conn, struct bt_uuid_16 n_uuid);
 static int find_desc(struct bt_conn *conn, struct bt_uuid_16 uuid,
 		     uint16_t start_handle);
 
-static void set_ble_state(enum ble_state state);
+static void set_ble_state(enum sensor_state state);
 
 static void discover_services_work_callback(struct k_work *work);
 static void discover_failed_handler(struct bt_conn *conn, int err);
@@ -166,7 +152,7 @@ void bl654_sensor_initialize(void)
 
 	bt_conn_cb_register(&conn_callbacks);
 
-	bt_scan_register(&scan_id, bl654_sensor_adv_handler);
+	lcz_bt_scan_register(&scan_id, bl654_sensor_adv_handler);
 
 	set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
 }
@@ -199,7 +185,7 @@ static void bl654_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 	LOG_INF("Found BL654 Sensor");
 
 	/* Can't connect while scanning */
-	bt_scan_stop(scan_id);
+	lcz_bt_scan_stop(scan_id);
 
 	/* Connect to device */
 	bt_addr_le_to_str(addr, bt_addr, sizeof(bt_addr));
@@ -568,23 +554,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
 }
 
-static char *get_sensor_state_string(uint8_t state)
-{
-	/* clang-format off */
-	switch (state) {
-		PREFIXED_SWITCH_CASE_RETURN_STRING(BT_DEMO_APP_STATE, FINDING_DEVICE);
-		PREFIXED_SWITCH_CASE_RETURN_STRING(BT_DEMO_APP_STATE, FINDING_SERVICE);
-		PREFIXED_SWITCH_CASE_RETURN_STRING(BT_DEMO_APP_STATE, FINDING_TEMP_CHAR);
-		PREFIXED_SWITCH_CASE_RETURN_STRING(BT_DEMO_APP_STATE, FINDING_HUMIDITY_CHAR);
-		PREFIXED_SWITCH_CASE_RETURN_STRING(BT_DEMO_APP_STATE, FINDING_PRESSURE_CHAR);
-		PREFIXED_SWITCH_CASE_RETURN_STRING(BT_DEMO_APP_STATE, CONNECTED_AND_CONFIGURED);
-	default:
-		return "UNKNOWN";
-	}
-	/* clang-format on */
-}
-
-static void set_ble_state(enum ble_state state)
+static void set_ble_state(enum sensor_state state)
 {
 	LOG_DBG("%s->%s", get_sensor_state_string(remote.app_state),
 		get_sensor_state_string(state));
@@ -594,13 +564,13 @@ static void set_ble_state(enum ble_state state)
 	switch (state) {
 	case BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED:
 		lcz_led_turn_on(BLUE_LED);
-		bt_scan_resume(scan_id);
+		lcz_bt_scan_resume(scan_id);
 		break;
 
 	case BT_DEMO_APP_STATE_FINDING_DEVICE:
 		lcz_led_blink(BLUE_LED, &LED_SENSOR_SEARCH_PATTERN);
 		bss_set_sensor_bt_addr(NULL);
-		bt_scan_restart(scan_id);
+		lcz_bt_scan_restart(scan_id);
 		break;
 
 	default:

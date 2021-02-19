@@ -1,0 +1,35 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig SINGLE_PERIPHERAL
+    bool "Enable single peripheral (one connection at a time) module"
+    help
+        Handles advertising
+        Prints connection information
+
+if SINGLE_PERIPHERAL
+
+config SINGLE_PERIPHERAL_INIT_PRIORITY
+    int "Priority of module init (Application)"
+    range 1 99
+    default 1
+    help
+        Must be initialized after Bluetooth is enabled
+
+config SINGLE_PERIPHERAL_LOG_LEVEL
+    int "Log level for single peripheral module"
+    range 0 4
+    default 3
+
+config SINGLE_PERIPHERAL_ADV_ON_INIT
+    bool "Start advertising after initialization"
+    help
+        Advertising after reset is used by the mobile application when updating firmware.
+
+config SINGLE_PERIPHERAL_ADV_DURATION_SECONDS
+    int "Seconds to advertise, 0 is indefinite"
+    default 30
+    help
+        This value is also used to restart advertising after a disconnect.
+
+endif # SINGLE_PERIPHERAL

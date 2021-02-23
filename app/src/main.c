@@ -296,16 +296,6 @@ void main(void)
 	ble_update_name(lteInfo->IMEI);
 	configure_button();
 
-	/* Advertise on startup after setting name.
-	 * This allows image confirmation from the mobile application during FOTA.
-	 * Button handling normally happens in ISR context, but in this case it does not.
-	 */
-#ifdef CONFIG_CONTACT_TRACING
-	ct_adv_on_button_isr();
-#else
-	adv_on_button_isr();
-#endif
-
 #ifdef CONFIG_SCAN_FOR_BT510
 	lcz_bt_scan_set_parameters(&scanParameters);
 #endif
@@ -392,6 +382,16 @@ void main(void)
 	printk("\n!!!!!!!! App is ready! !!!!!!!!\n");
 
 	appSetNextState(appStateWaitForLte);
+
+	/* Advertise on startup after setting name and after CT init.
+	 * This allows image confirmation from the mobile application during FOTA.
+	 * Button handling normally happens in ISR context, but in this case it does not.
+	 */
+#ifdef CONFIG_CONTACT_TRACING
+	ct_adv_on_button_isr();
+#else
+	adv_on_button_isr();
+#endif
 
 	while (true) {
 		appState();

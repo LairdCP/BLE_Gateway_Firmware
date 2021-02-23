@@ -329,6 +329,11 @@ void ct_ble_initialize(void)
 {
 	int err;
 
+	if (ct.ble_initialized) {
+		LOG_DBG("CT BLE already initialized");
+		return;
+	}
+
 	sensor_scan_conn_init();
 
 	bt_conn_cb_register(&conn_callbacks);
@@ -447,6 +452,11 @@ int ct_adv_on_button_isr(void)
 	int r = -EPERM;
 
 	LOG_DBG(".");
+
+	if (!ct.ble_initialized) {
+		LOG_ERR("Init CT BLE first");
+		return r;
+	}
 
 	if (central_conn == NULL) {
 		if (CONFIG_CT_CONNECTABLE_ADV_DURATION_SECONDS != 0) {

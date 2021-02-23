@@ -112,3 +112,11 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/coap/source/coap_fota_task.c
 )
 endif() # CONFIG_COAP_FOTA
+
+if (CONFIG_HTTP_FOTA)
+include_directories(${CMAKE_SOURCE_DIR}/http_fota/include)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/http_fota/source/http_fota_task.c
+    ${CMAKE_SOURCE_DIR}/http_fota/source/http_fota_shadow.c
+)
+endif() # CONFIG_HTTP_FOTA

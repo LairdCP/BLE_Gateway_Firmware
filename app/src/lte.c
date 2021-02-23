@@ -34,6 +34,9 @@ LOG_MODULE_REGISTER(lte, CONFIG_LTE_LOG_LEVEL);
 #ifdef CONFIG_COAP_FOTA
 #include "coap_fota_shadow.h"
 #endif
+#if CONFIG_HTTP_FOTA
+#include "http_fota_shadow.h"
+#endif
 
 #ifdef CONFIG_CONTACT_TRACING
 #include "ct_ble.h"
@@ -197,7 +200,6 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 	LTE_LOG_DBG("LTE is ready!");
 	lcz_led_turn_on(RED_LED);
 	onLteEvent(LTE_EVT_READY);
-	lteSyncQrtc();
 }
 
 static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
@@ -236,6 +238,7 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		case HL7800_HOME_NETWORK:
 		case HL7800_ROAMING:
 			lcz_led_turn_on(RED_LED);
+			lteSyncQrtc();
 			MFLT_METRICS_TIMER_STOP(lte_ttf);
 			break;
 
@@ -333,6 +336,12 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 #ifdef CONFIG_COAP_FOTA
 		/* This is duplicated for backwards compatability. */
 		coap_fota_set_running_version(MODEM_IMAGE_TYPE,
+					      (char *)event_data,
+					      strlen((char *)event_data));
+#endif
+#ifdef CONFIG_HTTP_FOTA
+		/* This is duplicated for backwards compatability. */
+		http_fota_set_running_version(MODEM_IMAGE_TYPE,
 					      (char *)event_data,
 					      strlen((char *)event_data));
 #endif

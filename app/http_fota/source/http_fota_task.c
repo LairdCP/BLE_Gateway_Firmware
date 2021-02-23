@@ -1,0 +1,528 @@
+/**
+ * @file http_fota_task.c
+ * @brief State machine for HTTP FOTA
+ *
+ * Copyright (c) 2021 Laird Connectivity
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <logging/log.h>
+LOG_MODULE_REGISTER(http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
+#define FWK_FNAME "http_fota"
+
+/******************************************************************************/
+/* Includes                                                                   */
+/******************************************************************************/
+#include <zephyr.h>
+#include <net/tls_credentials.h>
+#include <power/reboot.h>
+#include <drivers/modem/hl7800.h>
+#include <net/fota_download.h>
+#ifdef CONFIG_LCZ_MEMFAULT
+#include "memfault/http/root_certs.h"
+#endif
+
+#include "http_fota_task.h"
+
+#include "FrameworkIncludes.h"
+#include "laird_utility_macros.h"
+#include "file_system_utilities.h"
+
+#include "http_fota_shadow.h"
+
+/******************************************************************************/
+/* Local Constant, Macro and Type Definitions                                 */
+/******************************************************************************/
+
+#define HTTP_FOTA_TASK_PRIORITY K_PRIO_PREEMPT(CONFIG_HTTP_FOTA_TASK_PRIO)
+
+#define HTTP_FOTA_TICK_RATE K_SECONDS(1)
+#define TIMER_PERIOD_ONE_SHOT K_SECONDS(0)
+
+#define TLS_SEC_TAG 143
+
+static K_SEM_DEFINE(wait_fota_download, 0, 1);
+
+typedef enum fota_fsm_state_t {
+	FOTA_FSM_ABORT = -2,
+	FOTA_FSM_ERROR = -1,
+	FOTA_FSM_IDLE = 0,
+	FOTA_FSM_END,
+	FOTA_FSM_SUCCESS,
+	FOTA_FSM_MODEM_WAIT,
+	FOTA_FSM_WAIT,
+	FOTA_FSM_START,
+	FOTA_FSM_START_DOWNLOAD,
+	FOTA_FSM_DOWNLOAD_COMPLETE,
+	FOTA_FSM_DELETE_EXISTING_FILE,
+	FOTA_FSM_WAIT_FOR_SWITCHOVER,
+	FOTA_FSM_INITIATE_UPDATE
+} fota_fsm_state_t;
+
+typedef struct fota_context {
+	enum fota_image_type type;
+	fota_fsm_state_t state;
+	bool using_transport;
+	uint32_t delay;
+	char *file_path;
+	struct k_sem *wait_download;
+	bool download_error;
+} fota_context_t;
+
+typedef struct http_fota_task {
+	FwkMsgTask_t msgTask;
+	bool fs_mounted;
+	bool aws_connected;
+	bool allow_start;
+	fota_context_t app_context;
+	fota_context_t modem_context;
+} http_fota_task_obj_t;
+
+/******************************************************************************/
+/* Global Data Definitions                                                    */
+/******************************************************************************/
+
+K_THREAD_STACK_DEFINE(http_fota_task_stack, CONFIG_HTTP_FOTA_TASK_STACK_SIZE);
+
+K_MSGQ_DEFINE(http_fota_task_queue, FWK_QUEUE_ENTRY_SIZE,
+	      CONFIG_HTTP_FOTA_TASK_QUEUE_DEPTH, FWK_QUEUE_ALIGNMENT);
+
+/******************************************************************************/
+/* Local Data Definitions                                                     */
+/******************************************************************************/
+static http_fota_task_obj_t tctx;
+
+/******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
+static void http_fota_task_thread(void *pArg1, void *pArg2, void *pArg3);
+static int tls_init(void);
+static DispatchResult_t http_start_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+						   FwkMsg_t *pMsg);
+static DispatchResult_t http_start_ack_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+						   FwkMsg_t *pMsg);
+static DispatchResult_t connection_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+					       FwkMsg_t *pMsg);
+static DispatchResult_t http_fota_tick_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+						   FwkMsg_t *pMsg);
+static char *fota_state_get_string(fota_fsm_state_t state);
+static char *fota_image_type_get_string(enum fota_image_type type);
+static void fota_fsm(fota_context_t *pCtx);
+static int initiate_update(fota_context_t *pCtx);
+static int initiate_modem_update(fota_context_t *pCtx);
+static bool transport_not_required(void);
+void fota_download_handler(const struct fota_download_evt *evt);
+
+/******************************************************************************/
+/* Framework Message Dispatcher                                               */
+/******************************************************************************/
+static FwkMsgHandler_t http_fota_taskMsgDispatcher(FwkMsgCode_t MsgCode)
+{
+	/* clang-format off */
+	switch (MsgCode) {
+	case FMC_INVALID:                return Framework_UnknownMsgHandler;
+	case FMC_PERIODIC:               return http_fota_tick_msg_handler;
+	case FMC_AWS_CONNECTED:          return connection_msg_handler;
+	case FMC_AWS_DISCONNECTED:       return connection_msg_handler;
+	case FMC_FOTA_START:         	 return http_start_msg_handler;
+	case FMC_FOTA_START_ACK:         return http_start_ack_msg_handler;
+	default:                         return NULL;
+	}
+	/* clang-format on */
+}
+
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
+int http_fota_task_initialize(void)
+{
+	memset(&tctx, 0, sizeof(http_fota_task_obj_t));
+
+	tctx.msgTask.rxer.id = FWK_ID_HTTP_FOTA_TASK;
+	tctx.msgTask.rxer.pQueue = &http_fota_task_queue;
+	tctx.msgTask.rxer.rxBlockTicks = K_FOREVER;
+	tctx.msgTask.rxer.pMsgDispatcher = http_fota_taskMsgDispatcher;
+	tctx.msgTask.timerDurationTicks = HTTP_FOTA_TICK_RATE;
+	tctx.msgTask.timerPeriodTicks = TIMER_PERIOD_ONE_SHOT;
+	Framework_RegisterTask(&tctx.msgTask);
+
+	tctx.msgTask.pTid =
+		k_thread_create(&tctx.msgTask.threadData, http_fota_task_stack,
+				K_THREAD_STACK_SIZEOF(http_fota_task_stack),
+				http_fota_task_thread, &tctx, NULL, NULL,
+				HTTP_FOTA_TASK_PRIORITY, 0, K_NO_WAIT);
+
+	k_thread_name_set(tctx.msgTask.pTid, FWK_FNAME);
+
+	tctx.app_context.type = APP_IMAGE_TYPE;
+	tctx.modem_context.type = MODEM_IMAGE_TYPE;
+	tctx.app_context.wait_download = &wait_fota_download;
+	tctx.modem_context.wait_download = &wait_fota_download;
+
+	return 0;
+}
+
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
+static void http_fota_task_thread(void *pArg1, void *pArg2, void *pArg3)
+{
+	int rc;
+	http_fota_task_obj_t *pObj;
+
+	ARG_UNUSED(pArg2);
+	ARG_UNUSED(pArg3);
+
+	pObj = (http_fota_task_obj_t *)pArg1;
+
+	if (fsu_lfs_mount() == 0) {
+		pObj->fs_mounted = true;
+	}
+
+	tls_init();
+
+	http_fota_shadow_init(CONFIG_FSU_MOUNT_POINT);
+
+	rc = fota_download_init(fota_download_handler);
+	if (rc != 0) {
+		LOG_ERR("Could not init FOTA download %d", rc);
+	}
+
+	#warning "Bug 18510 add in hl7800 http fota download init"
+
+	while (true) {
+		Framework_MsgReceiver(&pObj->msgTask.rxer);
+	}
+}
+
+static int tls_init(void)
+{
+	int err = -EINVAL;
+
+	/* clang-format off */
+	static const char cert[] = {
+		#include "../include/fota_root_ca"
+	};
+	/* clang-format on */
+
+	tls_credential_delete(TLS_SEC_TAG, TLS_CREDENTIAL_CA_CERTIFICATE);
+	err = tls_credential_add(TLS_SEC_TAG, TLS_CREDENTIAL_CA_CERTIFICATE,
+				 cert, sizeof(cert));
+	if (err < 0) {
+		LOG_ERR("Failed to register root CA: %d", err);
+		return err;
+	}
+
+	return err;
+}
+
+static DispatchResult_t http_start_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+						   FwkMsg_t *pMsg)
+{
+	http_fota_task_obj_t *pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
+	Framework_StartTimer(&pObj->msgTask);
+	return DISPATCH_OK;
+}
+
+static DispatchResult_t http_start_ack_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+						   FwkMsg_t *pMsg)
+{
+	http_fota_task_obj_t *pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
+	pObj->allow_start = true;
+	return DISPATCH_OK;
+}
+
+/* AWS must be connected to get shadow information.
+ * AWS must be disconnected to run HTTP FOTA because there isn't enough
+ * memory to support two simultaneous connections.
+ */
+static DispatchResult_t connection_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+					       FwkMsg_t *pMsg)
+{
+	http_fota_task_obj_t *pObj;
+
+	pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
+	if (pMsg->header.msgCode == FMC_AWS_CONNECTED) {
+		pObj->aws_connected = true;
+	} else {
+		pObj->aws_connected = false;
+	}
+	return DISPATCH_OK;
+}
+
+static DispatchResult_t http_fota_tick_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+						   FwkMsg_t *pMsg)
+{
+	http_fota_task_obj_t *pObj;
+
+	UNUSED_PARAMETER(pMsg);
+
+	pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
+
+	if (pObj->aws_connected) {
+		http_fota_shadow_update_handler();
+	}
+
+	if (pObj->fs_mounted) {
+		fota_fsm(&pObj->app_context);
+		fota_fsm(&pObj->modem_context);
+	}
+
+	Framework_StartTimer(&pObj->msgTask);
+
+	return DISPATCH_OK;
+}
+
+static char *fota_state_get_string(fota_fsm_state_t state)
+{
+	/* clang-format off */
+	switch (state) {
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, ABORT);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, ERROR);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, IDLE);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, END);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, SUCCESS);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, MODEM_WAIT);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, WAIT);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, START);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, START_DOWNLOAD);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, DOWNLOAD_COMPLETE);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, DELETE_EXISTING_FILE);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, WAIT_FOR_SWITCHOVER);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, INITIATE_UPDATE);
+		default:
+			return "UNKNOWN";
+	}
+	/* clang-format on */
+}
+
+static char *fota_image_type_get_string(enum fota_image_type type)
+{
+	switch (type) {
+	case APP_IMAGE_TYPE:
+		return "APP";
+	case MODEM_IMAGE_TYPE:
+		return "MODEM";
+	default:
+		return "UNKNOWN";
+	}
+}
+
+static void fota_fsm(fota_context_t *pCtx)
+{
+	int r = 0;
+	fota_fsm_state_t next_state = pCtx->state;
+
+	switch (pCtx->state) {
+	case FOTA_FSM_ERROR:
+		pCtx->delay = CONFIG_HTTP_FOTA_ERROR_DELAY;
+		http_fota_increment_error_count(pCtx->type);
+		next_state = FOTA_FSM_END;
+		break;
+
+	case FOTA_FSM_ABORT:
+		next_state = FOTA_FSM_END;
+		break;
+
+	case FOTA_FSM_SUCCESS:
+		if (pCtx->type == MODEM_IMAGE_TYPE) {
+			LOG_WRN("Modem Updating");
+			pCtx->delay = CONFIG_HTTP_FOTA_MODEM_INSTALL_DELAY;
+			next_state = FOTA_FSM_MODEM_WAIT;
+		} else {
+			LOG_WRN("Entering mcuboot");
+			/* Allow last print to occur. */
+			k_sleep(K_MSEC(CONFIG_LOG_PROCESS_THREAD_SLEEP_MS));
+			sys_reboot(SYS_REBOOT_COLD);
+			next_state = FOTA_FSM_END; /* don't care */
+		}
+		break;
+
+	case FOTA_FSM_MODEM_WAIT:
+		/* The modem is going to reboot.  If the cloud fsm
+		 * stays in its fota state, then its queue won't get overfilled
+		 * by the app fsm requesting its turn (or by sensor data).
+		 */
+		if (http_fota_modem_install_complete()) {
+			pCtx->delay = 0;
+		}
+
+		if (pCtx->delay > 0) {
+			pCtx->delay -= 1;
+			next_state = FOTA_FSM_MODEM_WAIT;
+		} else {
+			next_state = FOTA_FSM_END;
+		}
+		break;
+
+	case FOTA_FSM_END:
+		pCtx->using_transport = false;
+		if (transport_not_required()) {
+			FRAMEWORK_MSG_CREATE_AND_SEND(
+				FWK_ID_RESERVED, FWK_ID_CLOUD, FMC_FOTA_DONE);
+		}
+		next_state = FOTA_FSM_WAIT;
+		break;
+
+	case FOTA_FSM_WAIT:
+		/* Allow time for the shadow to be updated if there is an error. */
+		if (pCtx->delay > 0) {
+			pCtx->delay -= 1;
+			next_state = FOTA_FSM_WAIT;
+		} else {
+			next_state = FOTA_FSM_IDLE;
+		}
+		break;
+
+	case FOTA_FSM_IDLE:
+		if (http_fota_request(pCtx->type)) {
+			next_state = FOTA_FSM_START;
+		}
+		break;
+
+	case FOTA_FSM_START:
+		/* Ack is used to ensure AWS didn't disconnect for another reason. */
+		if (tctx.allow_start && !tctx.aws_connected) {
+			/* The FOTA state machine requires a connection until
+			 * it gets to the switchover state.
+			 */
+			tctx.allow_start = false;
+			pCtx->using_transport = true;
+			pCtx->file_path =
+				(char *)http_fota_get_downloaded_filename(
+					pCtx->type);
+			pCtx->download_error = false;
+			next_state = FOTA_FSM_START_DOWNLOAD;
+		} else {
+			/* Keep requesting because we don't know what state cloud is in.
+			 * It may have dropped the message.
+			 */
+			FRAMEWORK_MSG_CREATE_AND_SEND(
+				FWK_ID_RESERVED, FWK_ID_CLOUD, FMC_FOTA_START);
+			next_state = FOTA_FSM_START;
+		}
+		break;
+
+	case FOTA_FSM_START_DOWNLOAD:
+		if (pCtx->type == APP_IMAGE_TYPE) {
+			r = fota_download_start(
+				http_fota_get_download_host(pCtx->type),
+				http_fota_get_download_file(pCtx->type),
+				TLS_SEC_TAG, NULL, 0);
+		} else {
+			#warning "Bug 18510 add in hl7800 http fota download start"
+			r = -1;
+		}
+		if (r < 0) {
+			next_state = FOTA_FSM_ERROR;
+		} else {
+			next_state = FOTA_FSM_DOWNLOAD_COMPLETE;
+		}
+		break;
+
+	case FOTA_FSM_DOWNLOAD_COMPLETE:
+		LOG_DBG("Wait for download");
+		r = k_sem_take(pCtx->wait_download, K_FOREVER);
+
+		if ((pCtx->download_error) || (r < 0)) {
+			next_state = FOTA_FSM_ERROR;
+		} else {
+			next_state = FOTA_FSM_WAIT_FOR_SWITCHOVER;
+		}
+		break;
+
+	case FOTA_FSM_WAIT_FOR_SWITCHOVER:
+		pCtx->using_transport = false;
+		if (http_fota_ready(pCtx->type)) {
+			next_state = FOTA_FSM_INITIATE_UPDATE;
+		} else if (http_fota_abort(pCtx->type)) {
+			next_state = FOTA_FSM_ABORT;
+		} else {
+			if (transport_not_required()) {
+				FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED,
+							      FWK_ID_CLOUD,
+							      FMC_FOTA_DONE);
+			}
+			next_state = FOTA_FSM_WAIT_FOR_SWITCHOVER;
+		}
+		break;
+
+	case FOTA_FSM_INITIATE_UPDATE:
+		r = initiate_update(pCtx);
+		if (r < 0) {
+			next_state = FOTA_FSM_ERROR;
+		} else {
+			next_state = FOTA_FSM_SUCCESS;
+		}
+		break;
+
+	default:
+		next_state = FOTA_FSM_ERROR;
+		break;
+	}
+
+	if (next_state != pCtx->state) {
+		LOG_INF("%s: %s->%s",
+			log_strdup(fota_image_type_get_string(pCtx->type)),
+			fota_state_get_string(pCtx->state),
+			fota_state_get_string(next_state));
+	}
+	pCtx->state = next_state;
+}
+
+static int initiate_update(fota_context_t *pCtx)
+{
+	int r = 0;
+	if (pCtx->type == MODEM_IMAGE_TYPE) {
+		r = initiate_modem_update(pCtx);
+	}
+
+#ifdef CONFIG_HTTP_FOTA_DELETE_FILE_AFTER_UPDATE
+	if (r == 0) {
+		if (fsu_delete_files("/lfs", pCtx->file_path) < 0) {
+			LOG_ERR("Unable to delete");
+		}
+	}
+#endif
+
+	return r;
+}
+
+static int initiate_modem_update(fota_context_t *pCtx)
+{
+	char abs_path[FSU_MAX_ABS_PATH_SIZE];
+	(void)fsu_build_full_name(abs_path, sizeof(abs_path), "/lfs",
+				  pCtx->file_path);
+	return mdm_hl7800_update_fw(abs_path);
+}
+
+static bool transport_not_required(void)
+{
+	return (tctx.app_context.using_transport ||
+		tctx.modem_context.using_transport) ?
+		       false :
+		       true;
+}
+
+/* this handler is only for app FOTA */
+void fota_download_handler(const struct fota_download_evt *evt)
+{
+	switch (evt->id) {
+	case FOTA_DOWNLOAD_EVT_ERROR:
+		tctx.app_context.download_error = true;
+		LOG_ERR("FOTA download err");
+		k_sem_give(&wait_fota_download);
+		break;
+	case FOTA_DOWNLOAD_EVT_FINISHED:
+		LOG_INF("FOTA download finished");
+		k_sem_give(&wait_fota_download);
+		break;
+	case FOTA_DOWNLOAD_EVT_PROGRESS:
+		LOG_INF("FOTA progress %d", evt->progress);
+		break;
+	default:
+		LOG_WRN("Unhandled FOTA event %d", evt->id);
+		break;
+	}
+}

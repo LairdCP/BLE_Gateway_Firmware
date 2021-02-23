@@ -28,7 +28,12 @@ enum FwkIdEnum {
 	/* Application */
 	FWK_ID_SENSOR_TASK = FWK_ID_APP_START,
 	FWK_ID_CLOUD,
+#ifdef CONFIG_COAP_FOTA
 	FWK_ID_COAP_FOTA_TASK,
+#endif
+#ifdef CONFIG_HTTP_FOTA
+	FWK_ID_HTTP_FOTA_TASK,
+#endif
 
 	/* Reserved for framework (DO NOT DELETE, and it must be LAST) */
 	__FRAMEWORK_MAX_MSG_RECEIVERS

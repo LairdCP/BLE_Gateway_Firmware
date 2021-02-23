@@ -1,0 +1,53 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+config HTTP_FOTA
+    bool "enable FOTA over HTTP"
+    depends on DNS_RESOLVER
+    depends on NET_SOCKETS
+    depends on BOOTLOADER_MCUBOOT
+    select DOWNLOAD_CLIENT
+    select FOTA_DOWNLOAD
+    select DFU_TARGET
+    select IMG_MANAGER
+    select IMG_ERASE_PROGRESSIVELY
+
+if HTTP_FOTA
+
+config HTTP_FOTA_TASK_PRIO
+    int "Thread priority"
+    default 2
+    help
+      Pre-emptive thread priority
+
+config HTTP_FOTA_TASK_STACK_SIZE
+    int "Thread stack size"
+    default 4096
+
+config HTTP_FOTA_TASK_LOG_LEVEL
+	int "task log level"
+	default 4
+	range 0 4
+
+config HTTP_FOTA_TASK_QUEUE_DEPTH
+    int "Task queue depth"
+    default 4
+
+config HTTP_FOTA_ERROR_DELAY
+    int "Seconds to wait before trying again after and error occurs."
+    default 60
+    help
+        This allows time for the shadow to be updated.
+
+config HTTP_FOTA_MODEM_INSTALL_DELAY
+    int "Seconds to wait to allow modem to install update"
+    default 600
+    help
+        Used to prevent starting duplicate update cycle while the modem reboots by
+        keeping cloud state machine in FOTA state until modem has rebooted.
+
+config HTTP_FOTA_DELETE_FILE_AFTER_UPDATE
+    bool "Delete HL7800 update file after update"
+    default y
+
+endif # HTTP_FOTA

@@ -40,7 +40,12 @@ LOG_MODULE_REGISTER(sensor_gateway_parser, LOG_LEVEL_INF);
 #include "sensor_cmd.h"
 #include "sensor_table.h"
 #include "shadow_builder.h"
+#ifdef CONFIG_COAP_FOTA
 #include "coap_fota_shadow.h"
+#endif
+#ifdef CONFIG_HTTP_FOTA
+#include "http_fota_shadow.h"
+#endif
 #include "FrameworkIncludes.h"
 
 /******************************************************************************/
@@ -153,9 +158,13 @@ static int (*LocalConfigGet[MAX_WRITEABLE_LOCAL_OBJECTS])() = {
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
+#if defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA)
 static void FotaParser(const char *pTopic, enum fota_image_type Type);
+#endif
+#ifdef CONFIG_COAP_FOTA
 static void FotaHostParser(const char *pTopic);
 static void FotaBlockSizeParser(const char *pTopic);
+#endif
 static void UnsubscribeToGetAcceptedHandler(void);
 
 #ifdef CONFIG_SENSOR_TASK
@@ -198,13 +207,25 @@ void SensorGatewayParser(const char *pTopic, const char *pJson)
 #ifdef CONFIG_BOARD_MG100
 		MiniGatewayParser(pTopic);
 #endif
+#if defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA)
+		FotaParser(pTopic, APP_IMAGE_TYPE);
+		FotaParser(pTopic, MODEM_IMAGE_TYPE);
+#endif
+#ifdef CONFIG_COAP_FOTA
+		FotaHostParser(pTopic);
+		FotaBlockSizeParser(pTopic);
+#endif
 #ifdef CONFIG_CONTACT_TRACING
 		rpc_params_gateway_parser(getAcceptedTopic);
 #endif
+#if defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA)
 		FotaParser(pTopic, APP_IMAGE_TYPE);
 		FotaParser(pTopic, MODEM_IMAGE_TYPE);
+#endif
+#ifdef CONFIG_COAP_FOTA
 		FotaHostParser(pTopic);
 		FotaBlockSizeParser(pTopic);
+#endif
 		UnsubscribeToGetAcceptedHandler();
 	} else {
 #ifdef CONFIG_SENSOR_TASK
@@ -395,8 +416,11 @@ static void UnsubscribeToGetAcceptedHandler(void)
 	}
 }
 
+#if defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA)
 static void FotaParser(const char *pTopic, enum fota_image_type Type)
 {
+	const char *img_name;
+
 	UNUSED_PARAMETER(pTopic);
 
 	int location = 0;
@@ -407,8 +431,12 @@ static void FotaParser(const char *pTopic, enum fota_image_type Type)
 	if (getAcceptedTopic) {
 		jsmn_find_type("reported", JSMN_OBJECT, NEXT_PARENT);
 	}
-	jsmn_find_type(coap_fota_get_image_name(Type), JSMN_OBJECT,
-		       NEXT_PARENT);
+#ifdef CONFIG_COAP_FOTA
+	img_name = coap_fota_get_image_name(Type);
+#else
+	img_name = http_fota_get_image_name(Type);
+#endif
+	jsmn_find_type(img_name, JSMN_OBJECT, NEXT_PARENT);
 
 	if (jsmn_index() > 0) {
 		jsmn_save_index();
@@ -416,12 +444,19 @@ static void FotaParser(const char *pTopic, enum fota_image_type Type)
 		location = jsmn_find_type(SHADOW_FOTA_DESIRED_STR, JSMN_STRING,
 					  NEXT_PARENT);
 		if (location > 0) {
+#ifdef CONFIG_COAP_FOTA
 			coap_fota_set_desired_version(Type,
 						      jsmn_string(location),
 						      jsmn_strlen(location));
+#else
+			http_fota_set_desired_version(Type,
+						      jsmn_string(location),
+						      jsmn_strlen(location));
+#endif
 		}
 
 		jsmn_restore_index();
+#ifdef CONFIG_COAP_FOTA
 		location = jsmn_find_type(SHADOW_FOTA_DESIRED_FILENAME_STR,
 					  JSMN_STRING, NEXT_PARENT);
 		if (location > 0) {
@@ -429,32 +464,73 @@ static void FotaParser(const char *pTopic, enum fota_image_type Type)
 						       jsmn_string(location),
 						       jsmn_strlen(location));
 		}
+#else
+		location = jsmn_find_type(SHADOW_FOTA_DOWNLOAD_HOST_STR,
+					  JSMN_STRING, NEXT_PARENT);
+		if (location > 0) {
+			http_fota_set_download_host(Type, jsmn_string(location),
+						    jsmn_strlen(location));
+		}
+
+		jsmn_restore_index();
+		location = jsmn_find_type(SHADOW_FOTA_DOWNLOAD_FILE_STR,
+					  JSMN_STRING, NEXT_PARENT);
+		if (location > 0) {
+			http_fota_set_download_file(Type, jsmn_string(location),
+						    jsmn_strlen(location));
+		}
+
+		jsmn_restore_index();
+		location = jsmn_find_type(SHADOW_FOTA_DOWNLOADED_FILENAME_STR,
+					  JSMN_STRING, NEXT_PARENT);
+		if (location > 0) {
+			http_fota_set_downloaded_filename(
+				Type, jsmn_string(location),
+				jsmn_strlen(location));
+		}
+#endif
 
 		jsmn_restore_index();
 		location = jsmn_find_type(SHADOW_FOTA_SWITCHOVER_STR,
 					  JSMN_PRIMITIVE, NEXT_PARENT);
 		if (location > 0) {
+#ifdef CONFIG_COAP_FOTA
 			coap_fota_set_switchover(Type,
 						 jsmn_convert_uint(location));
+#else
+			http_fota_set_switchover(Type,
+						 jsmn_convert_uint(location));
+#endif
 		}
 
 		jsmn_restore_index();
 		location = jsmn_find_type(SHADOW_FOTA_START_STR, JSMN_PRIMITIVE,
 					  NEXT_PARENT);
 		if (location > 0) {
+#ifdef CONFIG_COAP_FOTA
 			coap_fota_set_start(Type, jsmn_convert_uint(location));
+#else
+			http_fota_set_start(Type, jsmn_convert_uint(location));
+#endif
 		}
 
 		jsmn_restore_index();
 		location = jsmn_find_type(SHADOW_FOTA_ERROR_STR, JSMN_PRIMITIVE,
 					  NEXT_PARENT);
 		if (location > 0) {
+#ifdef CONFIG_COAP_FOTA
 			coap_fota_set_error_count(Type,
 						  jsmn_convert_uint(location));
+#else
+			http_fota_set_error_count(Type,
+						  jsmn_convert_uint(location));
+#endif
 		}
 	}
 }
+#endif /* COAP || HTTP FOTA */
 
+#ifdef CONFIG_COAP_FOTA
 static void FotaHostParser(const char *pTopic)
 {
 	UNUSED_PARAMETER(pTopic);
@@ -490,6 +566,7 @@ static void FotaBlockSizeParser(const char *pTopic)
 		coap_fota_set_blocksize(jsmn_convert_uint(location));
 	}
 }
+#endif /* CONFIG_COAP_FOTA */
 
 #ifdef CONFIG_SENSOR_TASK
 static void SensorParser(const char *pTopic)

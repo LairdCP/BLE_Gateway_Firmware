@@ -16,7 +16,12 @@ LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 #include "aws.h"
 #include "sensor_task.h"
 #include "sensor_table.h"
+#ifdef CONFIG_COAP_FOTA
 #include "coap_fota_shadow.h"
+#endif
+#ifdef CONFIG_HTTP_FOTA
+#include "http_fota_shadow.h"
+#endif
 #include "bluegrass.h"
 
 /******************************************************************************/
@@ -34,6 +39,9 @@ static bool subscribedToGetAccepted;
 static bool getShadowProcessed;
 static struct k_timer gatewayInitTimer;
 static FwkQueue_t *pMsgQueue;
+#ifdef CONFIG_HTTP_FOTA
+static struct k_timer fota_timer;
+#endif
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -41,6 +49,10 @@ static FwkQueue_t *pMsgQueue;
 static void StartGatewayInitTimer(void);
 static void GatewayInitTimerCallbackIsr(struct k_timer *timer_id);
 static int GatewaySubscriptionHandler(void);
+#ifdef CONFIG_HTTP_FOTA
+static void fota_timer_callback_isr(struct k_timer *timer_id);
+static void start_fota_timer(void);
+#endif
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -49,6 +61,10 @@ void Bluegrass_Initialize(FwkQueue_t *pQ)
 {
 	pMsgQueue = pQ;
 	k_timer_init(&gatewayInitTimer, GatewayInitTimerCallbackIsr, NULL);
+
+#ifdef CONFIG_HTTP_FOTA
+	k_timer_init(&fota_timer, fota_timer_callback_isr, NULL);
+#endif
 
 #ifdef CONFIG_SENSOR_TASK
 	SensorTask_Initialize();
@@ -148,7 +164,13 @@ static int GatewaySubscriptionHandler(void)
 #ifdef CONFIG_SENSOR_TASK
 			SensorTable_EnableGatewayShadowGeneration();
 #endif
+#ifdef CONFIG_COAP_FOTA
 			coap_fota_enable_shadow_generation();
+#endif
+#ifdef CONFIG_HTTP_FOTA
+			http_fota_enable_shadow_generation();
+			start_fota_timer();
+#endif
 		}
 	}
 
@@ -165,6 +187,13 @@ static void StartGatewayInitTimer(void)
 	k_timer_start(&gatewayInitTimer, K_SECONDS(1), K_NO_WAIT);
 }
 
+#ifdef CONFIG_HTTP_FOTA
+static void start_fota_timer(void)
+{
+	k_timer_start(&fota_timer, K_SECONDS(10), K_NO_WAIT);
+}
+#endif
+
 /******************************************************************************/
 /* Interrupt Service Routines                                                 */
 /******************************************************************************/
@@ -174,3 +203,15 @@ static void GatewayInitTimerCallbackIsr(struct k_timer *timer_id)
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
 				      FMC_GATEWAY_INIT);
 }
+
+#ifdef CONFIG_HTTP_FOTA
+static void fota_timer_callback_isr(struct k_timer *timer_id)
+{
+	UNUSED_PARAMETER(timer_id);
+	/* Kick off FOTA task now that we have processed any possible
+			 * shadow changes.
+			 */
+	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED, FWK_ID_HTTP_FOTA_TASK,
+				      FMC_FOTA_START);
+}
+#endif

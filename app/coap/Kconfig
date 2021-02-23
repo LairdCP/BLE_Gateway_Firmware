@@ -13,7 +13,6 @@ config COAP_FOTA
     depends on REBOOT
     depends on MODEM_HL7800
     depends on BLUEGRASS
-    default y
 
 if COAP_FOTA
 

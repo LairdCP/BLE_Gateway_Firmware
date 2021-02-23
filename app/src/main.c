@@ -81,6 +81,9 @@ LOG_MODULE_REGISTER(main);
 #if defined(CONFIG_BLUEGRASS) && defined(CONFIG_COAP_FOTA)
 #include "coap_fota_task.h"
 #endif
+#if defined(CONFIG_BLUEGRASS) && defined(CONFIG_HTTP_FOTA)
+#include "http_fota_task.h"
+#endif
 
 #include "lcz_memfault.h"
 
@@ -152,9 +155,7 @@ static bool devKeySet;
 static FwkMsgReceiver_t cloudMsgReceiver;
 static bool commissioned;
 static bool appReady = false;
-#if defined(CONFIG_BLUEGRASS) && defined(CONFIG_COAP_FOTA)
 static bool start_fota = false;
-#endif
 
 static app_state_function_t appState;
 struct lte_status *lteInfo;
@@ -374,6 +375,9 @@ void main(void)
 #if defined(CONFIG_BLUEGRASS) && defined(CONFIG_COAP_FOTA)
 	coap_fota_task_initialize();
 #endif
+#if defined(CONFIG_BLUEGRASS) && defined(CONFIG_HTTP_FOTA)
+	http_fota_task_initialize();
+#endif
 
 #ifdef CONFIG_CONTACT_TRACING
 	ct_app_init();
@@ -566,6 +570,7 @@ static void awsMsgHandler(void)
 	int rc = 0;
 	FwkMsg_t *pMsg;
 	bool freeMsg;
+	int fota_task_id = 0;
 
 	while (rc == 0 && !start_fota) {
 		lcz_led_turn_on(GREEN_LED);
@@ -619,8 +624,13 @@ static void awsMsgHandler(void)
 
 		case FMC_FOTA_START:
 			start_fota = true;
+#ifdef CONFIG_COAP_FOTA
+			fota_task_id = FWK_ID_COAP_FOTA_TASK;
+#elif CONFIG_HTTP_FOTA
+			fota_task_id = FWK_ID_HTTP_FOTA_TASK;
+#endif
 			FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED,
-						      FWK_ID_COAP_FOTA_TASK,
+						      fota_task_id,
 						      FMC_FOTA_START_ACK);
 			break;
 

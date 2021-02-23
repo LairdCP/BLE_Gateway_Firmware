@@ -209,8 +209,8 @@ static void fota_timer_callback_isr(struct k_timer *timer_id)
 {
 	UNUSED_PARAMETER(timer_id);
 	/* Kick off FOTA task now that we have processed any possible
-			 * shadow changes.
-			 */
+	 * shadow changes.
+	 */
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED, FWK_ID_HTTP_FOTA_TASK,
 				      FMC_FOTA_START);
 }

@@ -34,6 +34,7 @@ enum fota_image_type { APP_IMAGE_TYPE = 0, MODEM_IMAGE_TYPE };
 #define SHADOW_FOTA_DOWNLOAD_HOST_STR        "downloadHost"
 #define SHADOW_FOTA_DOWNLOAD_FILE_STR        "downloadFile"
 #define SHADOW_FOTA_DOWNLOADED_FILENAME_STR  "downloadedFilename"
+#define SHADOW_FOTA_HASH_STR                 "hash"
 #define SHADOW_FOTA_START_STR                "start"
 #define SHADOW_FOTA_SWITCHOVER_STR           "switchover"
 #define SHADOW_FOTA_ERROR_STR                "errorCount"
@@ -177,6 +178,37 @@ bool http_fota_abort(enum fota_image_type type);
  * @retval true when the desired and running version match, false otherwise
  */
 bool http_fota_modem_install_complete(void);
+
+/**
+ * @brief Accessor function to retrieve the hash string
+ *
+ * @param type the type of image being downloaded
+ *
+ * @retval pointer to the hash string
+ */
+const char *http_fota_get_hash(enum fota_image_type type);
+/**
+ * @brief Helper function to translate the hex string representing the
+ *  sha256 hash value of an image.
+ *
+ * @param type the type of image being downloaded
+ * @param buf is the pointer to the buffer to store the conversion result
+ * @param buf_len is the length of the buffer
+ *
+ * @retval non-zero when the string was succesfully converted.
+ */
+size_t http_fota_convert_hash(enum fota_image_type type, uint8_t * buf,
+					size_t buf_len);
+
+/**
+ * @brief Set the hash value being used for the image integrity check.
+ *
+ * @param type the type of image being downloaded
+ * @param p pointer to the data being set
+ * @param length the length of the data to be set
+ */
+void http_fota_set_hash(enum fota_image_type type, const char *p,
+				 size_t length);
 
 #ifdef __cplusplus
 }

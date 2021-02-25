@@ -118,5 +118,6 @@ include_directories(${CMAKE_SOURCE_DIR}/http_fota/include)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/http_fota/source/http_fota_task.c
     ${CMAKE_SOURCE_DIR}/http_fota/source/http_fota_shadow.c
+    ${CMAKE_SOURCE_DIR}/http_fota/source/hl7800_http_fota.c
 )
 endif() # CONFIG_HTTP_FOTA

@@ -34,6 +34,7 @@ typedef struct fota_shadow_image {
 	char host[CONFIG_DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE];
 	char file[CONFIG_DOWNLOAD_CLIENT_MAX_FILENAME_SIZE];
 	char downloaded_filename[CONFIG_FSU_MAX_FILE_NAME_SIZE];
+	char hash[FSU_HASH_SIZE * 2 + 1];
 	uint32_t start;
 	uint32_t switchover;
 	uint32_t error_count;
@@ -54,12 +55,13 @@ typedef struct fota_shadow {
 #define INT_CONVERSION_MAX_STR_LEN 10
 
 /* "app": { "running": "3.0.99", "desired": "3.0.100", "downloadHost": "",
- * "downloadFile": "", "downloadedFilename": "", "start": 0, "switchover": 0 }
+ * "downloadFile": "", "downloadedFilename": "", "hash": "", "start": 0, "switchover": 0 }
  */
 #define SHADOW_FOTA_IMAGE_FMT_MAX_CONVERSION_SIZE                              \
 	((CONFIG_FSU_MAX_VERSION_SIZE * 2) +                                   \
 	 CONFIG_DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE +                            \
 	 CONFIG_DOWNLOAD_CLIENT_MAX_FILENAME_SIZE +                            \
+	 (FSU_HASH_SIZE * 2) +                                                 \
 	 CONFIG_FSU_MAX_FILE_NAME_SIZE + (2 * INT_CONVERSION_MAX_STR_LEN))
 
 #define SHADOW_FOTA_IMAGE_FMT_STR                                              \
@@ -69,6 +71,7 @@ typedef struct fota_shadow {
 	"\"" SHADOW_FOTA_DOWNLOAD_HOST_STR "\":\"%s\","                        \
 	"\"" SHADOW_FOTA_DOWNLOAD_FILE_STR "\":\"%s\","                        \
 	"\"" SHADOW_FOTA_DOWNLOADED_FILENAME_STR "\":\"%s\","                  \
+	"\"" SHADOW_FOTA_HASH_STR "\":\"%s\","                                 \
 	"\"" SHADOW_FOTA_START_STR "\":%u,"                                    \
 	"\"" SHADOW_FOTA_SWITCHOVER_STR "\":%u,"                               \
 	"\"" SHADOW_FOTA_ERROR_STR "\":%u"                                     \
@@ -420,6 +423,51 @@ bool http_fota_abort(enum fota_image_type type)
 	return abort;
 }
 
+const char *http_fota_get_hash(enum fota_image_type type)
+{
+	switch (type) {
+	case APP_IMAGE_TYPE:
+		return fota_shadow.app.hash;
+	case MODEM_IMAGE_TYPE:
+		return fota_shadow.modem.hash;
+	default:
+		return "?name?";
+	}
+}
+
+size_t http_fota_convert_hash(enum fota_image_type type, uint8_t * buf,
+					size_t buf_len)
+{
+	size_t ret = 0;
+
+	if (buf != NULL) {
+		if ((type == MODEM_IMAGE_TYPE) && (fota_shadow.modem.hash != NULL)) {
+			ret = hex2bin(fota_shadow.modem.hash, FSU_HASH_SIZE * 2, buf, buf_len);
+		}
+		else if ((type == APP_IMAGE_TYPE) && (fota_shadow.app.hash != NULL)) {
+			ret = hex2bin(fota_shadow.app.hash, FSU_HASH_SIZE * 2, buf, buf_len);
+		}
+	}
+
+	return ret;
+}
+
+void http_fota_set_hash(enum fota_image_type type, const char *p,
+				 size_t length)
+{
+	fota_shadow_image_t *pImg = get_image_ptr(type);
+	if (pImg == NULL) {
+		return;
+	}
+
+	if (set_shadow_str(pImg->hash,
+			   sizeof(pImg->hash), p, length)) {
+		fota_shadow.json_update_request = true;
+		LOG_DBG("%s image hash: %s", log_strdup(pImg->name),
+			log_strdup(pImg->hash));
+	}
+}
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
@@ -477,11 +525,13 @@ static void fota_shadow_handler(void)
 			 fota_shadow.app.running, fota_shadow.app.desired,
 			 fota_shadow.app.host, fota_shadow.app.file,
 			 fota_shadow.app.downloaded_filename,
+			 fota_shadow.app.hash,
 			 fota_shadow.app.start, fota_shadow.app.switchover,
 			 fota_shadow.app.error_count, fota_shadow.modem.running,
 			 fota_shadow.modem.desired, fota_shadow.modem.host,
 			 fota_shadow.modem.file,
 			 fota_shadow.modem.downloaded_filename,
+			 fota_shadow.modem.hash,
 			 fota_shadow.modem.start, fota_shadow.modem.switchover,
 			 fota_shadow.modem.error_count);
 

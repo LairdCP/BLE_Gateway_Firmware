@@ -488,6 +488,15 @@ static void FotaParser(const char *pTopic, enum fota_image_type Type)
 				Type, jsmn_string(location),
 				jsmn_strlen(location));
 		}
+
+		jsmn_restore_index();
+		location = jsmn_find_type(SHADOW_FOTA_HASH_STR,
+					  JSMN_STRING, NEXT_PARENT);
+		if (location > 0) {
+			http_fota_set_hash(
+				Type, jsmn_string(location),
+				jsmn_strlen(location));
+		}
 #endif
 
 		jsmn_restore_index();

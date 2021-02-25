@@ -30,6 +30,7 @@ LOG_MODULE_REGISTER(http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
 #include "file_system_utilities.h"
 
 #include "http_fota_shadow.h"
+#include "hl7800_http_fota.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -44,32 +45,6 @@ LOG_MODULE_REGISTER(http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
 
 static K_SEM_DEFINE(wait_fota_download, 0, 1);
 
-typedef enum fota_fsm_state_t {
-	FOTA_FSM_ABORT = -2,
-	FOTA_FSM_ERROR = -1,
-	FOTA_FSM_IDLE = 0,
-	FOTA_FSM_END,
-	FOTA_FSM_SUCCESS,
-	FOTA_FSM_MODEM_WAIT,
-	FOTA_FSM_WAIT,
-	FOTA_FSM_START,
-	FOTA_FSM_START_DOWNLOAD,
-	FOTA_FSM_DOWNLOAD_COMPLETE,
-	FOTA_FSM_DELETE_EXISTING_FILE,
-	FOTA_FSM_WAIT_FOR_SWITCHOVER,
-	FOTA_FSM_INITIATE_UPDATE
-} fota_fsm_state_t;
-
-typedef struct fota_context {
-	enum fota_image_type type;
-	fota_fsm_state_t state;
-	bool using_transport;
-	uint32_t delay;
-	char *file_path;
-	struct k_sem *wait_download;
-	bool download_error;
-} fota_context_t;
-
 typedef struct http_fota_task {
 	FwkMsgTask_t msgTask;
 	bool fs_mounted;
@@ -78,10 +53,6 @@ typedef struct http_fota_task {
 	fota_context_t app_context;
 	fota_context_t modem_context;
 } http_fota_task_obj_t;
-
-/******************************************************************************/
-/* Global Data Definitions                                                    */
-/******************************************************************************/
 
 K_THREAD_STACK_DEFINE(http_fota_task_stack, CONFIG_HTTP_FOTA_TASK_STACK_SIZE);
 
@@ -109,8 +80,6 @@ static DispatchResult_t http_fota_tick_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 static char *fota_state_get_string(fota_fsm_state_t state);
 static char *fota_image_type_get_string(enum fota_image_type type);
 static void fota_fsm(fota_context_t *pCtx);
-static int initiate_update(fota_context_t *pCtx);
-static int initiate_modem_update(fota_context_t *pCtx);
 static bool transport_not_required(void);
 void fota_download_handler(const struct fota_download_evt *evt);
 
@@ -186,10 +155,13 @@ static void http_fota_task_thread(void *pArg1, void *pArg2, void *pArg3)
 
 	rc = fota_download_init(fota_download_handler);
 	if (rc != 0) {
-		LOG_ERR("Could not init FOTA download %d", rc);
+		LOG_ERR("Could not init APP FOTA download %d", rc);
 	}
 
-	#warning "Bug 18510 add in hl7800 http fota download init"
+	rc = hl7800_download_client_init(fota_download_handler);
+	if (rc != 0) {
+		LOG_ERR("Could not init HL7800 FOTA download %d", rc);
+	}
 
 	while (true) {
 		Framework_MsgReceiver(&pObj->msgTask.rxer);
@@ -410,9 +382,15 @@ static void fota_fsm(fota_context_t *pCtx)
 				http_fota_get_download_host(pCtx->type),
 				http_fota_get_download_file(pCtx->type),
 				TLS_SEC_TAG, NULL, 0);
-		} else {
-			#warning "Bug 18510 add in hl7800 http fota download start"
-			r = -1;
+		}
+		else if (pCtx->type == MODEM_IMAGE_TYPE) {
+			r = hl7800_download_start(pCtx,
+				http_fota_get_download_host(pCtx->type),
+				http_fota_get_download_file(pCtx->type),
+				TLS_SEC_TAG, NULL, 0);
+		}
+		else {
+			r = -EINVAL;
 		}
 		if (r < 0) {
 			next_state = FOTA_FSM_ERROR;
@@ -449,7 +427,7 @@ static void fota_fsm(fota_context_t *pCtx)
 		break;
 
 	case FOTA_FSM_INITIATE_UPDATE:
-		r = initiate_update(pCtx);
+		r = hl7800_initiate_modem_update(pCtx);
 		if (r < 0) {
 			next_state = FOTA_FSM_ERROR;
 		} else {
@@ -471,32 +449,6 @@ static void fota_fsm(fota_context_t *pCtx)
 	pCtx->state = next_state;
 }
 
-static int initiate_update(fota_context_t *pCtx)
-{
-	int r = 0;
-	if (pCtx->type == MODEM_IMAGE_TYPE) {
-		r = initiate_modem_update(pCtx);
-	}
-
-#ifdef CONFIG_HTTP_FOTA_DELETE_FILE_AFTER_UPDATE
-	if (r == 0) {
-		if (fsu_delete_files("/lfs", pCtx->file_path) < 0) {
-			LOG_ERR("Unable to delete");
-		}
-	}
-#endif
-
-	return r;
-}
-
-static int initiate_modem_update(fota_context_t *pCtx)
-{
-	char abs_path[FSU_MAX_ABS_PATH_SIZE];
-	(void)fsu_build_full_name(abs_path, sizeof(abs_path), "/lfs",
-				  pCtx->file_path);
-	return mdm_hl7800_update_fw(abs_path);
-}
-
 static bool transport_not_required(void)
 {
 	return (tctx.app_context.using_transport ||
@@ -505,13 +457,17 @@ static bool transport_not_required(void)
 		       true;
 }
 
-/* this handler is only for app FOTA */
 void fota_download_handler(const struct fota_download_evt *evt)
 {
 	switch (evt->id) {
 	case FOTA_DOWNLOAD_EVT_ERROR:
-		tctx.app_context.download_error = true;
-		LOG_ERR("FOTA download err");
+		if (tctx.app_context.using_transport) {
+			tctx.app_context.download_error = true;
+		}
+		else if (tctx.modem_context.using_transport) {
+			tctx.modem_context.download_error = true;
+		}
+		LOG_ERR("FOTA download error");
 		k_sem_give(&wait_fota_download);
 		break;
 	case FOTA_DOWNLOAD_EVT_FINISHED:

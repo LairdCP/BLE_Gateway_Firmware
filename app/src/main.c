@@ -150,6 +150,7 @@ static bool resolveAwsServer = true;
 static bool allowCommissioning = false;
 static bool devCertSet;
 static bool devKeySet;
+static struct k_delayed_work heartbeat;
 #endif
 
 static FwkMsgReceiver_t cloudMsgReceiver;
@@ -198,6 +199,7 @@ static void appStateLteConnectedAws(void);
 static void awsMsgHandler(void);
 static void set_commissioned(void);
 static void appStateWaitFota(void);
+static void heartbeat_work_handler(struct k_work *work);
 #endif
 
 static void initializeCloudMsgReceiver(void);
@@ -306,6 +308,7 @@ void main(void)
 
 #ifdef CONFIG_BLUEGRASS
 	Bluegrass_Initialize(cloudMsgReceiver.pQueue);
+	k_delayed_work_init(&heartbeat, heartbeat_work_handler);
 #endif
 
 	dis_initialize(APP_VERSION_STRING);
@@ -576,7 +579,6 @@ static void awsMsgHandler(void)
 		lcz_led_turn_on(GREEN_LED);
 		/* Remove sensor/gateway data from queue and send it to cloud.
 		 * Block if there are not any messages.
-		 * The keep alive message (RSSI) occurs every ~30 seconds.
 		 */
 		rc = -EINVAL;
 		Framework_Receive(cloudMsgReceiver.pQueue, &pMsg, K_FOREVER);
@@ -601,8 +603,8 @@ static void awsMsgHandler(void)
 						       pBmeMsg->pressurePa);
 		} break;
 
-		case FMC_AWS_KEEP_ALIVE: {
-			/* Periodically sending the RSSI keeps AWS connection open. */
+		case FMC_AWS_HEARTBEAT: {
+			/* Periodically send the RSSI as a heartbeat. */
 			lteInfo = lteGetStatus();
 #ifdef CONFIG_BOARD_MG100
 			batteryInfo = batteryGetStatus();
@@ -614,6 +616,11 @@ static void awsMsgHandler(void)
 #else
 			rc = awsPublishPinnacleData(lteInfo->rssi,
 						    lteInfo->sinr);
+#endif
+#if CONFIG_AWS_HEARTBEAT_SECONDS != 0
+			k_delayed_work_submit(
+				&heartbeat,
+				K_SECONDS(CONFIG_AWS_HEARTBEAT_SECONDS));
 #endif
 		} break;
 
@@ -685,6 +692,7 @@ static void appStateAwsInitShadow(void)
 		initShadow = false;
 		appSetNextState(appStateAwsSendSensorData);
 		Bluegrass_ConnectedCallback();
+		k_delayed_work_submit(&heartbeat, K_NO_WAIT);
 #ifdef CONFIG_CONTACT_TRACING
 		ct_ble_publish_dummy_data_to_aws();
 		/* Try to send stashed entries immediately on re-connect */
@@ -863,7 +871,6 @@ static void set_commissioned(void)
 	printk("Device is commissioned\n");
 }
 
-#ifdef CONFIG_BLUEGRASS
 void awsSvcEvent(enum aws_svc_event event)
 {
 	switch (event) {
@@ -875,7 +882,15 @@ void awsSvcEvent(enum aws_svc_event event)
 		break;
 	}
 }
-#endif
+
+static void heartbeat_work_handler(struct k_work *work)
+{
+	ARG_UNUSED(work);
+
+	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
+				      FMC_AWS_HEARTBEAT);
+}
+
 #endif /* CONFIG_BLUEGRASS */
 
 #ifdef CONFIG_LWM2M
@@ -977,11 +992,13 @@ void power_measurement_callback(uint8_t integer, uint8_t decimal)
 
 static void reset_reason_handler(void)
 {
+#ifndef CONFIG_LCZ_MEMFAULT
 	uint32_t reset_reason = lbt_get_and_clear_nrf52_reset_reason_register();
 
 	LOG_WRN("reset reason: %s (%08X)",
 		lbt_get_nrf52_reset_reason_string_from_register(reset_reason),
 		reset_reason);
+#endif
 }
 
 static char *get_app_type(void)

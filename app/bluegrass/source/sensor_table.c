@@ -11,8 +11,6 @@
 LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 #define FWK_FNAME "sensor_table"
 
-#define VERBOSE_AD_LOG(...)
-
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
@@ -35,9 +33,14 @@ LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 #ifdef CONFIG_BOARD_MG100
 #include "sdcard_log.h"
 #endif
+
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
+#define VERBOSE_AD_LOG(...)
+
+#define LOG_EVT(...) Z_LOG(CONFIG_SENSOR_TABLE_NEW_EVENT_LOG_LEVEL, __VA_ARGS__)
+
 #define SENSOR_UPDATE_TOPIC_FMT_STR CONFIG_SENSOR_TOPIC_FMT_STR_PREFIX "/update"
 
 #define SENSOR_SUBSCRIPTION_TOPIC_FMT_STR                                      \
@@ -676,7 +679,7 @@ static void AdEventHandler(LczSensorAdEvent_t *p, int8_t Rssi, uint32_t Index)
 
 	if (NewEvent(p->id, Index)) {
 		sensorTable[Index].validAd = true;
-		LOG_DBG("New Event for [%u] '%s' (%s) RSSI: %d", Index,
+		LOG_EVT("New Event for [%u] '%s' (%s) RSSI: %d", Index,
 			log_strdup(sensorTable[Index].name),
 			log_strdup(sensorTable[Index].addrString), Rssi);
 		sensorTable[Index].lastRecordType =
@@ -813,7 +816,7 @@ static void AddEntry(SensorEntry_t *pEntry, const bt_addr_t *pAddr, int8_t Rssi)
 	 * because the two formats are the same.
 	 */
 	SensorAddrToString(pEntry);
-	LOG_INF("Added BT510 sensor %s '%s' RSSI: %d",
+	LOG_DBG("Added BT510 sensor %s '%s' RSSI: %d",
 		log_strdup(pEntry->addrString), log_strdup(pEntry->name),
 		pEntry->rssi);
 	GatewayShadowMaker(false);

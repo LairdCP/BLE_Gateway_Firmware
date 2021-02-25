@@ -178,6 +178,11 @@ config SENSOR_SUBSCRIPTION_DELAY_SECONDS
         The server needs time to generate the sensor object.
         When the permissions are changed on AWS a disconnect may occur.
 
+config SENSOR_TABLE_NEW_EVENT_LOG_LEVEL
+    int "Log level for sensor table new event detection"
+    range 0 4
+    default 3
+
 config VSP_TX_ECHO
     bool "Print Virtual Serial Port data transmitted to sensors"
     help

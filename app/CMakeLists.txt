@@ -35,9 +35,6 @@ target_sources(app PRIVATE
 )
 endif()
 
-target_sources_ifdef(CONFIG_CT_WDT app PRIVATE
-    ${CMAKE_SOURCE_DIR}/contact_tracing/src/ct_wdt.c)
-
 target_sources_ifdef(CONFIG_CT_SHELL app PRIVATE
     ${CMAKE_SOURCE_DIR}/contact_tracing/src/ct_shell.c
 )
@@ -45,6 +42,9 @@ target_sources_ifdef(CONFIG_CT_SHELL app PRIVATE
 target_sources_ifdef(CONFIG_SINGLE_PERIPHERAL app PRIVATE
     ${CMAKE_SOURCE_DIR}/src/single_peripheral.c
 )
+
+target_sources_ifdef(CONFIG_WDT app PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/wdt.c)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/framework_config)

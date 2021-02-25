@@ -46,18 +46,6 @@ config CT_SHELL
     depends on SHELL
     default y
 
-config CT_WDT
-    bool "Enable the CT system work queue watchdog"
-    default y
-    imply WATCHDOG
-    help
-        Enable-to-Disable requires power cycle
-
-config CT_WDT_LOG_LEVEL
-    int "Log level for BLE contact tracing watchdog module"
-    range 0 4
-    default 3
-
 config CT_BLE_LOG_LEVEL
     int "Contact Tracing BLE Module Log level"
     range 0 4

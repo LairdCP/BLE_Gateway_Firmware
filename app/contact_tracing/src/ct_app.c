@@ -22,7 +22,6 @@ LOG_MODULE_REGISTER(ct_app, CONFIG_CT_APP_LOG_LEVEL);
 #include "aws.h"
 #include "bluegrass.h"
 #include "sdcard_log.h"
-#include "ct_wdt.h"
 #include "ble_aws_service.h"
 #include "ct_ble.h"
 #include "ct_app.h"
@@ -83,19 +82,7 @@ static void ct_app_work_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
 
-	uint32_t now = lcz_qrtc_get_epoch();
-
-#ifdef CONFIG_CT_WDT
-	if (ct_wdt_initialized()) {
-		ct_wdt_handler();
-	} else {
-		if (Bluegrass_ReadyForPublish() && awsPublished()) {
-			ct_wdt_init();
-		}
-	}
-#endif
-
-	ct_publisher(now);
+	ct_publisher(lcz_qrtc_get_epoch());
 
 	k_delayed_work_submit(&ct_app_work,
 			      K_SECONDS(CONFIG_CT_APP_TICK_RATE_SECONDS));

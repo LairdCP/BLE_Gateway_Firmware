@@ -1,0 +1,49 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig WDT
+    bool "Config Watchdog Timer"
+    imply WATCHDOG
+    help
+        Enable-to-Disable requires power cycle or watchdog reset.
+        Watchdog cannot be stopped once started.
+        It can be reconfigured after a reset.
+        If a watchdog reset occurs, then it won't cause another reset unless
+        it is re-enabled.
+
+if WDT
+
+config WDT_INIT_PRIORITY
+    int "System init priority (Application)"
+    default 0
+
+config WDT_LOG_LEVEL
+    int "Log level for BLE watchdog module"
+    range 0 4
+    default 3
+
+config WDT_TIMEOUT_MILLISECONDS
+    int "Rate in milliseconds for watchdog"
+    range 10000 1200000
+    default 600000
+    help
+        The bootloader (mcuboot) supplied with the application prior to
+        4.0.0 doesn't feed the watchdog. If the bootloader hasn't been
+        updated (requires a physical connection), the timeout should
+        remain at 10 minutes.
+
+config WDT_WORK_QUEUE_STACK_SIZE
+    int
+    default 320
+
+config WDT_WORK_QUEUE_THREAD_PRIORITY
+    int "Priority of work queue"
+    default 10
+    help
+        When check-in functions are not used, the priority needs to be lower
+        than main so that a non-yielding main causes a reset.
+
+config WDT_TEST
+    bool "Force the watchdog to timeout (set during initialization)"
+
+endif # WDT

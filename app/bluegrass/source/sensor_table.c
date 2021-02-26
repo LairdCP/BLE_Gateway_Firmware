@@ -689,7 +689,7 @@ static void AdEventHandler(LczSensorAdEvent_t *p, int8_t Rssi, uint32_t Index)
 		/* If event occurs before epoch is set, then AWS shows ~1970. */
 		sensorTable[Index].rxEpoch = lcz_qrtc_get_epoch();
 		ShadowMaker(&sensorTable[Index]);
-#ifdef CONFIG_BOARD_MG100
+#ifdef CONFIG_SD_CARD_LOG
 		sdCardLogAdEvent(p);
 #endif
 		/* The cloud uses the RX epoch (in the table) for filtering. */

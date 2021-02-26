@@ -258,14 +258,12 @@ void main(void)
 		goto exit;
 	}
 
-#ifdef CONFIG_BOARD_MG100
+#ifdef CONFIG_SD_CARD_LOG
 	rc = sdCardLogInit();
-#if 0 /* Bug 18504 - Fix SD card initialization with NCS1.4 */
 #ifdef CONFIG_CONTACT_TRACING
 	if (rc == 0) {
 		sdCardCleanup();
 	}
-#endif
 #endif
 #endif
 
@@ -578,6 +576,10 @@ static void awsMsgHandler(void)
 	bool freeMsg;
 	int fota_task_id = 0;
 
+#ifndef CONFIG_SD_CARD_LOG
+	struct sdcard_status sd_log_disabled_status = { -1, -1, -1 };
+#endif
+
 	while (rc == 0 && !start_fota) {
 		lcz_led_turn_on(GREEN_LED);
 		/* Remove sensor/gateway data from queue and send it to cloud.
@@ -598,7 +600,7 @@ static void awsMsgHandler(void)
 		switch (pMsg->header.msgCode) {
 		case FMC_BL654_SENSOR_EVENT: {
 			BL654SensorMsg_t *pBmeMsg = (BL654SensorMsg_t *)pMsg;
-#if defined(CONFIG_BOARD_MG100) && defined(CONFIG_BL654_SENSOR)
+#if defined(CONFIG_SD_CARD_LOG) && defined(CONFIG_BL654_SENSOR)
 			sdCardLogBL654Data(pBmeMsg);
 #endif
 			rc = awsPublishBl654SensorData(pBmeMsg->temperatureC,
@@ -612,7 +614,11 @@ static void awsMsgHandler(void)
 #ifdef CONFIG_BOARD_MG100
 			batteryInfo = batteryGetStatus();
 			motionInfo = motionGetStatus();
+#ifdef CONFIG_SD_CARD_LOG
 			sdcardInfo = sdCardLogGetStatus();
+#else
+			sdcardInfo = &sd_log_disabled_status;
+#endif
 			rc = awsPublishPinnacleData(lteInfo->rssi,
 						    lteInfo->sinr, batteryInfo,
 						    motionInfo, sdcardInfo);

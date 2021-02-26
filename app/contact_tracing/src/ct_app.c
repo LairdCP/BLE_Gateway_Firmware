@@ -29,8 +29,13 @@ LOG_MODULE_REGISTER(ct_app, CONFIG_CT_APP_LOG_LEVEL);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
+#ifdef CONFIG_SD_CARD_LOG
 #define SD_LOG_PUBLISH_BUF_SIZE 2048
 #define SD_LOG_PUBLISH_MAX_CHUNK_LEN 1984
+#else
+/* Buffer space is required to provide empty response. */
+#define SD_LOG_PUBLISH_BUF_SIZE 128
+#endif
 
 #define CLEAR_RPC_MSG "{\"state\":{\"desired\":{\"rpc\":null}}}"
 
@@ -158,9 +163,11 @@ static void handle_sd_card_log_get(void)
 			sd_log_pbuf += strlen(sd_log_pbuf);
 		}
 
-#ifdef CONFIG_BOARD_MG100
+#ifdef CONFIG_SD_CARD_LOG
 		sdCardLogGet(sd_log_pbuf, &log_get_state,
 			     SD_LOG_PUBLISH_MAX_CHUNK_LEN);
+#else
+		log_get_state.bytes_ready = 0;
 #endif
 
 		/* if bytes are ready in sd_log_pbuf, send them */
@@ -229,7 +236,7 @@ static void process_log_get_cmd(void)
 
 static void process_log_dir_command(void)
 {
-#ifdef CONFIG_BOARD_MG100
+#ifdef CONFIG_SD_CARD_LOG
 	char *topic = ct_ble_get_log_topic();
 
 	if (0 == sdCardLsDirToString("/", sd_log_publish_buf,

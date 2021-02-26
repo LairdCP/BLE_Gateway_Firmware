@@ -357,6 +357,14 @@ config SD_CARD_LOG_LEVEL
 config BLE_SENSOR_SERVICE
     bool "Enable the BLE sensor service module"
 
+config SD_CARD_LOG
+    bool
+    depends on BOARD_MG100
+    help
+        This is disabled.
+        Bug 18504 - Fix SD card initialization
+
+
 rsource "./Kconfig.ble"
 rsource "./Kconfig.single_peripheral"
 rsource "./Kconfig.lairdconnect_battery"

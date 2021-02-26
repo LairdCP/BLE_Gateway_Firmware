@@ -8,3 +8,4 @@ config LAIRD_CONNECT_BATTERY_LOG_LEVEL
 
 config LAIRD_CONNECT_BATTERY_LOGGING
     bool "Enable battery logging to SD card"
+    depends on SD_CARD_LOG

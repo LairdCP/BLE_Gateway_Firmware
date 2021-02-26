@@ -203,7 +203,7 @@ static int rpc_parse(int location)
 	if (jsmn_strlen(location) < sizeof(rpc_method)) {
 		rpc_params_clear_method();
 		JSMN_STRNCPY(rpc_method, location);
-		LOG_DBG("rpc.m: %s", rpc_method);
+		LOG_DBG("rpc.m: %s", log_strdup(rpc_method));
 		return rpc_params_parse();
 	}
 	return -1;

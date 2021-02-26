@@ -82,6 +82,7 @@ static char *fota_image_type_get_string(enum fota_image_type type);
 static void fota_fsm(fota_context_t *pCtx);
 static bool transport_not_required(void);
 void fota_download_handler(const struct fota_download_evt *evt);
+static int initiate_update(fota_context_t *pCtx);
 
 /******************************************************************************/
 /* Framework Message Dispatcher                                               */
@@ -427,7 +428,7 @@ static void fota_fsm(fota_context_t *pCtx)
 		break;
 
 	case FOTA_FSM_INITIATE_UPDATE:
-		r = hl7800_initiate_modem_update(pCtx);
+		r = initiate_update(pCtx);
 		if (r < 0) {
 			next_state = FOTA_FSM_ERROR;
 		} else {
@@ -455,6 +456,24 @@ static bool transport_not_required(void)
 		tctx.modem_context.using_transport) ?
 		       false :
 		       true;
+}
+
+static int initiate_update(fota_context_t *pCtx)
+{
+	int r = 0;
+	if (pCtx->type == MODEM_IMAGE_TYPE) {
+		r = hl7800_initiate_modem_update(pCtx);
+	}
+
+#ifdef CONFIG_HTTP_FOTA_DELETE_FILE_AFTER_UPDATE
+	if (r == 0) {
+		if (fsu_delete_files("/lfs", pCtx->file_path) < 0) {
+			LOG_ERR("Unable to delete");
+		}
+	}
+#endif
+
+	return r;
 }
 
 void fota_download_handler(const struct fota_download_evt *evt)

@@ -381,6 +381,9 @@ void main(void)
 		      K_SECONDS(CONFIG_CLOUD_FIFO_CHECK_RATE_SECONDS),
 		      K_SECONDS(CONFIG_CLOUD_FIFO_CHECK_RATE_SECONDS));
 
+	/* if we've gotten this far, assume the image is ok */
+	boot_write_img_confirmed();
+
 	appReady = true;
 	printk("\n!!!!!!!! App is ready! !!!!!!!!\n");
 

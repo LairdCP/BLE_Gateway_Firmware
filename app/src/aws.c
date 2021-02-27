@@ -172,6 +172,11 @@ int awsInit(void)
 #else
 	shadow_persistent_data.state.reported.codedPhySupported = false;
 #endif
+#ifdef CONFIG_HTTP_FOTA
+       shadow_persistent_data.state.reported.httpFotaEnabled = true;
+#else
+       shadow_persistent_data.state.reported.httpFotaEnabled = false;
+#endif
 	server_endpoint = AWS_DEFAULT_ENDPOINT;
 	mqtt_client_id = DEFAULT_MQTT_CLIENTID;
 

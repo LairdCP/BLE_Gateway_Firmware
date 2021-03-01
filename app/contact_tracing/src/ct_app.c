@@ -107,7 +107,7 @@ static void ct_publisher(uint32_t now)
 	if (ct_ble_is_publishing_log() == false) {
 		char *cmd = rpc_params_get_method();
 		if (cmd[0]) {
-			LOG_DBG("received rpc: '%s'", cmd);
+			LOG_DBG("received rpc: '%s'", log_strdup(cmd));
 			aws_handle_command(cmd);
 			publish_clear_command();
 			LOG_DBG("cleared rpc");
@@ -220,8 +220,10 @@ static void process_log_get_cmd(void)
 		/* parse the log_get rpc params */
 		rpc_params_log_get_t *params = rpc_params_get();
 		if (strlen(params->filename) > 0 && params->length > 0) {
-			LOG_DBG("log_get(%s, %s, %u, %u)", params->filename,
-				params->whence, params->offset, params->length);
+			LOG_DBG("log_get(%s, %s, %u, %u)",
+				log_strdup(params->filename),
+				log_strdup(params->whence), params->offset,
+				params->length);
 			memcpy(&log_get_state.rpc_params, params,
 			       sizeof(rpc_params_log_get_t));
 			log_get_state.bytes_remaining = params->length;

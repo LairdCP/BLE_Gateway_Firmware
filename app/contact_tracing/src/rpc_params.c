@@ -14,6 +14,7 @@ LOG_MODULE_REGISTER(rpc_params, CONFIG_RPC_PARAMS_LOG_LEVEL);
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
+#include <zephyr.h>
 #include <zephyr/types.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -58,8 +59,10 @@ void rpc_params_gateway_parser(bool get_accepted_topic)
 		jsmn_find_type("desired", JSMN_OBJECT, NEXT_PARENT);
 	}
 	jsmn_find_type("rpc", JSMN_OBJECT, NEXT_PARENT);
+	jsmn_save_index();
 	location = jsmn_find_type("m", JSMN_STRING, NEXT_PARENT);
 	if (jsmn_index() != 0) {
+		jsmn_restore_index();
 		rpc_parse(location);
 	}
 }
@@ -110,6 +113,7 @@ static int rpc_params_parse(void)
 			if (location > 0) {
 				JSMN_STRNCPY(params->filename, location);
 			} else {
+				LOG_ERR("Invalid filename");
 				r = -1;
 				break;
 			}
@@ -121,6 +125,7 @@ static int rpc_params_parse(void)
 			if (location > 0) {
 				JSMN_STRNCPY(params->whence, location);
 			} else {
+				LOG_ERR("Invalid whence");
 				r = -1;
 				break;
 			}
@@ -132,6 +137,7 @@ static int rpc_params_parse(void)
 			if (location > 0) {
 				params->offset = jsmn_convert_uint(location);
 			} else {
+				LOG_ERR("Invalid offset");
 				r = -1;
 				break;
 			}
@@ -143,6 +149,7 @@ static int rpc_params_parse(void)
 			if (location > 0) {
 				params->length = jsmn_convert_uint(location);
 			} else {
+				LOG_ERR("Invalid length");
 				r = -1;
 				break;
 			}
@@ -174,15 +181,19 @@ static int rpc_params_parse(void)
 			if (location > 0) {
 				JSMN_STRNCPY(params->cmd, location);
 			} else {
+				LOG_ERR("Unable to find command");
 				r = -1;
 				break;
 			}
 
-			/* verify the command is not an empty string */
 			if (strlen(params->cmd) <= 0) {
+				LOG_ERR("Command cannot be an empty string");
 				r = -1;
 				break;
 			}
+		} else {
+			LOG_ERR("Unknown RPC command");
+			r = -1;
 		}
 	} while (0);
 
@@ -200,11 +211,17 @@ static int rpc_params_parse(void)
  */
 static int rpc_parse(int location)
 {
+	int r = -EPERM;
+
 	if (jsmn_strlen(location) < sizeof(rpc_method)) {
 		rpc_params_clear_method();
 		JSMN_STRNCPY(rpc_method, location);
 		LOG_DBG("rpc.m: %s", log_strdup(rpc_method));
-		return rpc_params_parse();
+		r = rpc_params_parse();
+		if (r < 0) {
+			LOG_ERR("Unable to parse RPC command");
+			rpc_params_clear_method();
+		}
 	}
-	return -1;
+	return r;
 }

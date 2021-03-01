@@ -979,7 +979,7 @@ static void ct_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 		return;
 	}
 
-	LOG_DBG("CT sensor with log data found");
+	LOG_DBG("CT sensor with log data found (rssi: %d)", rssi);
 
 	/* Can't connect while scanning */
 	lcz_bt_scan_stop(ct.scan_id);

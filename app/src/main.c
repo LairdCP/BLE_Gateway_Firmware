@@ -92,6 +92,10 @@ LOG_MODULE_REGISTER(main);
 #include "ct_ble.h"
 #endif
 
+#ifdef CONFIG_MCUBOOT
+#include "mcuboot.h"
+#endif
+
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
@@ -379,8 +383,10 @@ void main(void)
 		      K_SECONDS(CONFIG_CLOUD_FIFO_CHECK_RATE_SECONDS),
 		      K_SECONDS(CONFIG_CLOUD_FIFO_CHECK_RATE_SECONDS));
 
+#ifdef CONFIG_MCUBOOT
 	/* if we've gotten this far, assume the image is ok */
 	boot_write_img_confirmed();
+#endif
 
 	appReady = true;
 	printk("\n!!!!!!!! App is ready! !!!!!!!!\n");

@@ -103,7 +103,8 @@ config AWS_HEARTBEAT_SECONDS
 
 config AWS_KEEP_ALIVE_SECONDS
     int "MQTT pings are sent at this rate to keep AWS connection alive"
-    default 30
+    range 30 1199
+    default 1190
 
 config AWS_PUBLISH_WATCHDOG_SECONDS
     int "Watchdog timeout for successful AWS publish"

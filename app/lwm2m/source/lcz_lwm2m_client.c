@@ -57,8 +57,10 @@ static char server_addr[CONFIG_DNS_RESOLVER_ADDR_MAX_SIZE];
 /******************************************************************************/
 static void lwm2m_client_init_internal(void);
 
-static int device_reboot_cb(uint16_t obj_inst_id);
-static int device_factory_default_cb(uint16_t obj_inst_id);
+static int device_reboot_cb(uint16_t obj_inst_id, uint8_t *args,
+			    uint16_t args_len);
+static int device_factory_default_cb(uint16_t obj_inst_id, uint8_t *args,
+				     uint16_t args_len);
 static int lwm2m_setup(const char *serial_number, const char *imei);
 static void rd_client_event(struct lwm2m_ctx *client,
 			    enum lwm2m_rd_client_event client_event);
@@ -113,8 +115,13 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static int device_reboot_cb(uint16_t obj_inst_id)
+static int device_reboot_cb(uint16_t obj_inst_id, uint8_t *args,
+			    uint16_t args_len)
 {
+	ARG_UNUSED(obj_inst_id);
+	ARG_UNUSED(args);
+	ARG_UNUSED(args_len);
+
 #ifdef CONFIG_REBOOT
 	LOG_INF("DEVICE: REBOOT");
 	power_reboot_module(REBOOT_TYPE_NORMAL);
@@ -124,8 +131,13 @@ static int device_reboot_cb(uint16_t obj_inst_id)
 #endif
 }
 
-static int device_factory_default_cb(uint16_t obj_inst_id)
+static int device_factory_default_cb(uint16_t obj_inst_id, uint8_t *args,
+				     uint16_t args_len)
 {
+	ARG_UNUSED(obj_inst_id);
+	ARG_UNUSED(args);
+	ARG_UNUSED(args_len);
+
 	LOG_INF("DEVICE: FACTORY DEFAULT");
 	return -1;
 }
@@ -258,8 +270,13 @@ static void rd_client_event(struct lwm2m_ctx *client,
 	case LWM2M_RD_CLIENT_EVENT_DISCONNECT:
 		LOG_DBG("Disconnected");
 		break;
+
 	case LWM2M_RD_CLIENT_EVENT_QUEUE_MODE_RX_OFF:
 		/* do nothing */
+		break;
+
+	case LWM2M_RD_CLIENT_EVENT_NETWORK_ERROR:
+		LOG_DBG("Network Error");
 		break;
 	}
 }

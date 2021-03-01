@@ -48,12 +48,12 @@ LOG_MODULE_REGISTER(main);
 #include "fota.h"
 #include "button.h"
 #include "lcz_software_reset.h"
+#include "sdcard_log.h"
 
 #ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
 #include "ble_battery_service.h"
 #include "ble_motion_service.h"
-#include "sdcard_log.h"
 #endif
 
 #ifdef CONFIG_LCZ_NFC
@@ -155,12 +155,12 @@ static bool allowCommissioning = false;
 static bool devCertSet;
 static bool devKeySet;
 static struct k_delayed_work heartbeat;
+static bool start_fota = false;
 #endif
 
 static FwkMsgReceiver_t cloudMsgReceiver;
 static bool commissioned;
 static bool appReady = false;
-static bool start_fota = false;
 
 static app_state_function_t appState;
 struct lte_status *lteInfo;
@@ -582,8 +582,10 @@ static void awsMsgHandler(void)
 	bool freeMsg;
 	int fota_task_id = 0;
 
+#ifdef CONFIG_BOARD_MG100
 #ifndef CONFIG_SD_CARD_LOG
 	struct sdcard_status sd_log_disabled_status = { -1, -1, -1 };
+#endif
 #endif
 
 	while (rc == 0 && !start_fota) {

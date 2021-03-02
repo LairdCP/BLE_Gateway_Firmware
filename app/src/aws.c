@@ -173,9 +173,9 @@ int awsInit(void)
 	shadow_persistent_data.state.reported.codedPhySupported = false;
 #endif
 #ifdef CONFIG_HTTP_FOTA
-       shadow_persistent_data.state.reported.httpFotaEnabled = true;
+	shadow_persistent_data.state.reported.httpFotaEnabled = true;
 #else
-       shadow_persistent_data.state.reported.httpFotaEnabled = false;
+	shadow_persistent_data.state.reported.httpFotaEnabled = false;
 #endif
 	server_endpoint = AWS_DEFAULT_ENDPOINT;
 	mqtt_client_id = DEFAULT_MQTT_CLIENTID;
@@ -603,7 +603,8 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 		connected = true;
 		k_sem_give(&connected_sem);
 		AWS_LOG_INF("MQTT client connected!");
-		k_delayed_work_submit(&keep_alive, K_NO_WAIT);
+		k_delayed_work_submit(&keep_alive,
+				      K_SECONDS(CONFIG_MQTT_KEEPALIVE / 2));
 		break;
 
 	case MQTT_EVT_DISCONNECT:
@@ -868,7 +869,7 @@ static void keep_alive_work_handler(struct k_work *work)
 		}
 
 		k_delayed_work_submit(&keep_alive,
-				      K_SECONDS(CONFIG_AWS_KEEP_ALIVE_SECONDS));
+				      K_SECONDS(CONFIG_MQTT_KEEPALIVE));
 	}
 }
 

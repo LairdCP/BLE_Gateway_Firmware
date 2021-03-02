@@ -101,11 +101,6 @@ config AWS_HEARTBEAT_SECONDS
     int "Rate at which to send LTE info and battery status"
     default 120
 
-config AWS_KEEP_ALIVE_SECONDS
-    int "MQTT pings are sent at this rate to keep AWS connection alive"
-    range 30 1199
-    default 1190
-
 config AWS_PUBLISH_WATCHDOG_SECONDS
     int "Watchdog timeout for successful AWS publish"
     default 3600

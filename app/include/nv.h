@@ -82,7 +82,6 @@ int nvReadAwsEnableCustom(bool *Value);
 #ifdef CONFIG_CONTACT_TRACING
 int nvStoreAwsTopicPrefix(uint8_t *prefix, uint16_t size);
 int nvReadAwsTopicPrefix(uint8_t *prefix, uint16_t size);
-int nvDeleteAwsTopicPrefix(void);
 int nvStoreBleNetworkId(uint16_t *networkId);
 int nvReadBleNetworkId(uint16_t *networkId);
 int nvStoreAesKey(uint8_t *key);

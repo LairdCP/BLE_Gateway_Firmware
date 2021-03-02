@@ -528,11 +528,6 @@ int nvReadAwsTopicPrefix(uint8_t *prefix, uint16_t size)
 	return nvs_read(&fs, SETTING_ID_AWS_TOPIC_PREFIX, prefix, size);
 }
 
-int nvDeleteAwsTopicPrefix(void)
-{
-	return nvs_delete(&fs, SETTING_ID_AWS_TOPIC_PREFIX);
-}
-
 int nvStoreBleNetworkId(uint16_t *networkId)
 {
 	return nvs_write(&fs, SETTING_ID_BLE_NETWORK_ID, networkId,

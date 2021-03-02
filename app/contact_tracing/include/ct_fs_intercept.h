@@ -39,7 +39,6 @@ typedef struct fs_mgmt_ctxt {
 	uint32_t data_len;
 } fs_mgmt_ctxt_t;
 
-#define CT_FS_INTERCEPT_TIME_PATH "/sys/time"
 #define CT_FS_INTERCEPT_NV_PATH "/nv/"
 #define CT_FS_INTERCEPT_TEST_PUB_PATH "/sys/testpub.cmd"
 

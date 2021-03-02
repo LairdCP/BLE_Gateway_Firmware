@@ -732,7 +732,8 @@ int aws_svc_save_clear_settings(bool save)
 		nvDeleteDevCert();
 		nvDeleteDevKey();
 #ifdef CONFIG_CONTACT_TRACING
-		nvDeleteAwsTopicPrefix();
+		nvStoreAwsTopicPrefix(AWS_DEFAULT_TOPIC_PREFIX,
+				      strlen(AWS_DEFAULT_TOPIC_PREFIX) + 1);
 #endif
 		isClientCertStored = true;
 		isClientKeyStored = true;

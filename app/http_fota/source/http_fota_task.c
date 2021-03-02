@@ -325,6 +325,10 @@ static void fota_fsm(fota_context_t *pCtx)
 			pCtx->delay -= 1;
 			next_state = FOTA_FSM_MODEM_WAIT;
 		} else {
+			LOG_WRN("Rebooting for modem update to be completed.");
+			/* Allow last print to occur. */
+			k_sleep(K_MSEC(CONFIG_LOG_PROCESS_THREAD_SLEEP_MS));
+			sys_reboot(SYS_REBOOT_COLD);
 			next_state = FOTA_FSM_END;
 		}
 		break;

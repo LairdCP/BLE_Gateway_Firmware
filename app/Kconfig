@@ -50,10 +50,6 @@ config SCAN_FOR_BT510_CODED
     bool "Scan for coded PHY and 1M advertisements from BT510"
     default y if SCAN_FOR_BT510
     depends on BT_EXT_ADV
-    depends on BT_LL_NRFXLIB_VS_INCLUDE
-    depends on BT_LL_NRFXLIB_DEFAULT
-    help
-        Coded PHY (extended advertisements) requires Nordic binary
 
 config CLOUD_QUEUE_SIZE
     int "The size of queue for sending messages to AWS or LWM2M client"

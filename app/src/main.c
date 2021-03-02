@@ -92,8 +92,8 @@ LOG_MODULE_REGISTER(main);
 #include "ct_ble.h"
 #endif
 
-#ifdef CONFIG_MCUBOOT
-#include "mcuboot.h"
+#ifdef CONFIG_DFU_TARGET_MCUBOOT
+#include <dfu/mcuboot.h>
 #endif
 
 /******************************************************************************/
@@ -383,9 +383,11 @@ void main(void)
 		      K_SECONDS(CONFIG_CLOUD_FIFO_CHECK_RATE_SECONDS),
 		      K_SECONDS(CONFIG_CLOUD_FIFO_CHECK_RATE_SECONDS));
 
-#ifdef CONFIG_MCUBOOT
+#ifdef CONFIG_DFU_TARGET_MCUBOOT
 	/* if we've gotten this far, assume the image is ok */
-	boot_write_img_confirmed();
+	if (!boot_is_img_confirmed()) {
+		boot_write_img_confirmed();
+	}
 #endif
 
 	appReady = true;

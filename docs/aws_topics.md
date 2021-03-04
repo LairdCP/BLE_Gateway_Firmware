@@ -43,7 +43,7 @@ Go to Manage -> Gateway Thing (for example, deviceId-3546090671947) -> Shadows -
 
 ![Gateway Shadow](images/gateway_shadow.png)
 
-A list of sensors that have been seen will be part of the shadow. Each entry contains the Bluetooth Address, the epoch (time) that the sensor was last seen, and whether on not it is allowed to publish.
+A list of sensors that have been seen will be part of the shadow. Each entry contains the Bluetooth Address, the epoch (time) that the sensor was last seen, and whether or not it is allowed to publish.
 
 The Bluetooth address can be found on the BT510 and is labeled BLE ID.
 

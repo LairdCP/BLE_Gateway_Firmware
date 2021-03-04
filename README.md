@@ -1,6 +1,7 @@
-
 [![Laird Connectivity](docs/images/LairdConnnectivityLogo_Horizontal_RGB.png)](https://www.lairdconnect.com/)
+
 # Pinnacle 100 Modem and MG100 Firmware
+
 [![Pinnacle 100 Modem](docs/images/pinnacle_100_modem.png)](https://www.lairdconnect.com/wireless-modules/cellular-solutions/pinnacle-100-cellular-modem) [![Pinnacle 100 DVK](docs/images/450-00010-K1-Contents_0.jpg)](https://www.lairdconnect.com/wireless-modules/cellular-solutions/pinnacle-100-cellular-modem) [![MG100](docs/images/MG100-Starter-Kit.png)](https://www.lairdconnect.com/iot-devices/iot-gateways/sentrius-mg100-gateway-lte-mnb-iot-and-bluetooth-5)
 
 This repository contains firmware that can run on the Pinnacle 100 Modem development kit (DVK) or the Sentrius MG100 gateway. This firmware is designed to showcase gathering sensor data over BLE and transferring it to the cloud. The AWS Out-of-Box (OOB) Demo firmware for both products connects to the Laird Connectivity Bluegrass Cloud portal by default. However it can be reconfigured over the UART with mcumgr to provision the device to connect to any AWS server.
@@ -9,12 +10,13 @@ The Pinnacle 100 modem can be purchased separately as a device that OEMs embed i
 
 A version of the MG100 firmware can be built to support contact tracing applications with the appropriate Laird Connectivity Contact Tracing BLE product (Sentrius BT510-CT and Sentrius BT710). Please contact your local Sales representative to find out further details on these sensors - sales@lairdconnect.com
 
->**Note:** This readme file and associated documentation should be viewed on GitHub selecting the desired branch. The main branch will always be up to date with the latest features. Viewing documentation from a release GA branch is recommended to get documentation for the specific feature set of that release.
+> **Note:** This readme file and associated documentation should be viewed on GitHub selecting the desired branch. The main branch will always be up to date with the latest features. Viewing documentation from a release GA branch is recommended to get documentation for the specific feature set of that release.
 
 The firmware can operate in three modes:
-* [LTE-M and AWS](#lte-m-and-aws)
-* [LTE-M, AWS, and Contact Tracing](#lte-m-aws-and-contact-tracing)
-* [NB-IoT and LwM2M](#nb-iot-and-lwm2m)
+
+- [LTE-M and AWS](#lte-m-and-aws)
+- [LTE-M, AWS, and Contact Tracing](#lte-m-aws-and-contact-tracing)
+- [NB-IoT and LwM2M](#nb-iot-and-lwm2m)
 
 These two modes are selected at compile time. See the following sections for documentation on the firmware and how it operates.
 
@@ -25,6 +27,7 @@ Download firmware releases from [here!](https://github.com/LairdCP/Pinnacle_100_
 The default [build with mcuboot task](.vscode/tasks.json) is setup to build the firmware source code for LTE-M and AWS operation. [Read here](docs/readme_ltem_aws.md) for details on how the firmware operates.
 
 ## LTE-M, AWS, and Contact Tracing
+
 This configuration [build ct with mcuboot task](.vscode/tasks.json) builds Laird Connectivity's Contact Tracing application. Read more about Laird Connectivity's contact tracing application [here.](docs/contact_tracing.md)
 
 ## NB-IoT and LwM2M
@@ -36,8 +39,9 @@ For more details on the LwM2M firmware, [read here](docs/readme_nbiot_lwm2m.md).
 ## Firmware Updates
 
 If the Pinnacle 100 device is running v2.0.0 firmware or earlier, firmware updates must be programmed via SWD(Serial Wire Debug). There is no FOTA capability in the 2.x releases. To perform the update this way, please consult:
-* MG100: the MG100 Hardware Guide section 5.4.4 to learn how to connect a J-Link debugger to the board.
-* Pinnacle 100 DVK: The DVK has a built in debugger to easily program firmware.
+
+- MG100: the MG100 Hardware Guide section 5.4.4 to learn how to connect a J-Link debugger to the board.
+- Pinnacle 100 DVK: The DVK has a built in debugger to easily program firmware.
 
 Pinnacle 100 devices with firmware version 3.x or greater support firmware updates via UART, BLE or LTE. Updates via LTE on 3.x firmware must be initiated from the Laird Connectivity Bluegrass cloud portal. Only images hosted by Laird Connectivity are supported on the 3.x release. On 4.x releases, updates over HTTPS can be initiated for images hosted on any AWS server.
 
@@ -51,7 +55,7 @@ To update firmware over HTTPS. Updates over HTTPS have been decoupled from Laird
 
 ### Cloning and Building the Source
 
-This is a Zephyr-based repository, **DO NOT** `git clone` this repo. To clone and build the project properly, please see the instructions in the [Pinnacle_100_firmware_manifest](https://github.com/LairdCP/Pinnacle_100_firmware_manifest) repository.
+This is a Zephyr-based repository, **DO NOT** `git clone` this repo. To clone and build the project properly, please see the instructions in the [Pinnacle 100 Firmware Manifest](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest) repository.
 
 ### BLE Profiles
 

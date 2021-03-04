@@ -120,10 +120,10 @@ Characteristics:
 
 Characteristics:
 
-| Name                     | UUID                                 | Properties  | Description                                                                                                                                                                                                            |
-| ------------------------ | ------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sensor State             | ab010001-5bab-471a-9074-a0ae3937c70c | read/notify | One Byte. BME280 Sensor State: 0 - Finding device, 1 - Finding service, 2 - Finding Temperature Characteristic, 3 - Finding Humidity Characteristic, 4 - Finding pressure characteristic, 5 - Connected and Configured |
-| Sensor Bluetooth Address | ab010002-5bab-471a-9074-a0ae3937c70c | read/notify | String representation of address of connected BME280 sensor.                                                                                                                                                           |
+| Name                     | UUID                                 | Properties  | Description                                                                                                                                                                                                     |
+| ------------------------ | ------------------------------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sensor State             | ab010001-5bab-471a-9074-a0ae3937c70c | read/notify | One Byte. Sensor State: 0 - Finding device, 1 - Finding service, 2 - Finding Temperature Characteristic, 3 - Finding Humidity Characteristic, 4 - Finding pressure characteristic, 5 - Connected and Configured |
+| Sensor Bluetooth Address | ab010002-5bab-471a-9074-a0ae3937c70c | read/notify | String representation of address of connected sensor. sensor.                                                                                                                                                   |
 
 ## LwM2M Client Configuration Profile
 

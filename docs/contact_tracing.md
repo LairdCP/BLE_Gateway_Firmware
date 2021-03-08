@@ -87,3 +87,22 @@ Logs from CT tracker devices (BT510-CT and BT710) are transferred to a gateway u
 # CT Gateway RPC Overview
 
 The Sentrius™ MG100-CT Gateway firmware implements an RPC mechanism providing system integrators with a means to send remote commands to trigger a set of maintenance operations. The device shadow is used as the mechanism to send RPC requests to the MG100-CT gateway and trigger operations that may perform maintenance tasks or post diagnostic data to designated MQTT topics. Details can be found [here.](ct_gateway_rpc.md)
+
+# Building for Contact Tracing
+
+The steps to build the Contact Tracing application are similar to the [Out-of-Box Demo](readme_ltem_aws.md#building-the-firmware).
+However, the contact tracing build requires another configuration file.
+
+```
+# Linux and macOS
+
+cp ../modules/zephyr_lib/mcuboot_config/pm_static.pinnacle100.yml app/pm_static.yml
+
+west build -b [board] -d ${PWD}/build/[board]/ct ${PWD}/app -- -DOVERLAY_CONFIG="${PWD}/app/contact_tracing/overlay_ct.conf ${PWD}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf" -Dmcuboot_DTC_OVERLAY_FILE=${PWD}/app/boards/pinnacle_100.overlay -Dmcuboot_CONF_FILE=${PWD}/../modules/zephyr_lib/mcuboot_config/pinnacle_100.conf
+
+# Windows
+
+copy ..\modules\zephyr_lib\mcuboot_config\pm_static.pinnacle100.yml app\pm_static.yml
+
+west build -b [board] -d %CD%\build\[board]\ct %CD%\app -- -DOVERLAY_CONFIG="%CD%\app\contact_tracing\overlay_ct.conf %CD%\..\modules\zephyr_lib\mcumgr_wrapper\config\overlay-mcuboot.conf" -Dmcuboot_DTC_OVERLAY_FILE=%CD%\app\boards\pinnacle_100.overlay -Dmcuboot_CONF_FILE=%CD%\..\modules\zephyr_lib\mcuboot_config\pinnacle_100.conf
+```

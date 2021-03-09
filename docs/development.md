@@ -19,12 +19,12 @@ This document will explain how to use Visual Studio Code to build and debug the 
 
 After cloning this repository with `west` the directory structure should look like:
 
-![Demo folder](images/demo_folder.png)
+![Demo folder](images/demo_folder.png)  
 _Demo folder_
 
 Open the _pinnacle_100_firmware_ folder with VS Code. The source code is then viewable in the _app_ folder.
 
-![Source code](images/oob_demo_source.png)
+![Source code](images/oob_demo_source.png)  
 _Source code_
 
 There are VS Code tasks already setup to make building and flashing the firmware easy!
@@ -35,14 +35,14 @@ To build the firmware, run the build task by selecting **Terminal -> Run Build T
 
 > **Note:** This builds the firmware without the mcuboot bootloader. This is the best method for debugging.
 
-![Run build task](images/run_build_task.png)
+![Run build task](images/run_build_task.png)  
 _Run build task_
 
 Once the firmware has built, you can flash the firmware by running the **flash application** task.
 
 Select **Terminal -> Run Task...**, then select **flash application**.
 
-![Run flash task](images/run_flash_task.png)
+![Run flash task](images/run_flash_task.png)  
 _Run flash task_
 
 ## Debugging the Firmware
@@ -55,7 +55,7 @@ Before debugging, some simple setup is required for Cortex-Debug. Go to **File -
 
 At the top of settings type `cortex-debug` to display the settings for that extension. The _Arm Toolchain Path_ and _JLink GDB Server Path_ settings need to be set. Click one of the _Edit in settings.json_ links to edit the settings.
 
-![Cortex debug settings](images/cortex_debug_settings.png)
+![Cortex debug settings](images/cortex_debug_settings.png)  
 _Cortex-Debug settings_
 
 Add the following lines to the settings.json file:

@@ -20,7 +20,7 @@ The firmware can operate in three modes:
 
 These two modes are selected at compile time. See the following sections for documentation on the firmware and how it operates.
 
-Download firmware releases from [here!](https://github.com/LairdCP/Pinnacle_100_firmware/releases)
+Download firmware releases from [here!](https://github.com/LairdCP/Pinnacle-100-Firmware/releases)
 
 ## LTE-M and AWS
 

@@ -211,12 +211,21 @@
       "label": "apply contact tracing patches",
       "type": "shell",
       // Linux based command is not tested
-      "command": "cp -R ./app/contact_tracing_patch/* ../",
+      "command": "cp -R ./app/contact_tracing_patch/* ./",
       "windows": {
         "command": "Xcopy /E /I /Y .\\app\\contact_tracing_patch ..\\"
       },
       "problemMatcher": []
-  },
+    },
+    {
+      "label": "get build id (memfault)",
+      "type": "shell",
+      "command": "arm-none-eabi-readelf -n ${workspaceRoot}/build/${input:board}/${input:app}/zephyr/zephyr.elf",
+      "windows": {
+        "command": "arm-none-eabi-readelf -n ${workspaceRoot}\\build\\${input:board}\\${input:app}\\zephyr\\zephyr.elf"
+      },
+      "problemMatcher": []
+    }
   ],
   "inputs": [
     {

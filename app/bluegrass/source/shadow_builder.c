@@ -133,7 +133,8 @@ void ShadowBuilder_AddPair(JsonMsg_t *pJsonMsg, const char *restrict pKey,
 	FRAMEWORK_ASSERT(pKey != NULL);
 	FRAMEWORK_ASSERT(pValue != NULL);
 	FRAMEWORK_ASSERT(strlen(pKey) > 0);
-	if (IsNotString) { /* string alloed be empty */
+	/* strings are allowed to be empty, but numbers aren't */
+	if (IsNotString) {
 		FRAMEWORK_ASSERT(strlen(pValue) > 0);
 	}
 

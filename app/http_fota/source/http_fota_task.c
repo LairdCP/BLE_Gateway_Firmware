@@ -70,7 +70,7 @@ static http_fota_task_obj_t tctx;
 static void http_fota_task_thread(void *pArg1, void *pArg2, void *pArg3);
 static int tls_init(void);
 static DispatchResult_t http_start_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-						   FwkMsg_t *pMsg);
+					       FwkMsg_t *pMsg);
 static DispatchResult_t http_start_ack_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 						   FwkMsg_t *pMsg);
 static DispatchResult_t connection_msg_handler(FwkMsgReceiver_t *pMsgRxer,
@@ -191,7 +191,7 @@ static int tls_init(void)
 }
 
 static DispatchResult_t http_start_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-						   FwkMsg_t *pMsg)
+					       FwkMsg_t *pMsg)
 {
 	http_fota_task_obj_t *pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
 	Framework_StartTimer(&pObj->msgTask);
@@ -387,14 +387,12 @@ static void fota_fsm(fota_context_t *pCtx)
 				http_fota_get_download_host(pCtx->type),
 				http_fota_get_download_file(pCtx->type),
 				TLS_SEC_TAG, NULL, 0);
-		}
-		else if (pCtx->type == MODEM_IMAGE_TYPE) {
-			r = hl7800_download_start(pCtx,
-				http_fota_get_download_host(pCtx->type),
+		} else if (pCtx->type == MODEM_IMAGE_TYPE) {
+			r = hl7800_download_start(
+				pCtx, http_fota_get_download_host(pCtx->type),
 				http_fota_get_download_file(pCtx->type),
 				TLS_SEC_TAG, NULL, 0);
-		}
-		else {
+		} else {
 			r = -EINVAL;
 		}
 		if (r < 0) {
@@ -458,24 +456,24 @@ static bool transport_not_required(void)
 {
 	return (tctx.app_context.using_transport ||
 		tctx.modem_context.using_transport) ?
-		       false :
-		       true;
+			     false :
+			     true;
 }
 
 static int initiate_update(fota_context_t *pCtx)
 {
 	int r = 0;
+
 	if (pCtx->type == MODEM_IMAGE_TYPE) {
 		r = hl7800_initiate_modem_update(pCtx);
-	}
-
 #ifdef CONFIG_HTTP_FOTA_DELETE_FILE_AFTER_UPDATE
-	if (r == 0) {
-		if (fsu_delete_files("/lfs", pCtx->file_path) < 0) {
-			LOG_ERR("Unable to delete");
+		if (r == 0) {
+			if (fsu_delete_files("/lfs", pCtx->file_path) < 0) {
+				LOG_ERR("Unable to delete");
+			}
 		}
-	}
 #endif
+	}
 
 	return r;
 }
@@ -486,8 +484,7 @@ void fota_download_handler(const struct fota_download_evt *evt)
 	case FOTA_DOWNLOAD_EVT_ERROR:
 		if (tctx.app_context.using_transport) {
 			tctx.app_context.download_error = true;
-		}
-		else if (tctx.modem_context.using_transport) {
+		} else if (tctx.modem_context.using_transport) {
 			tctx.modem_context.download_error = true;
 		}
 		LOG_ERR("FOTA download error");

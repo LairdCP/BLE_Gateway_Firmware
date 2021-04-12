@@ -34,10 +34,10 @@ enum sensor_state {
 	BT_DEMO_APP_STATE_FINDING_HUMIDITY_CHAR,
 	/* Searching for ESS Pressure characteristic */
 	BT_DEMO_APP_STATE_FINDING_PRESSURE_CHAR,
-	/* Searching for SMP characteristic */
-	BT_DEMO_APP_STATE_FINDING_SMP_CHAR,
 	/* All characteristics were found and subscribed to */
 	BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED,
+	/* Searching for SMP characteristic */
+	BT_DEMO_APP_STATE_FINDING_SMP_CHAR,
 	/* Authentication process - request challenge */
 	BT_DEMO_APP_STATE_CHALLENGE_REQ,
 	/* Authentication process - challenge response  */

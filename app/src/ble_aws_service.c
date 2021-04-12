@@ -33,6 +33,7 @@ LOG_MODULE_REGISTER(ble_aws_service, CONFIG_BLE_AWS_SERVICE_LOG_LEVEL);
 #include "nv.h"
 #include "aws.h"
 #include "lcz_bluetooth.h"
+#include "file_system_utilities.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -80,6 +81,9 @@ static struct bt_uuid_128 aws_status_uuid =
 /******************************************************************************/
 static void aws_svc_connected(struct bt_conn *conn, uint8_t err);
 static void aws_svc_disconnected(struct bt_conn *conn, uint8_t reason);
+
+static void copy_nv_string_to_fs(const char *name, void *data);
+static void deprecation_handler(void);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -631,7 +635,7 @@ int aws_svc_init(const char *clientId)
 			isClientKeyStored = true;
 		}
 
-#if CONFIG_CONTACT_TRACING
+#ifdef CONFIG_CONTACT_TRACING
 		rc = nvReadAwsTopicPrefix(topic_prefix_value,
 					  sizeof(topic_prefix_value));
 		if (rc <= 0) {
@@ -657,6 +661,8 @@ int aws_svc_init(const char *clientId)
 					       gatt_size);
 
 	bt_conn_cb_register(&aws_svc_conn_callbacks);
+
+	deprecation_handler();
 
 	rc = AWS_SVC_ERR_NONE;
 done:
@@ -723,6 +729,9 @@ int aws_svc_save_clear_settings(bool save)
 			goto exit;
 		}
 #endif
+
+		deprecation_handler();
+
 		AWS_SVC_LOG_INF("Saved AWS settings");
 	} else {
 		AWS_SVC_LOG_INF("Cleared AWS settings");
@@ -765,6 +774,51 @@ static void aws_svc_disconnected(struct bt_conn *conn, uint8_t reason)
 		bt_conn_unref(aws_svc_conn);
 		aws_svc_conn = NULL;
 	}
+}
+
+static void copy_nv_string_to_fs(const char *name, void *data)
+{
+	int r;
+	size_t length = strlen(data);
+
+	if (length > 0) {
+		r = fsu_write(CONFIG_FSU_MOUNT_POINT, name, data, length + 1);
+		if (r < 0) {
+			AWS_SVC_LOG_ERR("Error writing file '%s': %d", name, r);
+		}
+	} else {
+		AWS_SVC_LOG_DBG("NV to FS not copied: '%s' is blank", name);
+	}
+}
+
+/**
+ * @brief Next version of software uses LFS instead of NV.
+ *
+ * When nv is read (on startup) or written, then save to filesystem.
+ */
+static void deprecation_handler(void)
+{
+	bool read_from_fs = false;
+
+	copy_nv_string_to_fs(CONFIG_APP_CLIENT_ID_FILE_NAME, client_id_value);
+	copy_nv_string_to_fs(CONFIG_APP_ENDPOINT_FILE_NAME, endpoint_value);
+	copy_nv_string_to_fs(CONFIG_APP_TOPIC_PREFIX_FILE_NAME,
+			     topic_prefix_value);
+
+	/* If custom is being used, then nothing needs to be done
+	 * because the next version uses files with the same name.
+	 */
+	if (nvReadAwsEnableCustom(&read_from_fs) == 0) {
+		if (read_from_fs) {
+			return;
+		}
+	}
+
+	copy_nv_string_to_fs(CONFIG_APP_AWS_ROOT_CA_FILE_NAME, root_ca_value);
+	copy_nv_string_to_fs(CONFIG_APP_AWS_CLIENT_CERT_FILE_NAME,
+			     client_cert_value);
+	copy_nv_string_to_fs(CONFIG_APP_AWS_CLIENT_KEY_FILE_NAME,
+			     client_key_value);
 }
 
 __weak void awsSvcEvent(enum aws_svc_event event)

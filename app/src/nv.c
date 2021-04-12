@@ -25,6 +25,7 @@ LOG_MODULE_REGISTER(nv, LOG_LEVEL_DBG);
 #include <fs/nvs.h>
 
 #include "nv.h"
+#include "file_system_utilities.h"
 #ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
 #include "sdcard_log.h"
@@ -66,6 +67,11 @@ static struct nvs_fs fs;
 static bool nvCommissioned;
 
 /******************************************************************************/
+/* Local Function Prototypes                                                  */
+/******************************************************************************/
+static void commissionedDeprecationHandler(void);
+
+/******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
 int nvReadCommissioned(bool *commissioned)
@@ -89,7 +95,11 @@ int nvStoreCommissioned(bool commissioned)
 		       sizeof(nvCommissioned));
 	if (rc < 0) {
 		NV_LOG_ERR("Error writing commissioned (%d)", rc);
+	} else {
+		NV_LOG_DBG("Commissioned %u", nvCommissioned);
 	}
+
+	commissionedDeprecationHandler();
 
 	return rc;
 }
@@ -137,6 +147,8 @@ int nvInit(void)
 				   rc);
 			goto exit;
 		}
+	} else {
+		commissionedDeprecationHandler();
 	}
 #ifdef CONFIG_BOARD_MG100
 	batteryData = BatteryGetThresholds(BATTERY_IDX_4);
@@ -556,3 +568,22 @@ int nvDeleteAesKey(void)
 }
 
 #endif /* CONFIG_CONTACT_TRACING */
+
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
+static void commissionedDeprecationHandler(void)
+{
+	int r;
+
+	r = fsu_lfs_mount();
+	if (r == 0) {
+		r = fsu_write(CONFIG_FSU_MOUNT_POINT,
+			      CONFIG_APP_COMMISSIONED_FILE_NAME,
+			      &nvCommissioned, sizeof(nvCommissioned));
+		if (r < 0) {
+			NV_LOG_ERR("Error writing file '%s': %d",
+				   CONFIG_APP_COMMISSIONED_FILE_NAME, r);
+		}
+	}
+}

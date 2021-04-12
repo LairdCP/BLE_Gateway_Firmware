@@ -300,6 +300,27 @@ config APP_AWS_CLIENT_KEY_FILE_NAME
 
 endif # APP_AWS_CUSTOMIZATION
 
+#
+# The following 4 values are used to save NV information into the filesystem to
+# allow deprecation of the NV system.
+#
+config APP_COMMISSIONED_FILE_NAME
+    string
+    default "commissioned.bin"
+
+config APP_CLIENT_ID_FILE_NAME
+    string
+    default "client_id.txt"
+
+config APP_ENDPOINT_FILE_NAME
+    string
+    default "endpoint.txt"
+
+config APP_TOPIC_PREFIX_FILE_NAME
+    string
+    default "topic_prefix.txt"
+
+
 config BLE_MOTION_SVC_LOG_LEVEL
     int "Log level for BLE motion service"
     range 0 4

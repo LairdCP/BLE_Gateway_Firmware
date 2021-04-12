@@ -17,7 +17,7 @@ LOG_MODULE_REGISTER(single_peripheral, CONFIG_SINGLE_PERIPHERAL_LOG_LEVEL);
 #include <stddef.h>
 #include <init.h>
 
-#include "laird_bluetooth.h"
+#include "lcz_bluetooth.h"
 #include "single_peripheral.h"
 
 /******************************************************************************/
@@ -121,7 +121,7 @@ static int single_peripheral_initialize(const struct device *device)
 static void sp_connected(struct bt_conn *conn, uint8_t err)
 {
 	/* Did a central connect to us? */
-	if (!lbt_slave_role(conn)) {
+	if (!lbt_peripheral_role(conn)) {
 		return;
 	}
 
@@ -144,7 +144,7 @@ static void sp_connected(struct bt_conn *conn, uint8_t err)
 
 static void sp_disconnected(struct bt_conn *conn, uint8_t reason)
 {
-	if (!lbt_slave_role(conn)) {
+	if (!lbt_peripheral_role(conn)) {
 		return;
 	}
 

@@ -22,7 +22,7 @@ LOG_MODULE_REGISTER(bl654_sensor);
 
 #include "FrameworkIncludes.h"
 #include "laird_utility_macros.h"
-#include "laird_bluetooth.h"
+#include "lcz_bluetooth.h"
 #include "led_configuration.h"
 #include "ad_find.h"
 #include "lcz_bt_scan.h"

@@ -32,7 +32,7 @@ LOG_MODULE_REGISTER(ble_aws_service, CONFIG_BLE_AWS_SERVICE_LOG_LEVEL);
 #include "ble_aws_service.h"
 #include "nv.h"
 #include "aws.h"
-#include "laird_bluetooth.h"
+#include "lcz_bluetooth.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -748,7 +748,7 @@ static void aws_svc_connected(struct bt_conn *conn, uint8_t err)
 		return;
 	}
 
-	if (!lbt_slave_role(conn)) {
+	if (!lbt_peripheral_role(conn)) {
 		return;
 	}
 
@@ -757,7 +757,7 @@ static void aws_svc_connected(struct bt_conn *conn, uint8_t err)
 
 static void aws_svc_disconnected(struct bt_conn *conn, uint8_t reason)
 {
-	if (!lbt_slave_role(conn)) {
+	if (!lbt_peripheral_role(conn)) {
 		return;
 	}
 

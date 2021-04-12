@@ -22,7 +22,7 @@ LOG_MODULE_REGISTER(sensor_task, CONFIG_SENSOR_TASK_LOG_LEVEL);
 
 #include "FrameworkIncludes.h"
 #include "Bracket.h"
-#include "laird_bluetooth.h"
+#include "lcz_bluetooth.h"
 #include "lcz_bt_scan.h"
 #include "vsp_definitions.h"
 #include "lcz_qrtc.h"

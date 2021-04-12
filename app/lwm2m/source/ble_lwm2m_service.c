@@ -19,7 +19,7 @@ LOG_MODULE_REGISTER(ble_lwm2m_service);
 #include <bluetooth/bluetooth.h>
 #include <random/rand32.h>
 
-#include "laird_bluetooth.h"
+#include "lcz_bluetooth.h"
 #include "nv.h"
 #include "ble_lwm2m_service.h"
 

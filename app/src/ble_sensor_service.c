@@ -18,7 +18,7 @@ LOG_MODULE_REGISTER(ble_sensor_service);
 #include <bluetooth/gatt.h>
 #include <bluetooth/bluetooth.h>
 
-#include "laird_bluetooth.h"
+#include "lcz_bluetooth.h"
 #include "ble_sensor_service.h"
 
 /******************************************************************************/
@@ -170,7 +170,7 @@ static void bss_connected(struct bt_conn *conn, uint8_t err)
 		return;
 	}
 
-	if (!lbt_slave_role(conn)) {
+	if (!lbt_peripheral_role(conn)) {
 		return;
 	}
 
@@ -179,7 +179,7 @@ static void bss_connected(struct bt_conn *conn, uint8_t err)
 
 static void bss_disconnected(struct bt_conn *conn, uint8_t reason)
 {
-	if (!lbt_slave_role(conn)) {
+	if (!lbt_peripheral_role(conn)) {
 		return;
 	}
 

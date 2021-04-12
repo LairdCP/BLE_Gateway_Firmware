@@ -23,7 +23,7 @@ LOG_MODULE_REGISTER(ble_motion_svc, CONFIG_BLE_MOTION_SVC_LOG_LEVEL);
 #include <bluetooth/bluetooth.h>
 #include <drivers/sensor.h>
 
-#include "laird_bluetooth.h"
+#include "lcz_bluetooth.h"
 #include "ble_motion_service.h"
 #include "nv.h"
 
@@ -109,7 +109,7 @@ static void motion_svc_connected(struct bt_conn *conn, uint8_t err)
 		return;
 	}
 
-	if (!lbt_slave_role(conn)) {
+	if (!lbt_peripheral_role(conn)) {
 		return;
 	}
 
@@ -118,7 +118,7 @@ static void motion_svc_connected(struct bt_conn *conn, uint8_t err)
 
 static void motion_svc_disconnected(struct bt_conn *conn, uint8_t reason)
 {
-	if (!lbt_slave_role(conn)) {
+	if (!lbt_peripheral_role(conn)) {
 		return;
 	}
 

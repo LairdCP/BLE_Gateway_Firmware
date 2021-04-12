@@ -40,7 +40,7 @@ LOG_MODULE_REGISTER(main);
 #include "dis.h"
 #include "FrameworkIncludes.h"
 #include "laird_utility_macros.h"
-#include "laird_bluetooth.h"
+#include "lcz_bluetooth.h"
 #include "single_peripheral.h"
 #include "string_util.h"
 #include "app_version.h"
@@ -600,7 +600,7 @@ static void awsMsgHandler(void)
 		freeMsg = true;
 
 #ifdef CONFIG_LCZ_MEMFAULT_MQTT_TRANSPORT
-		lcz_memfault_publish_data(awsGetMqttClient(), memfault_topic);
+		lcz_memfault_publish_data(awsGetMqttClient());
 #endif
 
 		/* BL654 data is sent to the gateway topic.  If Bluegrass is enabled,

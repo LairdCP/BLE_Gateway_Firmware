@@ -19,7 +19,7 @@ LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 #include <zephyr.h>
 #include <bluetooth/bluetooth.h>
 
-#include "laird_bluetooth.h"
+#include "lcz_bluetooth.h"
 #include "lcz_qrtc.h"
 #include "ad_find.h"
 #include "shadow_builder.h"

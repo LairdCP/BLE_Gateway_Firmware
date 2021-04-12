@@ -46,7 +46,7 @@ LOG_MODULE_REGISTER(ct_ble, CONFIG_CT_BLE_LOG_LEVEL);
 #include "dfu_smp_c.h"
 #include "ble_cellular_service.h"
 #include "laird_utility_macros.h"
-#include "laird_bluetooth.h"
+#include "lcz_bluetooth.h"
 #include "lcz_sensor_adv_format.h"
 #include "lcz_software_reset.h"
 #include "led_configuration.h"

@@ -1,5 +1,9 @@
 [![Laird Connectivity](docs/images/LairdConnnectivityLogo_Horizontal_RGB.png)](https://www.lairdconnect.com/)
 
+> **WARNING:** This is a Zephyr-based repository, **DO NOT** `git clone` this repo. To clone and build the project properly, please see the instructions in the [Pinnacle 100 Firmware Manifest](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest) repository.
+
+### To evaluate the OOB demo, download pre-built firmware images [here!](https://github.com/LairdCP/Pinnacle-100-Firmware/releases) You do not need to build the application if no customizations are necessary.
+
 # Pinnacle 100 Modem and MG100 Firmware
 
 [![Pinnacle 100 Modem](docs/images/pinnacle_100_modem.png)](https://www.lairdconnect.com/wireless-modules/cellular-solutions/pinnacle-100-cellular-modem) [![Pinnacle 100 DVK](docs/images/450-00010-K1-Contents_0.jpg)](https://www.lairdconnect.com/wireless-modules/cellular-solutions/pinnacle-100-cellular-modem) [![MG100](docs/images/MG100-Starter-Kit.png)](https://www.lairdconnect.com/iot-devices/iot-gateways/sentrius-mg100-gateway-lte-mnb-iot-and-bluetooth-5)
@@ -19,8 +23,6 @@ The firmware can operate in three modes:
 - [NB-IoT and LwM2M](#nb-iot-and-lwm2m)
 
 These two modes are selected at compile time. See the following sections for documentation on the firmware and how it operates.
-
-Download firmware releases from [here!](https://github.com/LairdCP/Pinnacle-100-Firmware/releases)
 
 ## LTE-M and AWS
 
@@ -52,10 +54,6 @@ To update firmware over UART using the mcumgr CLI. This allows the user to updat
 To update firmware over HTTPS. Updates over HTTPS have been decoupled from Laird Connectivity's Bluegrass cloud portal. Images hosted on any AWS server can be downloaded. The details on how to trigger the update via the device shadow are available [here.](docs/cloud_fota.md)
 
 ## Development
-
-### Cloning and Building the Source
-
-This is a Zephyr-based repository, **DO NOT** `git clone` this repo. To clone and build the project properly, please see the instructions in the [Pinnacle 100 Firmware Manifest](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest) repository.
 
 ### BLE Profiles
 

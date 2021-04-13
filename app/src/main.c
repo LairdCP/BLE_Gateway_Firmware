@@ -142,9 +142,6 @@ static char build_id[BUILD_ID_SIZE];
 static char software_ver[sizeof(APP_VERSION_STRING) + sizeof(BUILD_ID_DELIM) +
 			 sizeof(build_id)];
 #endif
-#ifdef CONFIG_LCZ_MEMFAULT_MQTT_TRANSPORT
-static char memfault_topic[CONFIG_AWS_TOPIC_MAX_SIZE];
-#endif
 
 K_SEM_DEFINE(lte_ready_sem, 0, 1);
 K_SEM_DEFINE(rx_cert_sem, 0, 1);
@@ -282,10 +279,7 @@ void main(void)
 	}
 	lteInfo = lteGetStatus();
 
-#ifdef CONFIG_LCZ_MEMFAULT_MQTT_TRANSPORT
-	snprintk(memfault_topic, sizeof(memfault_topic),
-		 CONFIG_LCZ_MEMFAULT_MQTT_TOPIC, CONFIG_BOARD, lteInfo->IMEI);
-#endif
+	LCZ_MEMFAULT_BUILD_TOPIC(CONFIG_BOARD, lteInfo->IMEI);
 
 	/* init AWS */
 #ifdef CONFIG_BLUEGRASS

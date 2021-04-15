@@ -121,3 +121,9 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/http_fota/source/hl7800_http_fota.c
 )
 endif() # CONFIG_HTTP_FOTA
+
+if(CONFIG_SHELL AND CONFIG_MODEM_HL7800)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/lcz_modem_shell.c
+)
+endif()

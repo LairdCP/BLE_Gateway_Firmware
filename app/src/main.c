@@ -417,13 +417,10 @@ void memfault_platform_get_device_info(sMemfaultDeviceInfo *info)
 	strcat(software_ver, build_id);
 
 	/* platform specific version information */
-	*info = (sMemfaultDeviceInfo){
+	*info = (sMemfaultDeviceInfo)
+	{
 		.device_serial = lteInfo->IMEI,
-#ifdef CONFIG_LWM2M
-		.software_type = "OOB_demo_LwM2M",
-#else
-		.software_type = "OOB_demo_AWS",
-#endif
+		.software_type = CONFIG_LCZ_MEMFAULT_SOFTWARE_TYPE,
 		.software_version = software_ver,
 		.hardware_version = CONFIG_BOARD,
 	};

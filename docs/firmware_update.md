@@ -102,7 +102,7 @@
 
    # Windows
 
-   mcumgr --conntype serial --connstring dev=COM4 image reset
+   mcumgr --conntype serial --connstring dev=COM4 reset
 
    ```
 

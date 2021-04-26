@@ -1,0 +1,26 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig BL654_SENSOR
+    bool "BL654 sensor support"
+
+if BL654_SENSOR
+
+config BL654_SENSOR_LOG_LEVEL
+    int "Log level for BL654 Sensor module"
+    range 0 4
+    default 3
+
+config BL654_SENSOR_SEND_TO_AWS_RATE_SECONDS
+    int "The period at which to send BL654 Sensor data to AWS"
+    default 60
+    range 30 3600
+
+config BL654_SENSOR_NAME
+    string "The advertised name of the BL654 sensor (that is scanned for)"
+    default "BL654 BME280 Sensor"
+    help
+        Any sensor with the ESS service should work
+        (temperature, humidity, and pressure).
+
+endif # BL654_SENSOR

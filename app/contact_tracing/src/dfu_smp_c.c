@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019 Nordic Semiconductor ASA
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
@@ -133,9 +133,9 @@ uint8_t bt_gatt_dfu_smp_c_notify(struct bt_conn *conn,
 			LOG_VRB("smp rcv complete! (off: %d)\n", new_off);
 
 			/* if there are more bytes in the download or if in the authentication
-			 * states, update the offset and send the next request. */
-			if ((ct_ble_get_state() !=
-			     BT_DEMO_APP_STATE_LOG_DOWNLOAD) ||
+			 * states, update the offset and send the next request.
+			 */
+			if (ct_ble_is_not_downloading_logs() ||
 			    (dfu_smp_c->file_size == 0 ||
 			     (dfu_smp_c->file_size > 0 &&
 			      new_off < dfu_smp_c->file_size))) {

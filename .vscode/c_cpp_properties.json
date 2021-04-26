@@ -2,17 +2,17 @@
   "configurations": [
     {
       "name": "zephyr",
-      // generate compile commands when building by adding -DCMAKE_EXPORT_COMPILE_COMMANDS=1
-      // This will allow pre-processor code highlighting to work properly
-      "compileCommands": "${workspaceFolder}/build/mg100/aws/compile_commands.json",
       "browse": {
         "path": ["${workspaceFolder}"],
         "limitSymbolsToIncludedHeaders": true
       },
       "includePath": [
         "${workspaceFolder}/../zephyr/**",
+        "${workspaceFolder}/../modules/**",
         "${workspaceFolder}/build/**",
-        "${workspaceFolder}/app/**"
+        "${workspaceFolder}/app/**",
+        "${workspaceFolder}/../nrfxlib/**",
+        "${workspaceFolder}/../mbedtls/**"
       ],
       "cStandard": "c99",
       "intelliSenseMode": "gcc-arm"

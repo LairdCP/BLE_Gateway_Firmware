@@ -2,7 +2,7 @@
  * @file ct_shell.c
  * @brief Contact Tracing Shell
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -15,9 +15,7 @@
 #include "lcz_bt_scan.h"
 #include "ct_ble.h"
 #include "lte.h"
-#include "ble_aws_service.h"
 #include "lcz_qrtc.h"
-#include "nv.h"
 
 /******************************************************************************/
 /* Local Function Definitions                                                 */
@@ -57,38 +55,11 @@ static int print_status_cmd(const struct shell *shell, size_t argc, char **argv)
 	return 0;
 }
 
-static int shell_set_aws_topic_prefix(const struct shell *shell, size_t argc,
-				      char **argv)
-{
-	ARG_UNUSED(argc);
-
-	int rc = nvStoreAwsTopicPrefix(argv[1], strlen(argv[1]));
-	aws_svc_set_topic_prefix(argv[1]);
-	return rc;
-}
-
-#if 0 /* Bug 17828 - move to parameters */
-static int check_app_status_cmd(const struct shell *shell, size_t argc,
-				char **argv)
-{
-	if (argc > 1) {
-		checkAppStatusEnabled = (uint8_t)strtol(argv[1], NULL, 0);
-		shell_print(shell,,"checkAppStatusEnabled set to %d",
-			checkAppStatusEnabled);
-	}
-
-	return 0;
-}
-
-#endif
-
 /******************************************************************************/
 /* Shell                                                                      */
 /******************************************************************************/
 SHELL_STATIC_SUBCMD_SET_CREATE(
 	ct_cmds, SHELL_CMD(gettime, NULL, "Get current time", get_time_cmd),
-	SHELL_CMD_ARG(set_topic, NULL, "Set topic prefix",
-		      shell_set_aws_topic_prefix, 2, 0),
 	SHELL_CMD(status, NULL, "Print operating status info",
 		  print_status_cmd),
 	SHELL_SUBCMD_SET_END);

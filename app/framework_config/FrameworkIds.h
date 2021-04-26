@@ -2,7 +2,7 @@
  * @file FrameworkIds.h
  * @brief The message task/receiver IDs in the system.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -40,6 +40,8 @@ enum FwkIdEnum {
 };
 BUILD_ASSERT(__FRAMEWORK_MAX_MSG_RECEIVERS <= CONFIG_FWK_MAX_MSG_RECEIVERS,
 	     "Adjust number of message receivers in Kconfig");
+
+#define FWK_ID_CONTROL_TASK FWK_ID_CLOUD
 
 #ifdef __cplusplus
 }

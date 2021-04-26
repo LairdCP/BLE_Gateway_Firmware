@@ -4,7 +4,7 @@
  *
  * Once configured the BT510 sends all state information in advertisements.
  * This allows connectionless operation.
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -29,17 +29,17 @@ extern "C" {
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-typedef struct SensorWhitelist {
+typedef struct SensorGreenlist {
 	char addrString[SENSOR_ADDR_STR_SIZE];
-	bool whitelist;
-} SensorWhitelist_t;
+	bool greenlist;
+} SensorGreenlist_t;
 
-typedef struct SensorWhitelistMsg {
+typedef struct SensorGreenlistMsg {
 	FwkMsgHeader_t header;
-	SensorWhitelist_t sensors[CONFIG_SENSOR_TABLE_SIZE];
+	SensorGreenlist_t sensors[CONFIG_SENSOR_TABLE_SIZE];
 	size_t sensorCount;
-} SensorWhitelistMsg_t;
-CHECK_FWK_MSG_SIZE(SensorWhitelistMsg_t);
+} SensorGreenlistMsg_t;
+CHECK_FWK_MSG_SIZE(SensorGreenlistMsg_t);
 
 typedef struct SensorShadowInitMsg {
 	FwkMsgHeader_t header;
@@ -101,9 +101,9 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 				      uint8_t type, Ad_t *pAd);
 
 /**
- * @brief Only whitelisted sensors are allowed to send their data to the cloud.
+ * @brief Only greenlisted sensors are allowed to send their data to the cloud.
  */
-void SensorTable_ProcessWhitelistRequest(SensorWhitelistMsg_t *pMsg);
+void SensorTable_ProcessGreenlistRequest(SensorGreenlistMsg_t *pMsg);
 
 /**
  * @brief Whitlisted sensors can subscribe to receive config data from AWs.
@@ -162,7 +162,7 @@ void SensorTable_DisableGatewayShadowGeneration(void);
 /**
  * @brief If a sensor hasn't been seen (its ttl count is zero),
  * then remove it from the table.  Don't remove sensor
- * if it has been whitelisted by AWS.
+ * if it has been greenlisted by AWS.
  */
 void SensorTable_TimeToLiveHandler(void);
 

@@ -6,7 +6,10 @@
     "options": {
       "shell": {
         "executable": "cmd.exe",
-        "args": ["/d", "/c"]
+        "args": [
+          "/d",
+          "/c"
+        ]
       }
     }
   },
@@ -14,6 +17,9 @@
     {
       "label": "build",
       "type": "shell",
+      "dependsOn": [
+        "increment build version"
+      ],
       "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app",
       "windows": {
         "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app"
@@ -26,6 +32,9 @@
     {
       "label": "re-build",
       "type": "shell",
+      "dependsOn": [
+        "increment build version"
+      ],
       "command": "${config:clear_static_partitions_unix} && west build -p -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app",
       "windows": {
         "command": "${config:clear_static_partitions_windows} && west build -p -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app"
@@ -86,7 +95,10 @@
     {
       "label": "build contact tracing",
       "type": "shell",
-      "dependsOn": ["apply contact tracing patches"],
+      "dependsOn": [
+        "apply contact tracing patches",
+        "increment build version"
+      ],
       "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix}\"",
       "windows": {
         "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows}\""
@@ -117,6 +129,9 @@
     {
       "label": "build with mcuboot",
       "type": "shell",
+      "dependsOn": [
+        "increment build version"
+      ],
       "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
       "windows": {
         "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
@@ -129,6 +144,9 @@
     {
       "label": "build lwm2m with mcuboot",
       "type": "shell",
+      "dependsOn": [
+        "increment build version"
+      ],
       "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
       "windows": {
         "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
@@ -141,7 +159,10 @@
     {
       "label": "build ct with mcuboot",
       "type": "shell",
-      "dependsOn": ["apply contact tracing patches"],
+      "dependsOn": [
+        "apply contact tracing patches",
+        "increment build version"
+      ],
       "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
       "windows": {
         "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
@@ -155,14 +176,20 @@
       "label": "aws - build flash",
       "type": "shell",
       "dependsOrder": "sequence",
-      "dependsOn": ["build with mcuboot", "flash app"],
+      "dependsOn": [
+        "build with mcuboot",
+        "flash app"
+      ],
       "problemMatcher": []
     },
     {
       "label": "lwm2m - build flash",
       "type": "shell",
       "dependsOrder": "sequence",
-      "dependsOn": ["build lwm2m with mcuboot", "flash app"],
+      "dependsOn": [
+        "build lwm2m with mcuboot",
+        "flash app"
+      ],
       "problemMatcher": []
     },
     {
@@ -225,6 +252,15 @@
         "command": "arm-none-eabi-readelf -n ${workspaceRoot}\\build\\${input:board}\\${input:app}\\zephyr\\zephyr.elf"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "increment build version",
+      "type": "shell",
+      "command": "python3 ${workspaceRoot}/scripts/increment_build_version.py ${workspaceRoot}/app/common/include/app_version.h",
+      "windows": {
+        "command": "py ${workspaceRoot}\\scripts\\increment_build_version.py ${workspaceRoot}\\app\\common\\include\\app_version.h"
+      },
+      "problemMatcher": []
     }
   ],
   "inputs": [
@@ -233,14 +269,21 @@
       "description": "Select an app",
       "default": "aws",
       "type": "pickString",
-      "options": ["aws", "lwm2m", "ct"]
+      "options": [
+        "aws",
+        "lwm2m",
+        "ct"
+      ]
     },
     {
       "id": "board",
       "description": "Select a board",
       "default": "mg100",
       "type": "pickString",
-      "options": ["mg100", "pinnacle_100_dvk"]
+      "options": [
+        "mg100",
+        "pinnacle_100_dvk"
+      ]
     },
     {
       "id": "mcumgr_cnx",

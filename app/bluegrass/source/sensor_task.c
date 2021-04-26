@@ -2,7 +2,7 @@
  * @file sensor_task.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -109,50 +109,21 @@ K_MSGQ_DEFINE(sensorTaskQueue, FWK_QUEUE_ENTRY_SIZE, SENSOR_TASK_QUEUE_DEPTH,
 /******************************************************************************/
 static void SensorTaskThread(void *pArg1, void *pArg2, void *pArg3);
 
-static DispatchResult_t AdvertisementMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-						FwkMsg_t *pMsg);
-
-static DispatchResult_t SensorTickHandler(FwkMsgReceiver_t *pMsgRxer,
-					  FwkMsg_t *pMsg);
-
-static DispatchResult_t WhitelistRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-						   FwkMsg_t *pMsg);
-
-static DispatchResult_t ConfigRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-						FwkMsg_t *pMsg);
-
-static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-						 FwkMsg_t *pMsg);
-
-static DispatchResult_t StartDiscoveryMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-						 FwkMsg_t *pMsg);
-
-static DispatchResult_t DisconnectMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-					     FwkMsg_t *pMsg);
-
-static DispatchResult_t DiscoveryMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-					    FwkMsg_t *pMsg);
-
-static DispatchResult_t PeriodicTimerMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-						FwkMsg_t *pMsg);
-
-static DispatchResult_t ResponseHandler(FwkMsgReceiver_t *pMsgRxer,
-					FwkMsg_t *pMsg);
-
-static DispatchResult_t SendResetHandler(FwkMsgReceiver_t *pMsgRxer,
-					 FwkMsg_t *pMsg);
-
-static DispatchResult_t AwsConnectionMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-						FwkMsg_t *pMsg);
-
-static DispatchResult_t AwsDecommissionMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-						  FwkMsg_t *pMsg);
-
-static DispatchResult_t SubscriptionAckMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-						  FwkMsg_t *pMsg);
-
-static DispatchResult_t SensorShadowInitMsgHandler(FwkMsgReceiver_t *pMsgRxer,
-						   FwkMsg_t *pMsg);
+static FwkMsgHandler_t AdvertisementMsgHandler;
+static FwkMsgHandler_t SensorTickHandler;
+static FwkMsgHandler_t GreenlistRequestMsgHandler;
+static FwkMsgHandler_t ConfigRequestMsgHandler;
+static FwkMsgHandler_t ConnectRequestMsgHandler;
+static FwkMsgHandler_t StartDiscoveryMsgHandler;
+static FwkMsgHandler_t DisconnectMsgHandler;
+static FwkMsgHandler_t DiscoveryMsgHandler;
+static FwkMsgHandler_t PeriodicTimerMsgHandler;
+static FwkMsgHandler_t ResponseHandler;
+static FwkMsgHandler_t SendResetHandler;
+static FwkMsgHandler_t AwsConnectionMsgHandler;
+static FwkMsgHandler_t AwsDecommissionMsgHandler;
+static FwkMsgHandler_t SubscriptionAckMsgHandler;
+static FwkMsgHandler_t SensorShadowInitMsgHandler;
 
 static void RegisterConnectionCallbacks(void);
 static int StartDiscovery(void);
@@ -206,14 +177,14 @@ static void SensorTaskAdvHandler(const bt_addr_le_t *addr, int8_t rssi,
 /******************************************************************************/
 /* Framework Message Dispatcher                                               */
 /******************************************************************************/
-static FwkMsgHandler_t SensorTaskMsgDispatcher(FwkMsgCode_t MsgCode)
+static FwkMsgHandler_t *SensorTaskMsgDispatcher(FwkMsgCode_t MsgCode)
 {
 	/* clang-format off */
 	switch (MsgCode) {
 	case FMC_INVALID:                  return Framework_UnknownMsgHandler;
 	case FMC_ADV:                      return AdvertisementMsgHandler;
 	case FMC_SENSOR_TICK:              return SensorTickHandler;
-	case FMC_WHITELIST_REQUEST:        return WhitelistRequestMsgHandler;
+	case FMC_GREENLIST_REQUEST:        return GreenlistRequestMsgHandler;
 	case FMC_CONFIG_REQUEST:           return ConfigRequestMsgHandler;
 	case FMC_CONNECT_REQUEST:          return ConnectRequestMsgHandler;
 	case FMC_START_DISCOVERY:          return StartDiscoveryMsgHandler;
@@ -313,11 +284,11 @@ DispatchResult_t AdvertisementMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 	return DISPATCH_OK;
 }
 
-static DispatchResult_t WhitelistRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
+static DispatchResult_t GreenlistRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 						   FwkMsg_t *pMsg)
 {
 	UNUSED_PARAMETER(pMsgRxer);
-	SensorTable_ProcessWhitelistRequest((SensorWhitelistMsg_t *)pMsg);
+	SensorTable_ProcessGreenlistRequest((SensorGreenlistMsg_t *)pMsg);
 	return DISPATCH_OK;
 }
 
@@ -519,12 +490,8 @@ static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 		if (err) {
 			return RetryConfigRequest(pObj);
 		} else {
-			/* If a connection is requested on the last ad from the sensor,
-			 * then the state machine will get stuck waiting ~15 minutes
-			 * for the next ad.  This is because the stack does not
-			 * provide a timeout for this condition.
-			 * (state == BT_CONN_CONNECT_SCAN)
-			 * Bug 16483: Zephyr 2.x - Retest connection timeout fix (stack)
+			/* The stack should generate a disconnect callback if the
+			 * connection cannot be created.  This is a backup.
 			 */
 			k_timer_start(&pObj->msgTask.timer,
 				      CONNECTION_TIMEOUT_TICKS, K_NO_WAIT);

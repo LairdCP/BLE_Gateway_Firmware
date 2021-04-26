@@ -2,7 +2,7 @@
  * @file shadow_builder.c
  * @brief
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -238,7 +238,7 @@ void ShadowBuilder_EndArray(JsonMsg_t *pJsonMsg)
 
 void ShadowBuilder_AddSensorTableArrayEntry(JsonMsg_t *pJsonMsg,
 					    const char *restrict pAddrStr,
-					    uint32_t Epoch, bool Whitelisted)
+					    uint32_t Epoch, bool Greenlisted)
 {
 	FRAMEWORK_ASSERT(pJsonMsg != NULL);
 	FRAMEWORK_ASSERT(pAddrStr != NULL);
@@ -249,7 +249,7 @@ void ShadowBuilder_AddSensorTableArrayEntry(JsonMsg_t *pJsonMsg,
 	JSON_APPEND_CHAR(',');
 	JSON_APPEND_U32(Epoch);
 	JSON_APPEND_CHAR(',');
-	JSON_APPEND_STRING(Whitelisted ? "true" : "false");
+	JSON_APPEND_STRING(Greenlisted ? "true" : "false");
 	JSON_APPEND_CHAR(']');
 	JSON_APPEND_CHAR(',');
 }

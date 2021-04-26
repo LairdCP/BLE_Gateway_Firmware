@@ -2,20 +2,19 @@
  * @file bl654_sensor.c
  * @brief Connects to BL654 Sensor and configures ESS service for notification.
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(bl654_sensor);
+LOG_MODULE_REGISTER(bl654_sensor, CONFIG_BL654_SENSOR_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
 #include <zephyr.h>
-#include <zephyr/types.h>
 #include <stddef.h>
 #include <bluetooth/gatt.h>
 #include <bluetooth/bluetooth.h>
@@ -26,9 +25,11 @@ LOG_MODULE_REGISTER(bl654_sensor);
 #include "led_configuration.h"
 #include "ad_find.h"
 #include "lcz_bt_scan.h"
-#include "ble_sensor_service.h"
-#include "sensor_state.h"
-#include "bl654_sensor.h"
+#include "attr.h"
+
+#ifdef CONFIG_SD_CARD_LOG
+#include "sdcard_log.h"
+#endif
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -42,7 +43,7 @@ static const struct lcz_led_blink_pattern LED_SENSOR_SEARCH_PATTERN = {
 };
 
 struct remote_ble_sensor {
-	/* State of app, see BT_DEMO_APP_STATE_XXX */
+	/* State of app, see CENTRAL_STATE_XXX */
 	uint8_t app_state;
 	/* Handle of ESS service, used when searching for chars */
 	uint16_t ess_service_handle;
@@ -102,7 +103,7 @@ static int find_char(struct bt_conn *conn, struct bt_uuid_16 n_uuid);
 static int find_desc(struct bt_conn *conn, struct bt_uuid_16 uuid,
 		     uint16_t start_handle);
 
-static void set_ble_state(enum sensor_state state);
+static void set_ble_state(enum central_state state);
 
 static void discover_services_work_callback(struct k_work *work);
 static void discover_failed_handler(struct bt_conn *conn, int err);
@@ -148,8 +149,6 @@ static struct bt_uuid_16 last_searched_uuid;
 /******************************************************************************/
 void bl654_sensor_initialize(void)
 {
-	bss_init();
-
 	k_delayed_work_init(&discover_services_work,
 			    discover_services_work_callback);
 
@@ -157,7 +156,7 @@ void bl654_sensor_initialize(void)
 
 	lcz_bt_scan_register(&scan_id, bl654_sensor_adv_handler);
 
-	set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
+	set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
 }
 
 /******************************************************************************/
@@ -200,7 +199,7 @@ static void bl654_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 	} else {
 		LOG_ERR("Failed to connect to remote BLE device %s err [%d]",
 			log_strdup(bt_addr), err);
-		set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
+		set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
 	}
 }
 
@@ -209,7 +208,7 @@ static void discover_services_work_callback(struct k_work *work)
 	ARG_UNUSED(work);
 	if (sensor_conn) {
 		memcpy(&uuid, BT_UUID_ESS, sizeof(uuid));
-		set_ble_state(BT_DEMO_APP_STATE_FINDING_SERVICE);
+		set_ble_state(CENTRAL_STATE_FINDING_SERVICE);
 		int err = find_service(sensor_conn, uuid);
 		if (err) {
 			discover_failed_handler(sensor_conn, err);
@@ -360,7 +359,7 @@ static uint8_t desc_discover_func(struct bt_conn *conn,
 		return BT_GATT_ITER_CONTINUE;
 	}
 
-	if (remote.app_state == BT_DEMO_APP_STATE_FINDING_TEMP_CHAR) {
+	if (remote.app_state == CENTRAL_STATE_FINDING_ESS_TEMPERATURE_CHAR) {
 		/* Found temperature CCCD, enable notifications and move on */
 		remote.temperature_subscribe_params.notify =
 			notify_func_callback;
@@ -382,11 +381,11 @@ static uint8_t desc_discover_func(struct bt_conn *conn,
 			} else {
 				/* everything looks good, update state to looking for humidity char */
 				set_ble_state(
-					BT_DEMO_APP_STATE_FINDING_HUMIDITY_CHAR);
+					CENTRAL_STATE_FINDING_ESS_HUMIDITY_CHAR);
 			}
 		}
 	} else if (remote.app_state ==
-		   BT_DEMO_APP_STATE_FINDING_HUMIDITY_CHAR) {
+		   CENTRAL_STATE_FINDING_ESS_HUMIDITY_CHAR) {
 		/* Found humidity CCCD, enable notifications and move on */
 		remote.humidity_subscribe_params.notify = notify_func_callback;
 		remote.humidity_subscribe_params.value = BT_GATT_CCC_NOTIFY;
@@ -407,11 +406,11 @@ static uint8_t desc_discover_func(struct bt_conn *conn,
 			} else {
 				/* everything looks good, update state to looking for pressure char */
 				set_ble_state(
-					BT_DEMO_APP_STATE_FINDING_PRESSURE_CHAR);
+					CENTRAL_STATE_FINDING_ESS_PRESSURE_CHAR);
 			}
 		}
 	} else if (remote.app_state ==
-		   BT_DEMO_APP_STATE_FINDING_PRESSURE_CHAR) {
+		   CENTRAL_STATE_FINDING_ESS_PRESSURE_CHAR) {
 		/* Found pressure CCCD, enable notifications and move on */
 		remote.pressure_subscribe_params.notify = notify_func_callback;
 		remote.pressure_subscribe_params.value = BT_GATT_CCC_NOTIFY;
@@ -422,8 +421,7 @@ static uint8_t desc_discover_func(struct bt_conn *conn,
 			LOG_ERR("Subscribe failed (err %d)", err);
 		} else {
 			LOG_INF("Notifications enabled for pressure characteristic");
-			set_ble_state(
-				BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED);
+			set_ble_state(CENTRAL_STATE_CONNECTED_AND_CONFIGURED);
 		}
 	}
 
@@ -498,7 +496,8 @@ static uint8_t service_discover_func(struct bt_conn *conn,
 			discover_failed_handler(conn, err);
 		} else {
 			/* Looking for temperature char, update state */
-			set_ble_state(BT_DEMO_APP_STATE_FINDING_TEMP_CHAR);
+			set_ble_state(
+				CENTRAL_STATE_FINDING_ESS_TEMPERATURE_CHAR);
 		}
 	}
 
@@ -520,7 +519,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	}
 
 	LOG_INF("Connected sensor: %s", log_strdup(addr));
-	bss_set_sensor_bt_addr(addr);
+	attr_set_string(ATTR_ID_sensorBluetoothAddress, addr, strlen(addr));
 
 	/* Wait some time before discovering services.
 	* After a connection the BL654 Sensor disables
@@ -537,7 +536,7 @@ fail:
 	bt_conn_unref(conn);
 	sensor_conn = NULL;
 	/* Set state to searching */
-	set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
+	set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
 }
 
 /* This callback is triggered when a BLE disconnection occurs */
@@ -557,25 +556,23 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	sensor_conn = NULL;
 
 	/* Set state to searching */
-	set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
+	set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
 }
 
-static void set_ble_state(enum sensor_state state)
+static void set_ble_state(enum central_state state)
 {
-	LOG_DBG("%s->%s", get_sensor_state_string(remote.app_state),
-		get_sensor_state_string(state));
 	remote.app_state = state;
-	bss_set_sensor_state(state);
+	attr_set_uint32(ATTR_ID_centralState, state);
 
 	switch (state) {
-	case BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED:
+	case CENTRAL_STATE_CONNECTED_AND_CONFIGURED:
 		lcz_led_turn_on(BLUETOOTH_LED);
 		lcz_bt_scan_resume(scan_id);
 		break;
 
-	case BT_DEMO_APP_STATE_FINDING_DEVICE:
+	case CENTRAL_STATE_FINDING_DEVICE:
 		lcz_led_blink(BLUETOOTH_LED, &LED_SENSOR_SEARCH_PATTERN);
-		bss_set_sensor_bt_addr(NULL);
+		attr_set_string(ATTR_ID_sensorBluetoothAddress, "", 0);
 		lcz_bt_scan_restart(scan_id);
 		break;
 
@@ -588,7 +585,7 @@ static void set_ble_state(enum sensor_state state)
 static void sensor_aggregator(uint8_t sensor, int32_t reading)
 {
 	static int64_t bmeEventTime = 0;
-	/* On init send first data immediately. */
+	/* On init, send first data immediately. */
 	static int64_t delta =
 		(CONFIG_BL654_SENSOR_SEND_TO_AWS_RATE_SECONDS * MSEC_PER_SEC);
 
@@ -624,6 +621,11 @@ static void sensor_aggregator(uint8_t sensor, int32_t reading)
 		pMsg->temperatureC = temperature;
 		pMsg->humidityPercent = humidity;
 		pMsg->pressurePa = pressure;
+
+#ifdef CONFIG_SD_CARD_LOG
+		sdCardLogBL654Data(pMsg);
+#endif
+
 		FRAMEWORK_MSG_SEND(pMsg);
 		updated_temperature = false;
 		updated_humidity = false;

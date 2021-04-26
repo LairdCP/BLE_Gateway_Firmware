@@ -2,14 +2,13 @@
  * @file coap_fota_query.h
  * @brief Query/Context for requesting FOTA information from CoAP bridge.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef __COAP_FOTA_MSGS_H__
 #define __COAP_FOTA_MSGS_H__
 
-/* (Remove Empty Sections) */
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/

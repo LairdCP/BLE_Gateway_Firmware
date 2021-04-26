@@ -3,13 +3,14 @@
  * @brief Uses jsmn to parse JSON from AWS that controls gateway functionality
  * and sensor configuration.
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(sensor_gateway_parser, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(sensor_gateway_parser,
+		    CONFIG_SENSOR_GATEWAY_PARSER_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -24,7 +25,7 @@ LOG_MODULE_REGISTER(sensor_gateway_parser, LOG_LEVEL_INF);
 
 #ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
-#include "ble_motion_service.h"
+#include "lcz_motion.h"
 #include "sdcard_log.h"
 #endif
 
@@ -111,10 +112,10 @@ static uint16_t local_updates = 0;
  * based on the MG100 schema.
  */
 static const char *WriteableLocalObject[MAX_WRITEABLE_LOCAL_OBJECTS] = {
-	BATTERY_LOW_STRING, BATTERY_0_STRING,	BATTERY_1_STRING,
-	BATTERY_2_STRING,   BATTERY_3_STRING,	BATTERY_4_STRING,
-	BATTERY_BAD_STRING, ODR_STRING,		SCALE_STRING,
-	ACT_THRESH_STRING,  MAX_LOG_SIZE_STRING
+	BATTERY_LOW_STRING, BATTERY_0_STRING,	 BATTERY_1_STRING,
+	BATTERY_2_STRING,   BATTERY_3_STRING,	 BATTERY_4_STRING,
+	BATTERY_BAD_STRING, ODR_STRING,		 SCALE_STRING,
+	ACT_THRESH_STRING,  MAX_LOG_SIZE_STRING,
 };
 
 static const uint16_t LocalConfigUpdateBits[MAX_WRITEABLE_LOCAL_OBJECTS] = {
@@ -123,10 +124,10 @@ static const uint16_t LocalConfigUpdateBits[MAX_WRITEABLE_LOCAL_OBJECTS] = {
 	LOCAL_UPDATE_BIT_BATTERY_3,    LOCAL_UPDATE_BIT_BATTERY_4,
 	LOCAL_UPDATE_BIT_BATTERY_BAD,  LOCAL_UPDATE_BIT_MOTION_ODR,
 	LOCAL_UPDATE_BIT_MOTION_SCALE, LOCAL_UPDATE_BIT_MOTION_THR,
-	LOCAL_UPDATE_BIT_MAX_LOG_SIZE
+	LOCAL_UPDATE_BIT_MAX_LOG_SIZE,
 };
 
-static bool (*LocalConfigUpdate[MAX_WRITEABLE_LOCAL_OBJECTS])(int) = {
+static int (*LocalConfigUpdate[MAX_WRITEABLE_LOCAL_OBJECTS])(int) = {
 	UpdateBatteryLowThreshold,
 	UpdateBatteryThreshold0,
 	UpdateBatteryThreshold1,
@@ -134,24 +135,17 @@ static bool (*LocalConfigUpdate[MAX_WRITEABLE_LOCAL_OBJECTS])(int) = {
 	UpdateBatteryThreshold3,
 	UpdateBatteryThreshold4,
 	UpdateBatteryBadThreshold,
-	UpdateOdr,
-	UpdateScale,
-	UpdateActivityThreshold,
-	UpdateMaxLogSize
+	lcz_motion_set_and_update_odr,
+	lcz_motion_set_and_update_scale,
+	lcz_motion_set_and_update_threshold,
+	UpdateMaxLogSize,
 };
 
 static int (*LocalConfigGet[MAX_WRITEABLE_LOCAL_OBJECTS])() = {
-	GetBatteryLowThreshold,
-	GetBatteryThreshold0,
-	GetBatteryThreshold1,
-	GetBatteryThreshold2,
-	GetBatteryThreshold3,
-	GetBatteryThreshold4,
-	GetBatteryBadThreshold,
-	GetOdr,
-	GetScale,
-	GetActivityThreshold,
-	GetMaxLogSize
+	GetBatteryLowThreshold,	  GetBatteryThreshold0, GetBatteryThreshold1,
+	GetBatteryThreshold2,	  GetBatteryThreshold3, GetBatteryThreshold4,
+	GetBatteryBadThreshold,	  lcz_motion_get_odr,	lcz_motion_get_scale,
+	lcz_motion_get_threshold, GetMaxLogSize,
 };
 #endif /* CONFIG_BOARD_MG100 */
 
@@ -490,12 +484,11 @@ static void FotaParser(const char *pTopic, enum fota_image_type Type)
 		}
 
 		jsmn_restore_index();
-		location = jsmn_find_type(SHADOW_FOTA_HASH_STR,
-					  JSMN_STRING, NEXT_PARENT);
+		location = jsmn_find_type(SHADOW_FOTA_HASH_STR, JSMN_STRING,
+					  NEXT_PARENT);
 		if (location > 0) {
-			http_fota_set_hash(
-				Type, jsmn_string(location),
-				jsmn_strlen(location));
+			http_fota_set_hash(Type, jsmn_string(location),
+					   jsmn_strlen(location));
 		}
 #endif
 
@@ -643,7 +636,7 @@ static void SensorEventLogParser(const char *pTopic)
 /**
  * @brief Parse the elements in the anonymous array into a c-structure.
  * (Zephyr library can't handle anonymous arrays.)
- * ["addrString", epoch, whitelist (boolean)]
+ * ["addrString", epoch, greenlist (boolean)]
  * The epoch isn't used.
  */
 static void ParseArray(int ExpectedSensors)
@@ -652,8 +645,8 @@ static void ParseArray(int ExpectedSensors)
 		return;
 	}
 
-	SensorWhitelistMsg_t *pMsg =
-		BufferPool_Take(sizeof(SensorWhitelistMsg_t));
+	SensorGreenlistMsg_t *pMsg =
+		BufferPool_Take(sizeof(SensorGreenlistMsg_t));
 	if (pMsg == NULL) {
 		return;
 	}
@@ -679,7 +672,7 @@ static void ParseArray(int ExpectedSensors)
 			/* The 't' in true is used to determine true/false.
 			 * This is safe because primitives are
 			 * numbers, true, false, and null. */
-			pMsg->sensors[sensorsFound].whitelist =
+			pMsg->sensors[sensorsFound].greenlist =
 				(jsmn_string(i + ARRAY_WLIST_INDEX)[0] == 't');
 			sensorsFound += 1;
 			i += CHILD_ARRAY_SIZE + 1;
@@ -689,7 +682,7 @@ static void ParseArray(int ExpectedSensors)
 		}
 	}
 
-	pMsg->header.msgCode = FMC_WHITELIST_REQUEST;
+	pMsg->header.msgCode = FMC_GREENLIST_REQUEST;
 	pMsg->header.rxId = FWK_ID_SENSOR_TASK;
 	pMsg->sensorCount = sensorsFound;
 	FRAMEWORK_MSG_SEND(pMsg);

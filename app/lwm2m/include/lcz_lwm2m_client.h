@@ -2,7 +2,7 @@
  * @file lcz_lwm2m_client.h
  * @brief
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -20,14 +20,6 @@ extern "C" {
 #endif
 
 /******************************************************************************/
-/* Global Constants, Macros and Type Definitions                              */
-/******************************************************************************/
-
-/******************************************************************************/
-/* Global Data Definitions                                                    */
-/******************************************************************************/
-
-/******************************************************************************/
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
 
@@ -40,10 +32,17 @@ void lwm2m_client_init(void);
  * @brief Set the temperature, pressure, and humidity in the
  * respective IPSO objects.
  *
- * @retval 0 on success, negative value otherwise.
+ * @retval 0 on success, negative errno otherwise.
  */
 int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 				float pressure);
+
+/**
+ * @brief Generate new PSK
+ *
+ * @retval 0 on success, negative errno otherwise.
+ */
+int lwm2m_generate_psk(void);
 
 #ifdef __cplusplus
 }

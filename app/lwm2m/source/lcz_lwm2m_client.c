@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2017 Linaro Limited
  * Copyright (c) 2017-2019 Foundries.io
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -22,14 +22,14 @@ LOG_MODULE_REGISTER(lwm2m_client);
 #include <net/lwm2m.h>
 #include <string.h>
 #include <stddef.h>
+#include <random/rand32.h>
 
 #include "lcz_dns.h"
 #include "led_configuration.h"
 #include "dis.h"
 #include "lcz_qrtc.h"
-#include "laird_power.h"
-#include "ble_lwm2m_service.h"
-#include "lte.h"
+#include "lcz_software_reset.h"
+#include "attr.h"
 #include "lcz_lwm2m_client.h"
 
 /******************************************************************************/
@@ -61,7 +61,7 @@ static int device_reboot_cb(uint16_t obj_inst_id, uint8_t *args,
 			    uint16_t args_len);
 static int device_factory_default_cb(uint16_t obj_inst_id, uint8_t *args,
 				     uint16_t args_len);
-static int lwm2m_setup(const char *serial_number, const char *imei);
+static int lwm2m_setup(const char *serial_number, const char *id);
 static void rd_client_event(struct lwm2m_ctx *client,
 			    enum lwm2m_rd_client_event client_event);
 static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
@@ -112,6 +112,23 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 	return result;
 }
 
+int lwm2m_generate_psk(void)
+{
+	int r;
+	uint8_t psk[ATTR_LWM2M_PSK_SIZE];
+
+	LOG_WRN("Generating a new LwM2M PSK");
+
+	r = sys_csrand_get(psk, ATTR_LWM2M_PSK_SIZE);
+	if (r == 0) {
+		r = attr_set_byte_array(ATTR_ID_lwm2mPsk, psk, sizeof(psk));
+	} else {
+		LOG_ERR("Error generating PSK: %d", r);
+	}
+
+	return r;
+}
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
@@ -122,13 +139,8 @@ static int device_reboot_cb(uint16_t obj_inst_id, uint8_t *args,
 	ARG_UNUSED(args);
 	ARG_UNUSED(args_len);
 
-#ifdef CONFIG_REBOOT
-	LOG_INF("DEVICE: REBOOT");
-	power_reboot_module(REBOOT_TYPE_NORMAL);
+	lcz_software_reset(0);
 	return 0;
-#else
-	return -1;
-#endif
 }
 
 static int device_factory_default_cb(uint16_t obj_inst_id, uint8_t *args,
@@ -153,7 +165,7 @@ static void *current_time_read_cb(uint16_t obj_inst_id, uint16_t res_id,
 	return &lwm2m_time;
 }
 
-static int lwm2m_setup(const char *serial_number, const char *imei)
+static int lwm2m_setup(const char *serial_number, const char *id)
 {
 	int ret;
 	char *server_url;
@@ -178,9 +190,11 @@ static int lwm2m_setup(const char *serial_number, const char *imei)
 	lwm2m_engine_set_u8("0/0/2",
 			    IS_ENABLED(CONFIG_LWM2M_DTLS_SUPPORT) ? 0 : 3);
 #if defined(CONFIG_LWM2M_DTLS_SUPPORT)
-	lwm2m_engine_set_string("0/0/3", (char *)ble_lwm2m_get_client_id());
-	lwm2m_engine_set_opaque("0/0/5", (void *)ble_lwm2m_get_client_psk(),
-				CONFIG_LWM2M_PSK_SIZE);
+	lwm2m_engine_set_string(
+		"0/0/3", (char *)attr_get_quasi_static(ATTR_ID_lwm2mClientId));
+	lwm2m_engine_set_opaque("0/0/5",
+				attr_get_quasi_static(ATTR_ID_lwm2mPsk),
+				attr_get_size(ATTR_ID_lwm2mPsk));
 #endif /* CONFIG_LWM2M_DTLS_SUPPORT */
 
 #if defined(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP)
@@ -289,8 +303,9 @@ static int resolve_server_address(void)
 	};
 
 	static struct addrinfo *result;
-	int ret = dns_resolve_server_addr(ble_lwm2m_get_peer_url(), NULL,
-					  &hints, &result);
+	int ret = dns_resolve_server_addr(
+		attr_get_quasi_static(ATTR_ID_lwm2mPeerUrl), NULL, &hints,
+		&result);
 	if (ret == 0) {
 		ret = dns_build_addr_string(server_addr, result);
 	}
@@ -301,10 +316,11 @@ static int resolve_server_address(void)
 static void lwm2m_client_init_internal(void)
 {
 	uint32_t flags;
-	struct lte_status *lte_status = lteGetStatus();
 	int ret;
 
-	lwm2m_initialized = false;
+	if (lwm2m_initialized) {
+		return;
+	}
 
 	flags = IS_ENABLED(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP) ?
 			      LWM2M_RD_CLIENT_FLAG_BOOTSTRAP :
@@ -315,7 +331,8 @@ static void lwm2m_client_init_internal(void)
 		return;
 	}
 
-	ret = lwm2m_setup(lte_status->serialNumber, lte_status->IMEI);
+	ret = lwm2m_setup(attr_get_quasi_static(ATTR_ID_lteSerialNumber),
+			  attr_get_quasi_static(ATTR_ID_gatewayId));
 	if (ret < 0) {
 		LOG_ERR("Cannot setup LWM2M fields (%d)", ret);
 		return;
@@ -330,9 +347,11 @@ static void lwm2m_client_init_internal(void)
 	char endpoint_name[CONFIG_LWM2M_CLIENT_ENDPOINT_MAX_SIZE];
 	memset(endpoint_name, 0, sizeof(endpoint_name));
 	snprintk(endpoint_name, CONFIG_LWM2M_CLIENT_ENDPOINT_MAX_SIZE, "%s_%s",
-		 dis_get_model_number(), lte_status->IMEI);
+		 dis_get_model_number(),
+		 (char *)attr_get_quasi_static(ATTR_ID_gatewayId));
 	LOG_DBG("Endpoint name: %s", log_strdup(endpoint_name));
 	lwm2m_rd_client_start(&client, endpoint_name, flags, rd_client_event);
+
 	lwm2m_initialized = true;
 }
 
@@ -343,9 +362,9 @@ static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
 	uint8_t led_val = *(uint8_t *)data;
 	if (led_val != led_state) {
 		if (led_val) {
-			lcz_led_turn_on(GREEN_LED);
+			lcz_led_turn_on(CLOUD_LED);
 		} else {
-			lcz_led_turn_off(GREEN_LED);
+			lcz_led_turn_off(CLOUD_LED);
 		}
 		led_state = led_val;
 		/* reset time on counter */

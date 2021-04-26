@@ -2,7 +2,7 @@
  * @file ct_ble.c
  * @brief BLE portion for Contact Tracing
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -18,7 +18,6 @@ LOG_MODULE_REGISTER(ct_ble, CONFIG_CT_BLE_LOG_LEVEL);
 #include <stddef.h>
 #include <errno.h>
 #include <bluetooth/bluetooth.h>
-#include <version.h>
 #include <bluetooth/uuid.h>
 #include <bluetooth/gatt.h>
 #include <sys/crc.h>
@@ -44,7 +43,6 @@ LOG_MODULE_REGISTER(ct_ble, CONFIG_CT_BLE_LOG_LEVEL);
 
 #include "app_version.h"
 #include "dfu_smp_c.h"
-#include "ble_cellular_service.h"
 #include "laird_utility_macros.h"
 #include "lcz_bluetooth.h"
 #include "lcz_sensor_adv_format.h"
@@ -54,12 +52,10 @@ LOG_MODULE_REGISTER(ct_ble, CONFIG_CT_BLE_LOG_LEVEL);
 #include "lcz_bt_scan.h"
 #include "ct_datalog.h"
 #include "lcz_qrtc.h"
-#include "nv.h"
-#include "ble_aws_service.h"
+#include "attr.h"
 #include "aws.h"
 #include "lte.h"
 #include "bluegrass.h"
-#include "ble_sensor_service.h"
 
 #include "ct_ble.h"
 
@@ -133,6 +129,10 @@ struct smp_buffer {
 	uint8_t payload[CONFIG_MCUMGR_BUF_SIZE];
 } __packed;
 
+#define AES_CBC_IV_SIZE 16
+#define AES_CBC_BLK_SIZE 16
+#define AES_BLANK_KEY_BYTE_VALUE 0xFF
+
 BUILD_ASSERT((AES_CBC_IV_SIZE % 4) == 0, "IV must be a multiple of 4");
 
 /******************************************************************************/
@@ -190,7 +190,7 @@ static bool valid_ct_record_type(uint8_t type);
 
 static void sensor_att_timeout_callback(struct k_work *work);
 
-static void set_ble_state(enum sensor_state state);
+static void set_ble_state(enum central_state state);
 
 static void change_advert_type(enum adv_type adv_type);
 static void disconnect_sensor(void);
@@ -233,7 +233,7 @@ static struct bt_gatt_exchange_params mp;
 static struct bt_gatt_dfu_smp_c dfu_smp_c;
 
 static struct {
-	enum sensor_state app_state;
+	enum central_state app_state;
 	uint16_t smp_service_handle;
 	struct bt_gatt_subscribe_params smp_subscribe_params;
 	uint32_t inactivity;
@@ -327,8 +327,6 @@ static uint32_t crypto_cap_flags;
 
 void ct_ble_initialize(void)
 {
-	int err;
-
 	if (ct.ble_initialized) {
 		LOG_DBG("CT BLE already initialized");
 		return;
@@ -363,10 +361,8 @@ void ct_ble_initialize(void)
 	k_delayed_work_init(&disable_connectable_adv_work,
 			    disable_connectable_adv_work_handler);
 
-	err = nvReadBleNetworkId(&ct_mfg_data.networkId);
-	if (err <= 0) {
-		ct_mfg_data.networkId = CT_DEFAULT_NETWORK_ID;
-	}
+	ct_mfg_data.networkId =
+		attr_get_uint32(ATTR_ID_networkId, CT_DEFAULT_NETWORK_ID);
 
 	crypto_dev = device_get_binding(CONFIG_CRYPTO_TINYCRYPT_SHIM_DRV_NAME);
 	if (crypto_dev != NULL) {
@@ -375,22 +371,13 @@ void ct_ble_initialize(void)
 		LOG_ERR("Crypto should be enabled");
 	}
 
-	ct_ble_topic_builder();
-
 	ct.adv_type = ADV_TYPE_NONCONN;
 	start_advertising();
 
 	/* Initialize the state to 'looking for device' */
-	set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
+	set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
 
 	ct.ble_initialized = true;
-}
-
-void ct_ble_set_network_id(uint16_t nwkId)
-{
-	/* set in nv by fs_intercept */
-	ct_mfg_data.networkId = nwkId;
-	LOG_DBG("Set networkId: %04X", ct_mfg_data.networkId);
 }
 
 void ct_ble_check_stashed_log_entries(void)
@@ -476,16 +463,16 @@ int ct_adv_on_button_isr(void)
 
 void ct_ble_topic_builder(void)
 {
-	struct lte_status *lte_status = lteGetStatus();
+	char *id = (char *)attr_get_quasi_static(ATTR_ID_gatewayId);
 
 	snprintf(ct.up_topic, sizeof(ct.up_topic), "%s%s%s",
-		 aws_svc_get_topic_prefix(), lte_status->IMEI,
+		 (char *)attr_get_quasi_static(ATTR_ID_topicPrefix), id,
 		 AWS_TOPIC_UP_SUFFIX);
 
 	LOG_DBG("Pub Topic: %s", log_strdup(ct.up_topic));
 
 	snprintf(ct.log_topic, sizeof(ct.log_topic), "%s%s%s",
-		 aws_svc_get_topic_prefix(), lte_status->IMEI,
+		 (char *)attr_get_quasi_static(ATTR_ID_topicPrefix), id,
 		 AWS_TOPIC_LOG_SUFFIX);
 }
 
@@ -543,7 +530,8 @@ int ct_ble_publish_dummy_data_to_aws(void)
 	pub_hdr.fw_version[2] = APP_VERSION_PATCH;
 	pub_hdr.fw_version[3] = APP_VERSION_PATCH >> 8;
 	pub_hdr.battery_level = 0;
-	pub_hdr.network_id = ct_mfg_data.networkId;
+	pub_hdr.network_id =
+		attr_get_uint32(ATTR_ID_networkId, CT_DEFAULT_NETWORK_ID);
 
 	memcpy(buf, &pub_hdr, sizeof(struct ct_publish_header_t));
 	memcpy(&buf[sizeof(struct ct_publish_header_t)], dummyEntry,
@@ -553,9 +541,9 @@ int ct_ble_publish_dummy_data_to_aws(void)
 	return awsSendBinData(buf, buf_len, ct.up_topic);
 }
 
-enum sensor_state ct_ble_get_state(void)
+bool ct_ble_is_not_downloading_logs(void)
 {
-	return remote.app_state;
+	return (remote.app_state != CENTRAL_STATE_LOG_DOWNLOAD);
 }
 
 /******************************************************************************/
@@ -667,8 +655,7 @@ static uint8_t discover_func_smp(struct bt_conn *conn,
 			LOG_ERR("Subscribe failed (err %d)", err);
 		} else {
 			/* now, send a download command to grab the log */
-			set_ble_state(
-				BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED);
+			set_ble_state(CENTRAL_STATE_CONNECTED_AND_CONFIGURED);
 
 			if (is_encryption_enabled()) {
 				k_work_submit(&smp_challenge_req_work);
@@ -687,11 +674,9 @@ static uint8_t discover_func_smp(struct bt_conn *conn,
 static int start_advertising(void)
 {
 	int err = 0;
-	bool commissioned;
-	nvReadCommissioned(&commissioned);
 
 	/* Advertise using the MG100 ad format */
-	if (!commissioned) {
+	if (!attr_get_uint32(ATTR_ID_commissioned, 0)) {
 		/* stop the advert update timer in case it is running */
 		k_timer_stop(&update_advert_timer);
 
@@ -710,7 +695,8 @@ static int start_advertising(void)
 					BT_GAP_ADV_FAST_INT_MIN_2,
 					BT_GAP_ADV_FAST_INT_MAX_2, NULL),
 				ad, ARRAY_SIZE(ad), NULL, 0);
-			lcz_led_blink(BLUETOOTH_LED, &CT_LED_SENSOR_SEARCH_PATTERN);
+			lcz_led_blink(BLUETOOTH_LED,
+				      &CT_LED_SENSOR_SEARCH_PATTERN);
 		}
 	} else {
 		/* Advertise using the MG100 CT ad format */
@@ -731,7 +717,8 @@ static int start_advertising(void)
 					BT_GAP_ADV_FAST_INT_MAX_2, NULL),
 				contact_tracing_ad,
 				ARRAY_SIZE(contact_tracing_ad), NULL, 0);
-			lcz_led_blink(BLUETOOTH_LED, &CT_LED_SENSOR_SEARCH_PATTERN);
+			lcz_led_blink(BLUETOOTH_LED,
+				      &CT_LED_SENSOR_SEARCH_PATTERN);
 		}
 
 		k_timer_start(&update_advert_timer,
@@ -818,7 +805,7 @@ static void sensor_connected(struct bt_conn *conn, uint8_t err)
 	}
 
 	LOG_INF("Connected sensor: %s", log_strdup(addr));
-	bss_set_sensor_bt_addr(addr);
+	attr_set_string(ATTR_ID_sensorBluetoothAddress, addr, strlen(addr));
 
 	remote.encrypt_req = false;
 	remote.log_ble_xfer_active = true;
@@ -856,7 +843,7 @@ static void sensor_disconnect_cleanup(struct bt_conn *conn)
 	remote.conn = NULL;
 	remote.encrypt_req = false;
 
-	set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
+	set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
 }
 
 static void disconnect_sensor(void)
@@ -882,8 +869,6 @@ static void sensor_scan_conn_init()
 
 	k_timer_init(&sensor_conn_timeout_timer, sensor_conn_timeout_handler,
 		     NULL);
-
-	bss_init();
 }
 
 static void sensor_att_timeout_callback(struct k_work *work)
@@ -936,7 +921,7 @@ static void ct_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 	}
 
 	/* Leave this function if not connected to AWS */
-	if (!Bluegrass_ReadyForPublish()) {
+	if (!bluegrass_ready_for_publish()) {
 		adv_log_filter("not connected to AWS");
 		return;
 	}
@@ -996,7 +981,7 @@ static void ct_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 	} else {
 		LOG_ERR("Failed to connect to remote BLE device %s err [%d]",
 			log_strdup(bt_addr), err);
-		set_ble_state(BT_DEMO_APP_STATE_FINDING_DEVICE);
+		set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
 	}
 }
 
@@ -1165,7 +1150,7 @@ bool ct_ble_send_next_smp_request(uint32_t new_off)
 {
 	bool success = false;
 
-	if (remote.app_state == BT_DEMO_APP_STATE_CHALLENGE_REQ) {
+	if (remote.app_state == CENTRAL_STATE_CHALLENGE_REQUEST) {
 		LOG_DBG("/sys/challenge_rsp.bin");
 		bt_gatt_dfu_smp_c_init(&dfu_smp_c, NULL);
 		snprintk(smp_fs_download_filename,
@@ -1179,14 +1164,14 @@ bool ct_ble_send_next_smp_request(uint32_t new_off)
 			LOG_ERR("Authenticate device command send error (err: %d)",
 				ret);
 		} else {
-			set_ble_state(BT_DEMO_APP_STATE_CHALLENGE_RSP);
+			set_ble_state(CENTRAL_STATE_CHALLENGE_RESPONSE);
 			success = true;
 			k_timer_start(&smp_xfer_timeout_timer,
 				      SMP_TIMEOUT_TICKS, K_NO_WAIT);
 		}
-	} else if ((remote.app_state == BT_DEMO_APP_STATE_CHALLENGE_RSP) ||
-		   (remote.app_state == BT_DEMO_APP_STATE_LOG_DOWNLOAD)) {
-		if (remote.app_state == BT_DEMO_APP_STATE_CHALLENGE_RSP) {
+	} else if ((remote.app_state == CENTRAL_STATE_CHALLENGE_RESPONSE) ||
+		   (remote.app_state == CENTRAL_STATE_LOG_DOWNLOAD)) {
+		if (remote.app_state == CENTRAL_STATE_CHALLENGE_RESPONSE) {
 			/* reset dfu_smp_c structure only on first download request */
 			bt_gatt_dfu_smp_c_init(&dfu_smp_c, NULL);
 		}
@@ -1198,7 +1183,7 @@ bool ct_ble_send_next_smp_request(uint32_t new_off)
 		if (ret) {
 			LOG_WRN("Download command send error (err: %d)", ret);
 		} else {
-			set_ble_state(BT_DEMO_APP_STATE_LOG_DOWNLOAD);
+			set_ble_state(CENTRAL_STATE_LOG_DOWNLOAD);
 			success = true;
 			k_timer_start(&smp_xfer_timeout_timer,
 				      SMP_TIMEOUT_TICKS, K_NO_WAIT);
@@ -1314,7 +1299,7 @@ static void smp_challenge_req_proc_handler(struct bt_gatt_dfu_smp_c *dfu_smp_c)
 		/**** CBOR PARSE END */
 
 		/* if AWS connection is not up, abort the transfer */
-		if (!Bluegrass_ReadyForPublish()) {
+		if (!bluegrass_ready_for_publish()) {
 			LOG_ERR("AWS not connected during BLE transfer, aborting...");
 			dfu_smp_c->rsp_state.rc = MGMT_ERR_ENOENT;
 			return;
@@ -1330,7 +1315,7 @@ static void smp_challenge_req_proc_handler(struct bt_gatt_dfu_smp_c *dfu_smp_c)
 				LOG_ERR("Authentication not supported by remote device. Continue download...");
 				dfu_smp_c->rsp_state.rc = MGMT_ERR_EOK;
 				/* setting to this state will send the log download request */
-				set_ble_state(BT_DEMO_APP_STATE_CHALLENGE_RSP);
+				set_ble_state(CENTRAL_STATE_CHALLENGE_RESPONSE);
 				remote.encrypt_req = false;
 			}
 			return;
@@ -1350,7 +1335,7 @@ static void smp_challenge_req_proc_handler(struct bt_gatt_dfu_smp_c *dfu_smp_c)
 				LOG_ERR("No auth data from remote device (auth not required). Continue download...");
 				dfu_smp_c->rsp_state.rc = MGMT_ERR_EOK;
 				/* setting to this state will send the log download request */
-				set_ble_state(BT_DEMO_APP_STATE_CHALLENGE_RSP);
+				set_ble_state(CENTRAL_STATE_CHALLENGE_RESPONSE);
 				remote.encrypt_req = false;
 				return;
 			}
@@ -1375,17 +1360,15 @@ static void smp_challenge_req_proc_handler(struct bt_gatt_dfu_smp_c *dfu_smp_c)
 		/* If this is last packet, encrypt the received authentication data and send the encrypted string to the remote device */
 		if (dfu_smp_c->downloaded_bytes > 0 &&
 		    dfu_smp_c->downloaded_bytes == dfu_smp_c->file_size) {
-			uint8_t key[AES_KEY_SIZE];
-			memset(key, AES_BLANK_KEY_BYTE_VALUE, AES_KEY_SIZE);
-			nvReadAesKey(key);
-
 			/* This function returns the output size of the cipher text + IV (0 if failed)
 			 * The output buffer max len must be "input len + 16" (challenge length + IV size)
 			 */
 			challenge_rsp_len = encrypt_cbc(
 				log_buffer, dfu_smp_c->downloaded_bytes,
-				challenge_rsp, sizeof(challenge_rsp), key,
-				sizeof(key));
+				challenge_rsp, sizeof(challenge_rsp),
+				(uint8_t *)attr_get_quasi_static(
+					ATTR_ID_ctAesKey),
+				ATTR_CT_AES_KEY_SIZE);
 		}
 	}
 }
@@ -1493,7 +1476,7 @@ static void smp_challenge_rsp_proc_handler(struct bt_gatt_dfu_smp_c *dfu_smp_c)
 		/**** CBOR PARSE END */
 
 		/* if AWS connection is not up, abort the transfer */
-		if (!Bluegrass_ReadyForPublish()) {
+		if (!bluegrass_ready_for_publish()) {
 			LOG_ERR("AWS not connected during BLE transfer, aborting...");
 			dfu_smp_c->rsp_state.rc = MGMT_ERR_ENOENT;
 			return;
@@ -1511,7 +1494,7 @@ static void smp_challenge_rsp_proc_handler(struct bt_gatt_dfu_smp_c *dfu_smp_c)
 			LOG_DBG("Authentication successful. Continue download...");
 			dfu_smp_c->rsp_state.rc = MGMT_ERR_EOK;
 			/* setting to this state will send the log download request */
-			set_ble_state(BT_DEMO_APP_STATE_CHALLENGE_RSP);
+			set_ble_state(CENTRAL_STATE_CHALLENGE_RESPONSE);
 			remote.encrypt_req = true;
 		}
 
@@ -1652,7 +1635,7 @@ static void smp_file_download_rsp_proc(struct bt_gatt_dfu_smp_c *dfu_smp_c)
 		}
 
 		/* if AWS connection is not up, abort the transfer */
-		if (!Bluegrass_ReadyForPublish()) {
+		if (!bluegrass_ready_for_publish()) {
 			LOG_ERR("AWS not connected during BLE transfer, aborting...");
 			dfu_smp_c->rsp_state.rc = MGMT_ERR_ENOENT;
 
@@ -1673,13 +1656,11 @@ static void smp_file_download_rsp_proc(struct bt_gatt_dfu_smp_c *dfu_smp_c)
 
 		uint8_t dec_file_data[FS_MGMT_DL_CHUNK_SIZE];
 		if (remote.encrypt_req == true) {
-			uint8_t key[AES_KEY_SIZE];
-			memset(key, AES_BLANK_KEY_BYTE_VALUE, AES_KEY_SIZE);
-			nvReadAesKey(key);
-
 			/* max output len must be "input len - 16" */
 			uint32_t decrypted_length = decrypt_cbc(file_data, data_len, dec_file_data,
-							       data_len - AES_CBC_IV_SIZE, key, sizeof(key));
+							       data_len - AES_CBC_IV_SIZE,
+								   (uint8_t *)attr_get_quasi_static(ATTR_ID_ctAesKey),
+								   ATTR_CT_AES_KEY_SIZE);
 			data_len = decrypted_length;
 
 			if (decrypted_length == 0) {
@@ -2492,7 +2473,7 @@ static void smp_challenge_req_work_handler(struct k_work *work)
 		bt_conn_disconnect(remote.conn,
 				   BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 	} else {
-		set_ble_state(BT_DEMO_APP_STATE_CHALLENGE_REQ);
+		set_ble_state(CENTRAL_STATE_CHALLENGE_REQUEST);
 		k_timer_start(&smp_xfer_timeout_timer, SMP_TIMEOUT_TICKS,
 			      K_NO_WAIT);
 	}
@@ -2513,7 +2494,7 @@ static void smp_fs_download_work_handler(struct k_work *work)
 		bt_conn_disconnect(remote.conn,
 				   BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 	} else {
-		set_ble_state(BT_DEMO_APP_STATE_LOG_DOWNLOAD);
+		set_ble_state(CENTRAL_STATE_LOG_DOWNLOAD);
 		k_timer_start(&smp_xfer_timeout_timer, SMP_TIMEOUT_TICKS,
 			      K_NO_WAIT);
 	}
@@ -2530,7 +2511,7 @@ static void change_advert_type_work_handler(struct k_work *work)
 static void send_stashed_entries_work_handler(struct k_work *work)
 {
 	/* Make sure AWS is connected, and no other log download is occurring (normally over BLE) */
-	if (Bluegrass_ReadyForPublish() && (remote.app_state == BT_DEMO_APP_STATE_FINDING_DEVICE)) {
+	if (bluegrass_ready_for_publish() && (remote.app_state == CENTRAL_STATE_FINDING_DEVICE)) {
 		if (stashed_entries.available) {
 			if (stashed_entries.len >
 			    sizeof(struct ct_publish_header_t)) /* make sure ct header has been copied */
@@ -2663,23 +2644,21 @@ static void smp_xfer_timeout_handler(struct k_timer *dummy)
 	}
 }
 
-static void set_ble_state(enum sensor_state state)
+static void set_ble_state(enum central_state state)
 {
 	if (remote.app_state != state) {
-		LOG_DBG("%s->%s", get_sensor_state_string(remote.app_state),
-			get_sensor_state_string(state));
 		remote.app_state = state;
-		bss_set_sensor_state(state);
+		attr_set_uint32(ATTR_ID_centralState, state);
 	}
 
 	switch (state) {
-	case BT_DEMO_APP_STATE_CONNECTED_AND_CONFIGURED:
+	case CENTRAL_STATE_CONNECTED_AND_CONFIGURED:
 		lcz_led_turn_on(BLUETOOTH_LED);
 		break;
 
-	case BT_DEMO_APP_STATE_FINDING_DEVICE:
+	case CENTRAL_STATE_FINDING_DEVICE:
 		lcz_led_blink(BLUETOOTH_LED, &CT_LED_SENSOR_SEARCH_PATTERN);
-		bss_set_sensor_bt_addr(NULL);
+		attr_set_string(ATTR_ID_sensorBluetoothAddress, "", 0);
 		lcz_bt_scan_restart(ct.scan_id);
 		break;
 
@@ -2752,10 +2731,10 @@ static void update_advert_timer_handler(struct k_timer *dummy)
  */
 static void update_advert(struct k_work *work)
 {
-	bool commissioned;
-	nvReadCommissioned(&commissioned);
+	if (attr_get_uint32(ATTR_ID_commissioned, 0)) {
+		ct_mfg_data.networkId = attr_get_uint32(ATTR_ID_networkId,
+							CT_DEFAULT_NETWORK_ID);
 
-	if (commissioned) {
 		if (lcz_qrtc_epoch_was_set()) {
 			ct_mfg_data.flags |= CT_ADV_FLAGS_HAS_EPOCH_TIME;
 			ct_mfg_data.epoch = lcz_qrtc_get_epoch();
@@ -2782,19 +2761,16 @@ static void change_advert_type(enum adv_type adv_type)
 
 static bool is_encryption_enabled(void)
 {
-	bool blankKey = true;
-	uint8_t key[AES_KEY_SIZE];
+	uint8_t *key = (uint8_t *)attr_get_quasi_static(ATTR_ID_ctAesKey);
+	int i;
 
-	memset(key, AES_BLANK_KEY_BYTE_VALUE, AES_KEY_SIZE);
-	nvReadAesKey(key);
-
-	for (int i = 0; i < AES_KEY_SIZE; i++) {
-		if (key[i] != 0xFF) {
-			blankKey = false;
+	for (i = 0; i < ATTR_CT_AES_KEY_SIZE; i++) {
+		if (key[i] != AES_BLANK_KEY_BYTE_VALUE) {
+			return true;
 		}
 	}
 
-	return !blankKey; /* blank key means encryption is disabled */
+	return false;
 }
 
 static uint32_t validate_hw_compatibility(const struct device *dev)

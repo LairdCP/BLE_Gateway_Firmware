@@ -2,7 +2,7 @@
  * @file ct_app.c
  * @brief Contact tracing application
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -22,7 +22,6 @@ LOG_MODULE_REGISTER(ct_app, CONFIG_CT_APP_LOG_LEVEL);
 #include "aws.h"
 #include "bluegrass.h"
 #include "sdcard_log.h"
-#include "ble_aws_service.h"
 #include "ct_ble.h"
 #include "ct_app.h"
 

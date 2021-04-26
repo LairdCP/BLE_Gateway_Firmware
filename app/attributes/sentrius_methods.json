@@ -1,0 +1,1121 @@
+{
+    "sentrius": [
+        {
+            "name": "GetParameter",
+            "summary": "Get Parameter",
+            "description": "",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 1,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": "Parameter"
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter Id",
+                    "description": "ParameterId",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "maximum": 65535.0,
+                        "x-ctype": "uint16_t",
+                        "x-sequence-number": 1,
+                        "x-default": null,
+                        "x-example": "1"
+                    }
+                }
+            ],
+            "result": {
+                "name": "GetParameterResult",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r1",
+                            "summary": "Value",
+                            "description": "Value",
+                            "type": "string",
+                            "maximum": 0,
+                            "x-ctype": "string",
+                            "x-sequence-number": 1,
+                            "x-default": null,
+                            "x-example": "1"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "SetParameter",
+            "summary": "Set Parameter",
+            "description": "Set an attribute",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 2,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": "Parameter"
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter Id",
+                    "description": "ParameterId",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "maximum": 65535.0,
+                        "x-ctype": "uint16_t",
+                        "x-sequence-number": 1,
+                        "x-default": null,
+                        "x-example": "1"
+                    }
+                },
+                {
+                    "name": "p2",
+                    "summary": "Parameter Value",
+                    "description": "ParameterValue",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "maximum": 0,
+                        "x-ctype": "string",
+                        "x-sequence-number": 2,
+                        "x-default": null,
+                        "x-example": "1"
+                    }
+                }
+            ],
+            "result": {
+                "name": "SetParameterResult",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r1",
+                            "summary": "Result",
+                            "description": "negative error code, 0 or positive on success",
+                            "type": "integer",
+                            "maximum": 0,
+                            "x-ctype": "uint8_t",
+                            "x-sequence-number": 1,
+                            "x-default": null,
+                            "x-example": "0"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "RevEcho",
+            "summary": "Echo reversed string",
+            "description": "",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 3,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "d",
+                    "summary": "First parameter",
+                    "description": "Name matches echo command",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "maximum": 0,
+                        "x-ctype": "string",
+                        "x-sequence-number": 1,
+                        "x-default": null,
+                        "x-example": "hello world"
+                    }
+                }
+            ],
+            "result": {
+                "name": "RevEchoResult",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r1",
+                            "summary": "Response 1",
+                            "description": "Value",
+                            "type": "string",
+                            "maximum": 0,
+                            "x-ctype": "string",
+                            "x-sequence-number": 1,
+                            "x-default": null,
+                            "x-example": "1"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Echo",
+            "summary": "Echo string",
+            "description": "Built-in SMP echo command",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 0,
+            "x-group-id": 0,
+            "tags": [
+                {
+                    "name": 0
+                }
+            ],
+            "params": [
+                {
+                    "name": "d",
+                    "summary": "First parameter",
+                    "description": "Value",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "maximum": 0,
+                        "x-ctype": "string",
+                        "x-sequence-number": 1,
+                        "x-default": null,
+                        "x-example": "hello world"
+                    }
+                }
+            ],
+            "result": {
+                "name": "EchoResult",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r1",
+                            "summary": "Response 1",
+                            "description": "Value",
+                            "type": "string",
+                            "maximum": 0,
+                            "x-ctype": "string",
+                            "x-sequence-number": 1,
+                            "x-default": null,
+                            "x-example": "1"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "CalibrateThermistor",
+            "summary": "Tell BT6xx to run thermistor calibration using provided calibration parameters",
+            "description": "BT6xx will save results",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 4,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter 1",
+                    "description": "Ideal ADC counts for 560 Ohm resistor (R1 = 559.4 ohms --> C1 = 4096 * 559.4/(10000 + 559.4) = 217.0)",
+                    "required": true,
+                    "schema": {
+                        "type": "number",
+                        "minimum": 1.2e-38,
+                        "maximum": 3.4e+38,
+                        "x-ctype": "float",
+                        "x-sequence-number": 1,
+                        "x-default": "220.7351",
+                        "x-example": "220.7351"
+                    }
+                },
+                {
+                    "name": "p2",
+                    "summary": "Parameter 2",
+                    "description": "Ideal ADC counts for 330K resistor (R2 = 331.9k --> C2 = 4096 * 331900/(10000 + 331900) = 3976.2)",
+                    "required": true,
+                    "schema": {
+                        "type": "number",
+                        "minimum": 1.2e-38,
+                        "maximum": 3.4e+38,
+                        "x-ctype": "float",
+                        "x-sequence-number": 2,
+                        "x-default": "3.98e3",
+                        "x-example": "3.98e3"
+                    }
+                }
+            ],
+            "result": {
+                "name": "CalibrateThermistorResult",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-ctype": "int32_t",
+                            "x-example": "0",
+                            "x-sequence-number": 1
+                        },
+                        {
+                            "name": "ge",
+                            "type": "number",
+                            "summary": "Gain Error",
+                            "description": "This is applied to all thermistor readings",
+                            "x-ctype": "float",
+                            "x-example": "0.998",
+                            "x-sequence-number": 2
+                        },
+                        {
+                            "name": "oe",
+                            "type": "number",
+                            "summary": "Offset Error",
+                            "description": "This is applied to all thermistor readings",
+                            "x-ctype": "float",
+                            "x-example": "-12.8",
+                            "x-sequence-number": 3
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "CalibrateThermistorVersion2",
+            "summary": "",
+            "description": "Uses uint32_t for input parameters",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 6,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter 1",
+                    "description": "Calibration factor x10000",
+                    "required": true,
+                    "schema": {
+                        "type": "number",
+                        "x-ctype": "uint32_t",
+                        "x-sequence-number": 1,
+                        "x-default": "2207351",
+                        "x-example": "2207351"
+                    }
+                },
+                {
+                    "name": "p2",
+                    "summary": "Parameter 2",
+                    "description": "Calibration factor x10000",
+                    "required": true,
+                    "schema": {
+                        "type": "number",
+                        "x-ctype": "uint32_t",
+                        "x-sequence-number": 2,
+                        "x-default": "39800000",
+                        "x-example": "39800000"
+                    }
+                }
+            ],
+            "result": {
+                "name": "CalibrateThermistorResult",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-ctype": "int32_t",
+                            "x-example": "0",
+                            "x-sequence-number": 1
+                        },
+                        {
+                            "name": "ge",
+                            "type": "number",
+                            "summary": "Gain Error",
+                            "description": "This is applied to all thermistor readings",
+                            "x-ctype": "float",
+                            "x-example": "0.998",
+                            "x-sequence-number": 2
+                        },
+                        {
+                            "name": "oe",
+                            "type": "number",
+                            "summary": "Offset Error",
+                            "description": "This is applied to all thermistor readings",
+                            "x-ctype": "float",
+                            "x-example": "-12.8",
+                            "x-sequence-number": 3
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "TestLed",
+            "summary": "Turn green LED on, then red on, green off, and finally red off.",
+            "description": "",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 5,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter 1",
+                    "description": "Duration in milliseconds for each step",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "uint32_t",
+                        "x-default": "1000",
+                        "x-example": "1000",
+                        "x-sequence-number": 1
+                    }
+                }
+            ],
+            "result": {
+                "name": "TestLedResult",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "SetRtc",
+            "summary": "Set the RTC",
+            "description": "Time in seconds.  Reference is often Jan 1, 1970 (UTC).",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 7,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter 1",
+                    "description": "Time in seconds",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "uint32_t",
+                        "x-default": "1000",
+                        "x-example": "1000",
+                        "x-sequence-number": 1
+                    }
+                }
+            ],
+            "result": {
+                "name": "Rtc",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        },
+                        {
+                            "name": "t",
+                            "type": "integer",
+                            "summary": "Epoch Time",
+                            "description": "Time in seconds",
+                            "x-example": "0",
+                            "x-ctype": "uint32_t",
+                            "x-sequence-number": 2
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "GetRtc",
+            "summary": "Get the current RTC value",
+            "description": "Time in seconds.  Default reference is Jan 1, 1970",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 8,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [],
+            "result": {
+                "name": "Rtc",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "t",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "Time in seconds",
+                            "x-example": "0",
+                            "x-ctype": "uint32_t",
+                            "x-sequence-number": 1
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Load",
+            "summary": "Load parameters from a file",
+            "description": "Used in conjunction with file system commands",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 9,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [],
+            "result": {
+                "name": "LoadResult",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Dump",
+            "summary": "Dump chosen parameters to a file",
+            "description": "Used in conjunction with file system commands",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 10,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter 1",
+                    "description": "",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "uint8_t",
+                        "x-default": "0",
+                        "x-example": "2",
+                        "x-sequence-number": 1,
+                        "x-enum-name": "attr_dump",
+                        "enum": {
+                            "RW": 0,
+                            "W": 1,
+                            "RO": 2
+                        }
+                    }
+                },
+                {
+                    "name": "p2",
+                    "summary": "Parameter 2",
+                    "description": "",
+                    "required": false,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "uint8_t",
+                        "x-default": "",
+                        "x-example": "/lfs/dump.txt",
+                        "x-sequence-number": 2,
+                        "x-enum-name": "attr_dump",
+                        "enum": {
+                            "RW": 0,
+                            "W": 1,
+                            "RO": 2
+                        }
+                    }
+                }
+            ],
+            "result": {
+                "name": "DumpResult",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, length of file in bytes on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        },
+                        {
+                            "name": "n",
+                            "type": "string",
+                            "summary": "file name",
+                            "description": "The absolute path name of the dump file on the file system. Returned only when successful.",
+                            "x-example": "/lfs/dump.txt",
+                            "x-ctype": "string",
+                            "x-sequence-number": 2
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "PrepareLog",
+            "summary": "Prepare logs for reading",
+            "description": "Used in conjunction with file system commands to read logs",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 11,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Read Mode",
+                    "description": "0 = First-In First-Out",
+                    "required": false,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "uint8_t",
+                        "x-default": "0",
+                        "x-example": "0",
+                        "x-sequence-number": 1
+                    }
+                }
+            ],
+            "result": {
+                "name": "Result",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, number of log files to read on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        },
+                        {
+                            "name": "s",
+                            "type": "integer",
+                            "summary": "The size of the log file to read",
+                            "description": "the size of the log file",
+                            "x-example": "4096",
+                            "x-ctype": "uint32_t",
+                            "x-sequence-number": 2
+                        },
+                        {
+                            "name": "n",
+                            "type": "string",
+                            "summary": "Name",
+                            "description": "The absolute path name of the log on the file system",
+                            "x-example": "/lfs/log.bin",
+                            "x-ctype": "string",
+                            "x-sequence-number": 3
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "AckLog",
+            "summary": "Acknowledge reception of log",
+            "description": "Allows log to be freed",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 12,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [],
+            "result": {
+                "name": "Result",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "FactoryReset",
+            "summary": "Factory reset device",
+            "description": "Set configuration to defaults.  Erase certificates. Reset device.",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 13,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [],
+            "result": {
+                "name": "Result",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Sha256",
+            "summary": "Compute SHA-256 hash of file",
+            "description": "secure hash algorithm",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 14,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter 1",
+                    "description": "Absolute path file name",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "x-ctype": "string",
+                        "x-default": null,
+                        "x-example": "/lfs/file.txt",
+                        "x-sequence-number": 1
+                    }
+                }
+            ],
+            "result": {
+                "name": "Result",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        },
+                        {
+                            "x-help": "how do I specify an array",
+                            "name": "h",
+                            "type": "integer",
+                            "summary": "hash",
+                            "description": "The 32-byte hash",
+                            "x-example": "",
+                            "x-ctype": "uint32_t",
+                            "x-sequence-number": 2
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "SetNotify",
+            "summary": "Set notification flag",
+            "description": "Device generates BLE notifications for corresponding attribute",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 15,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter 1",
+                    "description": "Parameter Id",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "maximum": 65535.0,
+                        "x-ctype": "uint16_t",
+                        "x-sequence-number": 1,
+                        "x-default": null,
+                        "x-example": "1"
+                    }
+                },
+                {
+                    "name": "p2",
+                    "summary": "Parameter 2",
+                    "description": "Value to set notification flag to",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "maximum": 1.0,
+                        "x-ctype": "bool",
+                        "x-sequence-number": 2,
+                        "x-default": null,
+                        "x-example": "true"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Result",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "GetNotify",
+            "summary": "Get notification flag",
+            "description": "Device generates BLE notifications for corresponding attribute",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 16,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter 1",
+                    "description": "Parameter Id",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "maximum": 65535.0,
+                        "x-ctype": "uint16_t",
+                        "x-sequence-number": 1,
+                        "x-default": null,
+                        "x-example": "1"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Result",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "Notification state",
+                            "x-example": "false",
+                            "x-ctype": "bool",
+                            "x-sequence-number": 2
+                        },
+                        {
+                            "name": "id",
+                            "type": "integer",
+                            "summary": "parameter id",
+                            "description": "",
+                            "x-example": "0",
+                            "x-ctype": "uint16_t",
+                            "x-sequence-number": 1
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "DisableNotify",
+            "summary": "Disable All Notifications",
+            "description": "",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 17,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [],
+            "result": {
+                "name": "Result",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Prepare_Test_Log",
+            "summary": "Prepare test logs for reading",
+            "description": "Used in conjunction with file system commands to read logs",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-management-option": "ReadWrite",
+            "x-id": 18,
+            "x-groupid": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Start timestamp",
+                    "description": "The timestamp from which to start test log data.",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "uint32_t",
+                        "x-default": "0",
+                        "x-example": "0",
+                        "x-sequence-number": 1
+                    }
+                },
+                {
+                    "name": "p2",
+                    "summary": "Update rate",
+                    "description": "The interval between events.",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "uint32_t",
+                        "x-default": "0",
+                        "x-example": "0",
+                        "x-sequence-number": 2
+                    }
+                },
+                {
+                    "name": "p3",
+                    "summary": "Event type",
+                    "description": "The event type to set for test log data.",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "uint8_t",
+                        "x-default": "0",
+                        "x-example": "0",
+                        "x-sequence-number": 3
+                    }
+                },
+                {
+                    "name": "p4",
+                    "summary": "Event count",
+                    "description": "The number of events to add to the test log file.",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "uint32_t",
+                        "x-default": "0",
+                        "x-example": "0",
+                        "x-sequence-number": 4
+                    }
+                },
+                {
+                    "name": "p5",
+                    "summary": "Event data type",
+                    "description": "The data type to use for the event",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "uint8_t",
+                        "x-default": "0",
+                        "x-example": "0",
+                        "x-sequence-number": 5,
+                        "x-enum-name": "TEST_LOG_DATA_TYPE",
+                        "enum": {
+                            "BOOL": 0,
+                            "UINT32": 1,
+                            "FLOAT": 2
+                        }
+                    }
+                }
+            ],
+            "result": {
+                "name": "Result",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, number of log files to read on success",
+                            "required": true,
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        },
+                        {
+                            "name": "s",
+                            "type": "integer",
+                            "summary": "The size of the log file to read",
+                            "description": "the size of the log file",
+                            "required": true,
+                            "x-example": "4096",
+                            "x-ctype": "uint32_t",
+                            "x-sequence-number": 2
+                        },
+                        {
+                            "name": "n",
+                            "type": "string",
+                            "summary": "Name",
+                            "description": "The absolute path name of the log on the file system",
+                            "required": true,
+                            "x-example": "/lfs/log.txt",
+                            "x-ctype": "string",
+                            "x-sequence-number": 3
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "UartLogHalt",
+            "summary": "Halt logging to the UART.  Convenience function for testing over UART.",
+            "description": "Logging can interfere with processing of SMP over UART by the client",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 19,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [
+                {
+                    "name": "p1",
+                    "summary": "Parameter 1",
+                    "description": "Halt when true, Enable (go) when false",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "x-ctype": "bool",
+                        "x-sequence-number": 1,
+                        "x-default": "true",
+                        "x-example": "false"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Result",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Result",
+                            "description": "negative error code, 0 on success",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

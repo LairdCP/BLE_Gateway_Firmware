@@ -3,7 +3,7 @@
  * @brief Defines the couple of messages reserved by Framework.
  * Application message types can also be defined here.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -29,10 +29,9 @@ enum FwkMsgCodeEnum {
 	FMC_ADV = FMC_APPLICATION_SPECIFIC_START,
 	FMC_SENSOR_PUBLISH,
 	FMC_BL654_SENSOR_EVENT,
-	FMC_GATEWAY_INIT,
 	FMC_GATEWAY_OUT,
 	FMC_SENSOR_TICK,
-	FMC_WHITELIST_REQUEST,
+	FMC_GREENLIST_REQUEST,
 	FMC_CONFIG_REQUEST,
 	FMC_CONNECT_REQUEST,
 	FMC_START_DISCOVERY,
@@ -54,6 +53,14 @@ enum FwkMsgCodeEnum {
 	FMC_FOTA_START,
 	FMC_FOTA_START_ACK,
 	FMC_FOTA_DONE,
+
+	FMC_ATTR_CHANGED,
+	FMC_FACTORY_RESET,
+
+	FMC_LTE_CONNECTED,
+	FMC_LTE_DISCONNECTED,
+	FMC_CLOUD_CONNECTED,
+	FMC_CLOUD_DISCONNECTED,
 
 	/* Last value (DO NOT DELETE) */
 	NUMBER_OF_FRAMEWORK_MSG_CODES

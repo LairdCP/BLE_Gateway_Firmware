@@ -2,7 +2,7 @@
  * @file sensor_table.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -28,10 +28,9 @@ LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 #include "lcz_sensor_event.h"
 #include "sensor_log.h"
 #include "bt510_flags.h"
-#ifdef CONFIG_BLE_CELLULAR_SERVICE
-#include "lte.h"
-#endif
 #include "sensor_table.h"
+#include "attr.h"
+
 #ifdef CONFIG_BOARD_MG100
 #include "sdcard_log.h"
 #endif
@@ -104,7 +103,7 @@ typedef struct SensorEntry {
 	int8_t rssi;
 	uint8_t lastRecordType;
 	uint32_t rxEpoch;
-	bool whitelisted;
+	bool greenlisted;
 	bool subscribed;
 	bool getAcceptedSubscribed;
 	bool shadowInitReceived;
@@ -130,9 +129,6 @@ static size_t tableCount;
 static SensorEntry_t sensorTable[CONFIG_SENSOR_TABLE_SIZE];
 static char queryCmd[CONFIG_SENSOR_QUERY_CMD_MAX_SIZE];
 static uint64_t ttlUptime;
-#ifdef CONFIG_BLE_CELLULAR_SERVICE
-static struct lte_status *pLte;
-#endif
 static bool allowGatewayShadowGeneration;
 
 /******************************************************************************/
@@ -176,11 +172,11 @@ static void ShadowRspHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry);
 static void ShadowFlagHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry);
 static void ShadowLogHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry);
 static void ShadowSpecialHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry);
-static void GatewayShadowMaker(bool WhitelistProcessed);
+static void GatewayShadowMaker(bool GreenlistProcessed);
 
 static char *MangleKey(const char *pKey, const char *pName);
-static uint32_t WhitelistByAddress(const char *pAddrString, bool NextState);
-static void Whitelist(SensorEntry_t *pEntry, bool NextState);
+static uint32_t GreenlistByAddress(const char *pAddrString, bool NextState);
+static void Greenlist(SensorEntry_t *pEntry, bool NextState);
 
 static int32_t GetTemperature(SensorEntry_t *pEntry);
 static uint32_t GetBattery(SensorEntry_t *pEntry);
@@ -202,9 +198,6 @@ void SensorTable_Initialize(void)
 	ClearTable();
 	strncpy(queryCmd, SENSOR_CMD_DEFAULT_QUERY,
 		CONFIG_SENSOR_QUERY_CMD_MAX_SIZE - 1);
-#ifdef CONFIG_BLE_CELLULAR_SERVICE
-	pLte = lteGetStatus();
-#endif
 }
 
 bool SensorTable_MatchBt510(struct net_buf_simple *ad)
@@ -303,15 +296,15 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 	}
 }
 
-void SensorTable_ProcessWhitelistRequest(SensorWhitelistMsg_t *pMsg)
+void SensorTable_ProcessGreenlistRequest(SensorGreenlistMsg_t *pMsg)
 {
 	uint32_t changed = 0;
 	size_t i;
 	for (i = 0; i < pMsg->sensorCount; i++) {
-		changed += WhitelistByAddress(pMsg->sensors[i].addrString,
-					      pMsg->sensors[i].whitelist);
+		changed += GreenlistByAddress(pMsg->sensors[i].addrString,
+					      pMsg->sensors[i].greenlist);
 	}
-	LOG_DBG("Whitelist setting changed for %u sensors", changed);
+	LOG_DBG("Greenlist setting changed for %u sensors", changed);
 
 	/* Filter out deltas due to timestamp changing. */
 	if (changed > 0) {
@@ -441,7 +434,7 @@ void SensorTable_DecomissionHandler(void)
 {
 	size_t i;
 	for (i = 0; i < CONFIG_SENSOR_TABLE_SIZE; i++) {
-		Whitelist(&sensorTable[i], false);
+		Greenlist(&sensorTable[i], false);
 		sensorTable[i].shadowInitReceived = false;
 		sensorTable[i].firstDumpComplete = false;
 	}
@@ -467,7 +460,7 @@ void SensorTable_SubscriptionHandler(void)
 		 * permissions.
 		 */
 		if (pEntry->validAd && pEntry->validRsp &&
-		    (pEntry->whitelisted != pEntry->subscribed) &&
+		    (pEntry->greenlisted != pEntry->subscribed) &&
 		    (pEntry->subscriptionDispatchTime <= k_uptime_get())) {
 			SubscribeMsg_t *pMsg =
 				BufferPool_Take(sizeof(SubscribeMsg_t));
@@ -475,7 +468,7 @@ void SensorTable_SubscriptionHandler(void)
 				pMsg->header.msgCode = FMC_SUBSCRIBE;
 				pMsg->header.rxId = FWK_ID_CLOUD;
 				pMsg->header.txId = FWK_ID_SENSOR_TASK;
-				pMsg->subscribe = pEntry->whitelisted;
+				pMsg->subscribe = pEntry->greenlisted;
 				pMsg->tableIndex = i;
 				pMsg->length =
 					snprintk(pMsg->topic,
@@ -483,7 +476,7 @@ void SensorTable_SubscriptionHandler(void)
 						 pEntry->addrString);
 				FRAMEWORK_MSG_SEND(pMsg);
 				/* For now, assume the subscription will work. */
-				pEntry->subscribed = pEntry->whitelisted;
+				pEntry->subscribed = pEntry->greenlisted;
 			}
 		}
 	}
@@ -621,7 +614,7 @@ void SensorTable_TimeToLiveHandler(void)
 		SensorEntry_t *p = &sensorTable[i];
 		if (p->inUse) {
 			p->ttl = (p->ttl > deltaS) ? (p->ttl - deltaS) : 0;
-			if (p->ttl == 0 && !p->whitelisted) {
+			if (p->ttl == 0 && !p->greenlisted) {
 				LOG_DBG("Removing '%s' sensor %s from table",
 					log_strdup(p->name),
 					log_strdup(p->addrString));
@@ -679,15 +672,12 @@ static void FreeEntryBuffers(SensorEntry_t *pEntry)
 
 static void AdEventHandler(LczSensorAdEvent_t *p, int8_t Rssi, uint32_t Index)
 {
-	if (sensorTable[Index].whitelisted) {
+	if (sensorTable[Index].greenlisted) {
 		sensorTable[Index].ttl = CONFIG_SENSOR_TTL_SECONDS;
 	}
 
 	if (NewEvent(p->id, Index)) {
 		sensorTable[Index].validAd = true;
-		LOG_EVT("New Event for [%u] '%s' (%s) RSSI: %d", Index,
-			log_strdup(sensorTable[Index].name),
-			log_strdup(sensorTable[Index].addrString), Rssi);
 		sensorTable[Index].lastRecordType =
 			sensorTable[Index].ad.recordType;
 		memcpy(&sensorTable[Index].ad, p, sizeof(LczSensorAdEvent_t));
@@ -695,6 +685,14 @@ static void AdEventHandler(LczSensorAdEvent_t *p, int8_t Rssi, uint32_t Index)
 		/* If event occurs before epoch is set, then AWS shows ~1970. */
 		sensorTable[Index].rxEpoch = lcz_qrtc_get_epoch();
 		ShadowMaker(&sensorTable[Index]);
+
+		LOG_EVT("%s event %u for [%u] '%s' (%s) RSSI: %d",
+			lcz_sensor_event_get_string(
+				sensorTable[Index].ad.recordType),
+			sensorTable[Index].ad.id, Index,
+			log_strdup(sensorTable[Index].name),
+			log_strdup(sensorTable[Index].addrString), Rssi);
+
 #ifdef CONFIG_SD_CARD_LOG
 		sdCardLogAdEvent(p);
 #endif
@@ -889,10 +887,10 @@ static bool NewEvent(uint16_t Id, size_t Index)
 static void ShadowMaker(SensorEntry_t *pEntry)
 {
 	/* AWS will disconnect if data is sent for devices that have not
-	 * been whitelisted.
+	 * been greenlisted.
 	 */
 	if (!CONFIG_USE_SINGLE_AWS_TOPIC) {
-		if (!pEntry->whitelisted || !pEntry->shadowInitReceived) {
+		if (!pEntry->greenlisted || !pEntry->shadowInitReceived) {
 			return;
 		}
 	}
@@ -1197,9 +1195,10 @@ static void ShadowLogHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 /* These special items exist on the gateway and not on the sensor */
 static void ShadowSpecialHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 {
-#ifdef CONFIG_BLE_CELLULAR_SERVICE
-	ShadowBuilder_AddPair(pMsg, "gatewayId", pLte->IMEI, false);
-#endif
+	ShadowBuilder_AddPair(pMsg, "gatewayId",
+			      (char *)attr_get_quasi_static(ATTR_ID_gatewayId),
+			      false);
+
 	ShadowBuilder_AddUint32(pMsg, "eventLogSize",
 				SensorLog_GetSize(pEntry->pLog));
 }
@@ -1217,7 +1216,7 @@ static void SensorAddrToString(SensorEntry_t *pEntry)
 	FRAMEWORK_ASSERT(count == SENSOR_ADDR_STR_LEN);
 }
 
-static void GatewayShadowMaker(bool WhitelistProcessed)
+static void GatewayShadowMaker(bool GreenlistProcessed)
 {
 	if (CONFIG_USE_SINGLE_AWS_TOPIC) {
 		return;
@@ -1241,7 +1240,7 @@ static void GatewayShadowMaker(bool WhitelistProcessed)
 	/* Setting the desired group to null lets the cloud know
 	 * that its request was processed.
 	 */
-	if (WhitelistProcessed) {
+	if (GreenlistProcessed) {
 		ShadowBuilder_AddNull(pMsg, "desired");
 	}
 	ShadowBuilder_StartGroup(pMsg, "reported");
@@ -1254,7 +1253,7 @@ static void GatewayShadowMaker(bool WhitelistProcessed)
 			ShadowBuilder_AddSensorTableArrayEntry(pMsg,
 							       p->addrString,
 							       p->rxEpoch,
-							       p->whitelisted);
+							       p->greenlisted);
 		}
 	}
 	ShadowBuilder_EndArray(pMsg);
@@ -1267,20 +1266,20 @@ static void GatewayShadowMaker(bool WhitelistProcessed)
 }
 
 /* Returns 1 if the value was changed from its current state. */
-static uint32_t WhitelistByAddress(const char *pAddrString, bool NextState)
+static uint32_t GreenlistByAddress(const char *pAddrString, bool NextState)
 {
 	size_t i;
 	for (i = 0; i < CONFIG_SENSOR_TABLE_SIZE; i++) {
 		if (AddrStringMatch(pAddrString, i)) {
-			if (sensorTable[i].whitelisted != NextState) {
-				Whitelist(&sensorTable[i], NextState);
+			if (sensorTable[i].greenlisted != NextState) {
+				Greenlist(&sensorTable[i], NextState);
 				return 1;
 			} else {
 				return 0;
 			}
 		}
 	}
-	/* Don't add it to the table if it isn't whitelisted because
+	/* Don't add it to the table if it isn't greenlisted because
 	 * the client may not care about this sensor.
 	 */
 	if (NextState) {
@@ -1290,17 +1289,17 @@ static uint32_t WhitelistByAddress(const char *pAddrString, bool NextState)
 		bt_addr_t addr = BtAddrStringToStruct(pAddrString);
 		i = AddByAddress(&addr);
 		if (i < CONFIG_SENSOR_TABLE_SIZE) {
-			Whitelist(&sensorTable[i], true);
+			Greenlist(&sensorTable[i], true);
 			return 1;
 		}
 	}
 	return 0;
 }
 
-static void Whitelist(SensorEntry_t *pEntry, bool NextState)
+static void Greenlist(SensorEntry_t *pEntry, bool NextState)
 {
-	pEntry->whitelisted = NextState;
-	if (pEntry->whitelisted) {
+	pEntry->greenlisted = NextState;
+	if (pEntry->greenlisted) {
 		pEntry->subscribed = false;
 		pEntry->getAcceptedSubscribed = false;
 		pEntry->subscriptionDispatchTime =

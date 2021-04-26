@@ -14,16 +14,19 @@ zephyr_include_directories(${CMAKE_SOURCE_DIR}/memfault)
 endif()
 
 target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/main.c
-    ${CMAKE_SOURCE_DIR}/src/nv.c
-    ${CMAKE_SOURCE_DIR}/src/jsmn_json.c
-    ${CMAKE_SOURCE_DIR}/src/button.c
-    ${CMAKE_SOURCE_DIR}/src/sensor_state.c
-    ${CMAKE_SOURCE_DIR}/src/ble.c
+    ${CMAKE_SOURCE_DIR}/common/src/main.c
+    ${CMAKE_SOURCE_DIR}/common/src/jsmn_json.c
+    ${CMAKE_SOURCE_DIR}/common/src/button.c
+    ${CMAKE_SOURCE_DIR}/common/src/ble.c
+    ${CMAKE_SOURCE_DIR}/common/src/lcz_certs.c
+    ${CMAKE_SOURCE_DIR}/common/src/gateway_common.c
+    ${CMAKE_SOURCE_DIR}/common/src/control_task.c
+    ${CMAKE_SOURCE_DIR}/common/src/gateway_fsm.c
 )
 
 target_sources_ifdef(CONFIG_MODEM_HL7800 app PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/lte.c
+    ${CMAKE_SOURCE_DIR}/common/src/lte.c
+    ${CMAKE_SOURCE_DIR}/common/src/fota_smp.c
 )
 
 if(CONFIG_CONTACT_TRACING)
@@ -42,22 +45,21 @@ target_sources_ifdef(CONFIG_CT_SHELL app PRIVATE
 )
 
 target_sources_ifdef(CONFIG_SINGLE_PERIPHERAL app PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/single_peripheral.c
+    ${CMAKE_SOURCE_DIR}/common/src/single_peripheral.c
 )
 
 target_sources_ifdef(CONFIG_WDT app PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/wdt.c)
+    ${CMAKE_SOURCE_DIR}/common/src/wdt.c)
 
-include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/common/include)
 include_directories(${CMAKE_SOURCE_DIR}/framework_config)
 include_directories(${CMAKE_SOURCE_DIR}/../../modules/jsmn)
 
 if(CONFIG_BOARD_MG100)
 target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/lairdconnect_battery.c
-    ${CMAKE_SOURCE_DIR}/src/ble_battery_service.c
-    ${CMAKE_SOURCE_DIR}/src/ble_motion_service.c
-    ${CMAKE_SOURCE_DIR}/src/sdcard_log.c
+    ${CMAKE_SOURCE_DIR}/common/src/lairdconnect_battery.c
+    ${CMAKE_SOURCE_DIR}/common/src/lcz_motion.c
+    ${CMAKE_SOURCE_DIR}/common/src/sdcard_log.c
 )
 endif()
 
@@ -65,7 +67,6 @@ if(CONFIG_LWM2M)
 include_directories(${CMAKE_SOURCE_DIR}/lwm2m/include)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/lwm2m/source/lcz_lwm2m_client.c
-    ${CMAKE_SOURCE_DIR}/lwm2m/source/ble_lwm2m_service.c
 )
 endif()
 
@@ -77,9 +78,9 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/bluegrass/source/sensor_gateway_parser.c
     ${CMAKE_SOURCE_DIR}/bluegrass/source/shadow_builder.c
     ${CMAKE_SOURCE_DIR}/bluegrass/source/to_string.c
-    ${CMAKE_SOURCE_DIR}/src/aws.c
-    ${CMAKE_SOURCE_DIR}/src/ble_aws_service.c
+    ${CMAKE_SOURCE_DIR}/common/src/aws.c
 )
+endif()
 
 if(CONFIG_SENSOR_TASK)
 target_sources(app PRIVATE
@@ -89,21 +90,10 @@ target_sources(app PRIVATE
 )
 endif()
 
-if(CONFIG_SHELL AND CONFIG_APP_AWS_CUSTOMIZATION)
-target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/aws_config.c
-)
-endif()
-endif() # CONFIG BLUEGRASS
-
 if(CONFIG_BL654_SENSOR)
 include_directories(${CMAKE_SOURCE_DIR}/bl654_sensor/include)
 target_sources(app PRIVATE ${CMAKE_SOURCE_DIR}/bl654_sensor/source/bl654_sensor.c)
 endif()
-
-target_sources_ifdef(CONFIG_BLE_SENSOR_SERVICE app PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/ble_sensor_service.c
-)
 
 if (CONFIG_COAP_FOTA)
 include_directories(${CMAKE_SOURCE_DIR}/coap/include)
@@ -126,8 +116,32 @@ target_sources_ifdef(CONFIG_MODEM_HL7800 app PRIVATE
 )
 endif() # CONFIG_HTTP_FOTA
 
+include_directories(${CMAKE_SOURCE_DIR}/attributes/custom/include)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/attributes/custom/source/attr_table.c
+    ${CMAKE_SOURCE_DIR}/attributes/custom/source/attr_custom_validator.c
+)
+
+include_directories(${CMAKE_SOURCE_DIR}/attributes/universal/include)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/attributes/universal/source/attr.c
+    ${CMAKE_SOURCE_DIR}/attributes/universal/source/attr_validator.c
+)
+
+if(CONFIG_ATTR_SHELL)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/attributes/universal/source/attr_shell.c
+)
+endif()
+
+if(CONFIG_MCUMGR_CMD_SENTRIUS_MGMT)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/attributes/universal/source/sentrius_mgmt.c
+)
+endif()
+
 if(CONFIG_SHELL AND CONFIG_MODEM_HL7800)
 target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/lcz_modem_shell.c
+    ${CMAKE_SOURCE_DIR}/common/src/lcz_modem_shell.c
 )
 endif()

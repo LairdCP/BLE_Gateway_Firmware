@@ -2,7 +2,7 @@
  * @file coap_fota_task.c
  * @brief
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -140,7 +140,7 @@ static bool transport_not_required(void);
 /******************************************************************************/
 /* Framework Message Dispatcher                                               */
 /******************************************************************************/
-static FwkMsgHandler_t coap_fota_taskMsgDispatcher(FwkMsgCode_t MsgCode)
+static FwkMsgHandler_t *coap_fota_taskMsgDispatcher(FwkMsgCode_t MsgCode)
 {
 	/* clang-format off */
 	switch (MsgCode) {
@@ -631,6 +631,6 @@ static bool transport_not_required(void)
 {
 	return (cfto.app_context.using_transport ||
 		cfto.modem_context.using_transport) ?
-		       false :
-		       true;
+			     false :
+			     true;
 }

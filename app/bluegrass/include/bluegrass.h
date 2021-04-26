@@ -2,7 +2,7 @@
  * @file bluegrass.h
  * @brief Bluegrass is Laird Connectivity's AWS interface.
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -25,42 +25,50 @@ extern "C" {
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
 /**
- * @brief Initialize sensor task.  The sensor task will process messages from
- * the BT510.
+ * @brief Initialize Bluegrass gateway interface.
  *
- * @param pQ is a pointer to the queue that the Sensor Task will receive
- * messages from to send to AWS.
+ * Initialize sensor task if enabled.  The sensor task will process messages
+ * from the BT510.
  */
-void Bluegrass_Initialize(FwkQueue_t *pQ);
+void bluegrass_initialize(void);
 
 /**
- * @brief Subscribe and post to topics for individual sensors.  Post sensor
- * list to gateway topic.
- *
- * @param pMsg is a message containing an AWS interaction.
- * @param pFreeMsg is set to true if the message can be freed.
- *
- * @retval zero for success
+ * @brief Request shadow init to be sent.
  */
-int Bluegrass_MsgHandler(FwkMsg_t *pMsg, bool *pFreeMsg);
+void bluegrass_init_shadow_request(void);
 
 /**
- * @brief The gateway shadow must be processed on connection.
+ * @brief Framework message handler for gateway and sensor data.
+ */
+DispatchResult_t bluegrass_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+				       FwkMsg_t *pMsg);
+
+/**
+ * @brief Must be periodically called to process subscriptions.
+ * The gateway shadow must be processed on connection.
  * The delta topic must be subscribed to.
+ *
+ * @retval negative error code, 0 on success
  */
-void Bluegrass_ConnectedCallback(void);
+int bluegrass_subscription_handler(void);
+
+/**
+ * @brief Notify other parts of system that a cloud connection has started.
+ * Start heartbeat.  Init shadow if required. Send CT stashed data.
+ */
+void bluegrass_connected_callback(void);
 
 /**
  * @brief The sensor task can discard data if the connection to AWS is lost.
  */
-void Bluegrass_DisconnectedCallback(void);
+void bluegrass_disconnected_callback(void);
 
 /**
  * @brief Accessor function
  *
  * @retval true if system is ready for publishing to AWS/Bluegrass
  */
-bool Bluegrass_ReadyForPublish(void);
+bool bluegrass_ready_for_publish(void);
 
 #ifdef __cplusplus
 }

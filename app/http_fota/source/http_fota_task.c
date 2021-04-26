@@ -93,7 +93,7 @@ static int initiate_update(fota_context_t *pCtx);
 /******************************************************************************/
 /* Framework Message Dispatcher                                               */
 /******************************************************************************/
-static FwkMsgHandler_t http_fota_taskMsgDispatcher(FwkMsgCode_t MsgCode)
+static FwkMsgHandler_t *http_fota_taskMsgDispatcher(FwkMsgCode_t MsgCode)
 {
 	/* clang-format off */
 	switch (MsgCode) {

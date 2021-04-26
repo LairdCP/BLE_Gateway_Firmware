@@ -2,7 +2,7 @@
  * @file ct_ble.h
  * @brief Contact Tracing
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -18,8 +18,6 @@ extern "C" {
 /******************************************************************************/
 #include <zephyr/types.h>
 #include <stddef.h>
-
-#include "sensor_state.h"
 
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
@@ -39,11 +37,11 @@ void ct_ble_initialize(void);
 int ct_adv_on_button_isr(void);
 
 /**
- * @brief Returns state of machine looking for CT sensors
+ * @brief Accessor function
  *
- * @retval sensor state
+ * @retval true if CT isn't downloading logs from a sensor
  */
-enum sensor_state ct_ble_get_state(void);
+bool ct_ble_is_not_downloading_logs(void);
 
 /**
  * @brief SMP echo command used for testing.
@@ -56,13 +54,6 @@ void ct_ble_smp_echo_test(void);
  * @retval true if next request can be sent, false otherwise.
  */
 bool ct_ble_send_next_smp_request(uint32_t new_off);
-
-/**
- * @brief Setter
- *
- * @param nwkId network ID used in advertisements.  Saved in nv.
- */
-void ct_ble_set_network_id(uint16_t nwkId);
 
 /**
  * @brief Determine if entries that weren't able to be sent can now be

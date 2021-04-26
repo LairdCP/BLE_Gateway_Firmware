@@ -1,0 +1,4089 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "Pinnacle Parameters",
+    "version": "0.4.1"
+  },
+  "methods": {
+    "$ref": "file:./sentrius_methods.json"
+  },
+  "components": {
+    "contentDescriptors": {
+      "deviceParams": {
+        "name": "Device Parameters",
+        "schema": {
+          "name": "Sentrius Attributes",
+          "type": "array"
+        },
+        "x-device-parameters": [
+          {
+            "name": "sensorName",
+            "summary": "Sensor Name",
+            "required": true,
+            "x-id": 0,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "maximum": 23,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "BT610",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "location",
+            "summary": "Device Location",
+            "required": true,
+            "x-id": 1,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "NA",
+              "x-example": "myRoom",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "advertisingInterval",
+            "summary": "Advertising Interval in milliseconds",
+            "required": true,
+            "x-id": 2,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 20.0,
+              "maximum": 10000.0,
+              "x-ctype": "uint16_t",
+              "x-default": "1000",
+              "x-example": "1000",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "advertisingDuration",
+            "summary": "Advertising duration of an event in milliseconds. 0=No events advertised",
+            "required": true,
+            "x-id": 3,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 65535.0,
+              "x-ctype": "uint16_t",
+              "x-default": "15000",
+              "x-example": "15000",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "passkey",
+            "summary": "Six-Digit Numeric Passkey",
+            "required": true,
+            "x-id": 4,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999.0,
+              "x-ctype": "uint32_t",
+              "x-default": "123456",
+              "x-example": "987654",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lock",
+            "summary": "true = locked, false = unlocked: Used by the mobile APP to indicate settings are locked\n When true, lockable parameters can't be changed",
+            "required": true,
+            "x-id": 5,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "false",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "batterySenseInterval",
+            "summary": "Battery Sense interval in seconds",
+            "required": true,
+            "x-id": 6,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 86400.0,
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "60",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-broadcast": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "temperatureSenseInterval",
+            "summary": "Temperature Sense interval in seconds",
+            "required": true,
+            "x-id": 7,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 86400.0,
+              "x-ctype": "uint32_t",
+              "x-default": "60",
+              "x-example": "10",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-broadcast": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "aggregationCount",
+            "summary": "Aggregation value used on all the sensor data",
+            "required": true,
+            "x-id": 8,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 1.0,
+              "maximum": 32.0,
+              "x-ctype": "uint8_t",
+              "x-default": "1",
+              "x-example": "5",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "digitalOutput1State",
+            "summary": "false = off, true - on",
+            "required": true,
+            "x-id": 9,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "digitalOutput2State",
+            "summary": "false = off, true - on",
+            "required": true,
+            "x-id": 10,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "firmwareVersion",
+            "summary": "Firmware Version.\nFormat = Major.Minor.Build",
+            "required": true,
+            "x-id": 11,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 3,
+              "maximum": 11,
+              "x-ctype": "string",
+              "x-default": "0.0.0",
+              "x-example": "1.0.0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "resetReason",
+            "summary": "For Development",
+            "required": true,
+            "x-id": 12,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "x-ctype": "string",
+              "maximum": 12,
+              "x-default": "RESETPIN",
+              "x-example": "DOG",
+              "x-readable": true,
+              "x-savable": true
+            }
+          },
+          {
+            "name": "bluetoothAddress",
+            "summary": "Bluetooth MAC",
+            "required": true,
+            "x-id": 13,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 12,
+              "maximum": 12,
+              "x-ctype": "string",
+              "x-default": "0",
+              "x-example": "010203040506",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "resetCount",
+            "summary": "reset Count",
+            "required": true,
+            "x-id": 14,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "1",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "bootloaderVersion",
+            "summary": "Bootloader Version\nFormat = Major.Minor",
+            "required": true,
+            "x-id": 15,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 3,
+              "maximum": 11,
+              "x-ctype": "string",
+              "x-default": "0.0",
+              "x-example": "0.0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "upTime",
+            "summary": "Time in milliseconds since the last reboot",
+            "required": true,
+            "x-id": 16,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "int64_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "highTemp1Thresh1",
+            "summary": "High Temperature Alarm Threshold 1 in degrees C",
+            "required": true,
+            "x-id": 17,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "127",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highTemp1Thresh2",
+            "summary": "High Temperature Alarm Threshold 2 in degrees C",
+            "required": true,
+            "x-id": 18,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "127",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowTemp1Thresh1",
+            "summary": "Low Temperature Alarm Threshold 1 in degrees C",
+            "required": true,
+            "x-id": 19,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "-128",
+              "x-example": "-40",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowTemp1Thresh2",
+            "summary": "Low Temperature Alarm Threshold 2 in degrees C",
+            "required": true,
+            "x-id": 20,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "-128",
+              "x-example": "-40",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "temp1DeltaThresh",
+            "summary": "Delta Temperature Alarm Threshold in degrees C",
+            "description": "Disabled when negative",
+            "required": true,
+            "x-id": 21,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -1.0,
+              "maximum": 255.0,
+              "x-ctype": "float",
+              "x-default": "-1",
+              "x-example": "255",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highTemp2Thresh1",
+            "summary": "High Temperature Alarm Threshold 1 in degrees C",
+            "required": true,
+            "x-id": 22,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "127",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highTemp2Thresh2",
+            "summary": "High Temperature Alarm Threshold 2 in degrees C",
+            "required": true,
+            "x-id": 23,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "127",
+              "x-example": "120",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowTemp2Thresh1",
+            "summary": "Low Temperature Alarm Threshold 1 in degrees C",
+            "required": true,
+            "x-id": 24,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "-128",
+              "x-example": "-40",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowTemp2Thresh2",
+            "summary": "Low Temperature Alarm Threshold 2 in degrees C",
+            "required": true,
+            "x-id": 25,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "-128",
+              "x-example": "-40",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "temp2DeltaThresh",
+            "summary": "Delta Temperature Alarm Threshold",
+            "required": true,
+            "x-id": 26,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -1.0,
+              "maximum": 255.0,
+              "x-ctype": "float",
+              "x-default": "-1",
+              "x-example": "255",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highTemp3Thresh1",
+            "summary": "High Temperature Alarm Threshold 1 in degrees C",
+            "required": true,
+            "x-id": 27,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "127",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highTemp3Thresh2",
+            "summary": "High Temperature Alarm Threshold 2 in degrees C",
+            "required": true,
+            "x-id": 28,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "127",
+              "x-example": "120",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowTemp3Thresh1",
+            "summary": "Low Temperature Alarm Threshold 1 in degrees C",
+            "required": true,
+            "x-id": 29,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "-128",
+              "x-example": "-40",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowTemp3Thresh2",
+            "summary": "Low Temperature Alarm Threshold 2 in degrees C",
+            "required": true,
+            "x-id": 30,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "-128",
+              "x-example": "-40",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "temp3DeltaThresh",
+            "summary": "Delta Temperature Alarm Threshold",
+            "required": true,
+            "x-id": 31,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -1.0,
+              "maximum": 255.0,
+              "x-ctype": "float",
+              "x-default": "-1",
+              "x-example": "255",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highTemp4Thresh1",
+            "summary": "High Temperature Alarm Threshold 1 in degrees C",
+            "required": true,
+            "x-id": 32,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "127",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highTemp4Thresh2",
+            "summary": "High Temperature Alarm Threshold 2 in degrees C",
+            "required": true,
+            "x-id": 33,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "127",
+              "x-example": "120",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowTemp4Thresh1",
+            "summary": "Low Temperature Alarm Threshold 1 in degrees C",
+            "required": true,
+            "x-id": 34,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "-128",
+              "x-example": "-40",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowTemp4Thresh2",
+            "summary": "Low Temperature Alarm Threshold 2 in degrees C",
+            "required": true,
+            "x-id": 35,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -128.0,
+              "maximum": 127.0,
+              "x-ctype": "float",
+              "x-default": "-128",
+              "x-example": "-40",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "temp4DeltaThresh",
+            "summary": "Delta Temperature Alarm Threshold",
+            "required": true,
+            "x-id": 36,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -1.0,
+              "maximum": 255.0,
+              "x-ctype": "float",
+              "x-default": "-1",
+              "x-example": "255",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highAnalog1Thresh1",
+            "summary": "High Analog Alarm Threshold 1. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 37,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highAnalog1Thresh2",
+            "summary": "High Analog Alarm Threshold 2. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 38,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowAnalog1Thresh1",
+            "summary": "Low Analog Alarm Threshold 1. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 39,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowAnalog1Thresh2",
+            "summary": "Low Analog Alarm Threshold 2. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 40,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "analog1DeltaThresh",
+            "summary": "Delta Analog Alarm Threshold. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 41,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highAnalog2Thresh1",
+            "summary": "High Analog Alarm Threshold 1. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 42,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highAnalog2Thresh2",
+            "summary": "High Analog Alarm Threshold 2. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 43,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowAnalog2Thresh1",
+            "summary": "Low Analog Alarm Threshold 1. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 44,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowAnalog2Thresh2",
+            "summary": "Low Analog Alarm Threshold 2. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 45,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "analog2DeltaThresh",
+            "summary": "Delta Analog Alarm Threshold. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 46,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highAnalog3Thresh1",
+            "summary": "High Analog Alarm Threshold 1. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 47,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highAnalog3Thresh2",
+            "summary": "High Analog Alarm Threshold 2. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 48,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowAnalog3Thresh1",
+            "summary": "Low Analog Alarm Threshold 1. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 49,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowAnalog3Thresh2",
+            "summary": "Low Analog Alarm Threshold 2. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 50,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "analog3DeltaThresh",
+            "summary": "Delta Analog Alarm Threshold. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 51,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highAnalog4Thresh1",
+            "summary": "High Analog Alarm Threshold 1. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 52,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "highAnalog4Thresh2",
+            "summary": "High Analog Alarm Threshold 2. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 53,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowAnalog4Thresh1",
+            "summary": "Low Analog Alarm Threshold 1. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 54,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lowAnalog4Thresh2",
+            "summary": "Low Analog Alarm Threshold 2. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 55,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "analog4DeltaThresh",
+            "summary": "Delta Analog Alarm Threshold. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 56,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "x-ctype": "float",
+              "x-default": "4095",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "activeMode",
+            "summary": "0 = inactive (shelf mode)\n1 = active (sample enabled)",
+            "required": true,
+            "x-id": 57,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "false",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "useCodedPhy",
+            "summary": "Coded Phy Value",
+            "required": true,
+            "x-id": 58,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "true",
+              "x-example": "false",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-broadcast": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "txPower",
+            "summary": "Bluetooth Tx Power (dBm)",
+            "required": false,
+            "x-id": 59,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -40.0,
+              "maximum": 8.0,
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "8",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "networkId",
+            "summary": "Network Id used in advertisement.",
+            "required": true,
+            "x-id": 60,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 65535.0,
+              "x-ctype": "uint16_t",
+              "x-default": "0",
+              "x-example": "100",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "configVersion",
+            "summary": "Config Version",
+            "description": "This is used for synchronization between clients (Bluegrass/Phone application).",
+            "required": true,
+            "x-id": 61,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 255.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "10",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "configType",
+            "summary": "Predetermined configurations (modes of operation)",
+            "description": "Writing this will cause other attributes to be set with the correct value.",
+            "required": true,
+            "x-id": 62,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 255.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "2",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "enum": {
+                "NOT_CONFIGURED": 0,
+                "ANALOG": 1,
+                "DIGITAL": 2,
+                "TEMPERATURE": 3,
+                "CURRENT": 4,
+                "ULTRASONIC_PRESSURE": 5,
+                "SPI_OR_I2C": 6
+              }
+            }
+          },
+          {
+            "name": "hardwareVersion",
+            "summary": "Hardware version set during production",
+            "required": true,
+            "x-id": 63,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 255.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "3",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ge",
+            "summary": "ADC Calibrated Thermistor Gain Error",
+            "required": true,
+            "x-id": 64,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": -5.0,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "1.0",
+              "x-example": "0.998",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "oe",
+            "summary": "ADC calibrated offset error",
+            "required": true,
+            "x-id": 65,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": -16.0,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.0",
+              "x-example": "-12.2",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "oldCoefficientA",
+            "summary": "This is not used",
+            "required": true,
+            "x-id": 66,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.001132",
+              "x-example": "0.001132",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-deprecated": true
+            }
+          },
+          {
+            "name": "oldCoefficientB",
+            "summary": "This is not used",
+            "required": true,
+            "x-id": 67,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.0002338",
+              "x-example": "0.0002338",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-deprecated": true
+            }
+          },
+          {
+            "name": "oldCoefficientC",
+            "summary": "This is not used",
+            "required": true,
+            "x-id": 68,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "8.780e-8",
+              "x-example": "8.780e-8",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-deprecated": true
+            }
+          },
+          {
+            "name": "thermistorConfig",
+            "summary": "Bitmask of Thermistor Inputs.  Bit 0 is thermistor 1.  1 is enabled, 0 is disabled",
+            "required": true,
+            "x-id": 69,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 15.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "temperatureResult1",
+            "summary": "Temperature in C",
+            "required": true,
+            "x-id": 70,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "float",
+              "minimum": -3.4e+38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "temperatureResult2",
+            "summary": "Temperature in C",
+            "required": true,
+            "x-id": 71,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -3.4e+38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "temperatureResult3",
+            "summary": "Temperature in C",
+            "required": true,
+            "x-id": 72,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -3.4e+38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "temperatureResult4",
+            "summary": "Temperature in C",
+            "required": true,
+            "x-id": 73,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": -3.4e+38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "temperatureAlarms",
+            "summary": "Bitmask for all 4 channels and each alarm.\n dddddcccccbbbbbaaaaa",
+            "description": "",
+            "required": true,
+            "x-id": 74,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 1048575.0,
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-lockable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "enum": {
+                "PORT1_H1_BITMASK ": 1,
+                "PORT1_H2_BITMASK ": 2,
+                "PORT1_L1_BITMASK ": 4,
+                "PORT1_L2_BITMASK ": 8,
+                "PORT1_DELTA_BITMASK ": 16,
+                "PORT2_H1_BITMASK ": 32,
+                "PORT2_H2_BITMASK ": 64,
+                "PORT2_L1_BITMASK ": 128,
+                "PORT2_L2_BITMASK ": 256,
+                "PORT2_DELTA_BITMASK ": 512,
+                "PORT3_H1_BITMASK ": 1024,
+                "PORT3_H2_BITMASK ": 2048,
+                "PORT3_L1_BITMASK ": 4096,
+                "PORT3_L2_BITMASK ": 8192,
+                "PORT3_DELTA_BITMASK ": 16384,
+                "PORT4_H1_BITMASK ": 32768,
+                "PORT4_H2_BITMASK ": 65535,
+                "PORT4_L1_BITMASK ": 131072,
+                "PORT4_L2_BITMASK ": 262144,
+                "PORT4_DELTA_BITMASK ": 524288
+              }
+            }
+          },
+          {
+            "name": "batteryVoltageMv",
+            "summary": "Battery Voltage in millivolts",
+            "description": "Not a float to match previous system",
+            "required": true,
+            "x-id": 75,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint16_t",
+              "x-default": "0",
+              "x-example": "3000",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "digitalInput",
+            "summary": "Bit 0 is digital input 1, Bit 1 is digital input 2",
+            "required": true,
+            "x-id": 76,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 3.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-lockable": true,
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "digitalAlarms",
+            "summary": "Bitmask of alarms for Digital Inputs 1 and 2; Alarm is set when 1",
+            "description": "Bit 0 = Input 1, Bit 1 = Input 2",
+            "required": true,
+            "x-id": 77,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 3.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "1",
+              "x-lockable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-savable": true
+            }
+          },
+          {
+            "name": "digitalInput1Config",
+            "summary": "Bit 7 : Enable/Disable; Bits 1:0 Alarm Enumeration:\n 0 = None\n 1 = falling edge\n 2 = rising edge\n 3 = both",
+            "required": true,
+            "x-id": 78,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 131.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "128",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "digitalInput2Config",
+            "summary": "Bit 7 : Enable/Disable; Bits 1:0 Alarm Enumeration:\n 0 = None\n 1 = falling edge\n 2 = rising edge\n 3 = both",
+            "required": true,
+            "x-id": 79,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 131.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "128",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "analogInput1",
+            "summary": "Unit depends on Analog Input Configuration Type. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 80,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4095.0,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "analogInput2",
+            "summary": "Unit depends on Analog Input Configuration Type. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 81,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4095.0,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "analogInput3",
+            "summary": "Unit depends on Analog Input Configuration Type. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 82,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4095.0,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "analogInput4",
+            "summary": "Unit depends on Analog Input Configuration Type. Units will either be in mV or mA",
+            "required": true,
+            "x-id": 83,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4095.0,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "analogAlarms",
+            "summary": "Bitmask for all 4 channels and each alarm.\n dddddcccccbbbbbaaaaa",
+            "description": "",
+            "required": true,
+            "x-id": 84,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 1048575.0,
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-lockable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-savable": true,
+              "enum": {
+                "PORT1_H1_BITMASK": 1,
+                "PORT1_H2_BITMASK": 2,
+                "PORT1_L1_BITMASK": 4,
+                "PORT1_L2_BITMASK": 8,
+                "PORT1_DELTA_BITMASK": 16,
+                "PORT2_H1_BITMASK": 32,
+                "PORT2_H2_BITMASK": 64,
+                "PORT2_L1_BITMASK": 128,
+                "PORT2_L2_BITMASK": 256,
+                "PORT2_DELTA_BITMASK": 512,
+                "PORT3_H1_BITMASK": 1024,
+                "PORT3_H2_BITMASK": 2048,
+                "PORT3_L1_BITMASK": 4096,
+                "PORT3_L2_BITMASK": 8192,
+                "PORT3_DELTA_BITMASK": 16384,
+                "PORT4_H1_BITMASK": 32768,
+                "PORT4_H2_BITMASK": 65535,
+                "PORT4_L1_BITMASK": 131072,
+                "PORT4_L2_BITMASK": 262144,
+                "PORT4_DELTA_BITMASK": 524288
+              }
+            }
+          },
+          {
+            "name": "analogInput1Type",
+            "summary": "Analog Input Channel 1 configuration",
+            "description": "If changing a pressure sensor port, then any active pressure sensor ports must be first set to 0.",
+            "required": true,
+            "x-id": 85,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-validator": "aic",
+              "enum": {
+                "Unused": 0,
+                "Voltage 0V to 10V DC": 1,
+                "Current 4mA to 20mA": 2,
+                "Pressure": 3,
+                "Ultrasonic": 4,
+                "AC Current 20A": 5,
+                "AC Current 150A": 6,
+                "AC Current 500A": 7
+              }
+            }
+          },
+          {
+            "name": "analogInput2Type",
+            "summary": "Analog Input Channel 2 configuration",
+            "required": true,
+            "x-id": 86,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-validator": "aic"
+            }
+          },
+          {
+            "name": "analogInput3Type",
+            "summary": "Analog Input Channel 3 configuration",
+            "required": true,
+            "x-id": 87,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-validator": "aic"
+            }
+          },
+          {
+            "name": "analogInput4Type",
+            "summary": "Analog Input Channel 4 configuration",
+            "required": true,
+            "x-id": 88,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-validator": "aic"
+            }
+          },
+          {
+            "name": "flags",
+            "summary": "Flags",
+            "required": true,
+            "x-id": 89,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "1",
+              "x-broadcast": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "magnetState",
+            "summary": "Proximity of magnet to sensor (Door Open/Closed)",
+            "required": true,
+            "x-id": 90,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-readable": true,
+              "enum": {
+                "FAR_DOOR_OPEN": true,
+                "NEAR_DOOR_CLOSED": false
+              }
+            }
+          },
+          {
+            "name": "paramPath",
+            "summary": "Folder on file system used for Parse/Dump commands",
+            "required": true,
+            "x-id": 91,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 2,
+              "maximum": 8,
+              "x-ctype": "string",
+              "x-default": "/ext",
+              "x-example": "/lfs",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "batteryAge",
+            "summary": "Time in seconds that the battery has been in use",
+            "required": true,
+            "x-id": 92,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "attributeVersion",
+            "summary": "The API attribute version that the firmware supports",
+            "required": true,
+            "x-id": 93,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 6,
+              "maximum": 11,
+              "x-ctype": "string",
+              "x-default": "0.4.1",
+              "x-example": "123.456.789",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "qrtc",
+            "summary": "Quasi-RTC (epoch in seconds often referenced from from Jan 1, 1970)",
+            "required": true,
+            "x-id": 94,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "qrtcLastSet",
+            "summary": "Last time the RTC was set",
+            "required": false,
+            "x-id": 95,
+            "x-projects": [
+              "BT610",
+              "BT510",
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-savable": true,
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "shOffset",
+            "summary": "Steinhart-Hart Temperature Equation offset",
+            "required": true,
+            "x-id": 96,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "273.15",
+              "x-example": "273.15",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "analogSenseInterval",
+            "summary": "analog Sense interval in seconds",
+            "required": true,
+            "x-id": 97,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 86400.0,
+              "x-ctype": "uint32_t",
+              "x-default": "60",
+              "x-example": "10",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-broadcast": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "tamperSwitchStatus",
+            "summary": "Returns the current state of the tamper switch",
+            "description": "True = Tamper switch active (not pressed) \nFalse = Tamper switch inactive (pressed).",
+            "required": true,
+            "x-id": 98,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "false",
+              "x-readable": true,
+              "x-savable": true,
+              "x-broadcast": true,
+              "enum": {
+                "ACTIVE_NOT_PRESSED": true,
+                "INACTIVE_PRESSED": false
+              }
+            }
+          },
+          {
+            "name": "connectionTimeoutSec",
+            "summary": "How long the device connected to the app in seconds \nSetting to 0 will disable",
+            "required": true,
+            "x-id": 99,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 255.0,
+              "x-ctype": "uint8_t",
+              "x-default": "60",
+              "x-example": "30",
+              "x-validator": "cp8",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "settingsPassCode",
+            "summary": "Six digit numeric pass code to unlock device settings.",
+            "required": true,
+            "x-id": 100,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999,
+              "x-ctype": "uint32_t",
+              "x-default": "123456",
+              "x-example": "987654",
+              "x-backup": true,
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm1CoefficientA",
+            "summary": "Steinhart-Hart Temperature Equation coefficient A",
+            "required": true,
+            "x-id": 101,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.001132",
+              "x-example": "0.001132",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm2CoefficientA",
+            "summary": "Steinhart-Hart Temperature Equation coefficient A",
+            "required": true,
+            "x-id": 102,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.001132",
+              "x-example": "0.001132",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm3CoefficientA",
+            "summary": "Steinhart-Hart Temperature Equation  coefficient A",
+            "required": true,
+            "x-id": 103,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.001132",
+              "x-example": "0.001132",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm4CoefficientA",
+            "summary": "Steinhart-Hart Temperature Equation coefficient A",
+            "required": true,
+            "x-id": 104,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.001132",
+              "x-example": "0.001132",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm1CoefficientB",
+            "summary": "Steinhart-Hart Temperature Equation coefficient B",
+            "required": true,
+            "x-id": 105,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.0002338",
+              "x-example": "0.0002338",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm2CoefficientB",
+            "summary": "Steinhart-Hart Temperature Equation  coefficient B",
+            "required": true,
+            "x-id": 106,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.0002338",
+              "x-example": "0.0002338",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm3CoefficientB",
+            "summary": "Steinhart-Hart Temperature Equation coefficient B",
+            "required": true,
+            "x-id": 107,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.0002338",
+              "x-example": "0.0002338",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm4CoefficientB",
+            "summary": "Steinhart-Hart Temperature Equation coefficient B",
+            "required": true,
+            "x-id": 108,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "0.0002338",
+              "x-example": "0.0002338",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm1CoefficientC",
+            "summary": "Steinhart-Hart Temperature Equation  coefficient C",
+            "required": true,
+            "x-id": 109,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "8.780e-8",
+              "x-example": "8.780e-8",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm2CoefficientC",
+            "summary": "Steinhart-Hart Temperature Equation coefficient C",
+            "required": true,
+            "x-id": 110,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "8.780e-8",
+              "x-example": "8.780e-8",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm3CoefficientC",
+            "summary": "Steinhart-Hart Temperature Equation coefficient C",
+            "required": true,
+            "x-id": 111,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "8.780e-8",
+              "x-example": "8.780e-8",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "therm4CoefficientC",
+            "summary": "Steinhart-Hart Temperature Equation  coefficient C",
+            "required": true,
+            "x-id": 112,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "number",
+              "minimum": 1.2e-38,
+              "maximum": 3.4e+38,
+              "x-ctype": "float",
+              "x-default": "8.780e-8",
+              "x-example": "8.780e-8",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "dataLoggingEnable",
+            "summary": "0 = disable, 1 = enable ",
+            "required": true,
+            "x-id": 113,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "factoryResetEnable",
+            "summary": "false = disable, true = enable ",
+            "required": true,
+            "x-id": 114,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "true",
+              "x-example": "false",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "logFileStatus",
+            "summary": "Status of log operation",
+            "required": true,
+            "x-id": 115,
+            "x-projects": [
+              "BT610",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 3,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "1",
+              "x-readable": true,
+              "x-prepare": true,
+              "enum": {
+                "WAITING_FOR_PREPARE_COMMAND": 0,
+                "PREPARING": 1,
+                "READY": 2,
+                "FAILED": 3
+              }
+            }
+          },
+          {
+            "name": "pressureAlarm",
+            "summary": "Pressure Alarm in PSI",
+            "required": true,
+            "x-id": 116,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4095,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "1",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "pressurePinSelected",
+            "summary": "Pressure pin(s) chosen bitmask",
+            "required": true,
+            "x-id": 117,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 15,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "1",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-broadcast": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ultrasonicAlarm",
+            "summary": "Pressure Alarm in millimeters",
+            "required": true,
+            "x-id": 118,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4095,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "1",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "name",
+            "summary": "Name of the device.  Generated by firmware: combines board type + portion of IMEI",
+            "required": true,
+            "x-id": 140,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "Pinnacle DVK",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "board",
+            "summary": "Board Identifier",
+            "required": true,
+            "x-id": 142,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "buildId",
+            "summary": "Hash of firmware image",
+            "required": true,
+            "x-id": 143,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "maximum": 64,
+              "x-ctype": "string",
+              "x-default": "0",
+              "x-example": "c92fd5a0c5de7a7bb3f9a52594e0d4b415469c82",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "appType",
+            "summary": "Type of software application that is running",
+            "description": "",
+            "required": true,
+            "x-id": 144,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "AWS, LWM2M, CT",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "mount",
+            "summary": "Mount point for file system accessible by SMP",
+            "required": true,
+            "x-id": 145,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "/lfs",
+              "x-example": "/ext",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "commissioned",
+            "summary": "Write (Control Point): true - Causes certs to be loaded, false - Causes cloud connection to be closed and certs to be unloaded. Read: true when commissioned with AWS",
+            "description": "It is recommended to read certStatus after writing this.  Wait until it isn't busy.  If it is negative, read cloudError; otherwise wait for commissionedBusy to be false before writing this value again.",
+            "required": true,
+            "x-id": 146,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-validator": "cpb"
+            }
+          },
+          {
+            "name": "certStatus",
+            "summary": "Status of certificate loader: negative errno",
+            "required": true,
+            "x-id": 147,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "-1",
+              "x-readable": true,
+              "enum": {
+                "BUSY": 1,
+                "SUCCESS": 0,
+                "EPERM": -1
+              }
+            }
+          },
+          {
+            "name": "rootCaName",
+            "summary": "Root Certificate absolute file name",
+            "required": true,
+            "x-id": 148,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 48,
+              "x-ctype": "string",
+              "x-default": "/lfs/root_ca.pem",
+              "x-example": "/lfs/AmazonRootCA1.pem",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "clientCertName",
+            "summary": "Client (Device) Certificate absolute file name",
+            "required": true,
+            "x-id": 149,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 48,
+              "x-ctype": "string",
+              "x-default": "/lfs/client_cert.pem",
+              "x-example": "/lfs/fdc55248f1-certificate.pem.crt",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "clientKeyName",
+            "summary": "Client (Device) Key absolute file name",
+            "required": true,
+            "x-id": 150,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 48,
+              "x-ctype": "string",
+              "x-default": "/lfs/client_key.pem",
+              "x-example": "/lfs/fdc55248f1-private.pem.key",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "endpoint",
+            "summary": "(Amazon Web Services) Hostname",
+            "required": true,
+            "x-id": 151,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 254,
+              "x-ctype": "string",
+              "x-default": "a3273rvo818l4w-ats.iot.us-east-1.amazonaws.com",
+              "x-example": "host.com",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "port",
+            "summary": "(Amazon Web Server) Port",
+            "required": true,
+            "x-id": 152,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 4,
+              "maximum": 16,
+              "x-ctype": "string",
+              "x-default": "8883",
+              "x-example": "8883",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "clientId",
+            "summary": "(AWS) Client Id",
+            "required": true,
+            "x-id": 153,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "MG100",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "topicPrefix",
+            "summary": "Topic Prefix (for Contact Tracing publishing)",
+            "required": true,
+            "x-id": 154,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "mg100-ct/dev/gw/",
+              "x-example": "mg100-ct/dev/gw/",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gatewayState",
+            "summary": "Gateway State",
+            "required": true,
+            "x-id": 155,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "POWER_UP_INIT": 0,
+                "WAIT_BEFORE_NETWORK_INIT": 1,
+                "WAIT_FOR_NETWORK": 2,
+                "NETWORK_CONNECTED": 3,
+                "NETWORK_DISCONNECTED": 4,
+                "NETWORK_ERROR": 5,
+                "WAIT_FOR_COMMISSION": 6,
+                "RESOLVE_SERVER": 7,
+                "WAIT_BEFORE_CLOUD_CONNECT": 8,
+                "CLOUD_CONNECTED": 9,
+                "CLOUD_WAIT_FOR_DISCONNECT": 10,
+                "CLOUD_DISCONNECTED": 11,
+                "CLOUD_ERROR": 12,
+                "FOTA_BUSY ": 13,
+                "DECOMMISSION": 14,
+                "CLOUD_REQUEST_DISCONNECT": 15,
+                "CLOUD_CONNECTING": 16
+              }
+            }
+          },
+          {
+            "name": "batteryCapacity",
+            "summary": "Battery Capacity",
+            "required": false,
+            "x-id": 157,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "2",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "batteryTemperature",
+            "summary": "Battery Temperature",
+            "required": false,
+            "x-id": 158,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int16_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "batteryChargingState",
+            "summary": "Enumeration of charging state: Bit 0 = External Power State, Bit 1 = The battery is charging, Bit 2 = The battery is not charging, Bit 3 The battery is discharging.",
+            "required": false,
+            "x-id": 159,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "batteryLowThreshold",
+            "summary": "Battery Low Threshold in millivolts",
+            "required": false,
+            "x-id": 160,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 65535.0,
+              "x-ctype": "uint16_t",
+              "x-default": "3400",
+              "x-example": "3400",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "batteryAlarmThreshold",
+            "summary": "Battery Alarm Threshold in millivolts",
+            "required": false,
+            "x-id": 161,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 65535.0,
+              "x-ctype": "uint16_t",
+              "x-default": "3000",
+              "x-example": "3000",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "battery4",
+            "summary": "The highest threshold in millivolts for a 4-segment charging meter",
+            "required": false,
+            "x-id": 162,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 65535.0,
+              "x-ctype": "uint16_t",
+              "x-default": "4200",
+              "x-example": "4200",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "battery3",
+            "summary": "A threshold in millivolts for a 4-segment charging meter",
+            "required": false,
+            "x-id": 163,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 65535.0,
+              "x-ctype": "uint16_t",
+              "x-default": "3800",
+              "x-example": "3800",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "battery2",
+            "summary": "A threshold in millivolts for a 4-segment charging meter",
+            "required": false,
+            "x-id": 164,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 65535.0,
+              "x-ctype": "uint16_t",
+              "x-default": "3400",
+              "x-example": "3400",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "battery1",
+            "summary": "A threshold in millivolts for a 4-segment charging meter",
+            "required": false,
+            "x-id": 165,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 65535.0,
+              "x-ctype": "uint16_t",
+              "x-default": "3000",
+              "x-example": "3000",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "battery0",
+            "summary": "The lowest threshold in millivolts for a 4-segment charging meter",
+            "required": false,
+            "x-id": 166,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 65535.0,
+              "x-ctype": "uint16_t",
+              "x-default": "2750",
+              "x-example": "2750",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "batteryAlarm",
+            "summary": "Value indicating the low battery alarm state.",
+            "required": false,
+            "x-id": 167,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "motionOdr",
+            "summary": "Accelerometer Output Data Rate",
+            "required": true,
+            "x-id": 168,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 255.0,
+              "x-ctype": "uint8_t",
+              "x-default": "5",
+              "x-example": "0",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "motionThresh",
+            "summary": "Accelerometer Threshold",
+            "required": true,
+            "x-id": 169,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 255.0,
+              "x-ctype": "uint8_t",
+              "x-default": "10",
+              "x-example": "10",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "motionScale",
+            "summary": "Accelerometer Scale",
+            "required": true,
+            "x-id": 170,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 255.0,
+              "x-ctype": "uint8_t",
+              "x-default": "2",
+              "x-example": "2",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "motionDuration",
+            "summary": "Accelerometer Motion Duration",
+            "required": true,
+            "x-id": 171,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 255.0,
+              "x-ctype": "uint8_t",
+              "x-default": "6",
+              "x-example": "6",
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "motionAlarm",
+            "summary": "1 - Motion, 0 - No Motion",
+            "required": true,
+            "x-id": 172,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "sdLogMaxSize",
+            "summary": "",
+            "required": true,
+            "x-id": 173,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "?",
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ctAesKey",
+            "summary": "AES key used for Contact Tracing",
+            "required": true,
+            "x-id": 174,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "array",
+              "x-array-size": 16,
+              "x-ctype": "uint8_t",
+              "x-default": "{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }",
+              "x-example": "0",
+              "x-savable": true,
+              "x-writeable": true
+            }
+          },
+          {
+            "name": "powerSupplyVoltage",
+            "summary": "Measured power supply in volts.  Not valid for MG100",
+            "required": false,
+            "x-id": 175,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 10.0,
+              "x-ctype": "float",
+              "x-default": "0",
+              "x-example": "3.3",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gatewayId",
+            "summary": "ASCII string representing the IMEI (if modem present), otherwise Bluetooth MAC address",
+            "required": true,
+            "x-id": 176,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 15,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lteNetworkState",
+            "summary": "LTE network state enumeration",
+            "required": true,
+            "x-id": 177,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "NOT_REGISTERED": 0,
+                "HOME_NETWORK": 1,
+                "SEARCHING": 2,
+                "REGISTRATION_DENIED": 3,
+                "OUT_OF_COVERAGE": 4,
+                "ROAMING": 5,
+                "EMERGENCY": 8,
+                "UNABLE_TO_CONFIGURE": 240
+              }
+            }
+          },
+          {
+            "name": "lteStartupState",
+            "summary": "Modem startup state",
+            "required": true,
+            "x-id": 178,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "READY": 0,
+                "WAITING_FOR_ACCESS_CODE": 1,
+                "SIM_NOT_PRESENT": 2,
+                "SIM_LOCK": 3,
+                "UNRECOVERABLE_ERROR": 4,
+                "UNKNOWN": 5,
+                "INACTIVE_SIM": 6
+              }
+            }
+          },
+          {
+            "name": "lteRsrp",
+            "summary": "Reference Signals Receive Power (RSRP) in dBm",
+            "required": true,
+            "x-id": 179,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int16_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lteSinr",
+            "summary": "Signal to Interference plus Noise Ratio (SINR) in dBm",
+            "required": true,
+            "x-id": 180,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int16_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lteSleepState",
+            "summary": "Sleep state of driver",
+            "required": true,
+            "x-id": 181,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "UNINITIALIZED": 0,
+                "ASLEEP": 1,
+                "AWAKE": 2
+              }
+            }
+          },
+          {
+            "name": "lteRat",
+            "summary": "Radio Access Technology: 0 - CAT M1, 1 = CAT NB1",
+            "required": true,
+            "x-id": 182,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 1.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "iccid",
+            "summary": "",
+            "required": true,
+            "x-id": 183,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 20,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lteSerialNumber",
+            "summary": "",
+            "required": true,
+            "x-id": 184,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 14,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lteVersion",
+            "summary": "Firmware version of the LTE modem",
+            "required": true,
+            "x-id": 185,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 29,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "bands",
+            "summary": "",
+            "required": true,
+            "x-id": 186,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 20,
+              "maximum": 20,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "activeBands",
+            "summary": "",
+            "required": true,
+            "x-id": 187,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 20,
+              "maximum": 20,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "centralState",
+            "summary": "Enumeration of central device's sensor state for communication with BL654 Sensor, BT510-CT, and BT710-CT",
+            "required": true,
+            "x-id": 188,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "FINDING_DEVICE": 0,
+                "FINDING_SERVICE": 1,
+                "FINDING_ESS_TEMPERATURE_CHAR": 2,
+                "FINDING_ESS_HUMIDITY_CHAR": 3,
+                "FINDING_ESS_PRESSURE_CHAR": 4,
+                "CONNECTED_AND_CONFIGURED": 5,
+                "FINDING_SMP_CHAR": 6,
+                "CHALLENGE_REQUEST": 7,
+                "CHALLENGE_RESPONSE": 8,
+                "LOG_DOWNLOAD": 9
+              }
+            }
+          },
+          {
+            "name": "sensorBluetoothAddress",
+            "summary": "Unprocessed output from address formatter",
+            "required": true,
+            "x-id": 189,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 30,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "joinDelay",
+            "summary": "Write: Control point - Write 0 to generate new delay with value between (min, max) and a multiple of interval. Read: Randomized time in seconds to delay before joining",
+            "required": true,
+            "x-id": 190,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-savable": true,
+              "x-broadcast": true,
+              "x-writeable": true,
+              "x-readable": true,
+              "x-validator": "cp32"
+            }
+          },
+          {
+            "name": "joinMin",
+            "summary": "Minimum delay is joinMin * joinInterval",
+            "required": true,
+            "x-id": 191,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint16_t",
+              "x-default": "1",
+              "x-example": "0",
+              "x-writeable": true,
+              "x-savable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "joinMax",
+            "summary": "Maximum delay is joinMax * joinInterval",
+            "required": true,
+            "x-id": 192,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint16_t",
+              "x-default": "100",
+              "x-example": "0",
+              "x-writeable": true,
+              "x-savable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "joinInterval",
+            "summary": "Interval in milliseconds.  Determines separation between devices",
+            "required": true,
+            "x-id": 193,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint32_t",
+              "x-default": "1",
+              "x-example": "1000",
+              "x-writeable": true,
+              "x-savable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "networkJoinDelayed",
+            "summary": "If true the network attach is delayed.  If false, the cloud join is delayed.  This value mirrors a compile time constant",
+            "required": true,
+            "x-id": 194,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "delayCloudReconnect",
+            "summary": "If true, then cloud reconnects will be delayed by joinDelay",
+            "required": true,
+            "x-id": 195,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-writeable": true,
+              "x-savable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "apn",
+            "summary": "The LTE network access point name.",
+            "required": true,
+            "x-id": 196,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 64,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "apnUsername",
+            "summary": "The LTE network username",
+            "required": true,
+            "x-id": 197,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 65,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "apnPassword",
+            "summary": "The LTE network password",
+            "required": true,
+            "x-id": 198,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 65,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "apnControlPoint",
+            "summary": "Writing any value triggers update of APN in modem",
+            "required": true,
+            "x-id": 199,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-writeable": true,
+              "x-broadcast": true,
+              "x-validator": "cp8"
+            }
+          },
+          {
+            "name": "apnStatus",
+            "summary": "Status of setting APN: 0 - success, negative errno",
+            "description": "Result from mdm_hl7800_update_apn",
+            "required": true,
+            "x-id": 200,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "modemDesiredLogLevel",
+            "summary": "All levels below set value will be logged.  Value cannot be set higher than CONFIG_MODEM_LOG_LEVEL",
+            "required": true,
+            "x-id": 201,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 4.0,
+              "x-ctype": "uint32_t",
+              "x-default": "1",
+              "x-example": "4",
+              "x-readable": true,
+              "x-writeable": true,
+              "x-savable": true,
+              "x-broadcast": true,
+              "x-validator": "cp32",
+              "x-zephyr-enum": {
+                "NONE": 0,
+                "ERROR": 1,
+                "WARNING": 2,
+                "INFO": 3,
+                "DEBUG": 4
+              }
+            }
+          },
+          {
+            "name": "lteOperatorIndex",
+            "summary": "Operator Index",
+            "required": true,
+            "x-id": 202,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "255",
+              "x-example": "5",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "fotaControlPoint",
+            "summary": "Firmware update over-the-air Control Point",
+            "required": true,
+            "x-id": 203,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-writeable": true,
+              "x-broadcast": true,
+              "enum": {
+                "NOP": 0,
+                "MODEM_START": 2
+              },
+              "x-validator": "cp8"
+            }
+          },
+          {
+            "name": "fotaStatus",
+            "summary": "Status of FOTA operation",
+            "required": true,
+            "x-id": 204,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "SUCCESS": 0,
+                "BUSY": 1,
+                "ERROR": 2
+              }
+            }
+          },
+          {
+            "name": "fotaFileName",
+            "summary": "Absolute file name used for FOTA operation",
+            "required": true,
+            "x-id": 205,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 64,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true,
+              "x-writeable": true
+            }
+          },
+          {
+            "name": "fotaSize",
+            "summary": "Size in bytes of FOTA image",
+            "required": true,
+            "x-id": 206,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "fotaCount",
+            "summary": "Bytes processed in FOTA image.  Final value may be larger than size due to alignment.",
+            "required": true,
+            "x-id": 207,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "loadPath",
+            "summary": "(Default) Absolute file name for load parameters command",
+            "required": true,
+            "x-id": 208,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "/lfs/params.txt",
+              "x-example": "/ext/params.txt",
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "dumpPath",
+            "summary": "(Default) Absolute file name for dump command",
+            "required": true,
+            "x-id": 209,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "/lfs/dump.txt",
+              "x-example": "/ext/dump.txt",
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "nvImported",
+            "summary": "NV was imported into parameters",
+            "required": false,
+            "x-id": 210,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-savable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "floaty",
+            "summary": "floating point value for unit testing",
+            "required": false,
+            "x-id": 211,
+            "x-projects": [
+              "MG100",
+              "BT510"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "float",
+              "x-default": "0.13",
+              "x-example": "0.0",
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "generatePsk",
+            "summary": "Write (Control Point) to generate new PSK",
+            "required": true,
+            "x-id": 212,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "maximum": 1.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "1",
+              "x-broadcast": true,
+              "x-writeable": true,
+              "x-validator": "cp8",
+              "enum": {
+                "RESERVED": 0,
+                "LIGHTWEIGHT_MOBILE_TO_MOBILE": 1
+              }
+            }
+          },
+          {
+            "name": "lwm2mPsk",
+            "summary": "LWM2M Private Shared Key",
+            "required": true,
+            "x-id": 213,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "array",
+              "x-array-size": 16,
+              "x-ctype": "uint8_t",
+              "x-default": "{ 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f }",
+              "x-example": "0",
+              "x-savable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lwm2mClientId",
+            "summary": "Client",
+            "required": true,
+            "x-id": 214,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "Client_identity",
+              "x-example": "Client_1234",
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lwm2mPeerUrl",
+            "summary": "URL for LWM2M Demo",
+            "required": true,
+            "x-id": 215,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 6,
+              "maximum": 128,
+              "x-ctype": "string",
+              "x-default": "uwterminalx.lairdconnect.com",
+              "x-example": "name.com",
+              "x-savable": true,
+              "x-writeable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lteInitError",
+            "summary": "Initialization status of LTE module",
+            "required": true,
+            "x-id": 216,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "NONE": 0,
+                "NO_IFACE": -1,
+                "IFACE_CFG": -2,
+                "DNS_CFG": -3
+              }
+            }
+          },
+          {
+            "name": "cloudError",
+            "summary": "Initialization status of demo (endpoint, id, credentials)",
+            "required": true,
+            "x-id": 217,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "NONE": 0,
+                "INIT_ENDPOINT": -1,
+                "INIT_CLIENT_ID": -2,
+                "INIT_ROOT_CA": -3,
+                "READ_CRED_FS": -4,
+                "CRED_SIZE": -5,
+                "INIT_TOPIC_PREFIX": -6,
+                "INIT_CLIENT_CERT": -7,
+                "INIT_CLIENT_KEY": -8
+              }
+            }
+          },
+          {
+            "name": "commissioningBusy",
+            "summary": "Remains true when commissioning is in progress and until cloud connect is attempted.",
+            "description": "If certs fail to load, this flag will be set to false. See commissioned, certStatus and cloudError.",
+            "required": true,
+            "x-id": 218,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "imsi",
+            "summary": "international mobile subscriber identity",
+            "description": "",
+            "required": true,
+            "x-id": 219,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "x-ctype": "string",
+              "minimum": 14,
+              "maximum": 15,
+              "x-default": "",
+              "x-example": "",
+              "x-readable": true
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
  * @file ct_fs_intercept.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -22,10 +22,9 @@ LOG_MODULE_REGISTER(ct_fs_intercept, CONFIG_CT_FS_INTERCEPT_LOG_LEVEL);
 #include "mgmt/mgmt.h"
 #include "fs_mgmt/fs_mgmt_config.h"
 
-#include "ble_aws_service.h"
-#include "nv.h"
+#include "attr.h"
+#include "file_system_utilities.h"
 #include "ct_ble.h"
-#include "lcz_qrtc.h"
 
 #include "ct_fs_intercept.h"
 
@@ -169,27 +168,26 @@ static char *terminate_and_trim(char *str, int len)
  */
 static int smp_nv_mapper_aws_topic_prefix(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
-	int rc;
+	int rc = -EPERM;
 
 	fs_mgmt_ctxt->uploading = false;
 	fs_mgmt_ctxt->off = fs_mgmt_ctxt->data_len;
 
-	if (fs_mgmt_ctxt->data_len > 0 &&
-	    fs_mgmt_ctxt->data_len < AWS_TOPIC_PREFIX_MAX_LENGTH &&
-	    (fs_mgmt_ctxt->data_len + 1) < FS_MGMT_DL_CHUNK_SIZE) {
+	if ((fs_mgmt_ctxt->data_len + 1) < FS_MGMT_DL_CHUNK_SIZE) {
 		/* null-terminate and remove whitespace */
 		terminate_and_trim(fs_mgmt_ctxt->file_data,
 				   fs_mgmt_ctxt->data_len);
-		rc = nvStoreAwsTopicPrefix(fs_mgmt_ctxt->file_data,
-					   fs_mgmt_ctxt->data_len);
-		aws_svc_set_topic_prefix((const char *)fs_mgmt_ctxt->file_data);
-		if (rc) {
-			return MGMT_ERR_EINVAL;
-		}
-	} else {
-		return MGMT_ERR_EINVAL;
+		rc = attr_set_string(ATTR_ID_topicPrefix,
+				     fs_mgmt_ctxt->file_data,
+				     fs_mgmt_ctxt->data_len);
 	}
-	return 0;
+
+	if (rc) {
+		return MGMT_ERR_EINVAL;
+	} else {
+		ct_ble_topic_builder();
+		return 0;
+	}
 }
 
 /**
@@ -197,7 +195,7 @@ static int smp_nv_mapper_aws_topic_prefix(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
  */
 static int smp_nv_mapper_ble_network_id(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
-	int rc;
+	int rc = -EPERM;
 	uint16_t nwkId;
 
 	fs_mgmt_ctxt->uploading = false;
@@ -209,15 +207,14 @@ static int smp_nv_mapper_ble_network_id(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 		terminate_and_trim(fs_mgmt_ctxt->file_data,
 				   fs_mgmt_ctxt->data_len);
 		nwkId = strtoul(fs_mgmt_ctxt->file_data, NULL, 16) & 0xFFFF;
-		rc = nvStoreBleNetworkId(&nwkId);
-		ct_ble_set_network_id(nwkId);
-		if (rc) {
-			return MGMT_ERR_EINVAL;
-		}
-	} else {
-		return MGMT_ERR_EINVAL;
+		rc = attr_set_uint32(ATTR_ID_networkId, nwkId);
 	}
-	return 0;
+
+	if (rc) {
+		return MGMT_ERR_EINVAL;
+	} else {
+		return 0;
+	}
 }
 
 /**
@@ -225,6 +222,7 @@ static int smp_nv_mapper_ble_network_id(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
  */
 static int smp_nv_mapper_mqtt_client_id(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
+	int rc = -EPERM;
 	fs_mgmt_ctxt->uploading = false;
 	fs_mgmt_ctxt->off = fs_mgmt_ctxt->data_len;
 
@@ -233,16 +231,20 @@ static int smp_nv_mapper_mqtt_client_id(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 		/* null-terminate and remove whitespace */
 		terminate_and_trim(fs_mgmt_ctxt->file_data,
 				   fs_mgmt_ctxt->data_len);
-		LOG_DBG(">> client_id: %s", fs_mgmt_ctxt->file_data);
-		aws_svc_set_client_id(fs_mgmt_ctxt->file_data);
-	} else {
-		return MGMT_ERR_EINVAL;
+		rc = attr_set_string(ATTR_ID_clientId, fs_mgmt_ctxt->file_data,
+				     fs_mgmt_ctxt->data_len);
 	}
-	return 0;
+
+	if (rc) {
+		return MGMT_ERR_EINVAL;
+	} else {
+		return 0;
+	}
 }
 
 static int smp_nv_mapper_mqtt_endpoint(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
+	int rc = -EPERM;
 	fs_mgmt_ctxt->uploading = false;
 	fs_mgmt_ctxt->off = fs_mgmt_ctxt->data_len;
 
@@ -252,97 +254,125 @@ static int smp_nv_mapper_mqtt_endpoint(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 		terminate_and_trim(fs_mgmt_ctxt->file_data,
 				   fs_mgmt_ctxt->data_len);
 		LOG_DBG(">> mqtt_endpoint: %s", fs_mgmt_ctxt->file_data);
-		aws_svc_set_endpoint(fs_mgmt_ctxt->file_data);
-	} else {
-		return MGMT_ERR_EINVAL;
+		rc = attr_set_string(ATTR_ID_endpoint, fs_mgmt_ctxt->file_data,
+				     fs_mgmt_ctxt->data_len);
 	}
-	return 0;
+
+	if (rc) {
+		return MGMT_ERR_EINVAL;
+	} else {
+		return 0;
+	}
 }
 
 static int smp_nv_mapper_mqtt_root_ca(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
+	int rc = -EPERM;
+
 	if (fs_mgmt_ctxt->data_len > 0 &&
 	    (fs_mgmt_ctxt->data_len + 1) < FS_MGMT_DL_CHUNK_SIZE) {
-		/* Make sure this file can fit in the root ca value buffer */
 		if (fs_mgmt_ctxt->off == 0) {
-			if (fs_mgmt_ctxt->len > (AWS_ROOT_CA_MAX_LENGTH + 1)) {
-				return MGMT_ERR_ENOMEM;
-			}
+			rc = fsu_write_abs(
+				attr_get_quasi_static(ATTR_ID_rootCaName),
+				fs_mgmt_ctxt->file_data,
+				fs_mgmt_ctxt->data_len);
+		} else {
+			rc = fsu_append_abs(
+				attr_get_quasi_static(ATTR_ID_rootCaName),
+				fs_mgmt_ctxt->file_data,
+				fs_mgmt_ctxt->data_len);
 		}
 
-		/* copy in this chunk to the root ca value buffer */
-		aws_svc_set_root_ca_partial(fs_mgmt_ctxt->file_data,
-					    fs_mgmt_ctxt->off,
-					    fs_mgmt_ctxt->data_len);
-		fs_mgmt_ctxt->off += fs_mgmt_ctxt->data_len;
-		if (fs_mgmt_ctxt->off >= fs_mgmt_ctxt->len) {
-			fs_mgmt_ctxt->uploading = false;
-			LOG_DBG("updated root_ca %d bytes", fs_mgmt_ctxt->len);
+		if (rc >= 0) {
+			fs_mgmt_ctxt->off += fs_mgmt_ctxt->data_len;
+			if (fs_mgmt_ctxt->off >= fs_mgmt_ctxt->len) {
+				fs_mgmt_ctxt->uploading = false;
+				LOG_DBG("updated root_ca %d bytes",
+					fs_mgmt_ctxt->len);
+			}
 		}
-	} else {
-		return MGMT_ERR_EINVAL;
 	}
-	return 0;
+
+	if (rc < 0) {
+		return MGMT_ERR_EINVAL;
+	} else {
+		return 0;
+	}
 }
 
 static int smp_nv_mapper_mqtt_client_cert(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
+	int rc = -EPERM;
+
 	if (fs_mgmt_ctxt->data_len > 0 &&
 	    (fs_mgmt_ctxt->data_len + 1) < FS_MGMT_DL_CHUNK_SIZE) {
-		/* Make sure this file can fit in the client cert value buffer */
 		if (fs_mgmt_ctxt->off == 0) {
-			if (fs_mgmt_ctxt->len >
-			    (AWS_CLIENT_CERT_MAX_LENGTH + 1)) {
-				return MGMT_ERR_ENOMEM;
-			}
+			rc = fsu_write_abs(
+				attr_get_quasi_static(ATTR_ID_clientCertName),
+				fs_mgmt_ctxt->file_data,
+				fs_mgmt_ctxt->data_len);
+		} else {
+			rc = fsu_append_abs(
+				attr_get_quasi_static(ATTR_ID_clientCertName),
+				fs_mgmt_ctxt->file_data,
+				fs_mgmt_ctxt->data_len);
 		}
 
-		/* copy in this chunk to the client cert value buffer */
-		aws_svc_set_client_cert_partial(fs_mgmt_ctxt->file_data,
-						fs_mgmt_ctxt->off,
-						fs_mgmt_ctxt->data_len);
-		fs_mgmt_ctxt->off += fs_mgmt_ctxt->data_len;
-		if (fs_mgmt_ctxt->off >= fs_mgmt_ctxt->len) {
-			fs_mgmt_ctxt->uploading = false;
-			LOG_DBG("updated client_cert %d bytes",
-				fs_mgmt_ctxt->len);
+		if (rc >= 0) {
+			fs_mgmt_ctxt->off += fs_mgmt_ctxt->data_len;
+			if (fs_mgmt_ctxt->off >= fs_mgmt_ctxt->len) {
+				fs_mgmt_ctxt->uploading = false;
+				LOG_DBG("updated client_cert %d bytes",
+					fs_mgmt_ctxt->len);
+			}
 		}
-	} else {
-		return MGMT_ERR_EINVAL;
 	}
-	return 0;
+
+	if (rc < 0) {
+		return MGMT_ERR_EINVAL;
+	} else {
+		return 0;
+	}
 }
 
 static int smp_nv_mapper_mqtt_client_key(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
+	int rc = -EPERM;
+
 	if (fs_mgmt_ctxt->data_len > 0 &&
 	    (fs_mgmt_ctxt->data_len + 1) < FS_MGMT_DL_CHUNK_SIZE) {
-		/* Make sure this file can fit in the client key value buffer */
 		if (fs_mgmt_ctxt->off == 0) {
-			if (fs_mgmt_ctxt->len >
-			    (AWS_CLIENT_KEY_MAX_LENGTH + 1)) {
-				return MGMT_ERR_ENOMEM;
-			}
+			rc = fsu_write_abs(
+				attr_get_quasi_static(ATTR_ID_clientKeyName),
+				fs_mgmt_ctxt->file_data,
+				fs_mgmt_ctxt->data_len);
+		} else {
+			rc = fsu_append_abs(
+				attr_get_quasi_static(ATTR_ID_clientKeyName),
+				fs_mgmt_ctxt->file_data,
+				fs_mgmt_ctxt->data_len);
 		}
 
-		/* copy in this chunk to the client key value buffer */
-		aws_svc_set_client_key_partial(fs_mgmt_ctxt->file_data,
-					       fs_mgmt_ctxt->off,
-					       fs_mgmt_ctxt->data_len);
-		fs_mgmt_ctxt->off += fs_mgmt_ctxt->data_len;
-		if (fs_mgmt_ctxt->off >= fs_mgmt_ctxt->len) {
-			fs_mgmt_ctxt->uploading = false;
-			LOG_DBG("updated client_key %d bytes",
-				fs_mgmt_ctxt->len);
+		if (rc >= 0) {
+			fs_mgmt_ctxt->off += fs_mgmt_ctxt->data_len;
+			if (fs_mgmt_ctxt->off >= fs_mgmt_ctxt->len) {
+				fs_mgmt_ctxt->uploading = false;
+				LOG_DBG("updated client_key %d bytes",
+					fs_mgmt_ctxt->len);
+			}
 		}
-	} else {
-		return MGMT_ERR_EINVAL;
 	}
-	return 0;
+
+	if (rc < 0) {
+		return MGMT_ERR_EINVAL;
+	} else {
+		return 0;
+	}
 }
 
 static int smp_nv_mapper_mqtt_save_clear(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
+	int rc = -EPERM;
 	fs_mgmt_ctxt->uploading = false;
 	fs_mgmt_ctxt->off = fs_mgmt_ctxt->data_len;
 
@@ -352,7 +382,9 @@ static int smp_nv_mapper_mqtt_save_clear(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 		terminate_and_trim(fs_mgmt_ctxt->file_data,
 				   fs_mgmt_ctxt->data_len);
 		LOG_DBG(">> mqtt_save_clear: %s", fs_mgmt_ctxt->file_data);
+#if 0
 		bool save = strtoul(fs_mgmt_ctxt->file_data, NULL, 10);
+
 		aws_svc_save_clear_settings(save);
 
 		if (save) {
@@ -360,11 +392,14 @@ static int smp_nv_mapper_mqtt_save_clear(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 		} else {
 			awsSvcEvent(AWS_SVC_EVENT_SETTINGS_CLEARED);
 		}
-
-	} else {
-		return MGMT_ERR_EINVAL;
+#endif
 	}
-	return 0;
+
+	if (rc < 0) {
+		return MGMT_ERR_EINVAL;
+	} else {
+		return 0;
+	}
 }
 
 /**
@@ -372,23 +407,20 @@ static int smp_nv_mapper_mqtt_save_clear(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
  */
 static int smp_nv_mapper_aes_key(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
-	int rc;
-	uint8_t aesKey[AES_KEY_SIZE];
-
+	int rc = -EPERM;
 	fs_mgmt_ctxt->uploading = false;
 	fs_mgmt_ctxt->off = fs_mgmt_ctxt->data_len;
 
 	if (fs_mgmt_ctxt->data_len > 0 &&
 	    (fs_mgmt_ctxt->data_len + 1) < FS_MGMT_DL_CHUNK_SIZE) {
-		if (fs_mgmt_ctxt->data_len >= AES_KEY_SIZE) {
-			memcpy(aesKey, fs_mgmt_ctxt->file_data, AES_KEY_SIZE);
-			rc = nvStoreAesKey(aesKey);
-			if (rc) {
-				return MGMT_ERR_EINVAL;
-			}
-		}
-	} else {
-		return MGMT_ERR_EINVAL;
+		rc = attr_set_byte_array(ATTR_ID_ctAesKey,
+					 fs_mgmt_ctxt->file_data,
+					 fs_mgmt_ctxt->data_len);
 	}
-	return 0;
+
+	if (rc < 0) {
+		return MGMT_ERR_EINVAL;
+	} else {
+		return 0;
+	}
 }

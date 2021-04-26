@@ -3,7 +3,7 @@
  * @brief
  *
  * Copyright (c) 2018 Intel Corporation
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -85,7 +85,7 @@ static const sec_tag_t COAP_FOTA_TLS_TAG_LIST[] = {
 #endif
 
 #define BREAK_ON_ERROR(x)                                                      \
-	if (r < 0) {                                                           \
+	if (x < 0) {                                                           \
 		break;                                                         \
 	}
 
@@ -307,8 +307,8 @@ static int process_coap_reply(coap_fota_query_t *p)
 			if (type == COAP_TYPE_CON) {
 				uint8_t code =
 					p->block_xfer ?
-						COAP_CODE_EMPTY :
-						coap_header_get_code(&cf.reply);
+						      COAP_CODE_EMPTY :
+						      coap_header_get_code(&cf.reply);
 				r = packet_build_ack_from_con(code);
 				if (r == 0) {
 					r = lcz_sock_send(&cf.sock_info,
@@ -571,7 +571,8 @@ static int packet_append_uri_path(const uint8_t *path)
 			if (r < 0) {
 				LOG_ERR("Unable add URI path to request");
 			} else if (false) {
-				LOG_DBG("Adding %u chars of '%s' to URI path", s2 - s1, log_strdup(s1));
+				LOG_DBG("Adding %u chars of '%s' to URI path",
+					s2 - s1, log_strdup(s1));
 			}
 			if (s2 != end) {
 				s1 = s2 + 1;

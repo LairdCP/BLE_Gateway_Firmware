@@ -25,10 +25,9 @@ LOG_MODULE_REGISTER(hl7800_http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
-
-/******************************************************************************/
-/* Global Data Definitions                                                    */
-/******************************************************************************/
+#ifndef CONFIG_FOTA_FS_MOUNT
+#define CONFIG_FOTA_FS_MOUNT "/lfs"
+#endif
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -49,7 +48,8 @@ static void hl7800_fota_send_error_evt(enum fota_download_error_cause cause);
 #ifdef CONFIG_FOTA_DOWNLOAD_PROGRESS_EVT
 static void hl7800_fota_send_progress(int progress);
 #endif
-static int hl7800_download_client_callback(const struct download_client_evt *event);
+static int
+hl7800_download_client_callback(const struct download_client_evt *event);
 
 /******************************************************************************/
 /* Framework Message Dispatcher                                               */
@@ -65,13 +65,13 @@ int hl7800_download_client_init(fota_download_callback_t client_callback)
 	/* ensure a non-null callback value is sent */
 	if (client_callback > 0) {
 		hl7800_fota_callback = client_callback;
-	}
-	else {
+	} else {
 		return -EINVAL;
 	}
 
 	/* modem fota initialization */
-	err = download_client_init(&hl7800_dlc, hl7800_download_client_callback);
+	err = download_client_init(&hl7800_dlc,
+				   hl7800_download_client_callback);
 	if (err != 0) {
 		LOG_ERR("Could not init HL7800 MODEM FOTA download %d", err);
 	}
@@ -80,8 +80,8 @@ int hl7800_download_client_init(fota_download_callback_t client_callback)
 }
 
 int hl7800_download_start(fota_context_t *pCtx, const char *host,
-            const char *file, int sec_tag, const char *apn,
-            size_t fragment_size)
+			  const char *file, int sec_tag, const char *apn,
+			  size_t fragment_size)
 {
 	int err = -1;
 
@@ -105,7 +105,8 @@ int hl7800_download_start(fota_context_t *pCtx, const char *host,
 
 	/* if we are starting from a 0 offset, ensure we are starting fresh */
 	if (hl7800_file_offset == 0) {
-		if (fsu_delete_files(CONFIG_FOTA_FS_MOUNT, pCtx->file_path) < 0) {
+		if (fsu_delete_files(CONFIG_FOTA_FS_MOUNT, pCtx->file_path) <
+		    0) {
 			LOG_INF("HL7800 Firmware Update File Doesn't Exist");
 		}
 	}
@@ -137,19 +138,28 @@ int hl7800_initiate_modem_update(fota_context_t *pCtx)
 		memset(hl7800_update_file_hash, 0, FSU_HASH_SIZE);
 
 		LOG_DBG("Computing hash for %s", log_strdup(pCtx->file_path));
-		sha_r = fsu_sha256(hl7800_update_file_hash, CONFIG_FOTA_FS_MOUNT,
-					pCtx->file_path, file_size);
+		sha_r = fsu_sha256(hl7800_update_file_hash,
+				   CONFIG_FOTA_FS_MOUNT, pCtx->file_path,
+				   file_size);
 
 		/* only attempt to compare hash values if we were able to compute a hash on the file */
 		if (sha_r == 0) {
-			hash_len = http_fota_convert_hash(pCtx->type, hl7800_update_expected_hash, FSU_HASH_SIZE);
+			hash_len = http_fota_convert_hash(
+				pCtx->type, hl7800_update_expected_hash,
+				FSU_HASH_SIZE);
 			if (hash_len == FSU_HASH_SIZE) {
 				/* only attempt an update if we've correctly downloaded the full image */
-				if (!memcmp(hl7800_update_expected_hash, hl7800_update_file_hash, FSU_HASH_SIZE)) {
+				if (!memcmp(hl7800_update_expected_hash,
+					    hl7800_update_file_hash,
+					    FSU_HASH_SIZE)) {
 					LOG_INF("Hash values match. Initiating hl7800 modem update.");
-					(void)fsu_build_full_name(hl7800_update_abs_path, sizeof(hl7800_update_abs_path), CONFIG_FOTA_FS_MOUNT,
+					(void)fsu_build_full_name(
+						hl7800_update_abs_path,
+						sizeof(hl7800_update_abs_path),
+						CONFIG_FOTA_FS_MOUNT,
 						pCtx->file_path);
-					err = mdm_hl7800_update_fw(hl7800_update_abs_path);
+					err = mdm_hl7800_update_fw(
+						hl7800_update_abs_path);
 				}
 			}
 		}
@@ -166,7 +176,8 @@ int hl7800_initiate_modem_update(fota_context_t *pCtx)
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static int hl7800_download_client_callback(const struct download_client_evt *event)
+static int
+hl7800_download_client_callback(const struct download_client_evt *event)
 {
 	static bool first_fragment = true;
 	static size_t file_size;
@@ -179,19 +190,24 @@ static int hl7800_download_client_callback(const struct download_client_evt *eve
 	switch (event->id) {
 	case DOWNLOAD_CLIENT_EVT_FRAGMENT: {
 		if (first_fragment) {
-			err = download_client_file_size_get(&hl7800_dlc, &file_size);
+			err = download_client_file_size_get(&hl7800_dlc,
+							    &file_size);
 			if (err == 0) {
 				first_fragment = false;
 			} else {
-				hl7800_fota_send_error_evt(FOTA_DOWNLOAD_ERROR_CAUSE_DOWNLOAD_FAILED);
+				hl7800_fota_send_error_evt(
+					FOTA_DOWNLOAD_ERROR_CAUSE_DOWNLOAD_FAILED);
 			}
 		}
-		err = fsu_append(CONFIG_FSU_MOUNT_POINT, http_fota_get_downloaded_filename(MODEM_IMAGE_TYPE), (void *)event->fragment.buf,
-				       event->fragment.len);
+		err = fsu_append(
+			CONFIG_FSU_MOUNT_POINT,
+			http_fota_get_downloaded_filename(MODEM_IMAGE_TYPE),
+			(void *)event->fragment.buf, event->fragment.len);
 		if (err < 0) {
 			LOG_ERR("fs write error %d", err);
-			(void) download_client_disconnect(&hl7800_dlc);
-			hl7800_fota_send_error_evt(FOTA_DOWNLOAD_ERROR_CAUSE_DOWNLOAD_FAILED);
+			(void)download_client_disconnect(&hl7800_dlc);
+			hl7800_fota_send_error_evt(
+				FOTA_DOWNLOAD_ERROR_CAUSE_DOWNLOAD_FAILED);
 
 			return err;
 		} else {
@@ -200,14 +216,16 @@ static int hl7800_download_client_callback(const struct download_client_evt *eve
 #ifdef CONFIG_FOTA_DOWNLOAD_PROGRESS_EVT
 		if (file_size == 0) {
 			LOG_DBG("invalid file size: %d", file_size);
-			hl7800_fota_send_error_evt(FOTA_DOWNLOAD_ERROR_CAUSE_DOWNLOAD_FAILED);
+			hl7800_fota_send_error_evt(
+				FOTA_DOWNLOAD_ERROR_CAUSE_DOWNLOAD_FAILED);
 
 			return err;
 		}
-		hl7800_fota_send_progress((hl7800_file_offset * 100) / file_size);
+		hl7800_fota_send_progress((hl7800_file_offset * 100) /
+					  file_size);
 		LOG_DBG("Progress: %d/%d%%", hl7800_file_offset, file_size);
 #endif
-	break;
+		break;
 	}
 
 	case DOWNLOAD_CLIENT_EVT_DONE:
@@ -220,8 +238,9 @@ static int hl7800_download_client_callback(const struct download_client_evt *eve
 		/* In case of socket errors we can return 0 to retry/continue,
 		 * or non-zero to stop
 		 */
-		if ((hl7800_socket_retries_left) && ((event->error == -ENOTCONN) ||
-					      (event->error == -ECONNRESET))) {
+		if ((hl7800_socket_retries_left) &&
+		    ((event->error == -ENOTCONN) ||
+		     (event->error == -ECONNRESET))) {
 			LOG_WRN("Download socket error. %d retries left...",
 				hl7800_socket_retries_left);
 			hl7800_socket_retries_left--;
@@ -233,7 +252,8 @@ static int hl7800_download_client_callback(const struct download_client_evt *eve
 			LOG_ERR("Download client error");
 			first_fragment = true;
 			/* Return non-zero to tell download_client to stop */
-			hl7800_fota_send_error_evt(FOTA_DOWNLOAD_ERROR_CAUSE_DOWNLOAD_FAILED);
+			hl7800_fota_send_error_evt(
+				FOTA_DOWNLOAD_ERROR_CAUSE_DOWNLOAD_FAILED);
 			return event->error;
 		}
 	}
@@ -246,9 +266,7 @@ static int hl7800_download_client_callback(const struct download_client_evt *eve
 
 static void hl7800_fota_send_evt(enum fota_download_evt_id id)
 {
-	const struct fota_download_evt evt = {
-		.id = id
-	};
+	const struct fota_download_evt evt = { .id = id };
 	hl7800_fota_callback(&evt);
 }
 
@@ -256,13 +274,13 @@ static void hl7800_fota_send_error_evt(enum fota_download_error_cause cause)
 {
 	/* if we are ending in a download error, we must delete the file to start over */
 	hl7800_file_offset = 0;
-	if (fsu_delete_files(CONFIG_FOTA_FS_MOUNT,  http_fota_get_downloaded_filename(MODEM_IMAGE_TYPE)) < 0) {
+	if (fsu_delete_files(
+		    CONFIG_FOTA_FS_MOUNT,
+		    http_fota_get_downloaded_filename(MODEM_IMAGE_TYPE)) < 0) {
 		LOG_INF("Unable to delete");
 	}
-	const struct fota_download_evt evt = {
-		.id = FOTA_DOWNLOAD_EVT_ERROR,
-		.cause = cause
-	};
+	const struct fota_download_evt evt = { .id = FOTA_DOWNLOAD_EVT_ERROR,
+					       .cause = cause };
 	hl7800_fota_callback(&evt);
 }
 #ifdef CONFIG_FOTA_DOWNLOAD_PROGRESS_EVT

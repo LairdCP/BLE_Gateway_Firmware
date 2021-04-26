@@ -2,7 +2,7 @@
  * @file shadow_builder.h
  * @brief Build JSON strings for AWS shadow.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -99,7 +99,7 @@ void ShadowBuilder_EndArray(JsonMsg_t *pJsonMsg);
  */
 void ShadowBuilder_AddSensorTableArrayEntry(JsonMsg_t *pJsonMsg,
 					    const char *restrict pAddrStr,
-					    uint32_t Epoch, bool Whitelisted);
+					    uint32_t Epoch, bool Greenlisted);
 
 /**
  * @brief Adds "pKey": {

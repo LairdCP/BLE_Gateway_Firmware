@@ -71,6 +71,7 @@ K_THREAD_STACK_DEFINE(rx_thread_stack, AWS_RX_THREAD_STACK_SIZE);
 static struct k_thread rxThread;
 
 static struct k_sem connected_sem;
+static struct k_sem disconnected_sem;
 
 /* Buffers for MQTT client. */
 static uint8_t rx_buffer[CONFIG_MQTT_RX_BUFFER_SIZE];
@@ -94,7 +95,7 @@ static struct pollfd fds[1];
 static int nfds;
 
 static bool connected = false;
-
+static bool disconnect = false;
 static struct addrinfo *saddr;
 
 static sec_tag_t m_sec_tags[] = {
@@ -160,6 +161,7 @@ char *awsGetGatewayUpdateDeltaTopic()
 int awsInit(void)
 {
 	k_sem_init(&connected_sem, 0, 1);
+	k_sem_init(&disconnected_sem, 0, 1);
 
 	/* init shadow data */
 	shadow_persistent_data.state.reported.firmware_version = "";
@@ -225,33 +227,45 @@ int awsGetServerAddr(void)
 
 int awsConnect()
 {
-	/* Add randomness to client id to make each connection unique.*/
-	strncpy(mqtt_random_id, mqtt_client_id, AWS_MQTT_ID_MAX_SIZE);
-	size_t id_len = strlen(mqtt_random_id);
-	snprintf(mqtt_random_id + id_len, AWS_MQTT_ID_MAX_SIZE - id_len,
-		 "_%08x", sys_rand32_get());
+	int rc = 0;
+	size_t id_len;
 
-	AWS_LOG_INF("Attempting to connect %s to AWS...",
-		    log_strdup(mqtt_random_id));
-	int rc = try_to_connect(&client_ctx);
-	if (rc != 0) {
-		AWS_LOG_ERR("AWS connect err (%d)", rc);
-		aws_stats.consecutive_connection_failures += 1;
-		if ((aws_stats.consecutive_connection_failures >
-		     CONFIG_AWS_MAX_CONSECUTIVE_CONNECTION_FAILURES) &&
-		    (CONFIG_AWS_MAX_CONSECUTIVE_CONNECTION_FAILURES != 0)) {
-			LOG_WRN("Maximum consecutive connection failures exceeded");
-			lcz_software_reset(0);
+	if (!connected) {
+		disconnect = false;
+		/* Add randomness to client id to make each connection unique.*/
+		strncpy(mqtt_random_id, mqtt_client_id, AWS_MQTT_ID_MAX_SIZE);
+		id_len = strlen(mqtt_random_id);
+		snprintf(mqtt_random_id + id_len, AWS_MQTT_ID_MAX_SIZE - id_len,
+			 "_%08x", sys_rand32_get());
+
+		AWS_LOG_INF("Attempting to connect %s to AWS...",
+			    log_strdup(mqtt_random_id));
+		rc = try_to_connect(&client_ctx);
+		if (rc != 0) {
+			AWS_LOG_ERR("AWS connect err (%d)", rc);
+			aws_stats.consecutive_connection_failures += 1;
+			if ((aws_stats.consecutive_connection_failures >
+			     CONFIG_AWS_MAX_CONSECUTIVE_CONNECTION_FAILURES) &&
+			    (CONFIG_AWS_MAX_CONSECUTIVE_CONNECTION_FAILURES !=
+			     0)) {
+				LOG_WRN("Maximum consecutive connection failures exceeded");
+				lcz_software_reset(0);
+			}
+		} else {
+			aws_stats.consecutive_connection_failures = 0;
 		}
-	} else {
-		aws_stats.consecutive_connection_failures = 0;
 	}
 	return rc;
 }
 
 void awsDisconnect(void)
 {
-	mqtt_disconnect(&client_ctx);
+	if (connected) {
+		disconnect = true;
+		AWS_LOG_DBG("Waiting to close MQTT connection");
+		k_sem_take(&disconnected_sem, K_FOREVER);
+		AWS_LOG_DBG("MQTT connection closed");
+	}
 }
 
 int awsSetShadowKernelVersion(const char *version)
@@ -499,6 +513,16 @@ bool awsPublished(void)
 int awsSubscribe(uint8_t *topic, uint8_t subscribe)
 {
 	struct mqtt_topic mt;
+	int rc = -EPERM;
+	char *s, *t;
+	struct mqtt_subscription_list list = {
+		.list = &mt, .list_count = 1, .message_id = rand16_nonzero_get()
+	};
+
+	if (!connected) {
+		return rc;
+	}
+
 	if (topic == NULL) {
 		mt.topic.utf8 = topics.update_delta;
 	} else {
@@ -507,13 +531,10 @@ int awsSubscribe(uint8_t *topic, uint8_t subscribe)
 	mt.topic.size = strlen(mt.topic.utf8);
 	mt.qos = MQTT_QOS_1_AT_LEAST_ONCE;
 	__ASSERT(mt.topic.size != 0, "Invalid topic");
-	struct mqtt_subscription_list list = {
-		.list = &mt, .list_count = 1, .message_id = rand16_nonzero_get()
-	};
-	int rc = subscribe ? mqtt_subscribe(&client_ctx, &list) :
-				   mqtt_unsubscribe(&client_ctx, &list);
-	char *s = log_strdup(subscribe ? "Subscribed" : "Unsubscribed");
-	char *t = log_strdup(mt.topic.utf8);
+	rc = subscribe ? mqtt_subscribe(&client_ctx, &list) :
+			       mqtt_unsubscribe(&client_ctx, &list);
+	s = log_strdup(subscribe ? "Subscribed" : "Unsubscribed");
+	t = log_strdup(mt.topic.utf8);
 	if (rc != 0) {
 		AWS_LOG_ERR("%s status %d to %s", s, rc, t);
 	} else {
@@ -609,10 +630,8 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 
 	case MQTT_EVT_DISCONNECT:
 		AWS_LOG_INF("MQTT client disconnected %d", evt->result);
-
 		connected = false;
-		clear_fds();
-		awsDisconnectCallback();
+		disconnect = true;
 		k_delayed_work_cancel(&keep_alive);
 		aws_stats.disconnects += 1;
 		break;
@@ -827,9 +846,18 @@ static void aws_rx_thread(void *arg1, void *arg2, void *arg3)
 	while (true) {
 		if (connected) {
 			/* Wait for socket RX data */
-			wait(SYS_FOREVER_MS);
+			wait(SOCKET_POLL_WAIT_TIME_MSECS);
 			/* process MQTT RX data */
 			mqtt_input(&client_ctx);
+			if (disconnect) {
+				AWS_LOG_DBG("Closing MQTT connection");
+				mqtt_disconnect(&client_ctx);
+				clear_fds();
+				disconnect = false;
+				connected = false;
+				k_sem_give(&disconnected_sem);
+				awsDisconnectCallback();
+			}
 		} else {
 			AWS_LOG_DBG("Waiting for MQTT connection...");
 			/* Wait for connection */

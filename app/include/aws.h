@@ -58,6 +58,7 @@ static const unsigned char aws_root_ca[] =
 #define SERVER_PORT_STR "8883"
 
 #define APP_SLEEP_MSECS 500
+#define SOCKET_POLL_WAIT_TIME_MSECS 250
 
 #define APP_CONNECT_TRIES 1
 

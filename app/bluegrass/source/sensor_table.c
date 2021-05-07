@@ -28,7 +28,9 @@ LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 #include "lcz_sensor_event.h"
 #include "sensor_log.h"
 #include "bt510_flags.h"
+#ifdef CONFIG_BLE_CELLULAR_SERVICE
 #include "lte.h"
+#endif
 #include "sensor_table.h"
 #ifdef CONFIG_BOARD_MG100
 #include "sdcard_log.h"
@@ -128,7 +130,9 @@ static size_t tableCount;
 static SensorEntry_t sensorTable[CONFIG_SENSOR_TABLE_SIZE];
 static char queryCmd[CONFIG_SENSOR_QUERY_CMD_MAX_SIZE];
 static uint64_t ttlUptime;
+#ifdef CONFIG_BLE_CELLULAR_SERVICE
 static struct lte_status *pLte;
+#endif
 static bool allowGatewayShadowGeneration;
 
 /******************************************************************************/
@@ -198,7 +202,9 @@ void SensorTable_Initialize(void)
 	ClearTable();
 	strncpy(queryCmd, SENSOR_CMD_DEFAULT_QUERY,
 		CONFIG_SENSOR_QUERY_CMD_MAX_SIZE - 1);
+#ifdef CONFIG_BLE_CELLULAR_SERVICE
 	pLte = lteGetStatus();
+#endif
 }
 
 bool SensorTable_MatchBt510(struct net_buf_simple *ad)
@@ -1191,7 +1197,9 @@ static void ShadowLogHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 /* These special items exist on the gateway and not on the sensor */
 static void ShadowSpecialHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 {
+#ifdef CONFIG_BLE_CELLULAR_SERVICE
 	ShadowBuilder_AddPair(pMsg, "gatewayId", pLte->IMEI, false);
+#endif
 	ShadowBuilder_AddUint32(pMsg, "eventLogSize",
 				SensorLog_GetSize(pEntry->pLog));
 }

@@ -35,8 +35,12 @@ LOG_MODULE_REGISTER(main);
 #include "ble.h"
 #include "ble_cellular_service.h"
 #include "ble_aws_service.h"
+#ifdef CONFIG_BLE_POWER_SERVICE
 #include "ble_power_service.h"
+#endif
+#ifdef CONFIG_LCZ_POWER
 #include "laird_power.h"
+#endif
 #include "dis.h"
 #include "FrameworkIncludes.h"
 #include "laird_utility_macros.h"
@@ -262,6 +266,7 @@ void main(void)
 
 	nvReadCommissioned(&commissioned);
 
+#ifdef CONFIG_MODEM_HL7800
 	/* init LTE */
 	lteRegisterEventCallback(lteEvent);
 	rc = lteInit();
@@ -270,6 +275,7 @@ void main(void)
 		goto exit;
 	}
 	lteInfo = lteGetStatus();
+#endif
 
 	LCZ_MEMFAULT_BUILD_TOPIC(CONFIG_BOARD, lteInfo->IMEI);
 
@@ -301,20 +307,26 @@ void main(void)
 
 	dis_initialize(APP_VERSION_STRING);
 
+#ifdef CONFIG_BLE_CELLULAR_SERVICE
 	/* Start up BLE portion of the demo */
 	cell_svc_init();
 	cell_svc_set_imei(lteInfo->IMEI);
 	cell_svc_set_fw_ver(lteInfo->radio_version);
 	cell_svc_set_iccid(lteInfo->ICCID);
 	cell_svc_set_serial_number(lteInfo->serialNumber);
+#endif
 
 #ifdef CONFIG_FOTA_SERVICE
 	fota_init();
 #endif
 
 	/* Setup the power service */
+#ifdef CONFIG_BLE_POWER_SERVICE
 	power_svc_init();
+#endif
+#ifdef CONFIG_LCZ_POWER
 	power_init();
+#endif
 
 #ifdef CONFIG_BOARD_MG100
 	/* Setup the battery service */
@@ -505,10 +517,12 @@ static void appStateWaitForLte(void)
 	aws_svc_set_status(AWS_STATUS_DISCONNECTED);
 #endif
 
+#ifdef CONFIG_MODEM_HL7800
 	if (!lteIsReady()) {
 		/* Wait for LTE ready evt */
 		k_sem_take(&lte_ready_sem, K_FOREVER);
 	}
+#endif
 
 #ifdef CONFIG_LCZ_MEMFAULT_HTTP_TRANSPORT
 #ifdef CONFIG_LCZ_MEMFAULT_METRICS
@@ -603,6 +617,7 @@ static void awsMsgHandler(void)
 
 		case FMC_AWS_HEARTBEAT: {
 			/* Periodically send the RSSI as a heartbeat. */
+#ifdef CONFIG_MODEM_HL7800
 			lteInfo = lteGetStatus();
 #ifdef CONFIG_BOARD_MG100
 			batteryInfo = batteryGetStatus();
@@ -618,6 +633,7 @@ static void awsMsgHandler(void)
 #else
 			rc = awsPublishPinnacleData(lteInfo->rssi,
 						    lteInfo->sinr);
+#endif
 #endif
 #if CONFIG_AWS_HEARTBEAT_SECONDS != 0
 			k_delayed_work_submit(
@@ -716,10 +732,12 @@ static void appStateAwsConnect(void)
 		return;
 	}
 
+#ifdef CONFIG_MODEM_HL7800
 	if (!lteIsReady()) {
 		appSetNextState(appStateWaitForLte);
 		return;
 	}
+#endif
 
 	aws_svc_set_status(AWS_STATUS_CONNECTING);
 
@@ -951,6 +969,13 @@ static void configure_leds(void)
 		{ GREEN_LED, LED2_DEV, LED2, LED_ACTIVE_HIGH },
 		{ RED_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH },
 		{ GREEN_LED2, LED4_DEV, LED4, LED_ACTIVE_HIGH }
+	};
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+	struct lcz_led_configuration c[] = {
+		{ BLUE_LED1, LED1_DEV, LED1, LED_ACTIVE_LOW },
+		{ BLUE_LED2, LED2_DEV, LED2, LED_ACTIVE_LOW },
+		{ BLUE_LED3, LED3_DEV, LED3, LED_ACTIVE_LOW },
+		{ BLUE_LED4, LED4_DEV, LED4, LED_ACTIVE_LOW }
 	};
 #else
 #error "Unsupported board selected"

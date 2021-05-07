@@ -15,7 +15,6 @@ endif()
 
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src/main.c
-    ${CMAKE_SOURCE_DIR}/src/lte.c
     ${CMAKE_SOURCE_DIR}/src/nv.c
     ${CMAKE_SOURCE_DIR}/src/jsmn_json.c
     ${CMAKE_SOURCE_DIR}/src/button.c
@@ -23,6 +22,9 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src/ble.c
 )
 
+target_sources_ifdef(CONFIG_MODEM_HL7800 app PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/lte.c
+)
 
 if(CONFIG_CONTACT_TRACING)
 zephyr_include_directories(${CMAKE_SOURCE_DIR}/contact_tracing/include)
@@ -118,6 +120,8 @@ include_directories(${CMAKE_SOURCE_DIR}/http_fota/include)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/http_fota/source/http_fota_task.c
     ${CMAKE_SOURCE_DIR}/http_fota/source/http_fota_shadow.c
+)
+target_sources_ifdef(CONFIG_MODEM_HL7800 app PRIVATE
     ${CMAKE_SOURCE_DIR}/http_fota/source/hl7800_http_fota.c
 )
 endif() # CONFIG_HTTP_FOTA

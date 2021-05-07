@@ -140,6 +140,9 @@ static bool updated_pressure;
 
 static int scan_id;
 
+/* Store last searched UUID to prevent local out of scope variable access */
+static struct bt_uuid_16 last_searched_uuid;
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -296,8 +299,9 @@ static int find_desc(struct bt_conn *conn, struct bt_uuid_16 uuid,
 	int err;
 
 	/* Update discover parameters before initiating discovery */
+	memcpy(&last_searched_uuid, &uuid, sizeof(last_searched_uuid));
 	discover_params.type = BT_GATT_DISCOVER_DESCRIPTOR;
-	discover_params.uuid = &uuid.uuid;
+	discover_params.uuid = &last_searched_uuid.uuid;
 	discover_params.start_handle = start_handle;
 	discover_params.func = desc_discover_func;
 
@@ -316,8 +320,9 @@ static int find_char(struct bt_conn *conn, struct bt_uuid_16 n_uuid)
 	}
 
 	/* Update discover parameters before initiating discovery */
+	memcpy(&last_searched_uuid, &uuid, sizeof(last_searched_uuid));
 	discover_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
-	discover_params.uuid = &uuid.uuid;
+	discover_params.uuid = &last_searched_uuid.uuid;
 	discover_params.start_handle = remote.ess_service_handle;
 	discover_params.func = char_discover_func;
 
@@ -333,8 +338,9 @@ static int find_service(struct bt_conn *conn, struct bt_uuid_16 n_uuid)
 	int err;
 
 	/* Update discover parameters before initiating discovery */
+	memcpy(&last_searched_uuid, &uuid, sizeof(last_searched_uuid));
 	discover_params.type = BT_GATT_DISCOVER_PRIMARY;
-	discover_params.uuid = &uuid.uuid;
+	discover_params.uuid = &last_searched_uuid.uuid;
 	discover_params.start_handle = 0x0001;
 	discover_params.end_handle = 0xffff;
 	discover_params.func = service_discover_func;

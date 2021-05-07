@@ -198,7 +198,7 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 	}
 
 	LTE_LOG_DBG("LTE is ready!");
-	lcz_led_turn_on(RED_LED);
+	lcz_led_turn_on(NETWORK_LED);
 	onLteEvent(LTE_EVT_READY);
 }
 
@@ -210,7 +210,7 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 	}
 
 	LTE_LOG_DBG("LTE is down");
-	lcz_led_turn_off(RED_LED);
+	lcz_led_turn_off(NETWORK_LED);
 	onLteEvent(LTE_EVT_DISCONNECTED);
 }
 
@@ -237,7 +237,7 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		switch (code) {
 		case HL7800_HOME_NETWORK:
 		case HL7800_ROAMING:
-			lcz_led_turn_on(RED_LED);
+			lcz_led_turn_on(NETWORK_LED);
 			lteSyncQrtc();
 			MFLT_METRICS_TIMER_STOP(lte_ttf);
 			break;
@@ -245,19 +245,19 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		case HL7800_REGISTRATION_DENIED:
 		case HL7800_UNABLE_TO_CONFIGURE:
 		case HL7800_OUT_OF_COVERAGE:
-			lcz_led_turn_off(RED_LED);
+			lcz_led_turn_off(NETWORK_LED);
 			MFLT_METRICS_TIMER_START(lte_ttf);
 			break;
 
 		case HL7800_NOT_REGISTERED:
 		case HL7800_SEARCHING:
-			lcz_led_blink(RED_LED, &NETWORK_SEARCH_LED_PATTERN);
+			lcz_led_blink(NETWORK_LED, &NETWORK_SEARCH_LED_PATTERN);
 			MFLT_METRICS_TIMER_START(lte_ttf);
 			break;
 
 		case HL7800_EMERGENCY:
 		default:
-			lcz_led_turn_off(RED_LED);
+			lcz_led_turn_off(NETWORK_LED);
 			break;
 		}
 		break;
@@ -294,7 +294,7 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		case HL7800_STARTUP_STATE_UNKNOWN:
 		case HL7800_STARTUP_STATE_INACTIVE_SIM:
 		default:
-			lcz_led_turn_off(RED_LED);
+			lcz_led_turn_off(NETWORK_LED);
 			break;
 		}
 		break;

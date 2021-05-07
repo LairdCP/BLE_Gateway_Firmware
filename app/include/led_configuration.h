@@ -2,7 +2,7 @@
  * @file led_configuration.h
  * @brief
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -22,6 +22,8 @@ extern "C" {
 /* Board definitions                                                          */
 /******************************************************************************/
 
+#if defined(CONFIG_BOARD_MG100) || defined(CONFIG_BOARD_PINNACLE_100_DVK)
+/* Pinnacle 100 DVK or MG100 */
 #define LED1_NODE DT_ALIAS(led0)
 #define LED2_NODE DT_ALIAS(led1)
 #define LED3_NODE DT_ALIAS(led2)
@@ -49,10 +51,19 @@ enum led_index {
 #endif
 };
 
+enum led_type_index {
+	BLUETOOTH_LED = BLUE_LED,
+	NETWORK_LED = RED_LED,
+	CLOUD_LED = GREEN_LED
+};
+
 #ifdef CONFIG_BOARD_PINNACLE_100_DVK
 BUILD_ASSERT(CONFIG_LCZ_NUMBER_OF_LEDS > GREEN_LED2, "LED object too small");
 #else
 BUILD_ASSERT(CONFIG_LCZ_NUMBER_OF_LEDS > RED_LED, "LED object too small");
+#endif
+#else
+#error "Unsupported board selected"
 #endif
 
 #ifdef __cplusplus

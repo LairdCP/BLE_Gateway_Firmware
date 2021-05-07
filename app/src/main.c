@@ -542,7 +542,7 @@ static void appStateAwsSendSensorData(void)
 	/* If decommissioned then disconnect. */
 	if (!commissioned || !awsConnected() || start_fota) {
 		appSetNextState(appStateAwsDisconnect);
-		lcz_led_turn_off(GREEN_LED);
+		lcz_led_turn_off(CLOUD_LED);
 		return;
 	}
 
@@ -574,7 +574,7 @@ static void awsMsgHandler(void)
 #endif
 
 	while (rc == 0 && !start_fota) {
-		lcz_led_turn_on(GREEN_LED);
+		lcz_led_turn_on(CLOUD_LED);
 		/* Remove sensor/gateway data from queue and send it to cloud.
 		 * Block if there are not any messages.
 		 */
@@ -659,7 +659,7 @@ static void awsMsgHandler(void)
 		 * (sensor enabled in Bluegrass) the first subscription will result in
 		 * a disconnect. The second attempt will work.
 		 */
-		lcz_led_turn_off(GREEN_LED);
+		lcz_led_turn_off(CLOUD_LED);
 		if (rc == 0) {
 			k_sleep(K_MSEC(
 				CONFIG_AWS_DATA_SEND_LED_OFF_DURATION_MILLISECONDS));
@@ -939,19 +939,21 @@ static void lwm2mMsgHandler(void)
 
 static void configure_leds(void)
 {
-#ifdef CONFIG_BOARD_MG100
+#if defined(CONFIG_BOARD_MG100)
 	struct lcz_led_configuration c[] = {
 		{ BLUE_LED, LED2_DEV, LED2, LED_ACTIVE_HIGH },
 		{ GREEN_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH },
 		{ RED_LED, LED1_DEV, LED1, LED_ACTIVE_HIGH }
 	};
-#else
+#elif defined(CONFIG_BOARD_PINNACLE_100_DVK)
 	struct lcz_led_configuration c[] = {
 		{ BLUE_LED, LED1_DEV, LED1, LED_ACTIVE_HIGH },
 		{ GREEN_LED, LED2_DEV, LED2, LED_ACTIVE_HIGH },
 		{ RED_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH },
 		{ GREEN_LED2, LED4_DEV, LED4, LED_ACTIVE_HIGH }
 	};
+#else
+#error "Unsupported board selected"
 #endif
 	lcz_led_init(c, ARRAY_SIZE(c));
 }

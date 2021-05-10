@@ -76,8 +76,10 @@ static const unsigned char aws_root_ca[] =
 #define SHADOW_TEMPERATURE "\"temperature\":"
 #define SHADOW_HUMIDITY "\"humidity\":"
 #define SHADOW_PRESSURE "\"pressure\":"
+#ifdef CONFIG_MODEM_HL7800
 #define SHADOW_RADIO_RSSI "\"radio_rssi\":"
 #define SHADOW_RADIO_SINR "\"radio_sinr\":"
+#endif /* CONFIG_MODEM_HL7800 */
 #ifdef CONFIG_BOARD_MG100
 #define SHADOW_MG100_TEMP "\"tempC\":"
 #define SHADOW_MG100_BATT_LEVEL "\"batteryLevel\":"
@@ -108,10 +110,12 @@ static const unsigned char aws_root_ca[] =
 struct shadow_persistent_values {
 	const char *firmware_version;
 	const char *os_version;
+#ifdef CONFIG_MODEM_HL7800
 	const char *radio_version;
 	const char *IMEI;
 	const char *ICCID;
 	const char *radio_sn;
+#endif /* CONFIG_MODEM_HL7800 */
 	bool codedPhySupported;
 	bool httpFotaEnabled;
 };
@@ -129,6 +133,7 @@ static const struct json_obj_descr shadow_persistent_values_descr[] = {
 			    JSON_TOK_STRING),
 	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values, os_version,
 			    JSON_TOK_STRING),
+#ifdef CONFIG_MODEM_HL7800
 	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values, radio_version,
 			    JSON_TOK_STRING),
 	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values, IMEI,
@@ -137,6 +142,7 @@ static const struct json_obj_descr shadow_persistent_values_descr[] = {
 			    JSON_TOK_STRING),
 	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values, radio_sn,
 			    JSON_TOK_STRING),
+#endif /* CONFIG_MODEM_HL7800 */
 	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values, codedPhySupported,
 			    JSON_TOK_TRUE),
 	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values, httpFotaEnabled,
@@ -170,26 +176,28 @@ int awsSendData(char *data, uint8_t *topic);
 int awsSendBinData(char *data, uint32_t len, uint8_t *topic);
 int awsPublishShadowPersistentData(void);
 int awsSetShadowKernelVersion(const char *version);
+#ifdef CONFIG_MODEM_HL7800
 int awsSetShadowIMEI(const char *imei);
 int awsSetShadowICCID(const char *iccid);
 int awsSetShadowRadioSerialNumber(const char *sn);
 int awsSetShadowRadioFirmwareVersion(const char *version);
+#endif /* CONFIG_MODEM_HL7800 */
 int awsSetShadowAppFirmwareVersion(const char *version);
 int awsPublishBl654SensorData(float temperature, float humidity,
 			      float pressure);
-#ifdef CONFIG_BOARD_MG100
+#if defined(CONFIG_BOARD_MG100)
 int awsPublishPinnacleData(int radioRssi, int radioSinr,
 			   struct battery_data *battery,
 			   struct motion_status *motion,
 			   struct sdcard_status *sdcard);
-#else
+#elif defined(CONFIG_BOARD_PINNACLE_100_DVK)
 int awsPublishPinnacleData(int radioRssi, int radioSinr);
 #endif
 int awsSubscribe(uint8_t *topic, uint8_t subscribe);
 int awsGetShadow(void);
 int awsGetAcceptedSubscribe(void);
 int awsGetAcceptedUnsub(void);
-void awsGenerateGatewayTopics(const char *imei);
+void awsGenerateGatewayTopics(const char *deviceid);
 void awsDisconnectCallback(void);
 char *awsGetGatewayUpdateDeltaTopic(void);
 struct mqtt_client *awsGetMqttClient(void);

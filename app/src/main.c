@@ -30,10 +30,12 @@ LOG_MODULE_REGISTER(main);
 #include <string.h>
 
 #include "led_configuration.h"
-#include "lte.h"
-#include "nv.h"
 #include "ble.h"
+#ifdef CONFIG_MODEM_HL7800
+#include "lte.h"
 #include "ble_cellular_service.h"
+#endif
+#include "nv.h"
 #include "ble_aws_service.h"
 #ifdef CONFIG_BLE_POWER_SERVICE
 #include "ble_power_service.h"
@@ -110,6 +112,8 @@ LOG_MODULE_REGISTER(main);
 
 #define WAIT_TIME_BEFORE_RETRY_TICKS K_SECONDS(10)
 
+#define BT_ID_ADDR_SIZE 15 /* BLE address string size with null character */
+
 enum CREDENTIAL_TYPE { CREDENTIAL_CERT, CREDENTIAL_KEY };
 
 enum APP_ERROR {
@@ -128,6 +132,10 @@ typedef void (*app_state_function_t)(void);
 /******************************************************************************/
 #ifdef CONFIG_BLUEGRASS
 bool initShadow = true; /* can be set by lte */
+#endif
+
+#ifdef CONFIG_BOARD_BL5340_DVK_CPUAPP
+char bt_id_addr[BT_ID_ADDR_SIZE];
 #endif
 
 /******************************************************************************/
@@ -226,6 +234,11 @@ static void configure_button(void);
 static void reset_reason_handler(void);
 static char *get_app_type(void);
 
+#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+static inline int bt_addr_le_to_str_compact(const bt_addr_le_t *addr,
+					    char *str, size_t len);
+#endif
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -277,7 +290,9 @@ void main(void)
 	lteInfo = lteGetStatus();
 #endif
 
+#if defined(CONFIG_BOARD_MG100) || defined(CONFIG_BOARD_PINNACLE_100_DVK)
 	LCZ_MEMFAULT_BUILD_TOPIC(CONFIG_BOARD, lteInfo->IMEI);
+#endif
 
 	/* init AWS */
 #ifdef CONFIG_BLUEGRASS
@@ -289,7 +304,23 @@ void main(void)
 
 	initializeCloudMsgReceiver();
 
+#if defined(CONFIG_BOARD_MG100) || defined(CONFIG_BOARD_PINNACLE_100_DVK)
 	ble_update_name(lteInfo->IMEI);
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+	/* Get local BLE address in compact form */
+	bt_addr_le_t addr;
+	size_t addrs;
+	addrs = 1;
+	bt_id_get(&addr, &addrs);
+
+	if (addrs == 0) {
+		MAIN_LOG_ERR("Failed to get local Bluetooth ID");
+		goto exit;
+	}
+
+	bt_addr_le_to_str_compact(&addr, bt_id_addr, sizeof(bt_id_addr));
+	ble_update_name(bt_id_addr);
+#endif
 	configure_button();
 
 #ifdef CONFIG_SCAN_FOR_BT510
@@ -349,7 +380,11 @@ void main(void)
 #endif
 
 #ifdef CONFIG_BLUEGRASS
+#if defined(CONFIG_BOARD_MG100) || defined(CONFIG_BOARD_PINNACLE_100_DVK)
 	rc = aws_svc_init(lteInfo->IMEI);
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+	rc = aws_svc_init(bt_id_addr);
+#endif
 	if (rc != 0) {
 		goto exit;
 	}
@@ -423,7 +458,11 @@ void memfault_platform_get_device_info(sMemfaultDeviceInfo *info)
 	/* platform specific version information */
 	*info = (sMemfaultDeviceInfo)
 	{
+#if defined(CONFIG_BOARD_MG100) || defined(CONFIG_BOARD_PINNACLE_100_DVK)
 		.device_serial = lteInfo->IMEI,
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+		.device_serial = bt_id_addr,
+#endif
 		.software_type = CONFIG_LCZ_MEMFAULT_SOFTWARE_TYPE,
 		.software_version = software_ver,
 		.hardware_version = CONFIG_BOARD,
@@ -689,14 +728,20 @@ static void appStateAwsInitShadow(void)
 	int rc = 0;
 
 	if (initShadow) {
+#if defined(CONFIG_BOARD_MG100) || defined(CONFIG_BOARD_PINNACLE_100_DVK)
 		awsGenerateGatewayTopics(lteInfo->IMEI);
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+		awsGenerateGatewayTopics(bt_id_addr);
+#endif
 		/* Fill in base shadow info and publish */
 		awsSetShadowAppFirmwareVersion(APP_VERSION_STRING);
 		awsSetShadowKernelVersion(KERNEL_VERSION_STRING);
+#ifdef CONFIG_MODEM_HL7800
 		awsSetShadowIMEI(lteInfo->IMEI);
 		awsSetShadowICCID(lteInfo->ICCID);
 		awsSetShadowRadioFirmwareVersion(lteInfo->radio_version);
 		awsSetShadowRadioSerialNumber(lteInfo->serialNumber);
+#endif
 
 		MAIN_LOG_INF("Send persistent shadow data");
 		rc = awsPublishShadowPersistentData();
@@ -1040,6 +1085,16 @@ static char *get_app_type(void)
 	return "AWS";
 #endif
 }
+
+#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+static inline int bt_addr_le_to_str_compact(const bt_addr_le_t *addr,
+					    char *str, size_t len)
+{
+	return snprintk(str, len, "%02x%02x%02x%02x%02x%02x%02x", addr->type,
+			addr->a.val[5], addr->a.val[4], addr->a.val[3],
+			addr->a.val[2], addr->a.val[1], addr->a.val[0]);
+}
+#endif
 
 /******************************************************************************/
 /* Shell                                                                      */

@@ -166,9 +166,11 @@ int awsInit(void)
 	/* init shadow data */
 	shadow_persistent_data.state.reported.firmware_version = "";
 	shadow_persistent_data.state.reported.os_version = "";
+#ifdef CONFIG_MODEM_HL7800
 	shadow_persistent_data.state.reported.radio_version = "";
 	shadow_persistent_data.state.reported.IMEI = "";
 	shadow_persistent_data.state.reported.ICCID = "";
+#endif
 #ifdef CONFIG_SCAN_FOR_BT510_CODED
 	shadow_persistent_data.state.reported.codedPhySupported = true;
 #else
@@ -275,6 +277,7 @@ int awsSetShadowKernelVersion(const char *version)
 	return 0;
 }
 
+#ifdef CONFIG_MODEM_HL7800
 int awsSetShadowIMEI(const char *imei)
 {
 	shadow_persistent_data.state.reported.IMEI = imei;
@@ -288,6 +291,7 @@ int awsSetShadowRadioFirmwareVersion(const char *version)
 
 	return 0;
 }
+#endif
 
 int awsSetShadowAppFirmwareVersion(const char *version)
 {
@@ -296,6 +300,7 @@ int awsSetShadowAppFirmwareVersion(const char *version)
 	return 0;
 }
 
+#ifdef CONFIG_MODEM_HL7800
 int awsSetShadowICCID(const char *iccid)
 {
 	shadow_persistent_data.state.reported.ICCID = iccid;
@@ -309,6 +314,7 @@ int awsSetShadowRadioSerialNumber(const char *sn)
 
 	return 0;
 }
+#endif
 
 int awsSendData(char *data, uint8_t *topic)
 {
@@ -331,19 +337,19 @@ int awsSendBinData(char *data, uint32_t len, uint8_t *topic)
 	}
 }
 
-void awsGenerateGatewayTopics(const char *imei)
+void awsGenerateGatewayTopics(const char *deviceid)
 {
 	snprintk(topics.update, sizeof(topics.update),
-		 "$aws/things/deviceId-%s/shadow/update", imei);
+		 "$aws/things/deviceId-%s/shadow/update", deviceid);
 
 	snprintk(topics.update_delta, sizeof(topics.update_delta),
-		 "$aws/things/deviceId-%s/shadow/update/delta", imei);
+		 "$aws/things/deviceId-%s/shadow/update/delta", deviceid);
 
 	snprintk(topics.get_accepted, sizeof(topics.get_accepted),
-		 "$aws/things/deviceId-%s/shadow/get/accepted", imei);
+		 "$aws/things/deviceId-%s/shadow/get/accepted", deviceid);
 
 	snprintk(topics.get, sizeof(topics.get),
-		 "$aws/things/deviceId-%s/shadow/get", imei);
+		 "$aws/things/deviceId-%s/shadow/get", deviceid);
 }
 
 /* On power-up, get the shadow by sending a message to the /get topic */
@@ -434,6 +440,7 @@ int awsPublishBl654SensorData(float temperature, float humidity, float pressure)
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
 
+#if defined(CONFIG_BOARD_MG100) || defined(CONFIG_BOARD_PINNACLE_100_DVK)
 #ifdef CONFIG_BOARD_MG100
 int awsPublishPinnacleData(int radioRssi, int radioSinr,
 			   struct battery_data *battery,
@@ -499,6 +506,7 @@ int awsPublishPinnacleData(int radioRssi, int radioSinr)
 
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
+#endif
 
 bool awsConnected(void)
 {

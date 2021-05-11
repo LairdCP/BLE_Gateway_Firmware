@@ -17,7 +17,9 @@ LOG_MODULE_REGISTER(http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
 #include <zephyr.h>
 #include <net/tls_credentials.h>
 #include <power/reboot.h>
+#ifdef CONFIG_MODEM_HL7800
 #include <drivers/modem/hl7800.h>
+#endif
 #include <net/fota_download.h>
 #ifdef CONFIG_LCZ_MEMFAULT
 #include "memfault/http/root_certs.h"
@@ -30,7 +32,9 @@ LOG_MODULE_REGISTER(http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
 #include "file_system_utilities.h"
 
 #include "http_fota_shadow.h"
+#ifdef CONFIG_MODEM_HL7800
 #include "hl7800_http_fota.h"
+#endif
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -51,7 +55,9 @@ typedef struct http_fota_task {
 	bool aws_connected;
 	bool allow_start;
 	fota_context_t app_context;
+#ifdef CONFIG_MODEM_HL7800
 	fota_context_t modem_context;
+#endif
 } http_fota_task_obj_t;
 
 K_THREAD_STACK_DEFINE(http_fota_task_stack, CONFIG_HTTP_FOTA_TASK_STACK_SIZE);
@@ -126,9 +132,11 @@ int http_fota_task_initialize(void)
 	k_thread_name_set(tctx.msgTask.pTid, FWK_FNAME);
 
 	tctx.app_context.type = APP_IMAGE_TYPE;
+#ifdef CONFIG_MODEM_HL7800
 	tctx.modem_context.type = MODEM_IMAGE_TYPE;
-	tctx.app_context.wait_download = &wait_fota_download;
 	tctx.modem_context.wait_download = &wait_fota_download;
+#endif
+	tctx.app_context.wait_download = &wait_fota_download;
 
 	return 0;
 }
@@ -152,17 +160,22 @@ static void http_fota_task_thread(void *pArg1, void *pArg2, void *pArg3)
 
 	tls_init();
 
-	http_fota_shadow_init(CONFIG_FSU_MOUNT_POINT);
+	http_fota_shadow_init();
+#ifdef CONFIG_MODEM_HL7800
+	http_fota_modem_shadow_init(CONFIG_FSU_MOUNT_POINT);
+#endif
 
 	rc = fota_download_init(fota_download_handler);
 	if (rc != 0) {
 		LOG_ERR("Could not init APP FOTA download %d", rc);
 	}
 
+#ifdef CONFIG_MODEM_HL7800
 	rc = hl7800_download_client_init(fota_download_handler);
 	if (rc != 0) {
 		LOG_ERR("Could not init HL7800 FOTA download %d", rc);
 	}
+#endif
 
 	while (true) {
 		Framework_MsgReceiver(&pObj->msgTask.rxer);
@@ -239,7 +252,9 @@ static DispatchResult_t http_fota_tick_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 
 	if (pObj->fs_mounted) {
 		fota_fsm(&pObj->app_context);
+#ifdef CONFIG_MODEM_HL7800
 		fota_fsm(&pObj->modem_context);
+#endif
 	}
 
 	Framework_StartTimer(&pObj->msgTask);
@@ -275,8 +290,10 @@ static char *fota_image_type_get_string(enum fota_image_type type)
 	switch (type) {
 	case APP_IMAGE_TYPE:
 		return "APP";
+#ifdef CONFIG_MODEM_HL7800
 	case MODEM_IMAGE_TYPE:
 		return "MODEM";
+#endif
 	default:
 		return "UNKNOWN";
 	}
@@ -299,19 +316,24 @@ static void fota_fsm(fota_context_t *pCtx)
 		break;
 
 	case FOTA_FSM_SUCCESS:
+#ifdef CONFIG_MODEM_HL7800
 		if (pCtx->type == MODEM_IMAGE_TYPE) {
 			LOG_WRN("Modem Updating");
 			pCtx->delay = CONFIG_HTTP_FOTA_MODEM_INSTALL_DELAY;
 			next_state = FOTA_FSM_MODEM_WAIT;
 		} else {
+#endif
 			LOG_WRN("Entering mcuboot");
 			/* Allow last print to occur. */
 			k_sleep(K_MSEC(CONFIG_LOG_PROCESS_THREAD_SLEEP_MS));
 			sys_reboot(SYS_REBOOT_COLD);
 			next_state = FOTA_FSM_END; /* don't care */
+#ifdef CONFIG_MODEM_HL7800
 		}
+#endif
 		break;
 
+#ifdef CONFIG_MODEM_HL7800
 	case FOTA_FSM_MODEM_WAIT:
 		/* The modem is going to reboot.  If the cloud fsm
 		 * stays in its fota state, then its queue won't get overfilled
@@ -332,6 +354,7 @@ static void fota_fsm(fota_context_t *pCtx)
 			next_state = FOTA_FSM_END;
 		}
 		break;
+#endif
 
 	case FOTA_FSM_END:
 		pCtx->using_transport = false;
@@ -387,11 +410,13 @@ static void fota_fsm(fota_context_t *pCtx)
 				http_fota_get_download_host(pCtx->type),
 				http_fota_get_download_file(pCtx->type),
 				TLS_SEC_TAG, NULL, 0);
+#ifdef CONFIG_MODEM_HL7800
 		} else if (pCtx->type == MODEM_IMAGE_TYPE) {
 			r = hl7800_download_start(
 				pCtx, http_fota_get_download_host(pCtx->type),
 				http_fota_get_download_file(pCtx->type),
 				TLS_SEC_TAG, NULL, 0);
+#endif
 		} else {
 			r = -EINVAL;
 		}
@@ -454,16 +479,22 @@ static void fota_fsm(fota_context_t *pCtx)
 
 static bool transport_not_required(void)
 {
-	return (tctx.app_context.using_transport ||
-		tctx.modem_context.using_transport) ?
-			     false :
-			     true;
+	if (tctx.app_context.using_transport) {
+		return false;
+#ifdef CONFIG_MODEM_HL7800
+	} else if (tctx.modem_context.using_transport) {
+		return false;
+#endif
+	}
+
+	return true;
 }
 
 static int initiate_update(fota_context_t *pCtx)
 {
 	int r = 0;
 
+#ifdef CONFIG_MODEM_HL7800
 	if (pCtx->type == MODEM_IMAGE_TYPE) {
 		r = hl7800_initiate_modem_update(pCtx);
 #ifdef CONFIG_HTTP_FOTA_DELETE_FILE_AFTER_UPDATE
@@ -474,6 +505,7 @@ static int initiate_update(fota_context_t *pCtx)
 		}
 #endif
 	}
+#endif
 
 	return r;
 }
@@ -484,8 +516,10 @@ void fota_download_handler(const struct fota_download_evt *evt)
 	case FOTA_DOWNLOAD_EVT_ERROR:
 		if (tctx.app_context.using_transport) {
 			tctx.app_context.download_error = true;
+#ifdef CONFIG_MODEM_HL7800
 		} else if (tctx.modem_context.using_transport) {
 			tctx.modem_context.download_error = true;
+#endif
 		}
 		LOG_ERR("FOTA download error");
 		k_sem_give(&wait_fota_download);

@@ -44,12 +44,18 @@ enum fota_image_type { APP_IMAGE_TYPE = 0, MODEM_IMAGE_TYPE };
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
 /**
- * @brief Sets running app from version string. Sets image names.
+ * @brief Sets running app from version string. Sets application image name.
+ */
+void http_fota_shadow_init(void);
+
+/**
+ * @brief Sets running app from version string. Sets modem image name.
  *
- * @param abs_fs_path is the file system path for application images
  * @param modem_fs_path is the file system path for modem images.
  */
-void http_fota_shadow_init(const char *modem_fs_path);
+#ifdef CONFIG_MODEM_HL7800
+void http_fota_modem_shadow_init(const char *modem_fs_path);
+#endif
 
 /**
  * @brief Enable shadow generation

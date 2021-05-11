@@ -45,7 +45,9 @@ typedef struct fota_shadow_image {
 
 typedef struct fota_shadow {
 	fota_shadow_image_t app;
+#ifdef CONFIG_MODEM_HL7800
 	fota_shadow_image_t modem;
+#endif
 	bool json_update_request;
 	bool enabled;
 } fota_shadow_t;
@@ -77,11 +79,18 @@ typedef struct fota_shadow {
 	"\"" SHADOW_FOTA_ERROR_STR "\":%u"                                     \
 	"}"
 
+#ifdef CONFIG_MODEM_HL7800
 #define SHADOW_FOTA_FMT_STR                                                    \
 	SHADOW_FOTA_START                                                      \
 	"\"" SHADOW_FOTA_APP_STR "\":" SHADOW_FOTA_IMAGE_FMT_STR ","           \
 	"\"" SHADOW_FOTA_MODEM_STR                                             \
 	"\":" SHADOW_FOTA_IMAGE_FMT_STR SHADOW_FOTA_END
+#else
+#define SHADOW_FOTA_FMT_STR                                                    \
+	SHADOW_FOTA_START                                                      \
+	"\"" SHADOW_FOTA_APP_STR "\":" SHADOW_FOTA_IMAGE_FMT_STR               \
+	SHADOW_FOTA_END
+#endif
 
 #define SHADOW_FOTA_FMT_STR_MAX_CONVERSION_SIZE                                \
 	(sizeof(SHADOW_FOTA_FMT_STR) +                                         \
@@ -95,7 +104,9 @@ typedef struct fota_shadow {
 #define SHADOW_FOTA_NULL_DESIRED_FMT_STR                                       \
 	"{\"state\":{\"desired\":{\"%s\":null}}}"
 
+#ifdef CONFIG_MODEM_HL7800
 #define MODEM_IMAGE_PREFIX "HL7800"
+#endif
 
 /******************************************************************************/
 /* Global Data Definitions                                                    */
@@ -121,16 +132,22 @@ static bool set_shadow_uint32(uint32_t *dest, uint32_t value);
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-void http_fota_shadow_init(const char *modem_fs_path)
+void http_fota_shadow_init(void)
 {
 	strcpy(fota_shadow.app.running, APP_VERSION_STRING);
 
 	fota_shadow.app.name = SHADOW_FOTA_APP_STR;
-	fota_shadow.modem.name = SHADOW_FOTA_MODEM_STR;
-	fota_shadow.modem.fs_path = modem_fs_path;
 
 	fota_shadow.json_update_request = true;
 }
+
+#ifdef CONFIG_MODEM_HL7800
+void http_fota_modem_shadow_init(const char *modem_fs_path)
+{
+	fota_shadow.modem.name = SHADOW_FOTA_MODEM_STR;
+	fota_shadow.modem.fs_path = modem_fs_path;
+}
+#endif
 
 void http_fota_enable_shadow_generation(void)
 {
@@ -155,7 +172,9 @@ void http_fota_shadow_update_handler(void)
 
 	fota_shadow_handler();
 	fota_null_desired_image_handler(APP_IMAGE_TYPE);
+#ifdef CONFIG_MODEM_HL7800
 	fota_null_desired_image_handler(MODEM_IMAGE_TYPE);
+#endif
 }
 
 const char *http_fota_get_image_name(enum fota_image_type type)
@@ -163,8 +182,10 @@ const char *http_fota_get_image_name(enum fota_image_type type)
 	switch (type) {
 	case APP_IMAGE_TYPE:
 		return fota_shadow.app.name;
+#ifdef CONFIG_MODEM_HL7800
 	case MODEM_IMAGE_TYPE:
 		return fota_shadow.modem.name;
+#endif
 	default:
 		return "?name?";
 	}
@@ -179,11 +200,13 @@ void http_fota_set_running_version(enum fota_image_type type, const char *p,
 	}
 	/* Strip off prefix */
 	size_t offset = 0;
+#ifdef CONFIG_MODEM_HL7800
 	if (type == MODEM_IMAGE_TYPE) {
 		if (strstr(p, MODEM_IMAGE_PREFIX) != NULL) {
 			offset = strlen(MODEM_IMAGE_PREFIX);
 		}
 	}
+#endif
 	/* This isn't set from the shadow */
 	fota_shadow.json_update_request =
 		set_shadow_str(pImg->running, sizeof(pImg->running),
@@ -229,8 +252,10 @@ const char *http_fota_get_download_host(enum fota_image_type type)
 	switch (type) {
 	case APP_IMAGE_TYPE:
 		return fota_shadow.app.host;
+#ifdef CONFIG_MODEM_HL7800
 	case MODEM_IMAGE_TYPE:
 		return fota_shadow.modem.host;
+#endif
 	default:
 		return "?name?";
 	}
@@ -258,8 +283,10 @@ const char *http_fota_get_download_file(enum fota_image_type type)
 	switch (type) {
 	case APP_IMAGE_TYPE:
 		return fota_shadow.app.file;
+#ifdef CONFIG_MODEM_HL7800
 	case MODEM_IMAGE_TYPE:
 		return fota_shadow.modem.file;
+#endif
 	default:
 		return "?name?";
 	}
@@ -289,8 +316,10 @@ const char *http_fota_get_downloaded_filename(enum fota_image_type type)
 	switch (type) {
 	case APP_IMAGE_TYPE:
 		return fota_shadow.app.downloaded_filename;
+#ifdef CONFIG_MODEM_HL7800
 	case MODEM_IMAGE_TYPE:
 		return fota_shadow.modem.downloaded_filename;
+#endif
 	default:
 		return "?name?";
 	}
@@ -389,6 +418,7 @@ bool http_fota_ready(enum fota_image_type type)
 	return ready;
 }
 
+#ifdef CONFIG_MODEM_HL7800
 bool http_fota_modem_install_complete(void)
 {
 	bool match = false;
@@ -402,6 +432,7 @@ bool http_fota_modem_install_complete(void)
 	k_mutex_unlock(&fota_shadow_mutex);
 	return match;
 }
+#endif
 
 bool http_fota_abort(enum fota_image_type type)
 {
@@ -428,8 +459,10 @@ const char *http_fota_get_hash(enum fota_image_type type)
 	switch (type) {
 	case APP_IMAGE_TYPE:
 		return fota_shadow.app.hash;
+#ifdef CONFIG_MODEM_HL7800
 	case MODEM_IMAGE_TYPE:
 		return fota_shadow.modem.hash;
+#endif
 	default:
 		return "?name?";
 	}
@@ -441,12 +474,14 @@ size_t http_fota_convert_hash(enum fota_image_type type, uint8_t * buf,
 	size_t ret = 0;
 
 	if (buf != NULL) {
-		if ((type == MODEM_IMAGE_TYPE) && (fota_shadow.modem.hash != NULL)) {
-			ret = hex2bin(fota_shadow.modem.hash, FSU_HASH_SIZE * 2, buf, buf_len);
-		}
-		else if ((type == APP_IMAGE_TYPE) && (fota_shadow.app.hash != NULL)) {
+		if ((type == APP_IMAGE_TYPE) && (fota_shadow.app.hash != NULL)) {
 			ret = hex2bin(fota_shadow.app.hash, FSU_HASH_SIZE * 2, buf, buf_len);
 		}
+#ifdef CONFIG_MODEM_HL7800
+		else if ((type == MODEM_IMAGE_TYPE) && (fota_shadow.modem.hash != NULL)) {
+			ret = hex2bin(fota_shadow.modem.hash, FSU_HASH_SIZE * 2, buf, buf_len);
+		}
+#endif
 	}
 
 	return ret;
@@ -476,8 +511,10 @@ static fota_shadow_image_t *get_image_ptr(enum fota_image_type type)
 	switch (type) {
 	case APP_IMAGE_TYPE:
 		return &fota_shadow.app;
+#ifdef CONFIG_MODEM_HL7800
 	case MODEM_IMAGE_TYPE:
 		return &fota_shadow.modem;
+#endif
 	default:
 		return NULL;
 	}
@@ -527,13 +564,18 @@ static void fota_shadow_handler(void)
 			 fota_shadow.app.downloaded_filename,
 			 fota_shadow.app.hash,
 			 fota_shadow.app.start, fota_shadow.app.switchover,
-			 fota_shadow.app.error_count, fota_shadow.modem.running,
+			 fota_shadow.app.error_count
+#ifdef CONFIG_MODEM_HL7800
+			 ,
+			 fota_shadow.modem.running,
 			 fota_shadow.modem.desired, fota_shadow.modem.host,
 			 fota_shadow.modem.file,
 			 fota_shadow.modem.downloaded_filename,
 			 fota_shadow.modem.hash,
 			 fota_shadow.modem.start, fota_shadow.modem.switchover,
-			 fota_shadow.modem.error_count);
+			 fota_shadow.modem.error_count
+#endif
+);
 
 #ifdef CONFIG_BLUEGRASS
 		LOG_DBG("Update FOTA shadow");

@@ -147,8 +147,10 @@ static char software_ver[sizeof(APP_VERSION_STRING) + sizeof(BUILD_ID_DELIM) +
 			 sizeof(build_id)];
 #endif
 
-K_SEM_DEFINE(lte_ready_sem, 0, 1);
 K_SEM_DEFINE(rx_cert_sem, 0, 1);
+#ifdef CONFIG_MODEM_HL7800
+K_SEM_DEFINE(lte_ready_sem, 0, 1);
+#endif
 
 #ifdef CONFIG_BLUEGRASS
 static bool resolveAwsServer = true;
@@ -214,7 +216,9 @@ static void appStateLteConnected(void);
 static void appSetNextState(app_state_function_t next);
 static const char *getAppStateString(app_state_function_t state);
 
+#ifdef CONFIG_MODEM_HL7800
 static void lteEvent(enum lte_event event);
+#endif
 
 #ifdef CONFIG_LWM2M
 static void appStateInitLwm2mClient(void);
@@ -508,6 +512,7 @@ static void initializeCloudMsgReceiver(void)
 	Framework_RegisterReceiver(&cloudMsgReceiver);
 }
 
+#ifdef CONFIG_MODEM_HL7800
 static void lteEvent(enum lte_event event)
 {
 	switch (event) {
@@ -521,6 +526,7 @@ static void lteEvent(enum lte_event event)
 		break;
 	}
 }
+#endif
 
 static const char *getAppStateString(app_state_function_t state)
 {

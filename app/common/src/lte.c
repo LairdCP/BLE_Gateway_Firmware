@@ -157,6 +157,8 @@ int lteInit(void)
 	attr_set_string(ATTR_ID_iccid, str, strlen(str));
 	str = mdm_hl7800_get_sn();
 	attr_set_string(ATTR_ID_lteSerialNumber, str, strlen(str));
+	str = mdm_hl7800_get_imsi();
+	attr_set_string(ATTR_ID_imsi, str, strlen(str));
 
 	operator_index = mdm_hl7800_get_operator_index();
 	if (operator_index >= 0) {

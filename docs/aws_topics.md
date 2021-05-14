@@ -100,3 +100,38 @@ For example,
     }
 }
 ```
+
+## BT510 Configuration
+
+The Bluegrass GUI sets values in the **sensor's** shadow to change its configuration.  This can also be done manually using AWS IoT.
+
+First navigate to the sensor shadow.
+
+![SensorShadow](images/bt510_shadow.png)
+
+Then add the configuration that you want to change to the "desired" section of the shadow.  
+
+The configVersion must also be incremented.  This value is used by the MG100 gateway to filter duplicate requests.  In this example, the output data rate (odr) of the accelerometer is changed.
+
+```
+  "desired" : {
+    "configVersion" : 2,
+    "odr" : 4
+  },
+```
+
+![SensorDesired](images/bt510_desired.png)
+
+The gateway generates a JSON-RPC set command using the "/delta" shadow of the sensor.  The gateway cannot update a sensor if it isn't advertising.
+
+Once the shadow has been processed by the gateway, the desired portion of shadow will become non-existent.  If the desired value was accepted, it will appear in the "reported" section of the shadow.  If desired remains, then the gateway may be waiting to communicate with a sensor or the value provided may not be valid.  It is possible to set multiple values at once.
+
+```
+{
+  "reported": {
+    "sensorName": "Test-13",
+    "odr": 4
+}
+```
+
+The configuration parameters of the BT510 can be found in the [user guide](https://www.lairdconnect.com/documentation/sentrius-bt510-user-guide).  

@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.1"
+    "version": "0.4.2"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2042,7 +2042,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.1",
+              "x-default": "0.4.2",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -3919,6 +3919,7 @@
           {
             "name": "generatePsk",
             "summary": "Write (Control Point) to generate new PSK",
+            "description": "Device must be reset for new key to be loaded",
             "required": true,
             "x-id": 212,
             "x-projects": [
@@ -3934,8 +3935,8 @@
               "x-writeable": true,
               "x-validator": "cp8",
               "enum": {
-                "RESERVED": 0,
-                "LIGHTWEIGHT_MOBILE_TO_MOBILE": 1
+                "LWM2M_DEFAULT": 0,
+                "LWM2M_RANDOM": 1
               }
             }
           },

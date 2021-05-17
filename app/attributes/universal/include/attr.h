@@ -461,6 +461,15 @@ bool attr_get_notify(attr_id_t id);
  */
 int attr_disable_notify(void);
 
+/**
+ * @brief Set an entry to its default value
+ *
+ * @param id of attribute
+ *
+ * @return int 0 on success, else negative errno.
+ */
+int attr_default(attr_id_t id);
+
 #ifdef __cplusplus
 }
 #endif

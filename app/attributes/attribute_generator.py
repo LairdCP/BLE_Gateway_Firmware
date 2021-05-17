@@ -685,6 +685,8 @@ class attributes:
                         'return "' + inflection.titleize(key) + '";\n'
                 s += '\t\t' + 'default:'.ljust(GS_CASE_WIDTH) + 'return "?";\n'
                 s += "\t}\n}\n\n"
+                # Handle special cases
+                s = s.replace("Lwm2 M", "LwM2M")
                 lst.append(s)
 
         return ''.join(lst)

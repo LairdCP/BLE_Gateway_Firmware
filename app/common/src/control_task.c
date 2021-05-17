@@ -262,9 +262,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 
 #ifdef CONFIG_LWM2M
 		case ATTR_ID_generatePsk:
-			if (attr_get_uint32(ATTR_ID_generatePsk, 0) != 0) {
-				lwm2m_generate_psk();
-			}
+			lwm2m_generate_psk();
 			break;
 #endif
 

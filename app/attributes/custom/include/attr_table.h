@@ -259,8 +259,8 @@ enum fota_status {
 };
 
 enum generate_psk {
-	GENERATE_PSK_RESERVED = 0,
-	GENERATE_PSK_LIGHTWEIGHT_MOBILE_TO_MOBILE = 1,
+	GENERATE_PSK_LWM2M_DEFAULT = 0,
+	GENERATE_PSK_LWM2M_RANDOM = 1,
 };
 
 enum lte_init_error {

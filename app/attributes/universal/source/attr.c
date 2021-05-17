@@ -776,6 +776,19 @@ int attr_disable_notify(void)
 	return 0;
 }
 
+int attr_default(attr_id_t id)
+{
+	ATTR_ENTRY_DECL(id);
+
+	if (entry != NULL) {
+		memcpy(entry->pData, entry->pDefault, entry->size);
+		show(entry);
+		return 0;
+	} else {
+		return -EPERM;
+	}
+}
+
 __weak int attr_notify(attr_id_t id)
 {
 	ARG_UNUSED(id);

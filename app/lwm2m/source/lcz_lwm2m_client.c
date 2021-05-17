@@ -114,15 +114,33 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 
 int lwm2m_generate_psk(void)
 {
-	int r;
+	int r = -EPERM;
 	uint8_t psk[ATTR_LWM2M_PSK_SIZE];
+	uint8_t cmd = attr_get_uint32(ATTR_ID_generatePsk,
+				      GENERATE_PSK_LWM2M_DEFAULT);
 
-	LOG_WRN("Generating a new LwM2M PSK");
+	switch (cmd) {
+	case GENERATE_PSK_LWM2M_DEFAULT:
+		LOG_DBG("Setting PSK to default");
+		r = attr_default(ATTR_ID_lwm2mPsk);
 
-	r = sys_csrand_get(psk, ATTR_LWM2M_PSK_SIZE);
-	if (r == 0) {
-		r = attr_set_byte_array(ATTR_ID_lwm2mPsk, psk, sizeof(psk));
-	} else {
+		break;
+
+	case GENERATE_PSK_LWM2M_RANDOM:
+		LOG_DBG("Generating a new LwM2M PSK");
+		r = sys_csrand_get(psk, ATTR_LWM2M_PSK_SIZE);
+		if (r == 0) {
+			r = attr_set_byte_array(ATTR_ID_lwm2mPsk, psk,
+						sizeof(psk));
+		}
+		break;
+
+	default:
+		LOG_DBG("Unhandled PSK operation");
+		break;
+	}
+
+	if (r != 0) {
 		LOG_ERR("Error generating PSK: %d", r);
 	}
 

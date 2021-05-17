@@ -195,7 +195,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.1",
+	.attributeVersion = "0.4.2",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -667,8 +667,8 @@ const char *const attr_get_string_fota_status(int value)
 const char *const attr_get_string_generate_psk(int value)
 {
 	switch (value) {
-		case 0:           return "Reserved";
-		case 1:           return "Lightweight Mobile To Mobile";
+		case 0:           return "LwM2M Default";
+		case 1:           return "LwM2M Random";
 		default:          return "?";
 	}
 }

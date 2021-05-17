@@ -381,18 +381,8 @@ static int smp_nv_mapper_mqtt_save_clear(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 		/* null-terminate and remove whitespace */
 		terminate_and_trim(fs_mgmt_ctxt->file_data,
 				   fs_mgmt_ctxt->data_len);
-		LOG_DBG(">> mqtt_save_clear: %s", fs_mgmt_ctxt->file_data);
-#if 0
-		bool save = strtoul(fs_mgmt_ctxt->file_data, NULL, 10);
-
-		aws_svc_save_clear_settings(save);
-
-		if (save) {
-			awsSvcEvent(AWS_SVC_EVENT_SETTINGS_SAVED);
-		} else {
-			awsSvcEvent(AWS_SVC_EVENT_SETTINGS_CLEARED);
-		}
-#endif
+		LOG_DBG(">> mqtt_save_clear (deprecated): %s",
+			fs_mgmt_ctxt->file_data);
 	}
 
 	if (rc < 0) {

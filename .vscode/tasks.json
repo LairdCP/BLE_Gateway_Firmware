@@ -237,7 +237,6 @@
     {
       "label": "apply contact tracing patches",
       "type": "shell",
-      // Linux based command is not tested
       "command": "cp -R ./app/contact_tracing_patch/* ./",
       "windows": {
         "command": "Xcopy /E /I /Y .\\app\\contact_tracing_patch ..\\"
@@ -261,6 +260,21 @@
         "command": "py ${workspaceRoot}\\scripts\\increment_build_version.py ${workspaceRoot}\\app\\common\\include\\app_version.h"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "build bl5340 dvk with mcuboot",
+      "type": "shell",
+      "dependsOn": [
+        "increment build version"
+      ],
+      "command": "${config:setup_static_partitions_bl5340_unix} && west build -b bl5340_dvk_cpuapp -d ${workspaceRoot}/build/bl5340_dvk_cpuapp/aws ${workspaceRoot}/app",
+      "windows": {
+        "command": "${config:setup_static_partitions_bl5340_windows} && west build -b bl5340_dvk_cpuapp -d ${workspaceRoot}\\build\\bl5340_dvk_cpuapp\\aws ${workspaceRoot}\\app"
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
     }
   ],
   "inputs": [

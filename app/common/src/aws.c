@@ -25,7 +25,9 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #include <kernel.h>
 #include <random/rand32.h>
 #include <bluetooth/bluetooth.h>
+#include <version.h>
 
+#include "app_version.h"
 #include "lcz_dns.h"
 #include "print_json.h"
 #include "lcz_qrtc.h"
@@ -37,6 +39,13 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #include "sensor_gateway_parser.h"
 #endif
 
+#ifdef CONFIG_BOARD_MG100
+#include "lairdconnect_battery.h"
+#include "lcz_motion.h"
+#include "sdcard_log.h"
+#endif
+
+#include "aws_json.h"
 #include "aws.h"
 
 /******************************************************************************/
@@ -151,26 +160,30 @@ char *awsGetGatewayUpdateDeltaTopic()
 
 int awsInit(void)
 {
+	struct shadow_persistent_values *reported =
+		&shadow_persistent_data.state.reported;
+
 	k_sem_init(&connected_sem, 0, 1);
 	k_sem_init(&disconnected_sem, 0, 1);
 
 	/* init shadow data */
-	shadow_persistent_data.state.reported.firmware_version = "";
-	shadow_persistent_data.state.reported.os_version = "";
+	reported->os_version = KERNEL_VERSION_STRING;
+	reported->firmware_version = APP_VERSION_STRING;
 #ifdef CONFIG_MODEM_HL7800
-	shadow_persistent_data.state.reported.radio_version = "";
-	shadow_persistent_data.state.reported.IMEI = "";
-	shadow_persistent_data.state.reported.ICCID = "";
+	reported->IMEI = attr_get_quasi_static(ATTR_ID_gatewayId);
+	reported->ICCID = attr_get_quasi_static(ATTR_ID_iccid);
+	reported->radio_version = attr_get_quasi_static(ATTR_ID_lteVersion);
+	reported->radio_sn = attr_get_quasi_static(ATTR_ID_lteSerialNumber);
 #endif
 #ifdef CONFIG_SCAN_FOR_BT510_CODED
-	shadow_persistent_data.state.reported.codedPhySupported = true;
+	reported->codedPhySupported = true;
 #else
-	shadow_persistent_data.state.reported.codedPhySupported = false;
+	reported->codedPhySupported = false;
 #endif
 #ifdef CONFIG_HTTP_FOTA
-	shadow_persistent_data.state.reported.httpFotaEnabled = true;
+	reported->httpFotaEnabled = true;
 #else
-	shadow_persistent_data.state.reported.httpFotaEnabled = false;
+	reported->httpFotaEnabled = false;
 #endif
 
 	k_thread_name_set(
@@ -242,52 +255,6 @@ int awsDisconnect(void)
 
 	return 0;
 }
-
-int awsSetShadowKernelVersion(const char *version)
-{
-	shadow_persistent_data.state.reported.os_version = version;
-
-	return 0;
-}
-
-#ifdef CONFIG_MODEM_HL7800
-int awsSetShadowIMEI(const char *imei)
-{
-	shadow_persistent_data.state.reported.IMEI = imei;
-
-	return 0;
-}
-
-int awsSetShadowRadioFirmwareVersion(const char *version)
-{
-	shadow_persistent_data.state.reported.radio_version = version;
-
-	return 0;
-}
-#endif
-
-int awsSetShadowAppFirmwareVersion(const char *version)
-{
-	shadow_persistent_data.state.reported.firmware_version = version;
-
-	return 0;
-}
-
-#ifdef CONFIG_MODEM_HL7800
-int awsSetShadowICCID(const char *iccid)
-{
-	shadow_persistent_data.state.reported.ICCID = iccid;
-
-	return 0;
-}
-
-int awsSetShadowRadioSerialNumber(const char *sn)
-{
-	shadow_persistent_data.state.reported.radio_sn = sn;
-
-	return 0;
-}
-#endif
 
 int awsSendData(char *data, uint8_t *topic)
 {
@@ -390,6 +357,8 @@ int awsPublishShadowPersistentData()
 	if (rc < 0) {
 		AWS_LOG_ERR("Update persistent shadow data failed");
 		goto done;
+	} else {
+		AWS_LOG_INF("Sent persistent shadow data");
 	}
 
 done:
@@ -413,19 +382,11 @@ int awsPublishBl654SensorData(float temperature, float humidity, float pressure)
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
 
-#if defined(CONFIG_BOARD_MG100) || defined(CONFIG_BOARD_PINNACLE_100_DVK)
-#ifdef CONFIG_BOARD_MG100
-int awsPublishPinnacleData(int radioRssi, int radioSinr,
-			   struct battery_data *battery,
-			   struct motion_status *motion,
-			   struct sdcard_status *sdcard)
-#else
-int awsPublishPinnacleData(int radioRssi, int radioSinr)
-#endif
+#if defined(CONFIG_BOARD_MG100)
+int awsPublishHeartbeat(void)
 {
 	char msg[strlen(SHADOW_REPORTED_START) + strlen(SHADOW_RADIO_RSSI) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_RADIO_SINR) +
-#ifdef CONFIG_BOARD_MG100
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_TEMP) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_LEVEL) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_BATT_VOLT) +
@@ -445,10 +406,18 @@ int awsPublishPinnacleData(int radioRssi, int radioSinr)
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_MAX_LOG_SIZE) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_CURR_LOG_SIZE) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_SDCARD_FREE) +
-#endif
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_REPORTED_END)];
 
-#ifdef CONFIG_BOARD_MG100
+#ifdef CONFIG_SD_CARD_LOG
+	struct sdcard_status *sdcard = sdCardLogGetStatus();
+#else
+	struct sdcard_status sd_log_disabled_status = { -1, -1, -1 };
+	struct sdcard_status *sdcard = &sd_log_disabled_status;
+#endif
+
+	struct battery_data *battery = batteryGetStatus();
+	struct motion_status *motion = lcz_motion_get_status();
+
 	snprintf(
 		msg, sizeof(msg),
 		"%s%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d,%s%d%s",
@@ -470,14 +439,30 @@ int awsPublishPinnacleData(int radioRssi, int radioSinr)
 		SHADOW_MG100_MAX_LOG_SIZE, sdcard->maxLogSize,
 		SHADOW_MG100_CURR_LOG_SIZE, sdcard->currLogSize,
 		SHADOW_MG100_SDCARD_FREE, sdcard->freeSpace, SHADOW_RADIO_RSSI,
-		radioRssi, SHADOW_RADIO_SINR, radioSinr, SHADOW_REPORTED_END);
-#else
-	snprintf(msg, sizeof(msg), "%s%s%d,%s%d%s", SHADOW_REPORTED_START,
-		 SHADOW_RADIO_RSSI, radioRssi, SHADOW_RADIO_SINR, radioSinr,
-		 SHADOW_REPORTED_END);
-#endif
+		attr_get_signed32(ATTR_ID_lteRsrp, 0), SHADOW_RADIO_SINR,
+		attr_get_signed32(ATTR_ID_lteSinr, 0), SHADOW_REPORTED_END);
 
 	return awsSendData(msg, GATEWAY_TOPIC);
+}
+
+#elif defined(CONFIG_BOARD_PINNACLE_100_DVK)
+int awsPublishHeartbeat(void)
+{
+	char msg[strlen(SHADOW_REPORTED_START) + strlen(SHADOW_RADIO_RSSI) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_RADIO_SINR) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_REPORTED_END)];
+
+	snprintf(msg, sizeof(msg), "%s%s%d,%s%d%s", SHADOW_REPORTED_START,
+		 SHADOW_RADIO_RSSI, attr_get_signed32(ATTR_ID_lteRsrp, 0),
+		 SHADOW_RADIO_SINR, attr_get_signed32(ATTR_ID_lteSinr, 0),
+		 SHADOW_REPORTED_END);
+
+	return awsSendData(msg, GATEWAY_TOPIC);
+}
+#else
+int awsPublishHeartbeat(void)
+{
+	return 0;
 }
 #endif
 

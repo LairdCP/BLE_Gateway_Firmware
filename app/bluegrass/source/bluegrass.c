@@ -14,7 +14,6 @@ LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 /* Includes                                                                   */
 /******************************************************************************/
 #include <kernel.h>
-#include <version.h>
 
 #include "aws.h"
 #include "sensor_task.h"
@@ -22,14 +21,7 @@ LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 #include "lte.h"
 #include "lcz_memfault.h"
 #include "led_configuration.h"
-#include "app_version.h"
 #include "attr.h"
-
-#ifdef CONFIG_BOARD_MG100
-#include "lairdconnect_battery.h"
-#include "lcz_motion.h"
-#include "sdcard_log.h"
-#endif
 
 #ifdef CONFIG_COAP_FOTA
 #include "coap_fota_shadow.h"
@@ -78,7 +70,6 @@ static void start_fota_timer(void);
 #endif
 
 static void heartbeat_work_handler(struct k_work *work);
-static int heartbeat_handler(void);
 static void aws_init_shadow(void);
 
 static FwkMsgHandler_t sensor_publish_msg_handler;
@@ -237,34 +228,6 @@ static void heartbeat_work_handler(struct k_work *work)
 				      FMC_AWS_HEARTBEAT);
 }
 
-#ifdef CONFIG_BOARD_MG100
-static int heartbeat_handler(void)
-{
-#ifdef CONFIG_SD_CARD_LOG
-	struct sdcard_status *sdcard_status = sdCardLogGetStatus();
-#else
-	struct sdcard_status sd_log_disabled_status = { -1, -1, -1 };
-	struct sdcard_status *sdcard_status = &sd_log_disabled_status;
-#endif
-
-	struct battery_data *battery_data = batteryGetStatus();
-	struct motion_status *motion_status = lcz_motion_get_status();
-
-	return awsPublishPinnacleData(attr_get_signed32(ATTR_ID_lteRsrp, 0),
-				      attr_get_signed32(ATTR_ID_lteSinr, 0),
-				      battery_data, motion_status,
-				      sdcard_status);
-}
-
-#else
-
-static int heartbeat_handler(void)
-{
-	return awsPublishPinnacleData(attr_get_signed32(ATTR_ID_lteRsrp, 0),
-				      attr_get_signed32(ATTR_ID_lteSinr, 0));
-}
-#endif /* CONFIG_BOARD_MG100 */
-
 static void aws_init_shadow(void)
 {
 	int r;
@@ -273,17 +236,7 @@ static void aws_init_shadow(void)
 	if (bg.init_shadow) {
 		awsGenerateGatewayTopics(
 			attr_get_quasi_static(ATTR_ID_gatewayId));
-		/* Fill in base shadow info and publish */
-		awsSetShadowAppFirmwareVersion(APP_VERSION_STRING);
-		awsSetShadowKernelVersion(KERNEL_VERSION_STRING);
-		awsSetShadowIMEI(attr_get_quasi_static(ATTR_ID_gatewayId));
-		awsSetShadowICCID(attr_get_quasi_static(ATTR_ID_iccid));
-		awsSetShadowRadioFirmwareVersion(
-			attr_get_quasi_static(ATTR_ID_lteVersion));
-		awsSetShadowRadioSerialNumber(
-			attr_get_quasi_static(ATTR_ID_lteSerialNumber));
 
-		LOG_INF("Send persistent shadow data");
 		r = awsPublishShadowPersistentData();
 
 		if (r != 0) {
@@ -368,7 +321,7 @@ static DispatchResult_t heartbeat_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	ARG_UNUSED(pMsgRxer);
 	ARG_UNUSED(pMsg);
 
-	heartbeat_handler();
+	awsPublishHeartbeat();
 
 #if CONFIG_AWS_HEARTBEAT_SECONDS != 0
 	k_delayed_work_submit(&bg.heartbeat,

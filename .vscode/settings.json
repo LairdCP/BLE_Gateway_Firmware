@@ -11,6 +11,8 @@
     "setup_static_partitions_windows": "copy ${workspaceRoot}\\..\\modules\\zephyr_lib\\mcuboot_config\\pm_static.pinnacle100.yml ${workspaceRoot}\\app\\pm_static.yml",
     "clear_static_partitions_unix": "rm -f ${workspaceRoot}/app/pm_static.yml",
     "clear_static_partitions_windows": "del ${workspaceRoot}\\app\\pm_static.yml",
+    "setup_static_partitions_bl5340_unix": "copy ${workspaceRoot}/app/boards/pm_static_bl5340_dvk.yml ${workspaceRoot}/app/pm_static.yml",
+    "setup_static_partitions_bl5340_windows": "copy ${workspaceRoot}\\app\\boards\\pm_static_bl5340_dvk.yml ${workspaceRoot}\\app\\pm_static.yml",
     "C_Cpp.errorSquiggles": "Disabled",
     "cmake.configureOnOpen": false
 }

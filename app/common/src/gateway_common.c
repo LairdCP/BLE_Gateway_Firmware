@@ -19,7 +19,6 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 #include "lte.h"
 #include "attr.h"
 #include "ble.h"
-#include "laird_power.h"
 #include "dis.h"
 #include "FrameworkIncludes.h"
 #include "laird_utility_macros.h"
@@ -34,6 +33,10 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 #include "file_system_utilities.h"
 #include "gateway_fsm.h"
 #include "lcz_qrtc.h"
+
+#ifdef CONFIG_LCZ_POWER
+#include "laird_power.h"
+#endif
 
 #ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
@@ -186,9 +189,11 @@ int configure_app(void)
 	lcz_motion_init();
 #endif
 
+#ifdef CONFIG_LCZ_POWER
 	/* Start periodic ADC conversions (after battery init for mg100) */
 	power_init();
 	power_mode_set(true);
+#endif
 
 #ifdef CONFIG_LCZ_NFC
 	laird_connectivity_nfc_init();
@@ -333,6 +338,7 @@ void memfault_platform_get_device_info(sMemfaultDeviceInfo *info)
 }
 #endif /* CONFIG_LCZ_MEMFAULT */
 
+#ifdef CONFIG_LCZ_POWER
 /* Override weak implementation in laird_power.c */
 void power_measurement_callback(uint8_t integer, uint8_t decimal)
 {
@@ -347,6 +353,7 @@ void power_measurement_callback(uint8_t integer, uint8_t decimal)
 #endif
 	}
 }
+#endif
 
 #ifdef CONFIG_BOARD_MG100
 void lcz_motion_set_alarm_state(uint8_t state)

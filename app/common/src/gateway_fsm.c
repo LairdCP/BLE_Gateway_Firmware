@@ -82,7 +82,7 @@ static uint32_t get_join_network_delay(void);
 static uint32_t get_join_cloud_delay(void);
 static uint32_t get_reconnect_cloud_delay(void);
 
-#ifdef CONFIG_LWM2M
+#if defined(CONFIG_LWM2M) || !defined(CONFIG_MODEM_HL7800)
 static int unused_function(void);
 static bool status_true(void);
 #endif
@@ -92,7 +92,7 @@ static bool status_true(void);
 /******************************************************************************/
 void gateway_fsm_init(void)
 {
-#ifdef CONFIG_LWM2M
+#if defined(CONFIG_LWM2M)
 	gsm.network_init = lteInit;
 	/* The network state seems coupled to something that it shouldn't be */
 	gsm.network_is_connected = status_true;
@@ -103,8 +103,15 @@ void gateway_fsm_init(void)
 	gsm.cert_load = unused_function;
 	gsm.cert_unload = unused_function;
 #else
+
+#if defined(CONFIG_MODEM_HL7800)
 	gsm.network_init = lteInit;
 	gsm.network_is_connected = lteConnected;
+#else
+	gsm.network_init = unused_function;
+	gsm.network_is_connected = status_true;
+#endif
+
 	gsm.resolve_server = awsGetServerAddr;
 	gsm.cloud_connect = awsConnect;
 	gsm.cloud_disconnect = awsDisconnect;
@@ -131,7 +138,7 @@ void gateway_fsm(void)
 		break;
 
 	case GATEWAY_STATE_NETWORK_CONNECTED:
-#ifdef CONFIG_LWM2M
+#if defined(CONFIG_LWM2M)
 		if (!gsm.network_is_connected()) {
 			set_state(GATEWAY_STATE_NETWORK_DISCONNECTED);
 		}
@@ -403,7 +410,7 @@ static uint32_t get_reconnect_cloud_delay(void)
 	return delay;
 }
 
-#ifdef CONFIG_LWM2M
+#if defined(CONFIG_LWM2M) || !defined(CONFIG_MODEM_HL7800)
 static int unused_function(void)
 {
 	return 0;

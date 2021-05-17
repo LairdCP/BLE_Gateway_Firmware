@@ -305,11 +305,11 @@ Build without mcuboot:
 ```
 # Linux and macOS
 
-rm -f app/pm_static.yml && west build -b [board] -d build/[board]_aws app
+rm -f app/pm_static.yml && west build -b [board] -d build/[board]/aws app
 
 # Windows
 
-del app\pm_static.yml && west build -b [board] -d build\[board]_aws app
+del app\pm_static.yml && west build -b [board] -d build\[board]\aws app
 ```
 
 > **Note:** When switching between builds with or without mcuboot, be sure to delete the build directory before building.
@@ -339,11 +339,11 @@ After building the firmware, it can be flashed with the following command:
 ```
 # Linux and macOS
 
-west flash -d build/[board]_aws
+west flash -d build/[board]/aws
 
 # Windows
 
-west flash -d build\[board]_aws
+west flash -d build\[board]\aws
 ```
 
 If the firmware was built with mcuboot, `west flash` will program merged.hex which contains the mcuboot bootloader and app in a combined image.

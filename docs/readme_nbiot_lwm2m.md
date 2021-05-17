@@ -173,11 +173,11 @@ Build without mcuboot:
 ```
 # Linux and macOS
 
-rm -f app/pm_static.yml && west build -b [board] -d build/[board]_lwm2m app
+rm -f app/pm_static.yml && west build -b [board] -d build/[board]/lwm2m app
 
 # Windows
 
-del app\pm_static.yml && west build -b [board] -d build\[board]_lwm2m app
+del app\pm_static.yml && west build -b [board] -d build\[board]\lwm2m app
 ```
 
 > **Note:** When switching between builds with or without mcuboot, be sure to delete the build directory before building.
@@ -207,11 +207,11 @@ After building the firmware, it can be flashed with the following command:
 ```
 # Linux and macOS
 
-west flash -d build/[board]_lwm2m
+west flash -d build/[board]/lwm2m
 
 # Windows
 
-west flash -d build\[board]_lwm2m
+west flash -d build\[board]\lwm2m
 ```
 
 If the firmware was built with mcuboot, `west flash` will program merged.hex which contains the mcuboot bootloader and app in a combined image.

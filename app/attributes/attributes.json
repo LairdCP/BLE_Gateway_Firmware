@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.2"
+    "version": "0.4.3"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2042,7 +2042,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.2",
+              "x-default": "0.4.3",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -2859,7 +2859,7 @@
               "x-readable": true,
               "enum": {
                 "POWER_UP_INIT": 0,
-                "WAIT_BEFORE_NETWORK_INIT": 1,
+                "NETWORK_INIT": 1,
                 "WAIT_FOR_NETWORK": 2,
                 "NETWORK_CONNECTED": 3,
                 "NETWORK_DISCONNECTED": 4,
@@ -2874,7 +2874,9 @@
                 "FOTA_BUSY ": 13,
                 "DECOMMISSION": 14,
                 "CLOUD_REQUEST_DISCONNECT": 15,
-                "CLOUD_CONNECTING": 16
+                "CLOUD_CONNECTING": 16,
+                "MODEM_INIT": 17,
+                "MODEM_ERROR": 18
               }
             }
           },
@@ -3510,6 +3512,7 @@
           {
             "name": "joinDelay",
             "summary": "Write: Control point - Write 0 to generate new delay with value between (min, max) and a multiple of interval. Read: Randomized time in seconds to delay before joining",
+            "description": "If modem boot is selected during compile time, then modem is held in reset until delay expires. If modem boots into airplane mode, then exit from airplane mode and network init is delayed.",
             "required": true,
             "x-id": 190,
             "x-projects": [
@@ -3582,8 +3585,9 @@
             }
           },
           {
-            "name": "networkJoinDelayed",
-            "summary": "If true the network attach is delayed.  If false, the cloud join is delayed.  This value mirrors a compile time constant",
+            "name": "modemBoot",
+            "summary": "This value mirrors compile time constants (Kconfig).  If boot is normal, then cloud join is delayed.",
+            "description": "If cloud join delay isn't desired (or there isn't a modem), then set join delay and interval to 1 so that cloud delay is minimized.",
             "required": true,
             "x-id": 194,
             "x-projects": [
@@ -3591,11 +3595,16 @@
             ],
             "schema": {
               "type": "integer",
-              "x-ctype": "bool",
-              "x-default": "false",
-              "x-example": "true",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "1",
               "x-readable": true,
-              "x-prepare": true
+              "x-prepare": true,
+              "enum": {
+                "NORMAL": 0,
+                "DELAYED": 1,
+                "AIRPLANE": 2
+              }
             }
           },
           {
@@ -4016,7 +4025,9 @@
                 "NONE": 0,
                 "NO_IFACE": -1,
                 "IFACE_CFG": -2,
-                "DNS_CFG": -3
+                "DNS_CFG": -3,
+                "MODEM": -4,
+                "AIRPLANE": -5
               }
             }
           },
@@ -4081,6 +4092,30 @@
               "x-default": "",
               "x-example": "",
               "x-readable": true
+            }
+          },
+          {
+            "name": "modemFunctionality",
+            "summary": "Modem mode",
+            "description": "",
+            "required": true,
+            "x-id": 220,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "4",
+              "x-readable": true,
+              "x-prepare": true,
+              "enum": {
+                "ERRNO": -1,
+                "MINIMUM": 0,
+                "FULL": 1,
+                "AIRPLANE": 4
+              }
             }
           }
         ]

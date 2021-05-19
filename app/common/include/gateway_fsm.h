@@ -57,6 +57,7 @@ bool gateway_fsm_fota_request(void);
  * However, for the HL7800 a reset is recommended.
  */
 int gateway_fsm_network_error_callback(void);
+void gateway_fsm_modem_init_complete_callback(void);
 void gateway_fsm_network_init_complete_callback(void);
 void gateway_fsm_network_connected_callback(void);
 void gateway_fsm_network_disconnected_callback(void);

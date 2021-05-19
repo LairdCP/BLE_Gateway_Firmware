@@ -280,12 +280,14 @@ int attr_prepare_qrtc(void)
 	return attr_set_uint32(ATTR_ID_qrtc, lcz_qrtc_get_epoch());
 }
 
-int attr_prepare_networkJoinDelayed(void)
+int attr_prepare_modemBoot(void)
 {
-#ifdef CONFIG_MODEM_HL7800_DELAY_START
-	return attr_set_uint32(ATTR_ID_networkJoinDelayed, 1);
+#if defined(CONFIG_MODEM_HL7800_BOOT_DELAY)
+	return attr_set_uint32(ATTR_ID_modemBoot, MODEM_BOOT_DELAYED);
+#elif defined(CONFIG_MODEM_HL7800_BOOT_IN_AIRPLANE_MODE)
+	return attr_set_uint32(ATTR_ID_modemBoot, MODEM_BOOT_AIRPLANE);
 #else
-	return attr_set_uint32(ATTR_ID_networkJoinDelayed, 0);
+	return attr_set_uint32(ATTR_ID_modemBoot, MODEM_BOOT_NORMAL);
 #endif
 }
 

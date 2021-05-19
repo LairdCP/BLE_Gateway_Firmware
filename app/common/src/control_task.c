@@ -155,7 +155,7 @@ static void control_task_thread_internal(void *pArg1, void *pArg2, void *pArg3)
 {
 	control_task_obj_t *pObj = (control_task_obj_t *)pArg1;
 
-	attr_prepare_networkJoinDelayed();
+	attr_prepare_modemBoot();
 	random_join_handler(ATTR_ID_joinDelay);
 	update_modem_log_level_handler();
 

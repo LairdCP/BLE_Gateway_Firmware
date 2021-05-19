@@ -100,7 +100,7 @@ extern "C" {
 #define ATTR_ID_joinMin                               191
 #define ATTR_ID_joinMax                               192
 #define ATTR_ID_joinInterval                          193
-#define ATTR_ID_networkJoinDelayed                    194
+#define ATTR_ID_modemBoot                             194
 #define ATTR_ID_delayCloudReconnect                   195
 #define ATTR_ID_apn                                   196
 #define ATTR_ID_apnUsername                           197
@@ -126,6 +126,7 @@ extern "C" {
 #define ATTR_ID_cloudError                            217
 #define ATTR_ID_commissioningBusy                     218
 #define ATTR_ID_imsi                                  219
+#define ATTR_ID_modemFunctionality                    220
 /* pyend */
 
 /******************************************************************************/
@@ -133,8 +134,8 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                 93
-#define ATTR_TABLE_MAX_ID                               219
+#define ATTR_TABLE_SIZE                                 94
+#define ATTR_TABLE_MAX_ID                               220
 #define ATTR_TABLE_WRITABLE_COUNT                       43
 #define ATTR_MAX_STR_LENGTH                             254
 #define ATTR_MAX_STR_SIZE                               255
@@ -189,7 +190,7 @@ enum cert_status {
 
 enum gateway_state {
 	GATEWAY_STATE_POWER_UP_INIT = 0,
-	GATEWAY_STATE_WAIT_BEFORE_NETWORK_INIT = 1,
+	GATEWAY_STATE_NETWORK_INIT = 1,
 	GATEWAY_STATE_WAIT_FOR_NETWORK = 2,
 	GATEWAY_STATE_NETWORK_CONNECTED = 3,
 	GATEWAY_STATE_NETWORK_DISCONNECTED = 4,
@@ -205,6 +206,8 @@ enum gateway_state {
 	GATEWAY_STATE_DECOMMISSION = 14,
 	GATEWAY_STATE_CLOUD_REQUEST_DISCONNECT = 15,
 	GATEWAY_STATE_CLOUD_CONNECTING = 16,
+	GATEWAY_STATE_MODEM_INIT = 17,
+	GATEWAY_STATE_MODEM_ERROR = 18,
 };
 
 enum lte_network_state {
@@ -247,6 +250,12 @@ enum central_state {
 	CENTRAL_STATE_LOG_DOWNLOAD = 9,
 };
 
+enum modem_boot {
+	MODEM_BOOT_NORMAL = 0,
+	MODEM_BOOT_DELAYED = 1,
+	MODEM_BOOT_AIRPLANE = 2,
+};
+
 enum fota_control_point {
 	FOTA_CONTROL_POINT_NOP = 0,
 	FOTA_CONTROL_POINT_MODEM_START = 2,
@@ -268,6 +277,8 @@ enum lte_init_error {
 	LTE_INIT_ERROR_NO_IFACE = -1,
 	LTE_INIT_ERROR_IFACE_CFG = -2,
 	LTE_INIT_ERROR_DNS_CFG = -3,
+	LTE_INIT_ERROR_MODEM = -4,
+	LTE_INIT_ERROR_AIRPLANE = -5,
 };
 
 enum cloud_error {
@@ -280,6 +291,13 @@ enum cloud_error {
 	CLOUD_ERROR_INIT_TOPIC_PREFIX = -6,
 	CLOUD_ERROR_INIT_CLIENT_CERT = -7,
 	CLOUD_ERROR_INIT_CLIENT_KEY = -8,
+};
+
+enum modem_functionality {
+	MODEM_FUNCTIONALITY_ERRNO = -1,
+	MODEM_FUNCTIONALITY_MINIMUM = 0,
+	MODEM_FUNCTIONALITY_FULL = 1,
+	MODEM_FUNCTIONALITY_AIRPLANE = 4,
 };
 
 enum attr_dump {
@@ -297,11 +315,13 @@ BUILD_ASSERT(sizeof(enum lte_network_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_startup_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_sleep_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum central_state) == ATTR_SIZE_U8);
+BUILD_ASSERT(sizeof(enum modem_boot) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum fota_control_point) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum fota_status) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum generate_psk) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_init_error) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum cloud_error) == ATTR_SIZE_S8);
+BUILD_ASSERT(sizeof(enum modem_functionality) == ATTR_SIZE_S8);
 /* pyend */
 
 /******************************************************************************/
@@ -313,7 +333,8 @@ int attr_prepare_upTime(void);
 int attr_prepare_batteryVoltageMv(void);
 int attr_prepare_qrtc(void);
 int attr_prepare_qrtcLastSet(void);
-int attr_prepare_networkJoinDelayed(void);
+int attr_prepare_modemBoot(void);
+int attr_prepare_modemFunctionality(void);
 /* pyend */
 
 /* pystart - get string */
@@ -323,11 +344,13 @@ const char *const attr_get_string_lte_network_state(int value);
 const char *const attr_get_string_lte_startup_state(int value);
 const char *const attr_get_string_lte_sleep_state(int value);
 const char *const attr_get_string_central_state(int value);
+const char *const attr_get_string_modem_boot(int value);
 const char *const attr_get_string_fota_control_point(int value);
 const char *const attr_get_string_fota_status(int value);
 const char *const attr_get_string_generate_psk(int value);
 const char *const attr_get_string_lte_init_error(int value);
 const char *const attr_get_string_cloud_error(int value);
+const char *const attr_get_string_modem_functionality(int value);
 /* pyend */
 
 #ifdef __cplusplus

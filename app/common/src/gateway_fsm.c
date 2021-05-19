@@ -30,7 +30,7 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 
 #define RESOLVE_SERVER_RETRY_SECONDS 60
 
-/** Workaround for DNS errors that sometimes occur after network connection. */
+/** Workaround for sporadic DNS error */
 #define NETWORK_CONNECT_CALLBACK_DELAY 4
 
 #define CLOUD_CONNECT_TIMEOUT 10
@@ -45,11 +45,12 @@ static struct {
 	enum gateway_state state;
 	uint32_t timer;
 
-	bool network_init_complete;
+	bool modem_and_network_init_complete;
 	bool server_resolved;
 	bool cloud_disconnect_request;
 	bool decommission_request;
 
+	gsm_func *modem_init;
 	gsm_func *network_init;
 	gsm_status_func *network_is_connected;
 	gsm_func *resolve_server;
@@ -63,6 +64,7 @@ static struct {
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
+static void modem_init_handler(void);
 static void network_init_handler(void);
 static void wait_for_network_handler(void);
 static void wait_for_commission_handler(void);
@@ -78,6 +80,7 @@ static bool timer_expired(void);
 
 static void set_state(enum gateway_state next_state);
 
+static uint32_t get_modem_init_delay(void);
 static uint32_t get_join_network_delay(void);
 static uint32_t get_join_cloud_delay(void);
 static uint32_t get_reconnect_cloud_delay(void);
@@ -93,8 +96,8 @@ static bool status_true(void);
 void gateway_fsm_init(void)
 {
 #if defined(CONFIG_LWM2M)
-	gsm.network_init = lteInit;
-	/* The network state seems coupled to something that it shouldn't be */
+	gsm.modem_init = lteInit;
+	gsm.network_init = lteNetworkInit;
 	gsm.network_is_connected = status_true;
 	gsm.resolve_server = unused_function;
 	gsm.cloud_connect = unused_function;
@@ -105,9 +108,11 @@ void gateway_fsm_init(void)
 #else
 
 #if defined(CONFIG_MODEM_HL7800)
-	gsm.network_init = lteInit;
+	gsm.modem_init = lteInit;
+	gsm.network_init = lteNetworkInit;
 	gsm.network_is_connected = lteConnected;
 #else
+	gsm.modem_init = unused_function;
 	gsm.network_init = unused_function;
 	gsm.network_is_connected = status_true;
 #endif
@@ -125,11 +130,15 @@ void gateway_fsm(void)
 {
 	switch (gsm.state) {
 	case GATEWAY_STATE_POWER_UP_INIT:
-		set_state(GATEWAY_STATE_WAIT_BEFORE_NETWORK_INIT);
-		gsm.timer = get_join_network_delay();
+		set_state(GATEWAY_STATE_MODEM_INIT);
+		gsm.timer = get_modem_init_delay();
 		break;
 
-	case GATEWAY_STATE_WAIT_BEFORE_NETWORK_INIT:
+	case GATEWAY_STATE_MODEM_INIT:
+		modem_init_handler();
+		break;
+
+	case GATEWAY_STATE_NETWORK_INIT:
 		network_init_handler();
 		break;
 
@@ -153,9 +162,10 @@ void gateway_fsm(void)
 		set_state(GATEWAY_STATE_CLOUD_WAIT_FOR_DISCONNECT);
 		break;
 
+	case GATEWAY_STATE_MODEM_ERROR:
 	case GATEWAY_STATE_NETWORK_ERROR:
 		if (gateway_fsm_network_error_callback() == 0) {
-			set_state(GATEWAY_STATE_WAIT_BEFORE_NETWORK_INIT);
+			set_state(GATEWAY_STATE_MODEM_INIT);
 			gsm.timer = ERROR_RETRY_SECONDS;
 		}
 		break;
@@ -252,14 +262,33 @@ static bool timer_expired(void)
 	}
 }
 
+/**
+ * @brief Initialize modem after wait has expired.
+ */
+static void modem_init_handler(void)
+{
+	if (timer_expired()) {
+		if (gsm.modem_init() < 0) {
+			set_state(GATEWAY_STATE_MODEM_ERROR);
+		} else {
+			gsm.timer = get_join_network_delay();
+			set_state(GATEWAY_STATE_NETWORK_INIT);
+			gateway_fsm_modem_init_complete_callback();
+		}
+	}
+}
+
+/**
+ * @brief Initialize (LTE) network after wait has expired.
+ */
 static void network_init_handler(void)
 {
 	if (timer_expired()) {
 		if (gsm.network_init() < 0) {
-			gsm.network_init_complete = false;
+			gsm.modem_and_network_init_complete = false;
 			set_state(GATEWAY_STATE_NETWORK_ERROR);
 		} else {
-			gsm.network_init_complete = true;
+			gsm.modem_and_network_init_complete = true;
 			gsm.timer = NETWORK_CONNECT_CALLBACK_DELAY;
 			set_state(GATEWAY_STATE_WAIT_FOR_NETWORK);
 			gateway_fsm_network_init_complete_callback();
@@ -269,8 +298,8 @@ static void network_init_handler(void)
 
 static void wait_for_network_handler(void)
 {
-	if (!gsm.network_init_complete) {
-		set_state(GATEWAY_STATE_WAIT_BEFORE_NETWORK_INIT);
+	if (!gsm.modem_and_network_init_complete) {
+		set_state(GATEWAY_STATE_MODEM_INIT);
 	} else if (gsm.network_is_connected()) {
 		if (timer_expired()) {
 			gateway_fsm_network_connected_callback();
@@ -381,9 +410,18 @@ static void decommission_handler(void)
 	set_state(GATEWAY_STATE_WAIT_FOR_NETWORK);
 }
 
+static uint32_t get_modem_init_delay(void)
+{
+#ifdef CONFIG_MODEM_HL7800_BOOT_DELAY
+	return attr_get_uint32(ATTR_ID_joinDelay, 0);
+#else
+	return 0;
+#endif
+}
+
 static uint32_t get_join_network_delay(void)
 {
-#ifdef CONFIG_MODEM_HL7800_DELAY_START
+#ifdef CONFIG_MODEM_HL7800_BOOT_IN_AIRPLANE_MODE
 	return attr_get_uint32(ATTR_ID_joinDelay, 0);
 #else
 	return 0;
@@ -392,10 +430,10 @@ static uint32_t get_join_network_delay(void)
 
 static uint32_t get_join_cloud_delay(void)
 {
-#ifdef CONFIG_MODEM_HL7800_DELAY_START
-	return 0;
-#else
+#ifdef CONFIG_MODEM_HL7800_BOOT_NORMAL
 	return attr_get_uint32(ATTR_ID_joinDelay, 0);
+#else
+	return 0;
 #endif
 }
 
@@ -433,6 +471,11 @@ __weak bool gateway_fsm_fota_request(void)
 __weak int gateway_fsm_network_error_callback(void)
 {
 	return 0;
+}
+
+__weak void gateway_fsm_modem_init_complete_callback(void)
+{
+	return;
 }
 
 __weak void gateway_fsm_network_init_complete_callback(void)

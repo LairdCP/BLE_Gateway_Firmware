@@ -54,7 +54,10 @@ enum led_index {
 enum led_type_index {
 	BLUETOOTH_LED = BLUE_LED,
 	NETWORK_LED = RED_LED,
-	CLOUD_LED = GREEN_LED
+	CLOUD_LED = GREEN_LED,
+#ifdef CONFIG_BOARD_PINNACLE_100_DVK
+	NET_MGMT_LED = GREEN_LED2
+#endif
 };
 
 #ifdef CONFIG_BOARD_PINNACLE_100_DVK
@@ -62,7 +65,8 @@ BUILD_ASSERT(CONFIG_LCZ_NUMBER_OF_LEDS > GREEN_LED2, "LED object too small");
 #else
 BUILD_ASSERT(CONFIG_LCZ_NUMBER_OF_LEDS > RED_LED, "LED object too small");
 #endif
-#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || defined(CONFIG_BOARD_BL5340_DVK_CPUAPPNS)
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) ||                               \
+	defined(CONFIG_BOARD_BL5340_DVK_CPUAPPNS)
 /* BL5340 DVK */
 #define LED_NODE "tca9538"
 
@@ -79,7 +83,7 @@ enum led_index {
 	BLUE_LED1 = 0,
 	BLUE_LED2,
 	BLUE_LED3,
-	BLUE_LED4
+	BLUE_LED4,
 };
 
 enum led_type_index {

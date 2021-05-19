@@ -168,7 +168,7 @@ typedef struct ro_attribute {
 	char activeBands[20 + 1];
 	enum central_state centralState;
 	char sensorBluetoothAddress[30 + 1];
-	bool networkJoinDelayed;
+	enum modem_boot modemBoot;
 	char apn[64 + 1];
 	char apnUsername[65 + 1];
 	char apnPassword[65 + 1];
@@ -185,6 +185,7 @@ typedef struct ro_attribute {
 	enum cloud_error cloudError;
 	bool commissioningBusy;
 	char imsi[15 + 1];
+	enum modem_functionality modemFunctionality;
 	/* pyend */
 } ro_attribute_t;
 
@@ -195,7 +196,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.2",
+	.attributeVersion = "0.4.3",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -224,7 +225,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.activeBands = "",
 	.centralState = 0,
 	.sensorBluetoothAddress = "",
-	.networkJoinDelayed = false,
+	.modemBoot = 0,
 	.apn = "",
 	.apnUsername = "",
 	.apnPassword = "",
@@ -240,7 +241,8 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.lteInitError = 0,
 	.cloudError = 0,
 	.commissioningBusy = false,
-	.imsi = ""
+	.imsi = "",
+	.modemFunctionality = 0
 	/* pyend */
 };
 
@@ -251,11 +253,13 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 #define attr_get_string_lteStartupState     attr_get_string_lte_startup_state
 #define attr_get_string_lteSleepState       attr_get_string_lte_sleep_state
 #define attr_get_string_centralState        attr_get_string_central_state
+#define attr_get_string_modemBoot           attr_get_string_modem_boot
 #define attr_get_string_fotaControlPoint    attr_get_string_fota_control_point
 #define attr_get_string_fotaStatus          attr_get_string_fota_status
 #define attr_get_string_generatePsk         attr_get_string_generate_psk
 #define attr_get_string_lteInitError        attr_get_string_lte_init_error
 #define attr_get_string_cloudError          attr_get_string_cloud_error
+#define attr_get_string_modemFunctionality  attr_get_string_modem_functionality
 /* pyend */
 
 /******************************************************************************/
@@ -358,7 +362,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[64 ] = { 191, RW_ATTRX(joinMin)                       , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[65 ] = { 192, RW_ATTRX(joinMax)                       , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[66 ] = { 193, RW_ATTRX(joinInterval)                  , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[67 ] = { 194, RO_ATTRX(networkJoinDelayed)            , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , attr_prepare_networkJoinDelayed     , .min.ux = 0         , .max.ux = 0          },
+	[67 ] = { 194, RO_ATTRE(modemBoot)                     , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , attr_prepare_modemBoot              , .min.ux = 0         , .max.ux = 0          },
 	[68 ] = { 195, RW_ATTRX(delayCloudReconnect)           , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[69 ] = { 196, RO_ATTRS(apn)                           , ATTR_TYPE_STRING        , n, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 64         },
 	[70 ] = { 197, RO_ATTRS(apnUsername)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 65         },
@@ -383,7 +387,8 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[89 ] = { 216, RO_ATTRE(lteInitError)                  , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[90 ] = { 217, RO_ATTRE(cloudError)                    , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[91 ] = { 218, RO_ATTRX(commissioningBusy)             , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[92 ] = { 219, RO_ATTRS(imsi)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 14        , .max.ux = 15         }
+	[92 ] = { 219, RO_ATTRS(imsi)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 14        , .max.ux = 15         },
+	[93 ] = { 220, RO_ATTRE(modemFunctionality)            , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , attr_prepare_modemFunctionality     , .min.ux = 0         , .max.ux = 0          }
 	/* pyend */
 };
 
@@ -484,7 +489,8 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[216] = &ATTR_TABLE[89 ],
 	[217] = &ATTR_TABLE[90 ],
 	[218] = &ATTR_TABLE[91 ],
-	[219] = &ATTR_TABLE[92 ]
+	[219] = &ATTR_TABLE[92 ],
+	[220] = &ATTR_TABLE[93 ]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -547,7 +553,12 @@ __weak int attr_prepare_qrtcLastSet(void)
 	return 0;
 }
 
-__weak int attr_prepare_networkJoinDelayed(void)
+__weak int attr_prepare_modemBoot(void)
+{
+	return 0;
+}
+
+__weak int attr_prepare_modemFunctionality(void)
 {
 	return 0;
 }
@@ -569,7 +580,7 @@ const char *const attr_get_string_gateway_state(int value)
 {
 	switch (value) {
 		case 0:           return "Power Up Init";
-		case 1:           return "Wait Before Network Init";
+		case 1:           return "Network Init";
 		case 2:           return "Wait For Network";
 		case 3:           return "Network Connected";
 		case 4:           return "Network Disconnected";
@@ -585,6 +596,8 @@ const char *const attr_get_string_gateway_state(int value)
 		case 14:          return "Decommission";
 		case 15:          return "Cloud Request Disconnect";
 		case 16:          return "Cloud Connecting";
+		case 17:          return "Modem Init";
+		case 18:          return "Modem Error";
 		default:          return "?";
 	}
 }
@@ -645,6 +658,16 @@ const char *const attr_get_string_central_state(int value)
 	}
 }
 
+const char *const attr_get_string_modem_boot(int value)
+{
+	switch (value) {
+		case 0:           return "Normal";
+		case 1:           return "Delayed";
+		case 2:           return "Airplane";
+		default:          return "?";
+	}
+}
+
 const char *const attr_get_string_fota_control_point(int value)
 {
 	switch (value) {
@@ -680,6 +703,8 @@ const char *const attr_get_string_lte_init_error(int value)
 		case -1:          return "No Iface";
 		case -2:          return "Iface Cfg";
 		case -3:          return "Dns Cfg";
+		case -4:          return "Modem";
+		case -5:          return "Airplane";
 		default:          return "?";
 	}
 }
@@ -696,6 +721,17 @@ const char *const attr_get_string_cloud_error(int value)
 		case -6:          return "Init Topic Prefix";
 		case -7:          return "Init Client Cert";
 		case -8:          return "Init Client Key";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_modem_functionality(int value)
+{
+	switch (value) {
+		case -1:          return "Errno";
+		case 0:           return "Minimum";
+		case 1:           return "Full";
+		case 4:           return "Airplane";
 		default:          return "?";
 	}
 }

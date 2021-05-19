@@ -25,11 +25,18 @@ typedef void (*lte_event_function_t)(enum lte_event event);
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
 /**
- * @brief Init LTE module
+ * @brief Init LTE modem and update modem information
  *
  * @retval 0 on success, lte_init_status enum on failure.
  */
 int lteInit(void);
+
+/**
+ * @brief Init network
+ *
+ * @retval 0 on success, lte_init_status enum on failure.
+ */
+int lteNetworkInit(void);
 
 /**
 * @brief Accessor

@@ -100,6 +100,7 @@ static struct tm localTime;
 static int32_t localOffset;
 static bool connected;
 static bool wasConnected;
+static bool initialized;
 
 static struct mgmt_events iface_events[] = {
 	{ .event = NET_EVENT_DNS_SERVER_ADD,
@@ -117,18 +118,62 @@ int lteInit(void)
 	int rc = LTE_INIT_ERROR_NONE;
 	int operator_index;
 
-#ifdef CONFIG_MODEM_HL7800_DELAY_START
+	if (!initialized) {
+		initialized = true;
+		k_work_init(&localTimeWork, getLocalTimeFromModemWorkHandler);
+		mdm_hl7800_register_event_callback(modemEventCallback);
+		setup_iface_events();
+	}
+
+#ifdef CONFIG_MODEM_HL7800_BOOT_DELAY
 	rc = mdm_hl7800_reset();
 	if (rc < 0) {
+		rc = LTE_INIT_ERROR_MODEM;
 		LOG_ERR("Unable to configure modem");
+		attr_set_signed32(ATTR_ID_lteInitError, rc);
+		return rc;
+	}
+#endif
+
+	str = mdm_hl7800_get_imei();
+	attr_set_string(ATTR_ID_gatewayId, str, strlen(str));
+	str = mdm_hl7800_get_fw_version();
+	MFLT_METRICS_SET_UNSIGNED(lte_ver, lte_version_to_int(str));
+	attr_set_string(ATTR_ID_lteVersion, str, strlen(str));
+	str = mdm_hl7800_get_iccid();
+	attr_set_string(ATTR_ID_iccid, str, strlen(str));
+	str = mdm_hl7800_get_sn();
+	attr_set_string(ATTR_ID_lteSerialNumber, str, strlen(str));
+	str = mdm_hl7800_get_imsi();
+	attr_set_string(ATTR_ID_imsi, str, strlen(str));
+
+	operator_index = mdm_hl7800_get_operator_index();
+	if (operator_index >= 0) {
+		attr_set_uint32(ATTR_ID_lteOperatorIndex, operator_index);
+	}
+
+	mdm_hl7800_generate_status_events();
+
+	attr_prepare_modemFunctionality();
+
+	attr_set_signed32(ATTR_ID_lteInitError, rc);
+	return rc;
+}
+
+int lteNetworkInit(void)
+{
+	int rc = LTE_INIT_ERROR_NONE;
+
+#ifdef CONFIG_MODEM_HL7800_BOOT_IN_AIRPLANE_MODE
+	rc = mdm_hl7800_set_functionality(HL7800_FUNCTIONALITY_FULL);
+	if (rc < 0) {
+		rc = LTE_INIT_ERROR_AIRPLANE;
+		LOG_ERR("Unable to get modem out of airplane mode");
 		goto exit;
 	}
 #endif
 
-	k_work_init(&localTimeWork, getLocalTimeFromModemWorkHandler);
-
-	mdm_hl7800_register_event_callback(modemEventCallback);
-	setup_iface_events();
+	attr_prepare_modemFunctionality();
 
 	iface = net_if_get_default();
 	if (!iface) {
@@ -150,25 +195,6 @@ int lteInit(void)
 		rc = LTE_INIT_ERROR_DNS_CFG;
 		goto exit;
 	}
-
-	str = mdm_hl7800_get_imei();
-	attr_set_string(ATTR_ID_gatewayId, str, strlen(str));
-	str = mdm_hl7800_get_fw_version();
-	MFLT_METRICS_SET_UNSIGNED(lte_ver, lte_version_to_int(str));
-	attr_set_string(ATTR_ID_lteVersion, str, strlen(str));
-	str = mdm_hl7800_get_iccid();
-	attr_set_string(ATTR_ID_iccid, str, strlen(str));
-	str = mdm_hl7800_get_sn();
-	attr_set_string(ATTR_ID_lteSerialNumber, str, strlen(str));
-	str = mdm_hl7800_get_imsi();
-	attr_set_string(ATTR_ID_imsi, str, strlen(str));
-
-	operator_index = mdm_hl7800_get_operator_index();
-	if (operator_index >= 0) {
-		attr_set_uint32(ATTR_ID_lteOperatorIndex, operator_index);
-	}
-
-	mdm_hl7800_generate_status_events();
 
 exit:
 	attr_set_signed32(ATTR_ID_lteInitError, rc);
@@ -207,6 +233,14 @@ void lcz_qrtc_sync_handler(void)
 	}
 }
 
+int attr_prepare_modemFunctionality(void)
+{
+	int r = mdm_hl7800_get_functionality();
+
+	attr_set_signed32(ATTR_ID_modemFunctionality, r);
+	return r;
+}
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
@@ -219,6 +253,9 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 
 	LTE_LOG_DBG("LTE is ready!");
 	lcz_led_turn_on(NETWORK_LED);
+#ifdef CONFIG_BOARD_PINNACLE_100_DVK
+	lcz_led_turn_on(NET_MGMT_LED);
+#endif
 	lteEvent(LTE_EVT_READY);
 	connected = true;
 	wasConnected = true;
@@ -233,6 +270,9 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 
 	LTE_LOG_DBG("LTE is down");
 	lcz_led_turn_off(NETWORK_LED);
+#ifdef CONFIG_BOARD_PINNACLE_100_DVK
+	lcz_led_turn_off(NET_MGMT_LED);
+#endif
 	lteEvent(LTE_EVT_DISCONNECTED);
 	connected = false;
 }

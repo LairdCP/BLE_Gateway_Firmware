@@ -87,6 +87,8 @@ static void getLocalTimeFromModemWorkHandler(struct k_work *item);
 
 static void lteSyncQrtc(void);
 
+static uint32_t lte_version_to_int(char *ver);
+
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
@@ -152,6 +154,7 @@ int lteInit(void)
 	str = mdm_hl7800_get_imei();
 	attr_set_string(ATTR_ID_gatewayId, str, strlen(str));
 	str = mdm_hl7800_get_fw_version();
+	MFLT_METRICS_SET_UNSIGNED(lte_ver, lte_version_to_int(str));
 	attr_set_string(ATTR_ID_lteVersion, str, strlen(str));
 	str = mdm_hl7800_get_iccid();
 	attr_set_string(ATTR_ID_iccid, str, strlen(str));
@@ -349,6 +352,7 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_REVISION:
+		MFLT_METRICS_SET_UNSIGNED(lte_ver, lte_version_to_int(s));
 		attr_set_string(ATTR_ID_lteVersion, s, strlen(s));
 #ifdef CONFIG_BLUEGRASS
 		/* Update shadow because modem version has changed. */
@@ -396,4 +400,47 @@ static void lteSyncQrtc(void)
 __weak void lteEvent(enum lte_event event)
 {
 	ARG_UNUSED(event);
+}
+
+/**
+ * @brief Convert HL7800 version string from format 'HL7800.4.4.14.0' to
+ * 04041400
+ *
+ * @param ver HL7800 version string
+ * @return 0 on error or version as an int
+ */
+static uint32_t lte_version_to_int(char *ver)
+{
+	uint32_t ver_int = 0;
+	int num_delims = 4;
+	char *delims[num_delims];
+	char *search_start;
+	int major, minor, fix, build;
+
+	search_start = ver;
+
+	/* find all delimiters (.) */
+	for (int i = 0; i < num_delims; i++) {
+		delims[i] = strchr(search_start, '.');
+		if (!delims[i]) {
+			LOG_ERR("Could not find delim %d, val: %s", i,
+				log_strdup(ver));
+			return ver_int;
+		}
+		/* Start next search after current delim location */
+		search_start = delims[i] + 1;
+	}
+
+	major = strtol(delims[0] + 1, NULL, 10);
+	minor = strtol(delims[1] + 1, NULL, 10);
+	fix = strtol(delims[2] + 1, NULL, 10);
+	build = strtol(delims[3] + 1, NULL, 10);
+
+	ver_int += major * 1000000;
+	ver_int += minor * 10000;
+	ver_int += fix * 100;
+	ver_int += build;
+
+	LOG_INF("LTE version int: %d", ver_int);
+	return ver_int;
 }

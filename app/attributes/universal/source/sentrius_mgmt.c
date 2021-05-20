@@ -355,6 +355,8 @@ static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason)
 
 	bt_conn_unref(conn);
 	smp_ble.conn_handle = NULL;
+
+	attr_disable_notify();
 }
 
 static int get_parameter(struct mgmt_ctxt *ctxt)

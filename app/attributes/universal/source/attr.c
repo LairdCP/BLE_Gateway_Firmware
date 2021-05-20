@@ -677,7 +677,7 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 				if (r < 0) {
 					LOG_ERR("Error converting attribute table "
 						"into file (dump) [%u] status: %d",
-						i, r);
+						ATTR_TABLE[i].id, r);
 					break;
 				} else {
 					count += 1;
@@ -889,7 +889,7 @@ static int save_attributes(void)
 				if (r < 0) {
 					LOG_ERR("Error converting attribute table "
 						"into file (save) [%u] status: %d",
-						i, r);
+						ATTR_TABLE[i].id, r);
 					break;
 				}
 			}
@@ -944,10 +944,10 @@ static void broadcast_handler(bool send_notifications)
 					ns = attr_notify(ATTR_TABLE[i].id);
 					if (ns < 0 && ns != -ENOTCONN) {
 						LOG_ERR("Notification [%u]: %d",
-							i, ns);
+							ATTR_TABLE[i].id, ns);
 					} else {
 						LOG_DBG("Notification [%u]: %d",
-							i, ns);
+							ATTR_TABLE[i].id, ns);
 					}
 				}
 			}

@@ -4,6 +4,8 @@
 
 Communication between the gateway and AWS uses 4 topics.
 
+The gateway shadow is described in [yaml](ble_gateway_shadow.schema.yml).
+
 ## Gateway Topics
 
 The gateway uses the following topics. The IMEI of the device is used to differentiate gateways. For example, "\$aws/things/deviceId-354616090287629/shadow/get/accepted".

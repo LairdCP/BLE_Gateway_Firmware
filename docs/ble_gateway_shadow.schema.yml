@@ -1,0 +1,132 @@
+definitions:
+  fota:
+    type: object
+    properties:
+      running:
+        type: string
+        description: Version of version running
+      desired:
+        type: string
+        description: Version of desired
+      desiredFilename:
+        type: string
+        description: File name of desired version
+      downloadFilename:
+        type: string
+        description: File name of downloaded version
+      hash:
+        type: string
+      start:
+        type: number
+        description: Epoch that indicates when download can begin
+      switchover:
+        type: number
+        description: Epoch that indicates when switch to new firmware can begin.
+      errorCount:
+        type: number
+        description: If firmware update fails, this count will be incremented.
+  sensor:
+    type: object
+    properties:
+      bluetoothAddr:
+        type: string
+      lastSeenEpoch:
+        type: number
+        description: Seconds from Jan 1, 1970
+      enable:
+        type: boolean
+        description: Enable/Disable data collection from sensor.
+
+properties:
+  desired:
+    type: object
+    properties:
+      app:
+        "$ref": "#/definitions/fota"
+      hl7800:
+        "$ref": "#/definitions/fota"
+      fwBridge:
+        type: string
+
+  reported:
+    type: object
+    properties:
+      firmware_version:
+        type: string
+        required: true
+      os_version:
+        type: string
+        required: true
+      radio_version:
+        type: string
+        pattern: "HL7800\\.[0-9]{1,2}\\.[0-9]{1,2}\\.[0-9]{1,2}\\.[0-9]{1,2}"
+        description: Only available when modem is present
+        required: false
+      radio_rssi:
+        type: number
+        minimum: -100
+        maximum: 0
+        description: From modem
+        required: false
+      IMEI:
+        type: string
+        description: International Mobile Equipment Identity (modem)
+        required: false
+      ICCID:
+        type: string
+        description: Integrated Circuit Card ID (modem)
+        required: false
+      radio_sn:
+        type: string
+        description: Modem serial number
+        required: false
+      temperature:
+        title: Temperature C
+        type: number
+        description: Only present if BL654 sensor with BME280 is connected
+        required: false
+      humidity:
+        title: Humidity %
+        type: number
+        description: Only present if BL654 sensor with BME280 is connected
+        required: false
+      pressure:
+        title: Air Pressure (Pa)
+        type: number
+        description: Only present if BL654 sensor with BME280 is connected
+        required: false
+      battery_voltage:
+        title: Battery Voltage (float)
+        type: number
+        minimum: 0
+        maximum: 20
+      fwBridge:
+        type: string
+        description: Hostname (bridge) used during CoAP FOTA.  CoAP FOTA may not be enabled.
+        required: false
+      fwProduct:
+        type: string
+        description: The product name is used to generate the file path during CoAP FOTA
+        required: false
+      fwBlockSize:
+        type: number
+        description: The maximum blocksize used during CoAP FOTA
+        required: false
+      codedPhySupported:
+        type: boolean
+        required: true
+      httpFotaEnabled:
+        type: boolean
+        required: true
+      app:
+        "$ref": "#/definitions/fota"
+        required: true
+      hl7800:
+        "$ref": "#/definitions/fota"
+        required: false
+      bt510:
+        type: object
+        required: false
+        sensors:
+          type: array
+          "$ref": "#/definitions/sensor"

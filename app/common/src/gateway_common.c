@@ -246,11 +246,6 @@ void gateway_fsm_network_init_complete_callback(void)
 
 void gateway_fsm_network_connected_callback(void)
 {
-#ifdef CONFIG_LCZ_MEMFAULT_METRICS
-	/* force metric data flush to report anything thats ready at this point */
-	memfault_metrics_heartbeat_debug_trigger();
-#endif
-
 #ifdef CONFIG_LWM2M
 	lwm2m_client_init();
 #endif

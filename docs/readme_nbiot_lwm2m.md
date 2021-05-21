@@ -166,6 +166,8 @@ The firmware can be built to work with or without the mcuboot bootloader. Buildi
 
 Issue these commands **from the pinnacle_100_firmware directory**.
 
+> **WARNING:** If using windows, checkout code to a path of 12 characters or less to avoid build issues related to path length limits.
+
 Build without mcuboot:
 
 > **Note:** `[board]` should be replaced with `mg100` or `pinnacle_100_dvk`

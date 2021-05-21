@@ -101,6 +101,7 @@ static int32_t localOffset;
 static bool connected;
 static bool wasConnected;
 static bool initialized;
+static bool log_lte_dropped = false;
 
 static struct mgmt_events iface_events[] = {
 	{ .event = NET_EVENT_DNS_SERVER_ADD,
@@ -302,19 +303,25 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		switch (code) {
 		case HL7800_HOME_NETWORK:
 		case HL7800_ROAMING:
+			log_lte_dropped = true;
 			lcz_led_turn_on(NETWORK_LED);
 			lteSyncQrtc();
 			MFLT_METRICS_TIMER_STOP(lte_ttf);
 			break;
 
+		case HL7800_NOT_REGISTERED:
 		case HL7800_REGISTRATION_DENIED:
 		case HL7800_UNABLE_TO_CONFIGURE:
 		case HL7800_OUT_OF_COVERAGE:
 			lcz_led_turn_off(NETWORK_LED);
 			MFLT_METRICS_TIMER_START(lte_ttf);
+			if ((code == HL7800_OUT_OF_COVERAGE ||
+			    code == HL7800_NOT_REGISTERED) && log_lte_dropped) {
+				log_lte_dropped = false;
+				MFLT_METRICS_ADD(lte_drop, 1);
+			}
 			break;
 
-		case HL7800_NOT_REGISTERED:
 		case HL7800_SEARCHING:
 			lcz_led_blink(NETWORK_LED, &NETWORK_SEARCH_LED_PATTERN);
 			MFLT_METRICS_TIMER_START(lte_ttf);

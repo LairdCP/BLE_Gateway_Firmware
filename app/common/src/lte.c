@@ -81,11 +81,11 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 
 static void setup_iface_events(void);
 
-static void modemEventCallback(enum mdm_hl7800_event event, void *event_data);
+static void modem_event_callback(enum mdm_hl7800_event event, void *event_data);
 
-static void getLocalTimeFromModemWorkHandler(struct k_work *item);
+static void get_local_time_from_modem(struct k_work *item);
 
-static void lteSyncQrtc(void);
+static void lte_sync_qrtc(void);
 
 #ifdef CONFIG_LCZ_MEMFAULT
 static uint32_t lte_version_to_int(char *ver);
@@ -97,25 +97,30 @@ static uint32_t lte_version_to_int(char *ver);
 static struct net_if *iface;
 static struct net_if_config *cfg;
 static struct dns_resolve_context *dns;
-struct k_work localTimeWork;
-static struct tm localTime;
-static int32_t localOffset;
+struct k_work local_time_work;
+static struct tm local_time;
+static int32_t local_offset;
 static bool connected;
-static bool wasConnected;
+static bool was_connected;
 static bool initialized;
 static bool log_lte_dropped = false;
 
 static struct mgmt_events iface_events[] = {
-	{ .event = NET_EVENT_DNS_SERVER_ADD,
-	  .handler = iface_ready_evt_handler },
-	{ .event = NET_EVENT_IF_DOWN, .handler = iface_down_evt_handler },
+	{
+		.event = NET_EVENT_DNS_SERVER_ADD,
+		.handler = iface_ready_evt_handler,
+	},
+	{
+		.event = NET_EVENT_IF_DOWN,
+		.handler = iface_down_evt_handler,
+	},
 	{ 0 } /* The for loop below requires this extra location. */
 };
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-int lteInit(void)
+int lte_init(void)
 {
 	char *str;
 	int rc = LTE_INIT_ERROR_NONE;
@@ -123,8 +128,8 @@ int lteInit(void)
 
 	if (!initialized) {
 		initialized = true;
-		k_work_init(&localTimeWork, getLocalTimeFromModemWorkHandler);
-		mdm_hl7800_register_event_callback(modemEventCallback);
+		k_work_init(&local_time_work, get_local_time_from_modem);
+		mdm_hl7800_register_event_callback(modem_event_callback);
 		setup_iface_events();
 	}
 
@@ -163,7 +168,7 @@ int lteInit(void)
 	return rc;
 }
 
-int lteNetworkInit(void)
+int lte_network_init(void)
 {
 	int rc = LTE_INIT_ERROR_NONE;
 
@@ -204,7 +209,7 @@ exit:
 	return rc;
 }
 
-bool lteIsReady(void)
+bool lte_ready(void)
 {
 	struct sockaddr_in *dnsAddr;
 
@@ -217,13 +222,13 @@ bool lteIsReady(void)
 	return false;
 }
 
-bool lteConnected(void)
+bool lte_connected(void)
 {
 	/* On the first connection, wait for the event. */
 	if (connected) {
 		return true;
-	} else if (wasConnected) {
-		return lteIsReady();
+	} else if (was_connected) {
+		return lte_ready();
 	} else {
 		return false;
 	}
@@ -231,8 +236,8 @@ bool lteConnected(void)
 
 void lcz_qrtc_sync_handler(void)
 {
-	if (lteConnected()) {
-		lteSyncQrtc();
+	if (lte_connected()) {
+		lte_sync_qrtc();
 	}
 }
 
@@ -259,9 +264,9 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 #ifdef CONFIG_BOARD_PINNACLE_100_DVK
 	lcz_led_turn_on(NET_MGMT_LED);
 #endif
-	lteEvent(LTE_EVT_READY);
+	lte_event_callback(LTE_EVT_READY);
 	connected = true;
-	wasConnected = true;
+	was_connected = true;
 }
 
 static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
@@ -276,10 +281,13 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 #ifdef CONFIG_BOARD_PINNACLE_100_DVK
 	lcz_led_turn_off(NET_MGMT_LED);
 #endif
-	lteEvent(LTE_EVT_DISCONNECTED);
+	lte_event_callback(LTE_EVT_DISCONNECTED);
 	connected = false;
 }
 
+/**
+ * @note Events from different layers need their own cb
+ */
 static void setup_iface_events(void)
 {
 	int i;
@@ -293,7 +301,7 @@ static void setup_iface_events(void)
 	}
 }
 
-static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
+static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 {
 	uint8_t code = ((struct mdm_hl7800_compound_event *)event_data)->code;
 	char *s = (char *)event_data;
@@ -307,7 +315,7 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 		case HL7800_ROAMING:
 			log_lte_dropped = true;
 			lcz_led_turn_on(NETWORK_LED);
-			lteSyncQrtc();
+			lte_sync_qrtc();
 			MFLT_METRICS_TIMER_STOP(lte_ttf);
 			break;
 
@@ -428,26 +436,26 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 	}
 }
 
-static void getLocalTimeFromModemWorkHandler(struct k_work *item)
+static void get_local_time_from_modem(struct k_work *item)
 {
 	ARG_UNUSED(item);
 
-	int32_t status = mdm_hl7800_get_local_time(&localTime, &localOffset);
+	int32_t status = mdm_hl7800_get_local_time(&local_time, &local_offset);
 
 	if (status == 0) {
 		LOG_INF("Epoch set to %u",
-			lcz_qrtc_set_epoch_from_tm(&localTime, localOffset));
+			lcz_qrtc_set_epoch_from_tm(&local_time, local_offset));
 	} else {
 		LOG_WRN("Get local time from modem failed! (%d)", status);
 	}
 }
 
-static void lteSyncQrtc(void)
+static void lte_sync_qrtc(void)
 {
-	k_work_submit(&localTimeWork);
+	k_work_submit(&local_time_work);
 }
 
-__weak void lteEvent(enum lte_event event)
+__weak void lte_event_callback(enum lte_event event)
 {
 	ARG_UNUSED(event);
 }

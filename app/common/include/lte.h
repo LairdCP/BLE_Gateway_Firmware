@@ -29,29 +29,31 @@ typedef void (*lte_event_function_t)(enum lte_event event);
  *
  * @retval 0 on success, lte_init_status enum on failure.
  */
-int lteInit(void);
+int lte_init(void);
 
 /**
  * @brief Init network
  *
  * @retval 0 on success, lte_init_status enum on failure.
  */
-int lteNetworkInit(void);
+int lte_network_init(void);
 
 /**
 * @brief Accessor
  */
-bool lteIsReady(void);
+bool lte_ready(void);
 
 /**
  * @brief Accessor
  */
-bool lteConnected(void);
+bool lte_connected(void);
 
 /**
  * @brief Callback from LTE module that can be implemented in application.
+ *
+ * @param event
  */
-void lteEvent(enum lte_event event);
+void lte_event_callback(enum lte_event event);
 
 #ifdef __cplusplus
 }

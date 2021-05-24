@@ -96,8 +96,8 @@ static bool status_true(void);
 void gateway_fsm_init(void)
 {
 #if defined(CONFIG_LWM2M)
-	gsm.modem_init = lteInit;
-	gsm.network_init = lteNetworkInit;
+	gsm.modem_init = lte_init;
+	gsm.network_init = lte_network_init;
 	gsm.network_is_connected = status_true;
 	gsm.resolve_server = unused_function;
 	gsm.cloud_connect = unused_function;
@@ -108,9 +108,9 @@ void gateway_fsm_init(void)
 #else
 
 #if defined(CONFIG_MODEM_HL7800)
-	gsm.modem_init = lteInit;
-	gsm.network_init = lteNetworkInit;
-	gsm.network_is_connected = lteConnected;
+	gsm.modem_init = lte_init;
+	gsm.network_init = lte_network_init;
+	gsm.network_is_connected = lte_connected;
 #else
 	gsm.modem_init = unused_function;
 	gsm.network_init = unused_function;

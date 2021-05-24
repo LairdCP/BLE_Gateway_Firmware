@@ -21,6 +21,8 @@ LOG_MODULE_REGISTER(wdt, CONFIG_WDT_LOG_LEVEL);
 #include <drivers/watchdog.h>
 #include <logging/log_ctrl.h>
 
+#include "lcz_memfault.h"
+
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
@@ -175,7 +177,7 @@ int wdt_initialize(const struct device *device)
 
 		k_work_q_start(&wdt.work_q, wdt_workq_stack,
 			       K_THREAD_STACK_SIZEOF(wdt_workq_stack),
-			       CONFIG_WDT_WORK_QUEUE_THREAD_PRIORITY);
+			       K_LOWEST_APPLICATION_THREAD_PRIO);
 
 		k_delayed_work_init(&wdt.feed, wdt_feeder);
 		r = k_delayed_work_submit_to_queue(&wdt.work_q, &wdt.feed,
@@ -188,6 +190,20 @@ int wdt_initialize(const struct device *device)
 		r = wdt_setup(wdt.dev, WDT_OPT_PAUSE_HALTED_BY_DBG);
 		if (r < 0) {
 			LOG_ERR("watchdog setup error");
+			break;
+		}
+
+		r = LCZ_MEMFAULT_WATCHDOG_UPDATE_TIMEOUT(
+			CONFIG_WDT_TIMEOUT_MILLISECONDS -
+			CONFIG_WDT_MEMFAULT_PRE_FIRE_MS);
+		if (r < 0) {
+			LOG_ERR("Unable to set memfault software watchdog time");
+			break;
+		}
+
+		r = LCZ_MEMFAULT_WATCHDOG_ENABLE();
+		if (r < 0) {
+			LOG_ERR("Unable to enable memfault software watchdog");
 			break;
 		}
 
@@ -210,6 +226,7 @@ static void wdt_feeder(struct k_work *work)
 	int r = 0;
 
 	if (atomic_cas(&w->check_ins, w->check_mask, 0)) {
+		(void)LCZ_MEMFAULT_WATCHDOG_FEED();
 		r = wdt_feed(w->dev, w->channel_id);
 	}
 

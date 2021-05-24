@@ -8,8 +8,8 @@ menuconfig WDT
         Enable-to-Disable requires power cycle or watchdog reset.
         Watchdog cannot be stopped once started.
         It can be reconfigured after a reset.
-        If a watchdog reset occurs, then it won't cause another reset unless
-        it is re-enabled.
+        If a watchdog reset occurs, then it won't cause another
+        reset unless it is re-enabled.
 
 if WDT
 
@@ -24,7 +24,7 @@ config WDT_LOG_LEVEL
 
 config WDT_TIMEOUT_MILLISECONDS
     int "Rate in milliseconds for watchdog"
-    range 10000 1200000
+    range 18000 1200000
     default 600000
     help
         The bootloader (mcuboot) supplied with the application prior to
@@ -32,16 +32,19 @@ config WDT_TIMEOUT_MILLISECONDS
         updated (requires a physical connection), the timeout should
         remain at 10 minutes.
 
+config WDT_MEMFAULT_PRE_FIRE_MS
+    int "The software timer fires before the HW WDT"
+    default 8000
+    help
+        This software timer is used to save a core dump before reset.
+        This must be large enough so that the system can reboot and
+        feed the dog. The memfault software watchdog causes a
+        reset assertion.  The kernel with modem requires 3 seconds
+        to boot.
+
 config WDT_WORK_QUEUE_STACK_SIZE
     int
     default 320
-
-config WDT_WORK_QUEUE_THREAD_PRIORITY
-    int "Priority of work queue"
-    default 10
-    help
-        When check-in functions are not used, the priority needs to be lower
-        than main so that a non-yielding main causes a reset.
 
 config WDT_TEST
     bool "Force the watchdog to timeout (set during initialization)"

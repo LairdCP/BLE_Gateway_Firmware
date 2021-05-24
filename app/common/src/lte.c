@@ -87,7 +87,9 @@ static void getLocalTimeFromModemWorkHandler(struct k_work *item);
 
 static void lteSyncQrtc(void);
 
+#ifdef CONFIG_LCZ_MEMFAULT
 static uint32_t lte_version_to_int(char *ver);
+#endif
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -316,7 +318,8 @@ static void modemEventCallback(enum mdm_hl7800_event event, void *event_data)
 			lcz_led_turn_off(NETWORK_LED);
 			MFLT_METRICS_TIMER_START(lte_ttf);
 			if ((code == HL7800_OUT_OF_COVERAGE ||
-			    code == HL7800_NOT_REGISTERED) && log_lte_dropped) {
+			     code == HL7800_NOT_REGISTERED) &&
+			    log_lte_dropped) {
 				log_lte_dropped = false;
 				MFLT_METRICS_ADD(lte_drop, 1);
 			}
@@ -449,6 +452,7 @@ __weak void lteEvent(enum lte_event event)
 	ARG_UNUSED(event);
 }
 
+#ifdef CONFIG_LCZ_MEMFAULT
 /**
  * @brief Convert HL7800 version string from format 'HL7800.4.4.14.0' to
  * 04041400
@@ -491,3 +495,4 @@ static uint32_t lte_version_to_int(char *ver)
 	LOG_INF("LTE version int: %d", ver_int);
 	return ver_int;
 }
+#endif

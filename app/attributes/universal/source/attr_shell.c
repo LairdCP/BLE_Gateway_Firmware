@@ -126,26 +126,82 @@ static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	attr_id_t id = 0;
 	int r = -EPERM;
+	enum attr_type type;
+	static union {
+		long unsigned int x;
+		long int y;
+		long long unsigned int xx;
+		long long int yy;
+		bool b;
+		float f;
+		uint8_t bin[ATTR_MAX_BIN_SIZE];
+	} param;
+	size_t binlen;
 
 	if ((argc == 3) && (argv[1] != NULL) && (argv[2] != NULL)) {
 		id = get_id(argv[1]);
 		/* The attribute validators try to make sense of what is given to them. */
 		if (attr_valid_id(id)) {
-			if (is_string(argv[2])) {
+			type = attr_get_type(id);
+
+			switch (type) {
+			case ATTR_TYPE_FLOAT:
+				param.f = strtof(argv[2], NULL);
+				r = attr_set(id, ATTR_TYPE_ANY, &param.f,
+					     sizeof(param.f));
+				break;
+
+			case ATTR_TYPE_BOOL:
+			case ATTR_TYPE_U8:
+			case ATTR_TYPE_U16:
+			case ATTR_TYPE_U32:
+				param.x = strtoul(argv[2], NULL, 0);
+				r = attr_set(id, ATTR_TYPE_ANY, &param.x,
+					     sizeof(param.x));
+				break;
+
+			case ATTR_TYPE_U64:
+				param.xx = strtoull(argv[2], NULL, 0);
+				r = attr_set(id, ATTR_TYPE_ANY, &param.xx,
+					     sizeof(param.xx));
+				break;
+
+			case ATTR_TYPE_S8:
+			case ATTR_TYPE_S16:
+			case ATTR_TYPE_S32:
+				param.y = strtol(argv[2], NULL, 0);
+				r = attr_set(id, ATTR_TYPE_ANY, &param.y,
+					     sizeof(param.y));
+				break;
+
+			case ATTR_TYPE_S64:
+				param.yy = strtoull(argv[2], NULL, 0);
+				r = attr_set(id, ATTR_TYPE_ANY, &param.yy,
+					     sizeof(param.yy));
+				break;
+
+			case ATTR_TYPE_STRING:
 				r = attr_set(id, ATTR_TYPE_ANY, argv[2],
 					     strlen(argv[2]));
-			} else if (attr_get_type(id) == ATTR_TYPE_FLOAT) {
-				float f = strtof(argv[2], NULL);
-				r = attr_set(id, ATTR_TYPE_ANY, &f, sizeof(f));
-			} else if (attr_get_type(id) != ATTR_TYPE_STRING) {
-				long x = strtol(argv[2], NULL, 0);
-				r = attr_set(id, ATTR_TYPE_ANY, &x, sizeof(x));
-				if (r < 0) {
-					shell_error(shell, "Set failed");
-				}
-			} else {
-				shell_error(shell, "Unexpected type");
+				break;
+
+			case ATTR_TYPE_BYTE_ARRAY:
+				memset(param.bin, 0, sizeof(param.bin));
+				binlen = hex2bin(argv[2], strlen(argv[2]),
+						 param.bin, sizeof(param.bin));
+				r = attr_set(id, ATTR_TYPE_ANY, param.bin,
+					     binlen);
+				break;
+
+			default:
+				shell_error(shell, "Unhandled type");
+				break;
 			}
+
+			if (r < 0) {
+				shell_error(shell, "Set failed");
+			}
+
 		} else {
 			shell_error(shell, "Invalid id");
 		}

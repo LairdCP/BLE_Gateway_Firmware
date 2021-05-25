@@ -20,6 +20,7 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 #include "lte.h"
 #include "lcz_certs.h"
 #include "attr.h"
+#include "bluegrass.h"
 #include "gateway_fsm.h"
 
 /******************************************************************************/
@@ -407,6 +408,10 @@ static void decommission_handler(void)
 	gsm.decommission_request = false;
 	gsm.server_resolved = false;
 	gsm.cert_unload();
+#ifdef CONFIG_BLUEGRASS
+	/* The decomissioning process on the mobile app deletes the shadow */
+	bluegrass_init_shadow_request();
+#endif
 	set_state(GATEWAY_STATE_WAIT_FOR_NETWORK);
 }
 

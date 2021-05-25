@@ -21,7 +21,7 @@ LOG_MODULE_REGISTER(sensor_task, CONFIG_SENSOR_TASK_LOG_LEVEL);
 #include <bluetooth/bluetooth.h>
 
 #include "FrameworkIncludes.h"
-#include "Bracket.h"
+#include "lcz_bracket.h"
 #include "lcz_bluetooth.h"
 #include "lcz_bt_scan.h"
 #include "vsp_definitions.h"
@@ -75,7 +75,7 @@ typedef struct SensorTask {
 	bool paired;
 	bool resetSent;
 	bool configComplete;
-	BracketObj_t *pBracket;
+	bracket_t *pBracket;
 	SensorCmdMsg_t *pCmdMsg;
 	bool awsReady;
 	struct k_timer resetTimer;
@@ -133,7 +133,7 @@ static int RequestDisconnect(SensorTaskObj_t *pObj, const char *str);
 static int Discover(void);
 static int Subscribe(void);
 static int WriteString(const char *str);
-static void CreateAndSendResponseMsg(BracketObj_t *p);
+static void CreateAndSendResponseMsg(bracket_t *p);
 static DispatchResult_t RetryConfigRequest(SensorTaskObj_t *pObj);
 static void AckConfigRequest(SensorTaskObj_t *pObj);
 static void SendSetEpochCommand(void);
@@ -225,9 +225,10 @@ void SensorTask_Initialize(void)
 
 	k_thread_name_set(st.msgTask.pTid, FWK_FNAME);
 
-	st.pBracket =
-		Bracket_Initialize(CONFIG_JSON_BRACKET_BUFFER_SIZE,
-				   k_malloc(CONFIG_JSON_BRACKET_BUFFER_SIZE));
+	st.pBracket = lcz_bracket_initialize(
+		CONFIG_JSON_BRACKET_BUFFER_SIZE,
+		k_malloc(CONFIG_JSON_BRACKET_BUFFER_SIZE));
+
 	st.conn = NULL;
 	RegisterConnectionCallbacks();
 	RegisterSecurityCallbacks();
@@ -468,7 +469,7 @@ static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 
 	if (pObj->pCmdMsg == NULL && pObj->conn == NULL) { /* not busy */
 		lcz_bt_scan_stop(pObj->scanUserId);
-		Bracket_Reset(pObj->pBracket);
+		lcz_bracket_reset(pObj->pBracket);
 		pObj->pCmdMsg = (SensorCmdMsg_t *)pMsg;
 		pObj->connected = false;
 		pObj->paired = false;
@@ -829,8 +830,8 @@ static uint8_t NotificationCallback(struct bt_conn *conn,
 	char *ptr = (char *)data;
 	size_t i;
 	for (i = 0; i < length; i++) {
-		int result = Bracket_Compute(st.pBracket, ptr[i]);
-		if (result == 0) {
+		int result = lcz_bracket_compute(st.pBracket, ptr[i]);
+		if (result == BRACKET_MATCH) {
 			ST_LOG_DEV("Bracket Match");
 			CreateAndSendResponseMsg(st.pBracket);
 		}
@@ -848,10 +849,10 @@ static uint8_t NotificationCallback(struct bt_conn *conn,
 	return BT_GATT_ITER_CONTINUE;
 }
 
-static void CreateAndSendResponseMsg(BracketObj_t *p)
+static void CreateAndSendResponseMsg(bracket_t *p)
 {
 	/* Reserve an extra byte for adding NULL at end of JSON string */
-	size_t bufSize = Bracket_Length(p) + 1;
+	size_t bufSize = lcz_bracket_length(p) + 1;
 	FwkBufMsg_t *pMsg =
 		BufferPool_Take(FWK_BUFFER_MSG_SIZE(FwkBufMsg_t, bufSize));
 	if (pMsg != NULL) {
@@ -859,10 +860,10 @@ static void CreateAndSendResponseMsg(BracketObj_t *p)
 		pMsg->header.txId = FWK_ID_SENSOR_TASK;
 		pMsg->header.rxId = FWK_ID_SENSOR_TASK;
 		pMsg->size = bufSize;
-		pMsg->length = Bracket_Copy(p, pMsg->buffer);
+		pMsg->length = lcz_bracket_copy(p, pMsg->buffer);
 		FRAMEWORK_MSG_SEND(pMsg);
 	}
-	Bracket_Reset(p);
+	lcz_bracket_reset(p);
 }
 
 static void MtuCallback(struct bt_conn *conn, uint8_t err,

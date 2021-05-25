@@ -301,6 +301,7 @@ static DispatchResult_t SensorTickHandler(FwkMsgReceiver_t *pMsgRxer,
 	if (pObj->awsReady) {
 		SensorTable_TimeToLiveHandler();
 		SensorTable_SubscriptionHandler(); /* sensor shadow  delta */
+		SensorTable_ConfigRequestHandler();
 		SensorTable_GetAcceptedSubscriptionHandler();
 		SensorTable_InitShadowHandler();
 		StartSensorTick(pObj);

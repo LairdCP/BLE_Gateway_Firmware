@@ -135,12 +135,21 @@ config SENSOR_LOG_MAX_SIZE
         Limited by MQTT or modem.
 
 config SENSOR_SUBSCRIPTION_DELAY_SECONDS
-    int "Delay after sensor is greenlisted before subscription to the delta/get topics."
+    int "Delay after greenlist before subscription to the delta/get topics."
     default 10
     range 6 60
     help
         The server needs time to generate the sensor object.
-        When the permissions are changed on AWS a disconnect may occur.
+        When the permissions are changed on AWS a disconnect will occur.
+
+config SENSOR_CONFIG_DELAY_SECONDS
+    int "Delay before sensor is configured/dumped after greenlist ack"
+    default 10
+    range 6 60
+    help
+        Prevent reading of sensor settings during AWS disconnect that
+        occurs when a sensor is enabled in Bluegrass
+        (for the first time).
 
 config SENSOR_TABLE_NEW_EVENT_LOG_LEVEL
     int "Log level for sensor table new event detection"

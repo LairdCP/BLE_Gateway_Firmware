@@ -111,6 +111,8 @@ typedef struct SensorEntry {
 	uint32_t ttl;
 	void *pCmd;
 	void *pSecondCmd;
+	uint64_t configDispatchTime;
+	bool configRequest;
 	bool configBusy;
 	uint32_t configBusyVersion;
 	bool dumpBusy;
@@ -449,6 +451,23 @@ void SensorTable_UnsubscribeAll(void)
 	}
 }
 
+void SensorTable_ConfigRequestHandler(void)
+{
+	size_t i;
+	for (i = 0; i < CONFIG_SENSOR_TABLE_SIZE; i++) {
+		SensorEntry_t *p = &sensorTable[i];
+		if (p->configRequest &&
+		    (p->configDispatchTime <= k_uptime_get())) {
+			p->configRequest = false;
+			if (p->rsp.configVersion == 0) {
+				CreateConfigRequest(p);
+			} else if (!p->firstDumpComplete) {
+				CreateDumpRequest(p);
+			}
+		}
+	}
+}
+
 void SensorTable_SubscriptionHandler(void)
 {
 	char *fmt = SENSOR_SUBSCRIPTION_TOPIC_FMT_STR;
@@ -565,11 +584,11 @@ void SensorTable_SubscriptionAckHandler(SubscribeMsg_t *pMsg)
 			/* This is a delta subscription ack */
 			if (pMsg->success) {
 				if (p->subscribed) {
-					if (p->rsp.configVersion == 0) {
-						CreateConfigRequest(p);
-					} else if (!p->firstDumpComplete) {
-						CreateDumpRequest(p);
-					}
+					p->configRequest = true;
+					p->configDispatchTime =
+						k_uptime_get() +
+						(CONFIG_SENSOR_CONFIG_DELAY_SECONDS *
+						 MSEC_PER_SEC);
 				}
 			} else { /* Try again (most likely AWS disconnect has occurred) */
 				p->subscribed = !pMsg->subscribe;

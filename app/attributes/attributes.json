@@ -3511,7 +3511,7 @@
           },
           {
             "name": "joinDelay",
-            "summary": "Write: Control point - Write 0 to generate new delay with value between (min, max) and a multiple of interval. Read: Randomized time in seconds to delay before joining",
+            "summary": "Value in seconds. Write: Control point - Write 0 to generate new delay with value between (min, max) and a multiple of interval. Read: Randomized time in seconds to delay before joining",
             "description": "If modem boot is selected during compile time, then modem is held in reset until delay expires. If modem boots into airplane mode, then exit from airplane mode and network init is delayed.",
             "required": true,
             "x-id": 190,
@@ -3568,7 +3568,7 @@
           },
           {
             "name": "joinInterval",
-            "summary": "Interval in milliseconds.  Determines separation between devices",
+            "summary": "Interval in seconds.  Determines separation between devices",
             "required": true,
             "x-id": 193,
             "x-projects": [
@@ -3578,7 +3578,7 @@
               "type": "integer",
               "x-ctype": "uint32_t",
               "x-default": "1",
-              "x-example": "1000",
+              "x-example": "2",
               "x-writeable": true,
               "x-savable": true,
               "x-readable": true
@@ -3610,6 +3610,7 @@
           {
             "name": "delayCloudReconnect",
             "summary": "If true, then cloud reconnects will be delayed by joinDelay",
+            "description": "If cloud delay is enabled, this should remain disabled.",
             "required": true,
             "x-id": 195,
             "x-projects": [

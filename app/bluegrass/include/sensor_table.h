@@ -196,6 +196,16 @@ void SensorTable_InitShadowHandler(void);
  */
 void SensorTable_ProcessShadowInitMsg(SensorShadowInitMsg_t *pMsg);
 
+/**
+ * @brief Config requests that send shadow are delayed and handled
+ * by this function.  The delay is because AWS will disconnect when
+ * a sensor is created in Bluegrass.
+ *
+ * @note This shouldn't be called if they system isn't ready to send
+ * data to AWS.
+ */
+void SensorTable_ConfigRequestHandler(void);
+
 #ifdef __cplusplus
 }
 #endif

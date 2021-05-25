@@ -221,3 +221,7 @@ If the firmware was built with mcuboot, `west flash` will program merged.hex whi
 ## Development
 
 See [here](development.md) for help on getting started with custom development.
+
+## Cellular Network Information
+
+See [here](site_survey.md) for instructions on how to get details about the cell network.

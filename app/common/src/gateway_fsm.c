@@ -111,7 +111,7 @@ void gateway_fsm_init(void)
 #if defined(CONFIG_MODEM_HL7800)
 	gsm.modem_init = lte_init;
 	gsm.network_init = lte_network_init;
-	gsm.network_is_connected = lte_connected;
+	gsm.network_is_connected = lte_ready;
 #else
 	gsm.modem_init = unused_function;
 	gsm.network_init = unused_function;

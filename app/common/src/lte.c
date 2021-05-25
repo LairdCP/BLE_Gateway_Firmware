@@ -100,8 +100,6 @@ static struct dns_resolve_context *dns;
 struct k_work local_time_work;
 static struct tm local_time;
 static int32_t local_offset;
-static bool connected;
-static bool was_connected;
 static bool initialized;
 static bool log_lte_dropped = false;
 
@@ -211,32 +209,29 @@ exit:
 
 bool lte_ready(void)
 {
+	bool ready = false;
 	struct sockaddr_in *dnsAddr;
 
 	if (iface != NULL && cfg != NULL && &dns->servers[0] != NULL) {
 		dnsAddr = net_sin(&dns->servers[0].dns_server);
-		return net_if_is_up(iface) && cfg->ip.ipv4 &&
-		       !net_ipv4_is_addr_unspecified(&dnsAddr->sin_addr);
+		ready = net_if_is_up(iface) && cfg->ip.ipv4 &&
+			!net_ipv4_is_addr_unspecified(&dnsAddr->sin_addr);
 	}
 
-	return false;
-}
-
-bool lte_connected(void)
-{
-	/* On the first connection, wait for the event. */
-	if (connected) {
-		return true;
-	} else if (was_connected) {
-		return lte_ready();
+#ifdef CONFIG_BOARD_PINNACLE_100_DVK
+	if (ready) {
+		lcz_led_turn_on(NET_MGMT_LED);
 	} else {
-		return false;
+		lcz_led_turn_off(NET_MGMT_LED);
 	}
+#endif
+
+	return ready;
 }
 
 void lcz_qrtc_sync_handler(void)
 {
-	if (lte_connected()) {
+	if (lte_ready()) {
 		lte_sync_qrtc();
 	}
 }
@@ -261,12 +256,6 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 
 	LTE_LOG_DBG("LTE is ready!");
 	lcz_led_turn_on(NETWORK_LED);
-#ifdef CONFIG_BOARD_PINNACLE_100_DVK
-	lcz_led_turn_on(NET_MGMT_LED);
-#endif
-	lte_event_callback(LTE_EVT_READY);
-	connected = true;
-	was_connected = true;
 }
 
 static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
@@ -278,11 +267,6 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 
 	LTE_LOG_DBG("LTE is down");
 	lcz_led_turn_off(NETWORK_LED);
-#ifdef CONFIG_BOARD_PINNACLE_100_DVK
-	lcz_led_turn_off(NET_MGMT_LED);
-#endif
-	lte_event_callback(LTE_EVT_DISCONNECTED);
-	connected = false;
 }
 
 /**
@@ -453,11 +437,6 @@ static void get_local_time_from_modem(struct k_work *item)
 static void lte_sync_qrtc(void)
 {
 	k_work_submit(&local_time_work);
-}
-
-__weak void lte_event_callback(enum lte_event event)
-{
-	ARG_UNUSED(event);
 }
 
 #ifdef CONFIG_LCZ_MEMFAULT

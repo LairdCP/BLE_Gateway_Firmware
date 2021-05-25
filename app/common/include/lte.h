@@ -14,14 +14,6 @@ extern "C" {
 #endif
 
 /******************************************************************************/
-/* Global Constants, Macros and Type Definitions                              */
-/******************************************************************************/
-enum lte_event { LTE_EVT_READY, LTE_EVT_DISCONNECTED };
-
-/* Callback function for LTE events */
-typedef void (*lte_event_function_t)(enum lte_event event);
-
-/******************************************************************************/
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
 /**
@@ -42,18 +34,6 @@ int lte_network_init(void);
 * @brief Accessor
  */
 bool lte_ready(void);
-
-/**
- * @brief Accessor
- */
-bool lte_connected(void);
-
-/**
- * @brief Callback from LTE module that can be implemented in application.
- *
- * @param event
- */
-void lte_event_callback(enum lte_event event);
 
 #ifdef __cplusplus
 }

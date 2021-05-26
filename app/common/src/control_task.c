@@ -394,6 +394,9 @@ static void commission_handler(void)
 	attr_set_signed32(ATTR_ID_certStatus, CERT_STATUS_BUSY);
 	attr_set_uint32(ATTR_ID_commissioningBusy, true);
 
+	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CONTROL_TASK, FWK_ID_SENSOR_TASK,
+				      FMC_AWS_DECOMMISSION);
+
 	/* If the value is written, then always decommission so that the connection
 	 * is closed and the certs are unloaded.  The files aren't deleted.
 	 * If commission is true, then the state machine will load the certs

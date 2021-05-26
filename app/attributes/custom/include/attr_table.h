@@ -127,6 +127,7 @@ extern "C" {
 #define ATTR_ID_commissioningBusy                     218
 #define ATTR_ID_imsi                                  219
 #define ATTR_ID_modemFunctionality                    220
+#define ATTR_ID_ethernetInitError                     221
 /* pyend */
 
 /******************************************************************************/
@@ -134,8 +135,8 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                 94
-#define ATTR_TABLE_MAX_ID                               220
+#define ATTR_TABLE_SIZE                                 95
+#define ATTR_TABLE_MAX_ID                               221
 #define ATTR_TABLE_WRITABLE_COUNT                       43
 #define ATTR_MAX_STR_LENGTH                             254
 #define ATTR_MAX_STR_SIZE                               255
@@ -300,6 +301,13 @@ enum modem_functionality {
 	MODEM_FUNCTIONALITY_AIRPLANE = 4,
 };
 
+enum ethernet_init_error {
+	ETHERNET_INIT_ERROR_NONE = 0,
+	ETHERNET_INIT_ERROR_NO_IFACE = -1,
+	ETHERNET_INIT_ERROR_IFACE_CFG = -2,
+	ETHERNET_INIT_ERROR_DNS_CFG = -3,
+};
+
 enum attr_dump {
 	ATTR_DUMP_RW = 0,
 	ATTR_DUMP_W = 1,
@@ -322,6 +330,7 @@ BUILD_ASSERT(sizeof(enum generate_psk) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_init_error) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum cloud_error) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum modem_functionality) == ATTR_SIZE_S8);
+BUILD_ASSERT(sizeof(enum ethernet_init_error) == ATTR_SIZE_S8);
 /* pyend */
 
 /******************************************************************************/
@@ -351,6 +360,7 @@ const char *const attr_get_string_generate_psk(int value);
 const char *const attr_get_string_lte_init_error(int value);
 const char *const attr_get_string_cloud_error(int value);
 const char *const attr_get_string_modem_functionality(int value);
+const char *const attr_get_string_ethernet_init_error(int value);
 /* pyend */
 
 #ifdef __cplusplus

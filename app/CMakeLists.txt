@@ -27,6 +27,10 @@ target_sources_ifdef(CONFIG_MODEM_HL7800 app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/fota_smp.c
 )
 
+target_sources_ifdef(CONFIG_NET_L2_ETHERNET app PRIVATE
+    ${CMAKE_SOURCE_DIR}/common/src/ethernet_network.c
+)
+
 if(CONFIG_CONTACT_TRACING)
 zephyr_include_directories(${CMAKE_SOURCE_DIR}/contact_tracing/include)
 target_sources(app PRIVATE

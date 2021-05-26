@@ -186,6 +186,7 @@ typedef struct ro_attribute {
 	bool commissioningBusy;
 	char imsi[15 + 1];
 	enum modem_functionality modemFunctionality;
+	enum ethernet_init_error ethernetInitError;
 	/* pyend */
 } ro_attribute_t;
 
@@ -196,7 +197,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.3",
+	.attributeVersion = "0.4.5",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -242,7 +243,8 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.cloudError = 0,
 	.commissioningBusy = false,
 	.imsi = "",
-	.modemFunctionality = 0
+	.modemFunctionality = 0,
+	.ethernetInitError = 0
 	/* pyend */
 };
 
@@ -260,6 +262,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 #define attr_get_string_lteInitError        attr_get_string_lte_init_error
 #define attr_get_string_cloudError          attr_get_string_cloud_error
 #define attr_get_string_modemFunctionality  attr_get_string_modem_functionality
+#define attr_get_string_ethernetInitError   attr_get_string_ethernet_init_error
 /* pyend */
 
 /******************************************************************************/
@@ -388,7 +391,8 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[90 ] = { 217, RO_ATTRE(cloudError)                    , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[91 ] = { 218, RO_ATTRX(commissioningBusy)             , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[92 ] = { 219, RO_ATTRS(imsi)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 14        , .max.ux = 15         },
-	[93 ] = { 220, RO_ATTRE(modemFunctionality)            , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , attr_prepare_modemFunctionality     , .min.ux = 0         , .max.ux = 0          }
+	[93 ] = { 220, RO_ATTRE(modemFunctionality)            , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , attr_prepare_modemFunctionality     , .min.ux = 0         , .max.ux = 0          },
+	[94 ] = { 221, RO_ATTRE(ethernetInitError)             , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          }
 	/* pyend */
 };
 
@@ -490,7 +494,8 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[217] = &ATTR_TABLE[90 ],
 	[218] = &ATTR_TABLE[91 ],
 	[219] = &ATTR_TABLE[92 ],
-	[220] = &ATTR_TABLE[93 ]
+	[220] = &ATTR_TABLE[93 ],
+	[221] = &ATTR_TABLE[94 ]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -732,6 +737,17 @@ const char *const attr_get_string_modem_functionality(int value)
 		case 0:           return "Minimum";
 		case 1:           return "Full";
 		case 4:           return "Airplane";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_ethernet_init_error(int value)
+{
+	switch (value) {
+		case 0:           return "None";
+		case -1:          return "No Iface";
+		case -2:          return "Iface Cfg";
+		case -3:          return "Dns Cfg";
 		default:          return "?";
 	}
 }

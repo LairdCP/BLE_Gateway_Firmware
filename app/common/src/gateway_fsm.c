@@ -17,10 +17,17 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 
 #include "laird_utility_macros.h"
 #include "aws.h"
+#if defined(CONFIG_MODEM_HL7800)
 #include "lte.h"
+#endif
+#if defined(CONFIG_NET_L2_ETHERNET)
+#include "ethernet_network.h"
+#endif
 #include "lcz_certs.h"
 #include "attr.h"
+#ifdef CONFIG_BLUEGRASS
 #include "bluegrass.h"
+#endif
 #include "gateway_fsm.h"
 
 /******************************************************************************/
@@ -86,8 +93,10 @@ static uint32_t get_join_network_delay(void);
 static uint32_t get_join_cloud_delay(void);
 static uint32_t get_reconnect_cloud_delay(void);
 
-#if defined(CONFIG_LWM2M) || !defined(CONFIG_MODEM_HL7800)
+#if defined(CONFIG_LWM2M) || defined(CONFIG_NET_L2_ETHERNET)
 static int unused_function(void);
+#endif
+#if defined(CONFIG_LWM2M)
 static bool status_true(void);
 #endif
 
@@ -97,9 +106,21 @@ static bool status_true(void);
 void gateway_fsm_init(void)
 {
 #if defined(CONFIG_LWM2M)
+#if defined(CONFIG_MODEM_HL7800)
+	/* MG100 or Pinnacle 100 LwM2M */
 	gsm.modem_init = lte_init;
 	gsm.network_init = lte_network_init;
 	gsm.network_is_connected = status_true;
+#elif defined(CONFIG_NET_L2_ETHERNET)
+	/* BL5340 LwM2M */
+	gsm.modem_init = unused_function;
+	gsm.network_init = ethernet_init;
+	gsm.network_is_connected = status_true;
+#else
+	/* Unknown board LwM2M */
+#error "Unknown board/network configuration, add to gateway_fsm_init()"
+#endif
+
 	gsm.resolve_server = unused_function;
 	gsm.cloud_connect = unused_function;
 	gsm.cloud_disconnect = unused_function;
@@ -109,13 +130,18 @@ void gateway_fsm_init(void)
 #else
 
 #if defined(CONFIG_MODEM_HL7800)
+	/* MG100 or Pinnacle 100 Bluegrass/CT */
 	gsm.modem_init = lte_init;
 	gsm.network_init = lte_network_init;
 	gsm.network_is_connected = lte_ready;
-#else
+#elif defined(CONFIG_NET_L2_ETHERNET)
+	/* BL5340 Bluegrass/CT */
 	gsm.modem_init = unused_function;
-	gsm.network_init = unused_function;
-	gsm.network_is_connected = status_true;
+	gsm.network_init = ethernet_init;
+	gsm.network_is_connected = ethernet_connected;
+#else
+	/* Unknown board Bluegrass/CT */
+#error "Unknown board/network configuration, add to gateway_fsm_init()"
 #endif
 
 	gsm.resolve_server = awsGetServerAddr;
@@ -453,12 +479,14 @@ static uint32_t get_reconnect_cloud_delay(void)
 	return delay;
 }
 
-#if defined(CONFIG_LWM2M) || !defined(CONFIG_MODEM_HL7800)
+#if defined(CONFIG_LWM2M) || defined(CONFIG_NET_L2_ETHERNET)
 static int unused_function(void)
 {
 	return 0;
 }
+#endif
 
+#if defined(CONFIG_LWM2M)
 static bool status_true(void)
 {
 	return true;

@@ -2546,7 +2546,7 @@ static void send_stashed_entries_work_handler(struct k_work *work)
 								stashed_entries.failure_cnt = 0;
 
 								/* after 2 minutes of failures, AWS unlikely to be working so just reboot */
-								lcz_software_reset(1000);
+								lcz_software_reset_after_assert(1000);
 							}
 						}
 					}
@@ -2673,7 +2673,7 @@ static void ct_adv_watchdog_work_handler(struct k_work *work)
 	ARG_UNUSED(work);
 
 	LOG_WRN("Advertisement not received in the last hour");
-	lcz_software_reset(0);
+	lcz_software_reset_after_assert(0);
 }
 
 static bool ct_ble_remote_active_handler(void)

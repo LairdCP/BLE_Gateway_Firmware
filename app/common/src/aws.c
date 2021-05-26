@@ -235,7 +235,7 @@ int awsConnect()
 			    (CONFIG_AWS_MAX_CONSECUTIVE_CONNECTION_FAILURES !=
 			     0)) {
 				LOG_WRN("Maximum consecutive connection failures exceeded");
-				lcz_software_reset(0);
+				lcz_software_reset_after_assert(0);
 			}
 		} else {
 			aws_stats.consecutive_connection_failures = 0;
@@ -814,7 +814,7 @@ static void publish_watchdog_work_handler(struct k_work *work)
 	ARG_UNUSED(work);
 
 	LOG_WRN("Unable to publish (AWS) in the last hour");
-	lcz_software_reset(0);
+	lcz_software_reset_after_assert(0);
 }
 
 static void keep_alive_work_handler(struct k_work *work)

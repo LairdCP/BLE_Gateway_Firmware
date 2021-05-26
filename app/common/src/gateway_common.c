@@ -298,14 +298,7 @@ void Framework_AssertionHandler(char *file, int line)
 			log_strdup(k_thread_name_get(k_current_get())));
 	}
 
-#ifdef CONFIG_LAIRD_CONNECTIVITY_DEBUG
-	/* breakpoint location */
-	volatile bool wait = true;
-	while (wait)
-		;
-#endif
-
-	lcz_software_reset(CONFIG_FWK_RESET_DELAY_MS);
+	lcz_software_reset_after_assert(CONFIG_FWK_RESET_DELAY_MS);
 }
 
 #ifdef CONFIG_LCZ_MEMFAULT

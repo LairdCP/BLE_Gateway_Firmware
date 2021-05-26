@@ -508,14 +508,14 @@ static DispatchResult_t DisconnectMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 					     FwkMsg_t *pMsg)
 {
 	SensorTaskObj_t *pObj = FWK_TASK_CONTAINER(SensorTaskObj_t);
+
 	k_timer_stop(&pObj->msgTask.timer);
 	pObj->connected = false;
-	char *name = log_strdup(pObj->pCmdMsg->name);
 	if (pObj->configComplete) {
-		LOG_INF("'%s' configured", name);
+		LOG_INF("'%s' configured", log_strdup(pObj->pCmdMsg->name));
 		AckConfigRequest(pObj);
 	} else {
-		LOG_ERR("'%s' NOT configured", name);
+		LOG_ERR("'%s' NOT configured", log_strdup(pObj->pCmdMsg->name));
 		(void)RetryConfigRequest(pObj);
 		pObj->configDisconnects += 1;
 	}

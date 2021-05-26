@@ -480,7 +480,7 @@ int awsSubscribe(uint8_t *topic, uint8_t subscribe)
 {
 	struct mqtt_topic mt;
 	int rc = -EPERM;
-	char *s, *t;
+	const char *const str = subscribe ? "Subscribed" : "Unsubscribed";
 	struct mqtt_subscription_list list = {
 		.list = &mt, .list_count = 1, .message_id = rand16_nonzero_get()
 	};
@@ -499,12 +499,11 @@ int awsSubscribe(uint8_t *topic, uint8_t subscribe)
 	__ASSERT(mt.topic.size != 0, "Invalid topic");
 	rc = subscribe ? mqtt_subscribe(&client_ctx, &list) :
 			       mqtt_unsubscribe(&client_ctx, &list);
-	s = log_strdup(subscribe ? "Subscribed" : "Unsubscribed");
-	t = log_strdup(mt.topic.utf8);
 	if (rc != 0) {
-		AWS_LOG_ERR("%s status %d to %s", s, rc, t);
+		AWS_LOG_ERR("%s status %d to %s", str, rc,
+			    log_strdup(mt.topic.utf8));
 	} else {
-		AWS_LOG_DBG("%s to %s", s, t);
+		AWS_LOG_DBG("%s to %s", str, log_strdup(mt.topic.utf8));
 	}
 	return rc;
 }

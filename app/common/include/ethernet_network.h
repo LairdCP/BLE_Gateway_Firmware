@@ -16,10 +16,10 @@ extern "C" {
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-enum ethernet_event { ETHERNET_EVT_READY, ETHERNET_EVT_DISCONNECTED };
+enum ethernet_network_event { ETHERNET_EVT_READY, ETHERNET_EVT_DISCONNECTED };
 
 /* Callback function for ethernet events */
-typedef void (*ethernet_event_function_t)(enum ethernet_event event);
+typedef void (*ethernet_network_event_function_t)(enum ethernet_network_event event);
 
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
@@ -29,22 +29,22 @@ typedef void (*ethernet_event_function_t)(enum ethernet_event event);
  *
  * @retval 0 on success, ethernet_init_status enum on failure.
  */
-int ethernet_init(void);
+int ethernet_network_init(void);
 
 /**
 * @brief Accessor
  */
-bool ethernet_ready(void);
+bool ethernet_network_ready(void);
 
 /**
  * @brief Accessor
  */
-bool ethernet_connected(void);
+bool ethernet_network_connected(void);
 
 /**
  * @brief Callback from ethernet driver that can be implemented in application.
  */
-void ethernet_event(enum ethernet_event event);
+void ethernet_network_event(enum ethernet_network_event event);
 
 #ifdef __cplusplus
 }

@@ -83,7 +83,7 @@ static struct mgmt_events iface_events[] = {
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-int ethernet_init(void)
+int ethernet_network_init(void)
 {
 	int rc = ETHERNET_INIT_ERROR_NONE;
 
@@ -125,7 +125,7 @@ exit:
 	return rc;
 }
 
-bool ethernet_ready(void)
+bool ethernet_network_ready(void)
 {
 	struct sockaddr_in *dnsAddr;
 
@@ -138,13 +138,13 @@ bool ethernet_ready(void)
 	return false;
 }
 
-bool ethernet_connected(void)
+bool ethernet_network_connected(void)
 {
 	/* On the first connection, wait for the event. */
 	if (connected) {
 		return true;
 	} else if (wasConnected) {
-		return ethernet_ready();
+		return ethernet_network_ready();
 	} else {
 		return false;
 	}
@@ -162,7 +162,7 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 
 	ETHERNET_LOG_DBG("Ethernet is ready!");
 	lcz_led_turn_on(NETWORK_LED);
-	ethernet_event(ETHERNET_EVT_READY);
+	ethernet_network_event(ETHERNET_EVT_READY);
 	connected = true;
 	wasConnected = true;
 }
@@ -176,7 +176,7 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 
 	ETHERNET_LOG_DBG("Ethernet is down");
 	lcz_led_turn_off(NETWORK_LED);
-	ethernet_event(ETHERNET_EVT_DISCONNECTED);
+	ethernet_network_event(ETHERNET_EVT_DISCONNECTED);
 	connected = false;
 }
 
@@ -193,7 +193,7 @@ static void setup_iface_events(void)
 	}
 }
 
-__weak void ethernet_event(enum ethernet_event event)
+__weak void ethernet_network_event(enum ethernet_network_event event)
 {
 	ARG_UNUSED(event);
 }

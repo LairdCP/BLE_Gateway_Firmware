@@ -684,8 +684,7 @@ static int publish(struct mqtt_client *client, enum mqtt_qos qos, char *data,
 
 #ifdef CONFIG_JSON_LOG_PUBLISH
 	if (!binary) {
-		print_json("Publish string", len, data,
-			   param.message.payload.data);
+		print_json("Publish string", len, data);
 	}
 #endif
 

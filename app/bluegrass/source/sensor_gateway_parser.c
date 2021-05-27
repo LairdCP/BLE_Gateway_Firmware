@@ -97,6 +97,10 @@ static const char ACT_THRESH_STRING[] = "activationThreshold";
 static const char MAX_LOG_SIZE_STRING[] = "maxLogSizeMB";
 
 #define JSON_DEFAULT_BUF_SIZE (1536)
+BUILD_ASSERT((JSON_DEFAULT_BUF_SIZE * 2) + 256 < CONFIG_BUFFER_POOL_SIZE,
+	     "Buffer pool too small: Need space for 2 messages"
+	     "(and system messages)");
+
 #endif /* CONFIG_BOARD_MG100 */
 
 /******************************************************************************/
@@ -178,8 +182,8 @@ static bool FindUint(uint32_t *pVersion, const char *key);
 #ifdef CONFIG_BOARD_MG100
 static void MiniGatewayParser(const char *pTopic);
 static bool ValuesUpdated(uint16_t Value);
-static void BuildAndSendLocalConfigResponse();
-static void BuildAndSendLocalConfigNullResponse();
+static void BuildAndSendLocalConfigResponse(void);
+static void BuildAndSendLocalConfigNullResponse(void);
 #endif /* CONFIG_BOARD_MG100 */
 
 /******************************************************************************/
@@ -234,7 +238,7 @@ void SensorGatewayParser(const char *pTopic, const char *pJson)
 /* Local Function Definitions                                                 */
 /******************************************************************************/
 #ifdef CONFIG_BOARD_MG100
-static void BuildAndSendLocalConfigNullResponse()
+static void BuildAndSendLocalConfigNullResponse(void)
 {
 	size_t size = JSON_DEFAULT_BUF_SIZE;
 	JsonMsg_t *pMsg = BufferPool_Take(FWK_BUFFER_MSG_SIZE(JsonMsg_t, size));
@@ -261,7 +265,7 @@ static void BuildAndSendLocalConfigNullResponse()
 	FRAMEWORK_MSG_SEND(pMsg);
 }
 
-static void BuildAndSendLocalConfigResponse()
+static void BuildAndSendLocalConfigResponse(void)
 {
 	int index = 0;
 	size_t size = JSON_DEFAULT_BUF_SIZE;

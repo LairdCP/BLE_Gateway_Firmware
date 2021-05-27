@@ -12,7 +12,6 @@ menuconfig CONTACT_TRACING
     depends on !BL654_SENSOR
     depends on !SINGLE_PERIPHERAL
     depends on SHELL_BACKEND_DUMMY
-    select BLE_SENSOR_SERVICE
     select CRYPTO
     select CRYPTO_TINYCRYPT_SHIM
 

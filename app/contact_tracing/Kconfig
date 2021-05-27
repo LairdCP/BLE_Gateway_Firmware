@@ -13,6 +13,8 @@ menuconfig CONTACT_TRACING
     depends on !SINGLE_PERIPHERAL
     depends on SHELL_BACKEND_DUMMY
     select BLE_SENSOR_SERVICE
+    select CRYPTO
+    select CRYPTO_TINYCRYPT_SHIM
 
 if CONTACT_TRACING
 

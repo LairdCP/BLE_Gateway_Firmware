@@ -372,6 +372,7 @@ static int smp_nv_mapper_mqtt_client_key(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 
 static int smp_nv_mapper_mqtt_save_clear(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
+	bool save = false;
 	int rc = -EPERM;
 	fs_mgmt_ctxt->uploading = false;
 	fs_mgmt_ctxt->off = fs_mgmt_ctxt->data_len;
@@ -381,8 +382,11 @@ static int smp_nv_mapper_mqtt_save_clear(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 		/* null-terminate and remove whitespace */
 		terminate_and_trim(fs_mgmt_ctxt->file_data,
 				   fs_mgmt_ctxt->data_len);
-		LOG_DBG(">> mqtt_save_clear (deprecated): %s",
+		LOG_DBG(">> mqtt_save_clear (commission): %s",
 			fs_mgmt_ctxt->file_data);
+
+		save = strtoul(fs_mgmt_ctxt->file_data, NULL, 10);
+		rc = attr_set_uint32(ATTR_ID_commissioned, save);
 	}
 
 	if (rc < 0) {

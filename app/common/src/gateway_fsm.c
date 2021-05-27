@@ -374,8 +374,8 @@ static void wait_before_cloud_connect_handler(void)
 	} else if (gateway_fsm_fota_request() || gsm.cloud_disconnect_request) {
 		set_state(GATEWAY_STATE_CLOUD_REQUEST_DISCONNECT);
 	} else if (timer_expired()) {
+		set_state(GATEWAY_STATE_CLOUD_CONNECTING);
 		if (gsm.cloud_connect() == 0) {
-			set_state(GATEWAY_STATE_CLOUD_CONNECTING);
 			gsm.timer = CLOUD_CONNECT_TIMEOUT;
 		} else {
 			set_state(GATEWAY_STATE_CLOUD_ERROR);

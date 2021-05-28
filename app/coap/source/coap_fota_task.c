@@ -346,6 +346,8 @@ static void fota_fsm(fota_context_t *pCtx)
 
 	case FOTA_FSM_IDLE:
 		if (coap_fota_request(pCtx->type)) {
+			FRAMEWORK_MSG_CREATE_AND_SEND(
+				FWK_ID_RESERVED, FWK_ID_CLOUD, FMC_FOTA_START);
 			next_state = FOTA_FSM_START;
 		}
 		break;
@@ -360,13 +362,6 @@ static void fota_fsm(fota_context_t *pCtx)
 			pCtx->using_transport = true;
 			coap_fota_populate_query(pCtx->type, &pCtx->query);
 			next_state = FOTA_FSM_GET_SIZE;
-		} else {
-			/* Keep requesting because we don't know what state cloud is in.
-			 * It may have dropped the message.
-			 */
-			FRAMEWORK_MSG_CREATE_AND_SEND(
-				FWK_ID_RESERVED, FWK_ID_CLOUD, FMC_FOTA_START);
-			next_state = FOTA_FSM_START;
 		}
 		break;
 

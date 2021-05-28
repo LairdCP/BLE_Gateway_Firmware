@@ -377,6 +377,8 @@ static void fota_fsm(fota_context_t *pCtx)
 
 	case FOTA_FSM_IDLE:
 		if (http_fota_request(pCtx->type)) {
+			FRAMEWORK_MSG_CREATE_AND_SEND(
+				FWK_ID_RESERVED, FWK_ID_CLOUD, FMC_FOTA_START);
 			next_state = FOTA_FSM_START;
 		}
 		break;
@@ -394,13 +396,6 @@ static void fota_fsm(fota_context_t *pCtx)
 					pCtx->type);
 			pCtx->download_error = false;
 			next_state = FOTA_FSM_START_DOWNLOAD;
-		} else {
-			/* Keep requesting because we don't know what state cloud is in.
-			 * It may have dropped the message.
-			 */
-			FRAMEWORK_MSG_CREATE_AND_SEND(
-				FWK_ID_RESERVED, FWK_ID_CLOUD, FMC_FOTA_START);
-			next_state = FOTA_FSM_START;
 		}
 		break;
 

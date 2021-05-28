@@ -52,6 +52,26 @@ extern "C" {
 #define SHADOW_MG100_SDCARD_FREE "\"sdCardFreeMB\":"
 #define SHADOW_MG100_CURR_LOG_SIZE "\"logSizeMB\":"
 
+#ifdef CONFIG_NET_L2_ETHERNET
+struct shadow_persistent_values_ethernet {
+	const char *MAC;
+	uint32_t type;
+	uint32_t mode;
+	uint32_t speed;
+	uint32_t duplex;
+	const char *IPAddress;
+	uint32_t netmaskLength;
+	const char *gateway;
+	const char *DNS;
+#ifdef CONFIG_NET_DHCPV4
+	uint32_t DHCPLeaseTime;
+	uint32_t DHCPRenewTime;
+	uint32_t DHCPState;
+	uint32_t DHCPAttempts;
+#endif /* CONFIG_NET_DHCPV4 */
+};
+#endif /* CONFIG_NET_L2_ETHERNET */
+
 struct shadow_persistent_values {
 	const char *firmware_version;
 	const char *os_version;
@@ -61,6 +81,9 @@ struct shadow_persistent_values {
 	const char *ICCID;
 	const char *radio_sn;
 #endif /* CONFIG_MODEM_HL7800 */
+#ifdef CONFIG_NET_L2_ETHERNET
+	struct shadow_persistent_values_ethernet ethernet;
+#endif /* CONFIG_NET_L2_ETHERNET */
 	bool codedPhySupported;
 	bool httpFotaEnabled;
 };
@@ -72,6 +95,39 @@ struct shadow_state_reported {
 struct shadow_reported_struct {
 	struct shadow_state_reported state;
 };
+
+#ifdef CONFIG_NET_L2_ETHERNET
+static const struct json_obj_descr shadow_persistent_values_ethernet_descr[] = {
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, MAC,
+			    JSON_TOK_STRING),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, type,
+			    JSON_TOK_NUMBER),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, mode,
+			    JSON_TOK_NUMBER),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, speed,
+			    JSON_TOK_NUMBER),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, duplex,
+			    JSON_TOK_NUMBER),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, IPAddress,
+			    JSON_TOK_STRING),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, netmaskLength,
+			    JSON_TOK_NUMBER),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, gateway,
+			    JSON_TOK_STRING),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, DNS,
+			    JSON_TOK_STRING),
+#ifdef CONFIG_NET_DHCPV4
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, DHCPLeaseTime,
+			    JSON_TOK_NUMBER),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, DHCPRenewTime,
+			    JSON_TOK_NUMBER),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, DHCPState,
+			    JSON_TOK_NUMBER),
+	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values_ethernet, DHCPAttempts,
+			    JSON_TOK_NUMBER),
+#endif /* CONFIG_NET_DHCPV4 */
+};
+#endif /* CONFIG_NET_L2_ETHERNET */
 
 static const struct json_obj_descr shadow_persistent_values_descr[] = {
 	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values, firmware_version,
@@ -88,6 +144,10 @@ static const struct json_obj_descr shadow_persistent_values_descr[] = {
 	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values, radio_sn,
 			    JSON_TOK_STRING),
 #endif /* CONFIG_MODEM_HL7800 */
+#ifdef CONFIG_NET_L2_ETHERNET
+	JSON_OBJ_DESCR_OBJECT(struct shadow_persistent_values, ethernet,
+			      shadow_persistent_values_ethernet_descr),
+#endif /* CONFIG_NET_L2_ETHERNET */
 	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values, codedPhySupported,
 			    JSON_TOK_TRUE),
 	JSON_OBJ_DESCR_PRIM(struct shadow_persistent_values, httpFotaEnabled,

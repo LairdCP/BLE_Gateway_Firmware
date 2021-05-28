@@ -2,6 +2,7 @@
  * @file aws.c
  * @brief AWS APIs
  *
+ * Copyright (c) 2016 Intel Corporation
  * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -48,6 +49,13 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #include "aws_json.h"
 #include "aws.h"
 
+#if defined(CONFIG_NET_L2_ETHERNET)
+#include <net/dns_resolve.h>
+#include <net/ethernet.h>
+#include "net_private.h"
+#include "ethernet_network.h"
+#endif
+
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
@@ -56,6 +64,10 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #endif
 
 #define CONVERSION_MAX_STR_LEN 10
+#define JSON_QUOTE_STR_LEN 2
+#define ETHERNET_IP_MAX_STR_LEN 15 /* IPv4 */
+#define ETHERNET_DNS_MAX_STR_LEN ((ETHERNET_IP_MAX_STR_LEN + 1) * 2) /* 2x IPv4 addresses with comma separator */
+#define ETHERNET_MAX_DNS_ADDRESSES 2
 
 struct topics {
 	uint8_t update[CONFIG_AWS_TOPIC_MAX_SIZE];
@@ -317,10 +329,116 @@ int awsGetAcceptedUnsub(void)
 	return awsSubscribe(topics.get_accepted, false);
 }
 
+#ifdef CONFIG_NET_L2_ETHERNET
+/* Functions taken from net_private.h
+ * Copyright (c) 2016 Intel Corporation
+ */
+static char *net_sprint_ll_addr_buf_lower(const uint8_t *ll, uint8_t ll_len,
+			     char *buf, int buflen)
+{
+	uint8_t i, len, blen;
+	char *ptr = buf;
+
+	switch (ll_len) {
+	case 8:
+		len = 8U;
+		break;
+	case 6:
+		len = 6U;
+		break;
+	case 2:
+		len = 2U;
+		break;
+	default:
+		len = 6U;
+		break;
+	}
+
+	for (i = 0U, blen = buflen; i < len && blen > 0; i++) {
+		ptr = net_byte_to_hex(ptr, (char)ll[i], 'a', true);
+		blen -= 3U;
+	}
+
+	if (!(ptr - buf)) {
+		return NULL;
+	}
+
+	*(ptr - 1) = '\0';
+	return buf;
+}
+
+static inline char *net_sprint_ll_addr_lower(const uint8_t *ll, uint8_t ll_len)
+{
+	static char buf[sizeof("xx:xx:xx:xx:xx:xx:xx:xx")];
+
+	return net_sprint_ll_addr_buf_lower(ll, ll_len, (char *)buf, sizeof(buf));
+}
+#endif
+
 int awsPublishShadowPersistentData()
 {
 	int rc = -ENOMEM;
 	ssize_t buf_len;
+
+#ifdef CONFIG_NET_L2_ETHERNET
+	struct shadow_persistent_values *reported =
+		&shadow_persistent_data.state.reported;
+	struct net_if *iface = net_if_get_default();
+	struct dns_resolve_context *ctx = dns_resolve_get_default();
+	struct net_if_ipv4 *ipv4;
+	struct net_if_addr *unicast;
+	uint8_t i = 0;
+	uint8_t count = 0;
+	uint8_t netmaskLength = 0;
+	uint32_t tmpNetmask;
+	static char ethDNS[ETHERNET_DNS_MAX_STR_LEN + 1];
+
+	/* Update persistent shadow with ethernet network details */
+	ipv4 = iface->config.ip.ipv4;
+	unicast = &ipv4->unicast[0];
+	tmpNetmask = ipv4->netmask.s_addr;
+
+	/* Count number of set bits for netmask length */
+	while (tmpNetmask & 0x1) {
+		++netmaskLength;
+		tmpNetmask = tmpNetmask >> 1;
+	}
+
+	/* Format DNS servers into JSON string */
+	ethDNS[0] = 0;
+	while (i < (CONFIG_DNS_RESOLVER_MAX_SERVERS + DNS_MAX_MCAST_SERVERS)) {
+		if (ctx->servers[i].dns_server.sa_family == AF_INET) {
+			snprintf(&ethDNS[strlen(ethDNS)], sizeof(ethDNS)-strlen(ethDNS), "%s,", net_sprint_ipv4_addr(&net_sin(&ctx->servers[i].dns_server)->sin_addr));
+			++count;
+
+			if (count == ETHERNET_MAX_DNS_ADDRESSES) {
+				break;
+			}
+		}
+		++i;
+	}
+
+	/* Remove final comma from DNS server list if present */
+	if (count > 0 && ethDNS[strlen(ethDNS)-1] == ',') {
+		ethDNS[strlen(ethDNS)-1] = 0;
+	}
+
+	reported->ethernet.MAC = net_sprint_ll_addr_lower(net_if_get_link_addr(iface)->addr, net_if_get_link_addr(iface)->len);
+	reported->ethernet.type = (uint32_t)ETHERNET_TYPE_IPV4;
+	reported->ethernet.mode = (uint32_t)ETHERNET_MODE_DHCP;
+	reported->ethernet.speed = (uint32_t)ETHERNET_SPEED_UNKNOWN;
+	reported->ethernet.duplex = (uint32_t)ETHERNET_DUPLEX_UNKNOWN;
+	reported->ethernet.IPAddress = net_sprint_ipv4_addr(&unicast->address.in_addr);
+	reported->ethernet.netmaskLength = (uint32_t)netmaskLength;
+	reported->ethernet.gateway = net_sprint_ipv4_addr(&ipv4->gw);
+	reported->ethernet.DNS = ethDNS;
+#if defined(CONFIG_NET_DHCPV4)
+	reported->ethernet.DHCPLeaseTime = iface->config.dhcpv4.lease_time;
+	reported->ethernet.DHCPRenewTime = iface->config.dhcpv4.renewal_time;
+	reported->ethernet.DHCPState = iface->config.dhcpv4.state;
+	reported->ethernet.DHCPAttempts = iface->config.dhcpv4.attempts;
+#endif
+#endif
 
 	buf_len = json_calc_encoded_len(shadow_descr, ARRAY_SIZE(shadow_descr),
 					&shadow_persistent_data);
@@ -444,7 +562,6 @@ int awsPublishHeartbeat(void)
 
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
-
 #elif defined(CONFIG_BOARD_PINNACLE_100_DVK)
 int awsPublishHeartbeat(void)
 {

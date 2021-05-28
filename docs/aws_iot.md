@@ -95,11 +95,13 @@ The Pinnacle 100 device can be provisioned to communicate with the Bluegrass AWS
 
 ### Provisioning the Device Via UART
 
-1. Connect a terminal program to the console UART and turn off log messages. Log messages output by the firmware can interfere with the file transfer process.
+1. Connect a terminal program to the console UART, decommission the device and turn off log messages. Log messages output by the firmware can interfere with the file transfer process.
 
    Issue command:
 
    ```
+   attr set commissioned 0
+
    log halt
    ```
 
@@ -136,18 +138,16 @@ The Pinnacle 100 device can be provisioned to communicate with the Bluegrass AWS
    Connect the terminal program to the console UART and set the endpoint.
 
    ```
-   aws endpoint a3pefs972vw3m-ats.iot.us-east-1.amazonaws.com
+   attr set endpoint a3pefs972vw3m-ats.iot.us-east-1.amazonaws.com
    ```
 
-5. Enable AWS connection and reboot
+5. Set commissioned flag
 
    ```
-   aws enable 1
-
-   kernel reboot cold
+   attr commissioned 1
    ```
 
-   After a reboot, the device will connect to the AWS instance after an LTE signal is acquired.
+   Setting commissioning to `1` (true) will trigger the device to connect to the AWS instance.
 
 ### Monitor AWS Messages
 

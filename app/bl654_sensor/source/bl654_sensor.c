@@ -611,8 +611,7 @@ static void sensor_aggregator(uint8_t sensor, int32_t reading)
 
 	if (updated_temperature && updated_humidity && updated_pressure) {
 		BL654SensorMsg_t *pMsg =
-			(BL654SensorMsg_t *)BufferPool_TryToTake(
-				sizeof(BL654SensorMsg_t));
+			BP_TRY_TO_TAKE(sizeof(BL654SensorMsg_t));
 		if (pMsg == NULL) {
 			return;
 		}

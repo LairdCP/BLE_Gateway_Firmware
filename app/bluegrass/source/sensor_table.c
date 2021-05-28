@@ -482,7 +482,7 @@ void SensorTable_SubscriptionHandler(void)
 		    (pEntry->greenlisted != pEntry->subscribed) &&
 		    (pEntry->subscriptionDispatchTime <= k_uptime_get())) {
 			SubscribeMsg_t *pMsg =
-				BufferPool_Take(sizeof(SubscribeMsg_t));
+				BP_TRY_TO_TAKE(sizeof(SubscribeMsg_t));
 			if (pMsg != NULL) {
 				pMsg->header.msgCode = FMC_SUBSCRIBE;
 				pMsg->header.rxId = FWK_ID_CLOUD;
@@ -511,7 +511,7 @@ void SensorTable_GetAcceptedSubscriptionHandler(void)
 		    !pEntry->shadowInitReceived &&
 		    (pEntry->subscriptionDispatchTime <= k_uptime_get())) {
 			SubscribeMsg_t *pMsg =
-				BufferPool_Take(sizeof(SubscribeMsg_t));
+				BP_TRY_TO_TAKE(sizeof(SubscribeMsg_t));
 			if (pMsg != NULL) {
 				pMsg->header.msgCode = FMC_SUBSCRIBE;
 				pMsg->header.rxId = FWK_ID_CLOUD;
@@ -601,7 +601,7 @@ void SensorTable_CreateShadowFromDumpResponse(FwkBufMsg_t *pRsp,
 					      const char *pAddrStr)
 {
 	size_t size = JSON_DEFAULT_BUF_SIZE + pRsp->length + 1;
-	JsonMsg_t *pMsg = BufferPool_Take(FWK_BUFFER_MSG_SIZE(JsonMsg_t, size));
+	JsonMsg_t *pMsg = BP_TRY_TO_TAKE(FWK_BUFFER_MSG_SIZE(JsonMsg_t, size));
 	if (pMsg == NULL) {
 		return;
 	}
@@ -914,8 +914,8 @@ static void ShadowMaker(SensorEntry_t *pEntry)
 		}
 	}
 
-	JsonMsg_t *pMsg = BufferPool_Take(
-		FWK_BUFFER_MSG_SIZE(JsonMsg_t, SHADOW_BUF_SIZE));
+	JsonMsg_t *pMsg =
+		BP_TRY_TO_TAKE(FWK_BUFFER_MSG_SIZE(JsonMsg_t, SHADOW_BUF_SIZE));
 	if (pMsg == NULL) {
 		return;
 	}
@@ -1245,7 +1245,7 @@ static void GatewayShadowMaker(bool GreenlistProcessed)
 		return;
 	}
 
-	JsonMsg_t *pMsg = BufferPool_Take(
+	JsonMsg_t *pMsg = BP_TRY_TO_TAKE(
 		FWK_BUFFER_MSG_SIZE(JsonMsg_t, SENSOR_GATEWAY_SHADOW_MAX_SIZE));
 	if (pMsg == NULL) {
 		return;
@@ -1380,7 +1380,7 @@ static void CreateDumpRequest(SensorEntry_t *pEntry)
 
 	size_t bufSize = strlen(pCmd) + 1;
 	SensorCmdMsg_t *pMsg =
-		BufferPool_Take(FWK_BUFFER_MSG_SIZE(SensorCmdMsg_t, bufSize));
+		BP_TRY_TO_TAKE(FWK_BUFFER_MSG_SIZE(SensorCmdMsg_t, bufSize));
 	if (pMsg != NULL) {
 		pMsg->header.msgCode = FMC_CONFIG_REQUEST;
 		pMsg->header.txId = FWK_ID_SENSOR_TASK;
@@ -1393,6 +1393,8 @@ static void CreateDumpRequest(SensorEntry_t *pEntry)
 		strcpy(pMsg->cmd, pCmd);
 		pEntry->dumpBusy = true;
 		FRAMEWORK_MSG_SEND(pMsg);
+	} else {
+		LOG_ERR("Unable to allocate sensor dump");
 	}
 }
 

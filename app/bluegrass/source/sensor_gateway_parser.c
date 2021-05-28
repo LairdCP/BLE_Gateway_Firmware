@@ -241,7 +241,7 @@ void SensorGatewayParser(const char *pTopic, const char *pJson)
 static void BuildAndSendLocalConfigNullResponse(void)
 {
 	size_t size = JSON_DEFAULT_BUF_SIZE;
-	JsonMsg_t *pMsg = BufferPool_Take(FWK_BUFFER_MSG_SIZE(JsonMsg_t, size));
+	JsonMsg_t *pMsg = BP_TRY_TO_TAKE(FWK_BUFFER_MSG_SIZE(JsonMsg_t, size));
 
 	if (pMsg == NULL) {
 		return;
@@ -269,7 +269,7 @@ static void BuildAndSendLocalConfigResponse(void)
 {
 	int index = 0;
 	size_t size = JSON_DEFAULT_BUF_SIZE;
-	JsonMsg_t *pMsg = BufferPool_Take(FWK_BUFFER_MSG_SIZE(JsonMsg_t, size));
+	JsonMsg_t *pMsg = BP_TRY_TO_TAKE(FWK_BUFFER_MSG_SIZE(JsonMsg_t, size));
 
 	if (pMsg == NULL) {
 		return;
@@ -598,7 +598,7 @@ static void SensorDeltaParser(const char *pTopic)
 			 strlen(SENSOR_CMD_SUFFIX) + 1;
 
 	SensorCmdMsg_t *pMsg =
-		BufferPool_Take(FWK_BUFFER_MSG_SIZE(SensorCmdMsg_t, bufSize));
+		BP_TRY_TO_TAKE(FWK_BUFFER_MSG_SIZE(SensorCmdMsg_t, bufSize));
 	if (pMsg != NULL) {
 		pMsg->header.msgCode = FMC_CONFIG_REQUEST;
 		pMsg->header.txId = FWK_ID_CLOUD;
@@ -607,7 +607,8 @@ static void SensorDeltaParser(const char *pTopic)
 		pMsg->length = (bufSize > 0) ? (bufSize - 1) : 0;
 
 		/* The version in the delta document changes anytime a publsh occurs,
-		 * so use a CRC to filter out duplicates. */
+		 * so use a CRC to filter out duplicates.
+		 */
 		pMsg->configVersion = version;
 
 		memcpy(pMsg->addrString, pTopic + strlen(SENSOR_SHADOW_PREFIX),
@@ -650,7 +651,7 @@ static void ParseArray(int ExpectedSensors)
 	}
 
 	SensorGreenlistMsg_t *pMsg =
-		BufferPool_Take(sizeof(SensorGreenlistMsg_t));
+		BP_TRY_TO_TAKE(sizeof(SensorGreenlistMsg_t));
 	if (pMsg == NULL) {
 		return;
 	}
@@ -698,7 +699,7 @@ static void ParseArray(int ExpectedSensors)
 static void ParseEventArray(const char *pTopic)
 {
 	SensorShadowInitMsg_t *pMsg =
-		BufferPool_Take(sizeof(SensorShadowInitMsg_t));
+		BP_TRY_TO_TAKE(sizeof(SensorShadowInitMsg_t));
 	if (pMsg == NULL) {
 		return;
 	}

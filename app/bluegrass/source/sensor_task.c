@@ -394,15 +394,13 @@ static DispatchResult_t ResponseHandler(FwkMsgReceiver_t *pMsgRxer,
 
 static void SendSetEpochCommand(void)
 {
-	size_t maxSize = strlen(SENSOR_CMD_SET_EPOCH_FMT_STR) +
-			 SENSOR_CMD_MAX_EPOCH_SIZE + 1;
-	char *buf = BufferPool_Take(maxSize);
-	if (buf != NULL) {
-		uint32_t epoch = lcz_qrtc_get_epoch();
-		snprintk(buf, maxSize, SENSOR_CMD_SET_EPOCH_FMT_STR, epoch);
-		WriteString(buf);
-		LOG_DBG("%u", epoch);
-	}
+	char buf[strlen(SENSOR_CMD_SET_EPOCH_FMT_STR) +
+		 SENSOR_CMD_MAX_EPOCH_SIZE + 1];
+	uint32_t epoch = lcz_qrtc_get_epoch();
+
+	snprintk(buf, sizeof(buf), SENSOR_CMD_SET_EPOCH_FMT_STR, epoch);
+	WriteString(buf);
+	LOG_DBG("%u", epoch);
 }
 
 static DispatchResult_t SendResetHandler(FwkMsgReceiver_t *pMsgRxer,
@@ -909,7 +907,7 @@ static void SensorTaskAdvHandler(const bt_addr_le_t *addr, int8_t rssi,
 			return;
 		}
 
-		AdvMsg_t *pMsg = BufferPool_Take(sizeof(AdvMsg_t));
+		AdvMsg_t *pMsg = BP_TRY_TO_TAKE(sizeof(AdvMsg_t));
 		if (pMsg == NULL) {
 			return;
 		}

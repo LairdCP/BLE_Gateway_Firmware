@@ -495,6 +495,7 @@ static void advertise_on_startup(void)
 
 static void configure_sd_card(void)
 {
+	int rc;
 #ifdef CONFIG_SD_CARD_LOG
 	rc = sdCardLogInit();
 #ifdef CONFIG_CONTACT_TRACING

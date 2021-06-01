@@ -295,7 +295,7 @@ config CERT_LOADER_LOG_LEVEL
 
 config SD_CARD_LOG
     bool
-    depends on BOARD_MG100
+    depends on (BOARD_MG100 || BOARD_BL5340_DVK_CPUAPP)
     help
         This is disabled.
         Bug 18504 - Fix SD card initialization

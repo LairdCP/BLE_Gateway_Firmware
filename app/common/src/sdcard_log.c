@@ -30,10 +30,12 @@ LOG_MODULE_REGISTER(sdcard_log, CONFIG_SD_CARD_LOG_LEVEL);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
+#ifdef CONFIG_BOARD_MG100
 #define SD_OE_PORT DT_PROP(DT_NODELABEL(gpio0), label)
 #define SD_OE_PIN 4
 #define SD_OE_ENABLED 1
 #define SD_OE_DISABLED 0
+#endif
 
 #define TIMESTAMP_LEN 10
 #define FMT_CHAR_LEN 3
@@ -61,9 +63,15 @@ static struct fs_mount_t mp = {
 };
 
 static const char *mountPoint = "/SD:";
+#if defined(CONFIG_BOARD_MG100)
 static const char *batteryFilePath = "/SD:/mg100B.csv";
 static const char *sensorFilePath = "/SD:/mg100Ad.csv";
 static const char *bl654FilePath = "/SD:/mg100bl6.csv";
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+static const char *batteryFilePath = "/SD:/bl5340B.csv";
+static const char *sensorFilePath = "/SD:/bl5340Ad.csv";
+static const char *bl654FilePath = "/SD:/bl5340bl6.csv";
+#endif
 
 static bool sdCardPresent = false;
 static struct fs_file_t batteryLogZfp;
@@ -194,10 +202,12 @@ int sdCardLogInit()
 
 	UpdateMaxLogSize(LogLength);
 
+#ifdef CONFIG_BOARD_MG100
 	/* enable the voltage translator between the nRF52 and SD card */
 	sdcardEnable = device_get_binding(SD_OE_PORT);
 	gpio_pin_configure(sdcardEnable, SD_OE_PIN, GPIO_OUTPUT);
 	gpio_pin_set(sdcardEnable, SD_OE_PIN, SD_OE_ENABLED);
+#endif
 
 	do {
 		ret = disk_access_init(diskPdrv);

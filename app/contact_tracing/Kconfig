@@ -11,7 +11,7 @@ menuconfig CONTACT_TRACING
     depends on !SCAN_FOR_BT510
     depends on !BL654_SENSOR
     depends on !SINGLE_PERIPHERAL
-    depends on SHELL_BACKEND_DUMMY
+    depends on SHELL_BACKEND_DUMMY || SHELL_BACKEND_SERIAL
     select CRYPTO
     select CRYPTO_TINYCRYPT_SHIM
 

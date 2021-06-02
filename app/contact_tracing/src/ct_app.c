@@ -16,6 +16,14 @@ LOG_MODULE_REGISTER(ct_app, CONFIG_CT_APP_LOG_LEVEL);
 #include <stdio.h>
 #include <shell/shell.h>
 
+#ifdef CONFIG_SHELL_BACKEND_SERIAL
+#include <shell/shell_uart.h>
+#endif
+
+#ifdef CONFIG_SHELL_BACKEND_DUMMY
+#warning "log strdup buffers are not always freed when using dummy shell"
+#endif
+
 #include "lcz_software_reset.h"
 #include "lcz_qrtc.h"
 #include "lte.h"
@@ -103,6 +111,8 @@ static int publish_clear_command(void)
 
 static void ct_publisher(uint32_t now)
 {
+	int r;
+
 	if (ct_ble_is_publishing_log() == false) {
 		char *cmd = rpc_params_get_method();
 		if (cmd[0]) {
@@ -135,9 +145,16 @@ static void ct_publisher(uint32_t now)
 
 	/* if an exec was received, run the command */
 	if (awsExecCommandReceived) {
-		shell_execute_cmd(NULL,
-				  ((rpc_params_exec_t *)rpc_params_get())->cmd);
+#ifdef CONFIG_SHELL_BACKEND_SERIAL
+		r = shell_execute_cmd(
+			shell_backend_uart_get_ptr(),
+			((rpc_params_exec_t *)rpc_params_get())->cmd);
+#else
+		r = shell_execute_cmd(
+			NULL, ((rpc_params_exec_t *)rpc_params_get())->cmd);
+#endif
 		awsExecCommandReceived = false;
+		LOG_DBG("Shell (RPC exec) status: %d", r);
 	}
 }
 

@@ -92,6 +92,24 @@ extern "C" {
 #define ATTR_ID_cloudError                            217
 #define ATTR_ID_commissioningBusy                     218
 #define ATTR_ID_ethernetInitError                     221
+#define ATTR_ID_ethernetMAC                           222
+#define ATTR_ID_ethernetType                          223
+#define ATTR_ID_ethernetMode                          224
+#define ATTR_ID_ethernetSpeed                         225
+#define ATTR_ID_ethernetDuplex                        226
+#define ATTR_ID_ethernetIPAddress                     227
+#define ATTR_ID_ethernetNetmaskLength                 228
+#define ATTR_ID_ethernetGateway                       229
+#define ATTR_ID_ethernetDNS                           230
+#define ATTR_ID_ethernetStaticIPAddress               231
+#define ATTR_ID_ethernetStaticNetmaskLength           232
+#define ATTR_ID_ethernetStaticGateway                 233
+#define ATTR_ID_ethernetStaticDNS                     234
+#define ATTR_ID_ethernetDHCPLeaseTime                 235
+#define ATTR_ID_ethernetDHCPRenewTime                 236
+#define ATTR_ID_ethernetDHCPState                     237
+#define ATTR_ID_ethernetDHCPAttempts                  238
+#define ATTR_ID_ethernetDHCPAction                    239
 /* pyend */
 
 /******************************************************************************/
@@ -99,42 +117,49 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                 59
-#define ATTR_TABLE_MAX_ID                               221
-#define ATTR_TABLE_WRITABLE_COUNT                       33
-#define ATTR_MAX_STR_LENGTH                             254
-#define ATTR_MAX_STR_SIZE                               255
-#define ATTR_MAX_BIN_SIZE                               16
+#define ATTR_TABLE_SIZE                                      77
+#define ATTR_TABLE_MAX_ID                                    239
+#define ATTR_TABLE_WRITABLE_COUNT                            40
+#define ATTR_MAX_STR_LENGTH                                  254
+#define ATTR_MAX_STR_SIZE                                    255
+#define ATTR_MAX_BIN_SIZE                                    16
 
 /* Attribute Max String Lengths */
-#define ATTR_LOCATION_MAX_STR_SIZE                      33
-#define ATTR_FIRMWARE_VERSION_MAX_STR_SIZE              12
-#define ATTR_RESET_REASON_MAX_STR_SIZE                  13
-#define ATTR_BLUETOOTH_ADDRESS_MAX_STR_SIZE             13
-#define ATTR_ATTRIBUTE_VERSION_MAX_STR_SIZE             12
-#define ATTR_NAME_MAX_STR_SIZE                          33
-#define ATTR_BOARD_MAX_STR_SIZE                         33
-#define ATTR_BUILD_ID_MAX_STR_SIZE                      65
-#define ATTR_APP_TYPE_MAX_STR_SIZE                      33
-#define ATTR_MOUNT_MAX_STR_SIZE                         33
-#define ATTR_ROOT_CA_NAME_MAX_STR_SIZE                  49
-#define ATTR_CLIENT_CERT_NAME_MAX_STR_SIZE              49
-#define ATTR_CLIENT_KEY_NAME_MAX_STR_SIZE               49
-#define ATTR_ENDPOINT_MAX_STR_SIZE                      255
-#define ATTR_PORT_MAX_STR_SIZE                          17
-#define ATTR_CLIENT_ID_MAX_STR_SIZE                     33
-#define ATTR_TOPIC_PREFIX_MAX_STR_SIZE                  33
-#define ATTR_GATEWAY_ID_MAX_STR_SIZE                    16
-#define ATTR_SENSOR_BLUETOOTH_ADDRESS_MAX_STR_SIZE      31
-#define ATTR_FOTA_FILE_NAME_MAX_STR_SIZE                65
-#define ATTR_LOAD_PATH_MAX_STR_SIZE                     33
-#define ATTR_DUMP_PATH_MAX_STR_SIZE                     33
-#define ATTR_LWM2M_CLIENT_ID_MAX_STR_SIZE               33
-#define ATTR_LWM2M_PEER_URL_MAX_STR_SIZE                129
+#define ATTR_LOCATION_MAX_STR_SIZE                           33
+#define ATTR_FIRMWARE_VERSION_MAX_STR_SIZE                   12
+#define ATTR_RESET_REASON_MAX_STR_SIZE                       13
+#define ATTR_BLUETOOTH_ADDRESS_MAX_STR_SIZE                  13
+#define ATTR_ATTRIBUTE_VERSION_MAX_STR_SIZE                  12
+#define ATTR_NAME_MAX_STR_SIZE                               33
+#define ATTR_BOARD_MAX_STR_SIZE                              33
+#define ATTR_BUILD_ID_MAX_STR_SIZE                           65
+#define ATTR_APP_TYPE_MAX_STR_SIZE                           33
+#define ATTR_MOUNT_MAX_STR_SIZE                              33
+#define ATTR_ROOT_CA_NAME_MAX_STR_SIZE                       49
+#define ATTR_CLIENT_CERT_NAME_MAX_STR_SIZE                   49
+#define ATTR_CLIENT_KEY_NAME_MAX_STR_SIZE                    49
+#define ATTR_ENDPOINT_MAX_STR_SIZE                           255
+#define ATTR_PORT_MAX_STR_SIZE                               17
+#define ATTR_CLIENT_ID_MAX_STR_SIZE                          33
+#define ATTR_TOPIC_PREFIX_MAX_STR_SIZE                       33
+#define ATTR_GATEWAY_ID_MAX_STR_SIZE                         16
+#define ATTR_SENSOR_BLUETOOTH_ADDRESS_MAX_STR_SIZE           31
+#define ATTR_FOTA_FILE_NAME_MAX_STR_SIZE                     65
+#define ATTR_LOAD_PATH_MAX_STR_SIZE                          33
+#define ATTR_DUMP_PATH_MAX_STR_SIZE                          33
+#define ATTR_LWM2M_CLIENT_ID_MAX_STR_SIZE                    33
+#define ATTR_LWM2M_PEER_URL_MAX_STR_SIZE                     129
+#define ATTR_ETHERNET_IP_ADDRESS_MAX_STR_SIZE                16
+#define ATTR_ETHERNET_GATEWAY_MAX_STR_SIZE                   16
+#define ATTR_ETHERNET_DNS_MAX_STR_SIZE                       32
+#define ATTR_ETHERNET_STATIC_IP_ADDRESS_MAX_STR_SIZE         16
+#define ATTR_ETHERNET_STATIC_GATEWAY_MAX_STR_SIZE            16
+#define ATTR_ETHERNET_STATIC_DNS_MAX_STR_SIZE                32
 
 /* Attribute Byte Array Lengths */
-#define ATTR_CT_AES_KEY_SIZE                            16
-#define ATTR_LWM2M_PSK_SIZE                             16
+#define ATTR_CT_AES_KEY_SIZE                                 16
+#define ATTR_LWM2M_PSK_SIZE                                  16
+#define ATTR_ETHERNET_MAC_SIZE                               6
 /* pyend */
 
 /* pystart - enumerations */
@@ -214,6 +239,45 @@ enum ethernet_init_error {
 	ETHERNET_INIT_ERROR_DNS_CFG = -3,
 };
 
+enum ethernet_type {
+	ETHERNET_TYPE_IPV4 = 1,
+	ETHERNET_TYPE_IPV6 = 2,
+};
+
+enum ethernet_mode {
+	ETHERNET_MODE_STATIC = 1,
+	ETHERNET_MODE_DHCP = 2,
+};
+
+enum ethernet_speed {
+	ETHERNET_SPEED_UNKNOWN = 0,
+	ETHERNET_SPEED_10MBPS = 1,
+	ETHERNET_SPEED_100MBPS = 2,
+	ETHERNET_SPEED_1GBPS = 4,
+};
+
+enum ethernet_duplex {
+	ETHERNET_DUPLEX_UNKNOWN = 0,
+	ETHERNET_DUPLEX_HALF = 1,
+	ETHERNET_DUPLEX_FULL = 2,
+};
+
+enum ethernet_dhcp_state {
+	ETHERNET_DHCP_STATE_DISABLED = 0,
+	ETHERNET_DHCP_STATE_INIT = 1,
+	ETHERNET_DHCP_STATE_SELECTING = 2,
+	ETHERNET_DHCP_STATE_REQUESTING = 3,
+	ETHERNET_DHCP_STATE_RENEWING = 4,
+	ETHERNET_DHCP_STATE_REBINDING = 5,
+	ETHERNET_DHCP_STATE_BOUND = 6,
+};
+
+enum ethernet_dhcp_action {
+	ETHERNET_DHCP_ACTION_NOP = 0,
+	ETHERNET_DHCP_ACTION_RELEASE = 1,
+	ETHERNET_DHCP_ACTION_RENEW = 2,
+};
+
 enum attr_dump {
 	ATTR_DUMP_RW = 0,
 	ATTR_DUMP_W = 1,
@@ -231,6 +295,12 @@ BUILD_ASSERT(sizeof(enum fota_status) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum generate_psk) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum cloud_error) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum ethernet_init_error) == ATTR_SIZE_S8);
+BUILD_ASSERT(sizeof(enum ethernet_type) == ATTR_SIZE_S8);
+BUILD_ASSERT(sizeof(enum ethernet_mode) == ATTR_SIZE_S8);
+BUILD_ASSERT(sizeof(enum ethernet_speed) == ATTR_SIZE_S8);
+BUILD_ASSERT(sizeof(enum ethernet_duplex) == ATTR_SIZE_S8);
+BUILD_ASSERT(sizeof(enum ethernet_dhcp_state) == ATTR_SIZE_U8);
+BUILD_ASSERT(sizeof(enum ethernet_dhcp_action) == ATTR_SIZE_U8);
 /* pyend */
 
 /******************************************************************************/
@@ -252,6 +322,12 @@ const char *const attr_get_string_fota_status(int value);
 const char *const attr_get_string_generate_psk(int value);
 const char *const attr_get_string_cloud_error(int value);
 const char *const attr_get_string_ethernet_init_error(int value);
+const char *const attr_get_string_ethernet_type(int value);
+const char *const attr_get_string_ethernet_mode(int value);
+const char *const attr_get_string_ethernet_speed(int value);
+const char *const attr_get_string_ethernet_duplex(int value);
+const char *const attr_get_string_ethernet_dhcp_state(int value);
+const char *const attr_get_string_ethernet_dhcp_action(int value);
 /* pyend */
 
 #ifdef __cplusplus

@@ -66,6 +66,13 @@ typedef struct rw_attribute {
 	uint8_t lwm2mPsk[16];
 	char lwm2mClientId[32 + 1];
 	char lwm2mPeerUrl[128 + 1];
+	enum ethernet_type ethernetType;
+	enum ethernet_mode ethernetMode;
+	char ethernetStaticIPAddress[15 + 1];
+	uint8_t ethernetStaticNetmaskLength;
+	char ethernetStaticGateway[15 + 1];
+	char ethernetStaticDNS[31 + 1];
+	enum ethernet_dhcp_action ethernetDHCPAction;
 	/* pyend */
 } rw_attribute_t;
 
@@ -106,7 +113,14 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.generatePsk = 0,
 	.lwm2mPsk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
 	.lwm2mClientId = "Client_identity",
-	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com"
+	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com",
+	.ethernetType = 0,
+	.ethernetMode = 0,
+	.ethernetStaticIPAddress = "0.0.0.0",
+	.ethernetStaticNetmaskLength = 0,
+	.ethernetStaticGateway = "0.0.0.0",
+	.ethernetStaticDNS = "0.0.0.0,0.0.0.0",
+	.ethernetDHCPAction = 0
 	/* pyend */
 };
 
@@ -138,6 +152,18 @@ typedef struct ro_attribute {
 	enum cloud_error cloudError;
 	bool commissioningBusy;
 	enum ethernet_init_error ethernetInitError;
+	uint8_t ethernetMAC[6];
+	enum ethernet_speed ethernetSpeed;
+	enum ethernet_duplex ethernetDuplex;
+	char ethernetIPAddress[15 + 1];
+	uint8_t ethernetNetmaskLength;
+	char ethernetGateway[15 + 1];
+	char ethernetDNS[31 + 1];
+	uint32_t ethernetDHCPLeaseTime;
+	uint32_t ethernetDHCPRenewTime;
+	enum ethernet_dhcp_state ethernetDHCPState;
+	uint8_t ethernetDHCPAttempts;
+	enum ethernet_dhcp_action ethernetDHCPAction;
 	/* pyend */
 } ro_attribute_t;
 
@@ -147,7 +173,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.bluetoothAddress = "0",
 	.resetCount = 0,
 	.upTime = 0,
-	.attributeVersion = "0.4.8",
+	.attributeVersion = "0.4.11",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -168,7 +194,19 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.generatePsk = 0,
 	.cloudError = 0,
 	.commissioningBusy = false,
-	.ethernetInitError = 0
+	.ethernetInitError = 0,
+	.ethernetMAC = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+	.ethernetSpeed = 0,
+	.ethernetDuplex = 0,
+	.ethernetIPAddress = "0.0.0.0",
+	.ethernetNetmaskLength = 0,
+	.ethernetGateway = "0.0.0.0",
+	.ethernetDNS = "0.0.0.0,0.0.0.0",
+	.ethernetDHCPLeaseTime = 0,
+	.ethernetDHCPRenewTime = 0,
+	.ethernetDHCPState = 0,
+	.ethernetDHCPAttempts = 0,
+	.ethernetDHCPAction = 0
 	/* pyend */
 };
 
@@ -181,6 +219,12 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 #define attr_get_string_generatePsk         attr_get_string_generate_psk
 #define attr_get_string_cloudError          attr_get_string_cloud_error
 #define attr_get_string_ethernetInitError   attr_get_string_ethernet_init_error
+#define attr_get_string_ethernetType        attr_get_string_ethernet_type
+#define attr_get_string_ethernetMode        attr_get_string_ethernet_mode
+#define attr_get_string_ethernetSpeed       attr_get_string_ethernet_speed
+#define attr_get_string_ethernetDuplex      attr_get_string_ethernet_duplex
+#define attr_get_string_ethernetDHCPState   attr_get_string_ethernet_dhcp_state
+#define attr_get_string_ethernetDHCPAction  attr_get_string_ethernet_dhcp_action
 /* pyend */
 
 /******************************************************************************/
@@ -274,7 +318,25 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[55 ] = { 215, RW_ATTRS(lwm2mPeerUrl)                  , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 6         , .max.ux = 128        },
 	[56 ] = { 217, RO_ATTRE(cloudError)                    , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[57 ] = { 218, RO_ATTRX(commissioningBusy)             , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[58 ] = { 221, RO_ATTRE(ethernetInitError)             , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          }
+	[58 ] = { 221, RO_ATTRE(ethernetInitError)             , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[59 ] = { 222, RO_ATTRX(ethernetMAC)                   , ATTR_TYPE_BYTE_ARRAY    , n, n, y, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[60 ] = { 223, RW_ATTRE(ethernetType)                  , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[61 ] = { 224, RW_ATTRE(ethernetMode)                  , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[62 ] = { 225, RO_ATTRE(ethernetSpeed)                 , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[63 ] = { 226, RO_ATTRE(ethernetDuplex)                , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[64 ] = { 227, RO_ATTRS(ethernetIPAddress)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[65 ] = { 228, RO_ATTRX(ethernetNetmaskLength)         , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[66 ] = { 229, RO_ATTRS(ethernetGateway)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[67 ] = { 230, RO_ATTRS(ethernetDNS)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 31         },
+	[68 ] = { 231, RW_ATTRS(ethernetStaticIPAddress)       , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[69 ] = { 232, RW_ATTRX(ethernetStaticNetmaskLength)   , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[70 ] = { 233, RW_ATTRS(ethernetStaticGateway)         , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[71 ] = { 234, RW_ATTRS(ethernetStaticDNS)             , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 31         },
+	[72 ] = { 235, RO_ATTRX(ethernetDHCPLeaseTime)         , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
+	[73 ] = { 236, RO_ATTRX(ethernetDHCPRenewTime)         , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
+	[74 ] = { 237, RO_ATTRE(ethernetDHCPState)             , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 6          },
+	[75 ] = { 238, RO_ATTRX(ethernetDHCPAttempts)          , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 100        },
+	[76 ] = { 239, RO_ATTRE(ethernetDHCPAction)            , ATTR_TYPE_U8            , n, y, n, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 2          }
 	/* pyend */
 };
 
@@ -341,7 +403,25 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[215] = &ATTR_TABLE[55 ],
 	[217] = &ATTR_TABLE[56 ],
 	[218] = &ATTR_TABLE[57 ],
-	[221] = &ATTR_TABLE[58 ]
+	[221] = &ATTR_TABLE[58 ],
+	[222] = &ATTR_TABLE[59 ],
+	[223] = &ATTR_TABLE[60 ],
+	[224] = &ATTR_TABLE[61 ],
+	[225] = &ATTR_TABLE[62 ],
+	[226] = &ATTR_TABLE[63 ],
+	[227] = &ATTR_TABLE[64 ],
+	[228] = &ATTR_TABLE[65 ],
+	[229] = &ATTR_TABLE[66 ],
+	[230] = &ATTR_TABLE[67 ],
+	[231] = &ATTR_TABLE[68 ],
+	[232] = &ATTR_TABLE[69 ],
+	[233] = &ATTR_TABLE[70 ],
+	[234] = &ATTR_TABLE[71 ],
+	[235] = &ATTR_TABLE[72 ],
+	[236] = &ATTR_TABLE[73 ],
+	[237] = &ATTR_TABLE[74 ],
+	[238] = &ATTR_TABLE[75 ],
+	[239] = &ATTR_TABLE[76 ]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -506,6 +586,69 @@ const char *const attr_get_string_ethernet_init_error(int value)
 		case -1:          return "No Iface";
 		case -2:          return "Iface Cfg";
 		case -3:          return "Dns Cfg";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_ethernet_type(int value)
+{
+	switch (value) {
+		case 1:           return "Ipv4";
+		case 2:           return "Ipv6";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_ethernet_mode(int value)
+{
+	switch (value) {
+		case 1:           return "Static";
+		case 2:           return "Dhcp";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_ethernet_speed(int value)
+{
+	switch (value) {
+		case 0:           return "Unknown";
+		case 1:           return "10 Mbps";
+		case 2:           return "100 Mbps";
+		case 4:           return "1 Gbps";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_ethernet_duplex(int value)
+{
+	switch (value) {
+		case 0:           return "Unknown";
+		case 1:           return "Half";
+		case 2:           return "Full";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_ethernet_dhcp_state(int value)
+{
+	switch (value) {
+		case 0:           return "Disabled";
+		case 1:           return "Init";
+		case 2:           return "Selecting";
+		case 3:           return "Requesting";
+		case 4:           return "Renewing";
+		case 5:           return "Rebinding";
+		case 6:           return "Bound";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_ethernet_dhcp_action(int value)
+{
+	switch (value) {
+		case 0:           return "Nop";
+		case 1:           return "Release";
+		case 2:           return "Renew";
 		default:          return "?";
 	}
 }

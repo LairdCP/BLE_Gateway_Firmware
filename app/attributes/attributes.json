@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.8"
+    "version": "0.4.11"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2054,7 +2054,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.8",
+              "x-default": "0.4.11",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -4196,6 +4196,366 @@
                 "NO_IFACE": -1,
                 "IFACE_CFG": -2,
                 "DNS_CFG": -3
+              }
+            }
+          },
+          {
+            "name": "ethernetMAC",
+            "summary": "MAC address of Ethernet module",
+            "required": true,
+            "x-id": 222,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "array",
+              "x-array-size": 6,
+              "x-ctype": "uint8_t",
+              "x-default": "{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }",
+              "x-example": "0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ethernetType",
+            "summary": "Type of Ethernet network mode",
+            "required": true,
+            "x-id": 223,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "enum": {
+                "IPV4": 1,
+                "IPV6": 2
+              }
+            }
+          },
+          {
+            "name": "ethernetMode",
+            "summary": "Operating mode of Ethernet network",
+            "required": true,
+            "x-id": 224,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "x-savable": true,
+              "x-writeable": true,
+              "enum": {
+                "STATIC": 1,
+                "DHCP": 2
+              }
+            }
+          },
+          {
+            "name": "ethernetSpeed",
+            "summary": "Connectivity speed of Ethernet module",
+            "required": true,
+            "x-id": 225,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "UNKNOWN": 0,
+                "10MBPS": 1,
+                "100MBPS": 2,
+                "1GBPS": 4
+              }
+            }
+          },
+          {
+            "name": "ethernetDuplex",
+            "summary": "Operating duplex mode of Ethernet module",
+            "required": true,
+            "x-id": 226,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "UNKNOWN": 0,
+                "HALF": 1,
+                "FULL": 2
+              }
+            }
+          },
+          {
+            "name": "ethernetIPAddress",
+            "summary": "Read to get the current active IP address of the Ethernet module",
+            "required": true,
+            "x-id": 227,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 7,
+              "maximum": 15,
+              "x-ctype": "string",
+              "x-default": "0.0.0.0",
+              "x-example": "192.168.1.2",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ethernetNetmaskLength",
+            "summary": "Read to get the current active netmask length of the Ethernet module",
+            "required": true,
+            "x-id": 228,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 32.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "24",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ethernetGateway",
+            "summary": "Read to get the current active gateway IP address of the Ethernet module",
+            "required": true,
+            "x-id": 229,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 7,
+              "maximum": 15,
+              "x-ctype": "string",
+              "x-default": "0.0.0.0",
+              "x-example": "192.168.1.1",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ethernetDNS",
+            "summary": "Read to get the current active DNS IP addresses of the Ethernet module",
+            "required": true,
+            "x-id": 230,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 7,
+              "maximum": 31,
+              "x-ctype": "string",
+              "x-default": "0.0.0.0,0.0.0.0",
+              "x-example": "192.168.1.1,192.168.1.5",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ethernetStaticIPAddress",
+            "summary": "The IP address of the Ethernet module which is used when configured in static operating mode",
+            "required": true,
+            "x-id": 231,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 7,
+              "maximum": 15,
+              "x-ctype": "string",
+              "x-default": "0.0.0.0",
+              "x-example": "192.168.1.2",
+              "x-readable": true,
+              "x-savable": true,
+              "x-writeable": true
+            }
+          },
+          {
+            "name": "ethernetStaticNetmaskLength",
+            "summary": "The netmask length of the Ethernet module which is used when configured in static operating mode",
+            "required": true,
+            "x-id": 232,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 32.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "24",
+              "x-readable": true,
+              "x-savable": true,
+              "x-writeable": true
+            }
+          },
+          {
+            "name": "ethernetStaticGateway",
+            "summary": "The gateway IP address of the Ethernet module which is used when configured in static operating mode",
+            "required": true,
+            "x-id": 233,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 7,
+              "maximum": 15,
+              "x-ctype": "string",
+              "x-default": "0.0.0.0",
+              "x-example": "192.168.1.1",
+              "x-readable": true,
+              "x-savable": true,
+              "x-writeable": true
+            }
+          },
+          {
+            "name": "ethernetStaticDNS",
+            "summary": "The DNS IP addresses of the Ethernet module which are used when configured in static operating mode",
+            "required": true,
+            "x-id": 234,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 7,
+              "maximum": 31,
+              "x-ctype": "string",
+              "x-default": "0.0.0.0,0.0.0.0",
+              "x-example": "192.168.1.1,192.168.1.5",
+              "x-readable": true,
+              "x-savable": true,
+              "x-writeable": true
+            }
+          },
+          {
+            "name": "ethernetDHCPLeaseTime",
+            "summary": "The DHCP lease time of the ethernet module (if DHCP is active)",
+            "required": true,
+            "x-id": 235,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 4294967294.0,
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "86400",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ethernetDHCPRenewTime",
+            "summary": "The DHCP renew time of the ethernet module (if DHCP is active)",
+            "required": true,
+            "x-id": 236,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 4294967294.0,
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "43200",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ethernetDHCPState",
+            "summary": "The current DHCP state of the ethernet module (if DHCP is active)",
+            "required": true,
+            "x-id": 237,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 6.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "6",
+              "x-readable": true,
+              "enum": {
+                "DISABLED": 0,
+                "INIT": 1,
+                "SELECTING": 2,
+                "REQUESTING": 3,
+                "RENEWING": 4,
+                "REBINDING": 5,
+                "BOUND": 6
+              }
+            }
+          },
+          {
+            "name": "ethernetDHCPAttempts",
+            "summary": "The number of attempts which were taken to obtain a DHCP lease on the ethernet module (if DHCP is active)",
+            "required": true,
+            "x-id": 238,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "1",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ethernetDHCPAction",
+            "summary": "An action to perform using DHCP on the ethernet module (if DHCP is active)",
+            "required": true,
+            "x-id": 239,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 2.0,
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-writeable": true,
+              "enum": {
+                "NOP": 0,
+                "RELEASE": 1,
+                "RENEW": 2
               }
             }
           }

@@ -262,7 +262,7 @@ static uint8_t notify_func_callback(struct bt_conn *conn,
 		memcpy(temperature_data, data, length);
 		reading = (int16_t)((temperature_data[1] << 8 & 0xFF00) +
 				    temperature_data[0]);
-		LOG_INF("ESS Temperature value = %d", reading);
+		LOG_DBG("ESS Temperature value = %d", reading);
 		sensor_aggregator(SENSOR_TYPE_TEMPERATURE, reading);
 	}
 	/* Check if the notifications received have the humidity handle */
@@ -272,7 +272,7 @@ static uint8_t notify_func_callback(struct bt_conn *conn,
 		uint8_t humidity_data[2];
 		memcpy(humidity_data, data, length);
 		reading = ((humidity_data[1] << 8) & 0xFF00) + humidity_data[0];
-		LOG_INF("ESS Humidity value = %d", reading);
+		LOG_DBG("ESS Humidity value = %d", reading);
 		sensor_aggregator(SENSOR_TYPE_HUMIDITY, reading);
 	}
 	/* Check if the notifications received have the pressure handle */
@@ -284,7 +284,7 @@ static uint8_t notify_func_callback(struct bt_conn *conn,
 		reading = ((pressure_data[3] << 24) & 0xFF000000) +
 			  ((pressure_data[2] << 16) & 0xFF0000) +
 			  ((pressure_data[1] << 8) & 0xFF00) + pressure_data[0];
-		LOG_INF("ESS Pressure value = %d", reading);
+		LOG_DBG("ESS Pressure value = %d", reading);
 		sensor_aggregator(SENSOR_TYPE_PRESSURE, reading);
 	}
 

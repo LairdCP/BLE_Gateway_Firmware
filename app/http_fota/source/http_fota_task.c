@@ -276,7 +276,7 @@ static char *fota_state_get_string(fota_fsm_state_t state)
 		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, WAIT);
 		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, START);
 		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, START_DOWNLOAD);
-		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, DOWNLOAD_COMPLETE);
+		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, WAIT_FOR_DOWNLOAD_COMPLETE);
 		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, DELETE_EXISTING_FILE);
 		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, WAIT_FOR_SWITCHOVER);
 		PREFIXED_SWITCH_CASE_RETURN_STRING(FOTA_FSM, INITIATE_UPDATE);
@@ -420,23 +420,17 @@ static void fota_fsm(fota_context_t *pCtx)
 		if (r < 0) {
 			next_state = FOTA_FSM_ERROR;
 		} else {
-			next_state = FOTA_FSM_DOWNLOAD_COMPLETE;
+			next_state = FOTA_FSM_WAIT_FOR_DOWNLOAD_COMPLETE;
 		}
 		break;
 
-	case FOTA_FSM_DOWNLOAD_COMPLETE:
+	case FOTA_FSM_WAIT_FOR_DOWNLOAD_COMPLETE:
 		LOG_DBG("Wait for download");
 		r = k_sem_take(pCtx->wait_download, K_FOREVER);
 
 		if ((pCtx->download_error) || (r < 0)) {
 			next_state = FOTA_FSM_ERROR;
 		} else {
-			pCtx->using_transport = false;
-			if (transport_not_required()) {
-				FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED,
-							      FWK_ID_CLOUD,
-							      FMC_FOTA_DONE);
-			}
 			next_state = FOTA_FSM_WAIT_FOR_SWITCHOVER;
 		}
 		break;
@@ -446,6 +440,15 @@ static void fota_fsm(fota_context_t *pCtx)
 			next_state = FOTA_FSM_INITIATE_UPDATE;
 		} else if (http_fota_abort(pCtx->type)) {
 			next_state = FOTA_FSM_ABORT;
+		} else if (pCtx->using_transport) {
+			pCtx->using_transport = false;
+			if (transport_not_required()) {
+				LOG_DBG("Transport not required");
+				FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED,
+							      FWK_ID_CLOUD,
+							      FMC_FOTA_DONE);
+			}
+			next_state = FOTA_FSM_WAIT_FOR_SWITCHOVER;
 		}
 		break;
 

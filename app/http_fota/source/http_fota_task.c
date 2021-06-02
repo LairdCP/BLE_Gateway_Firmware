@@ -22,6 +22,7 @@ LOG_MODULE_REGISTER(http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
 #endif
 #include <net/fota_download.h>
 #ifdef CONFIG_LCZ_MEMFAULT
+#include "lcz_memfault.h"
 #include "memfault/http/root_certs.h"
 #endif
 
@@ -308,6 +309,7 @@ static void fota_fsm(fota_context_t *pCtx)
 	case FOTA_FSM_ERROR:
 		pCtx->delay = CONFIG_HTTP_FOTA_ERROR_DELAY;
 		http_fota_increment_error_count(pCtx->type);
+		LCZ_MEMFAULT_COLLECT_LOGS;
 		next_state = FOTA_FSM_END;
 		break;
 

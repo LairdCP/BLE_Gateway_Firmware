@@ -349,7 +349,15 @@ static void lwm2m_client_init_internal(void)
 		return;
 	}
 
-	ret = lwm2m_setup(attr_get_quasi_static(ATTR_ID_lteSerialNumber),
+	ret = lwm2m_setup(
+#ifdef CONFIG_MODEM_HL7800
+			  attr_get_quasi_static(ATTR_ID_lteSerialNumber),
+#else
+			  /* For non-Pinnacle 100 devices which do not contain
+			   * modems, use the gateway ID as the serial number
+			   */
+			  attr_get_quasi_static(ATTR_ID_gatewayId),
+#endif
 			  attr_get_quasi_static(ATTR_ID_gatewayId));
 	if (ret < 0) {
 		LOG_ERR("Cannot setup LWM2M fields (%d)", ret);

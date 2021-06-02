@@ -196,7 +196,7 @@ menuconfig LC_LWM2M
     depends on LCZ_DNS
     depends on LCZ_QRTC
     depends on LCZ_SOFTWARE_RESET
-    depends on MODEM_HL7800_BOOT_NORMAL
+    depends on !MODEM_HL7800 || MODEM_HL7800_BOOT_NORMAL
     depends on ATTR
 
 if LC_LWM2M

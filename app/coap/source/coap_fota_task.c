@@ -453,23 +453,21 @@ static void fota_fsm(fota_context_t *pCtx)
 		} else if (!hash_match(&pCtx->query, pCtx->query.size)) {
 			next_state = FOTA_FSM_ERROR;
 		} else {
-			next_state = FOTA_FSM_WAIT_FOR_SWITCHOVER;
-		}
-		break;
-
-	case FOTA_FSM_WAIT_FOR_SWITCHOVER:
-		pCtx->using_transport = false;
-		if (coap_fota_ready(pCtx->type)) {
-			next_state = FOTA_FSM_INITIATE_UPDATE;
-		} else if (coap_fota_abort(pCtx->type)) {
-			next_state = FOTA_FSM_ABORT;
-		} else {
+			pCtx->using_transport = false;
 			if (transport_not_required()) {
 				FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED,
 							      FWK_ID_CLOUD,
 							      FMC_FOTA_DONE);
 			}
 			next_state = FOTA_FSM_WAIT_FOR_SWITCHOVER;
+		}
+		break;
+
+	case FOTA_FSM_WAIT_FOR_SWITCHOVER:
+		if (coap_fota_ready(pCtx->type)) {
+			next_state = FOTA_FSM_INITIATE_UPDATE;
+		} else if (coap_fota_abort(pCtx->type)) {
+			next_state = FOTA_FSM_ABORT;
 		}
 		break;
 

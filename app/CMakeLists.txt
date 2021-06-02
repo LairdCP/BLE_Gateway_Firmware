@@ -60,13 +60,18 @@ include_directories(${CMAKE_SOURCE_DIR}/../../modules/jsmn)
 if(CONFIG_BOARD_MG100)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/lairdconnect_battery.c
-    ${CMAKE_SOURCE_DIR}/common/src/lcz_motion.c
 )
 endif()
 
 if(CONFIG_SD_CARD_LOG)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/sdcard_log.c
+)
+endif()
+
+if(CONFIG_LCZ_MOTION_LOG_LEVEL)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/common/src/lcz_motion.c
 )
 endif()
 

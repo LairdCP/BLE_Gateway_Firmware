@@ -281,6 +281,7 @@ config SD_CARD_LOG_LEVEL
 config LCZ_MOTION_LOG_LEVEL
     int "Motion driver log level"
     range 0 4
+    depends on (BOARD_MG100 || BOARD_BL5340_DVK_CPUAPP)
     default 3
 
 config SENSOR_GATEWAY_PARSER_LOG_LEVEL

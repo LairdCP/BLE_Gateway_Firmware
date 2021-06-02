@@ -337,30 +337,15 @@ static DispatchResult_t fota_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 					 FwkMsg_t *pMsg)
 {
 	ARG_UNUSED(pMsgRxer);
-
-#if defined(CONFIG_BLUEGRASS) &&                                               \
-	(defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA))
-
 	control_task_obj_t *pObj = FWK_TASK_CONTAINER(control_task_obj_t);
-	FwkId_t fota_task_id;
 
-	/* This logic won't work if both are enabled */
 	if (pMsg->header.msgCode == FMC_FOTA_START) {
 		pObj->fota_request = true;
-
-#ifdef CONFIG_COAP_FOTA
-		fota_task_id = FWK_ID_COAP_FOTA_TASK;
-#elif CONFIG_HTTP_FOTA
-		fota_task_id = FWK_ID_HTTP_FOTA_TASK;
-#endif
-
-		FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED, fota_task_id,
-					      FMC_FOTA_START_ACK);
-
+		FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_CONTROL_TASK,
+						   FMC_FOTA_START_ACK);
 	} else {
 		pObj->fota_request = false;
 	}
-#endif
 
 	return DISPATCH_OK;
 }

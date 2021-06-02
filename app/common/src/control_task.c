@@ -97,10 +97,13 @@ static FwkMsgHandler_t lwm2m_msg_handler;
 #endif
 
 static void commission_handler(void);
+
+#ifdef CONFIG_MODEM_HL7800
 static void random_join_handler(attr_index_t idx);
 static void update_apn_handler(void);
 static void update_modem_log_level_handler(void);
 static void update_rat_handler(void);
+#endif
 
 /******************************************************************************/
 /* Framework Message Dispatcher                                               */
@@ -155,9 +158,11 @@ static void control_task_thread_internal(void *pArg1, void *pArg2, void *pArg3)
 {
 	control_task_obj_t *pObj = (control_task_obj_t *)pArg1;
 
+#ifdef CONFIG_MODEM_HL7800
 	attr_prepare_modemBoot();
 	random_join_handler(ATTR_ID_joinDelay);
 	update_modem_log_level_handler();
+#endif
 
 	configure_app();
 	gateway_fsm_init();
@@ -198,8 +203,10 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	attr_changed_msg_t *pb = (attr_changed_msg_t *)pMsg;
 	size_t i;
 	bool update_commission = false;
+#ifdef CONFIG_MODEM_HL7800
 	bool update_apn = false;
 	bool update_rat = false;
+#endif
 
 	pObj->broadcast_count += 1;
 
@@ -217,6 +224,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 #endif
 			break;
 
+#ifdef CONFIG_MODEM_HL7800
 		case ATTR_ID_joinDelay:
 			random_join_handler(pb->list[i]);
 			break;
@@ -233,6 +241,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 		case ATTR_ID_lteRat:
 			update_rat = true;
 			break;
+#endif
 
 		case ATTR_ID_fotaControlPoint:
 #ifdef CONFIG_MODEM_HL7800
@@ -276,6 +285,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 		commission_handler();
 	}
 
+#ifdef CONFIG_MODEM_HL7800
 	if (update_apn) {
 		update_apn_handler();
 	}
@@ -283,6 +293,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	if (update_rat) {
 		update_rat_handler();
 	}
+#endif
 
 	return DISPATCH_OK;
 }
@@ -426,35 +437,33 @@ static void random_join_handler(attr_index_t idx)
 	}
 }
 
+#ifdef CONFIG_MODEM_HL7800
 /* Currently only the name is writable. */
 static void update_apn_handler(void)
 {
-#ifdef CONFIG_MODEM_HL7800
 	int32_t status = mdm_hl7800_update_apn(
 		(char *)attr_get_quasi_static(ATTR_ID_apn));
 	attr_set_signed32(ATTR_ID_apnStatus, status);
-#else
-	attr_set_signed32(ATTR_ID_apnStatus, -EPERM);
-#endif
 }
+#endif
 
+#ifdef CONFIG_MODEM_HL7800
 static void update_modem_log_level_handler(void)
 {
-#ifdef CONFIG_MODEM_HL7800
 	uint32_t desired =
 		attr_get_uint32(ATTR_ID_modemDesiredLogLevel, LOG_LEVEL_DBG);
 	uint32_t new_level = mdm_hl7800_log_filter_set(desired);
 	LOG_INF("modem log level: desired: %u new_level: %u", desired,
 		new_level);
-#endif
 }
+#endif
 
+#ifdef CONFIG_MODEM_HL7800
 static void update_rat_handler(void)
 {
-#ifdef CONFIG_MODEM_HL7800
 	mdm_hl7800_update_rat(attr_get_uint32(ATTR_ID_lteRat, MDM_RAT_CAT_M1));
-#endif
 }
+#endif
 
 #ifdef CONFIG_LWM2M
 static DispatchResult_t lwm2m_msg_handler(FwkMsgReceiver_t *pMsgRxer,

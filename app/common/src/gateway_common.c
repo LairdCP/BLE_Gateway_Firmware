@@ -138,8 +138,10 @@ static int adv_on_button_isr(void);
 static void aws_set_default_client_id(void);
 #endif
 
+#ifdef CONFIG_MODEM_HL7800
 static void fs_to_attr_string_handler(attr_index_t idx, const char *file_name);
 static void nv_deprecation_handler(void);
+#endif
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -158,7 +160,9 @@ int configure_app(void)
 
 	LCZ_MEMFAULT_HTTP_INIT(CONFIG_LCZ_MEMFAULT_PROJECT_API_KEY);
 
+#ifdef CONFIG_MODEM_HL7800
 	nv_deprecation_handler();
+#endif
 
 #ifdef CONFIG_SCAN_FOR_BT510
 	lcz_bt_scan_set_parameters(&scanParameters);
@@ -280,6 +284,7 @@ int attr_prepare_qrtc(void)
 	return attr_set_uint32(ATTR_ID_qrtc, lcz_qrtc_get_epoch());
 }
 
+#ifdef CONFIG_MODEM_HL7800
 int attr_prepare_modemBoot(void)
 {
 #if defined(CONFIG_MODEM_HL7800_BOOT_DELAY)
@@ -290,6 +295,7 @@ int attr_prepare_modemBoot(void)
 	return attr_set_uint32(ATTR_ID_modemBoot, MODEM_BOOT_NORMAL);
 #endif
 }
+#endif
 
 void Framework_AssertionHandler(char *file, int line)
 {
@@ -530,6 +536,7 @@ static void aws_set_default_client_id(void)
 }
 #endif
 
+#ifdef CONFIG_MODEM_HL7800
 static void fs_to_attr_string_handler(attr_index_t idx, const char *file_name)
 {
 	int r = -EPERM;
@@ -580,3 +587,4 @@ static void nv_deprecation_handler(void)
 	/* Remove file used by previous version to limit writes on reboot. */
 	fsu_delete_abs(CONFIG_FSU_MOUNT_POINT "/nv_startup.bin");
 }
+#endif

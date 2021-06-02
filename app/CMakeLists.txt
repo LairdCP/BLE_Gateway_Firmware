@@ -128,11 +128,29 @@ target_sources_ifdef(CONFIG_MODEM_HL7800 app PRIVATE
 )
 endif() # CONFIG_HTTP_FOTA
 
-include_directories(${CMAKE_SOURCE_DIR}/attributes/custom/include)
+if(CONFIG_BOARD_PINNACLE_100_DVK)
+include_directories(${CMAKE_SOURCE_DIR}/attributes/custom/MG100/include)
 target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/attributes/custom/source/attr_table.c
-    ${CMAKE_SOURCE_DIR}/attributes/custom/source/attr_custom_validator.c
+    ${CMAKE_SOURCE_DIR}/attributes/custom/MG100/source/attr_table.c
+    ${CMAKE_SOURCE_DIR}/attributes/custom/MG100/source/attr_custom_validator.c
 )
+endif()
+
+if(CONFIG_BOARD_MG100)
+include_directories(${CMAKE_SOURCE_DIR}/attributes/custom/MG100/include)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/attributes/custom/MG100/source/attr_table.c
+    ${CMAKE_SOURCE_DIR}/attributes/custom/MG100/source/attr_custom_validator.c
+)
+endif()
+
+if(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+include_directories(${CMAKE_SOURCE_DIR}/attributes/custom/BL5340/include)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/attributes/custom/BL5340/source/attr_table.c
+    ${CMAKE_SOURCE_DIR}/attributes/custom/BL5340/source/attr_custom_validator.c
+)
+endif()
 
 include_directories(${CMAKE_SOURCE_DIR}/attributes/universal/include)
 target_sources(app PRIVATE

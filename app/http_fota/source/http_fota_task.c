@@ -326,6 +326,10 @@ static void fota_fsm(fota_context_t *pCtx)
 		} else {
 #endif
 			LOG_WRN("Entering mcuboot");
+#ifdef CONFIG_LCZ_MEMFAULT
+			memfault_reboot_tracking_mark_reset_imminent(
+				kMfltRebootReason_FirmwareUpdate, NULL);
+#endif
 			/* Allow last print to occur. */
 			k_sleep(K_MSEC(CONFIG_LOG_PROCESS_THREAD_SLEEP_MS));
 			sys_reboot(SYS_REBOOT_COLD);
@@ -350,6 +354,10 @@ static void fota_fsm(fota_context_t *pCtx)
 			next_state = FOTA_FSM_MODEM_WAIT;
 		} else {
 			LOG_WRN("Rebooting for modem update to be completed.");
+#ifdef CONFIG_LCZ_MEMFAULT
+			memfault_reboot_tracking_mark_reset_imminent(
+				kMfltRebootReason_FirmwareUpdate, NULL);
+#endif
 			/* Allow last print to occur. */
 			k_sleep(K_MSEC(CONFIG_LOG_PROCESS_THREAD_SLEEP_MS));
 			sys_reboot(SYS_REBOOT_COLD);

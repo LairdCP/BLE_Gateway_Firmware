@@ -71,7 +71,7 @@ typedef struct rw_attribute {
 	char ethernetStaticIPAddress[15 + 1];
 	uint8_t ethernetStaticNetmaskLength;
 	char ethernetStaticGateway[15 + 1];
-	char ethernetStaticDNS[31 + 1];
+	char ethernetStaticDNS[15 + 1];
 	enum ethernet_dhcp_action ethernetDHCPAction;
 	/* pyend */
 } rw_attribute_t;
@@ -115,11 +115,11 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.lwm2mClientId = "Client_identity",
 	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com",
 	.ethernetType = 0,
-	.ethernetMode = 0,
+	.ethernetMode = 2,
 	.ethernetStaticIPAddress = "0.0.0.0",
 	.ethernetStaticNetmaskLength = 0,
 	.ethernetStaticGateway = "0.0.0.0",
-	.ethernetStaticDNS = "0.0.0.0,0.0.0.0",
+	.ethernetStaticDNS = "0.0.0.0",
 	.ethernetDHCPAction = 0
 	/* pyend */
 };
@@ -153,12 +153,13 @@ typedef struct ro_attribute {
 	bool commissioningBusy;
 	enum ethernet_init_error ethernetInitError;
 	uint8_t ethernetMAC[6];
+	bool ethernetCableDetected;
 	enum ethernet_speed ethernetSpeed;
 	enum ethernet_duplex ethernetDuplex;
 	char ethernetIPAddress[15 + 1];
 	uint8_t ethernetNetmaskLength;
 	char ethernetGateway[15 + 1];
-	char ethernetDNS[31 + 1];
+	char ethernetDNS[15 + 1];
 	uint32_t ethernetDHCPLeaseTime;
 	uint32_t ethernetDHCPRenewTime;
 	enum ethernet_dhcp_state ethernetDHCPState;
@@ -173,7 +174,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.bluetoothAddress = "0",
 	.resetCount = 0,
 	.upTime = 0,
-	.attributeVersion = "0.4.11",
+	.attributeVersion = "0.4.17",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -196,12 +197,13 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.commissioningBusy = false,
 	.ethernetInitError = 0,
 	.ethernetMAC = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+	.ethernetCableDetected = false,
 	.ethernetSpeed = 0,
 	.ethernetDuplex = 0,
 	.ethernetIPAddress = "0.0.0.0",
 	.ethernetNetmaskLength = 0,
 	.ethernetGateway = "0.0.0.0",
-	.ethernetDNS = "0.0.0.0,0.0.0.0",
+	.ethernetDNS = "0.0.0.0",
 	.ethernetDHCPLeaseTime = 0,
 	.ethernetDHCPRenewTime = 0,
 	.ethernetDHCPState = 0,
@@ -320,23 +322,24 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[57 ] = { 218, RO_ATTRX(commissioningBusy)             , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[58 ] = { 221, RO_ATTRE(ethernetInitError)             , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[59 ] = { 222, RO_ATTRX(ethernetMAC)                   , ATTR_TYPE_BYTE_ARRAY    , n, n, y, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[60 ] = { 223, RW_ATTRE(ethernetType)                  , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[61 ] = { 224, RW_ATTRE(ethernetMode)                  , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[62 ] = { 225, RO_ATTRE(ethernetSpeed)                 , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[63 ] = { 226, RO_ATTRE(ethernetDuplex)                , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[64 ] = { 227, RO_ATTRS(ethernetIPAddress)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
-	[65 ] = { 228, RO_ATTRX(ethernetNetmaskLength)         , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[66 ] = { 229, RO_ATTRS(ethernetGateway)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
-	[67 ] = { 230, RO_ATTRS(ethernetDNS)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 31         },
-	[68 ] = { 231, RW_ATTRS(ethernetStaticIPAddress)       , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
-	[69 ] = { 232, RW_ATTRX(ethernetStaticNetmaskLength)   , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[70 ] = { 233, RW_ATTRS(ethernetStaticGateway)         , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
-	[71 ] = { 234, RW_ATTRS(ethernetStaticDNS)             , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 31         },
-	[72 ] = { 235, RO_ATTRX(ethernetDHCPLeaseTime)         , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
-	[73 ] = { 236, RO_ATTRX(ethernetDHCPRenewTime)         , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
-	[74 ] = { 237, RO_ATTRE(ethernetDHCPState)             , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 6          },
-	[75 ] = { 238, RO_ATTRX(ethernetDHCPAttempts)          , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 100        },
-	[76 ] = { 239, RO_ATTRE(ethernetDHCPAction)            , ATTR_TYPE_U8            , n, y, n, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 2          }
+	[60 ] = { 223, RW_ATTRE(ethernetType)                  , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 1         , .max.ux = 2          },
+	[61 ] = { 224, RW_ATTRE(ethernetMode)                  , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 1         , .max.ux = 2          },
+	[62 ] = { 225, RO_ATTRX(ethernetCableDetected)         , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[63 ] = { 226, RO_ATTRE(ethernetSpeed)                 , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[64 ] = { 227, RO_ATTRE(ethernetDuplex)                , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[65 ] = { 228, RO_ATTRS(ethernetIPAddress)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[66 ] = { 229, RO_ATTRX(ethernetNetmaskLength)         , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[67 ] = { 230, RO_ATTRS(ethernetGateway)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[68 ] = { 231, RO_ATTRS(ethernetDNS)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[69 ] = { 232, RW_ATTRS(ethernetStaticIPAddress)       , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[70 ] = { 233, RW_ATTRX(ethernetStaticNetmaskLength)   , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[71 ] = { 234, RW_ATTRS(ethernetStaticGateway)         , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[72 ] = { 235, RW_ATTRS(ethernetStaticDNS)             , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[73 ] = { 236, RO_ATTRX(ethernetDHCPLeaseTime)         , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
+	[74 ] = { 237, RO_ATTRX(ethernetDHCPRenewTime)         , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
+	[75 ] = { 238, RO_ATTRE(ethernetDHCPState)             , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 6          },
+	[76 ] = { 239, RO_ATTRX(ethernetDHCPAttempts)          , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 100        },
+	[77 ] = { 240, RO_ATTRE(ethernetDHCPAction)            , ATTR_TYPE_U8            , n, y, n, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 2          }
 	/* pyend */
 };
 
@@ -421,7 +424,8 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[236] = &ATTR_TABLE[73 ],
 	[237] = &ATTR_TABLE[74 ],
 	[238] = &ATTR_TABLE[75 ],
-	[239] = &ATTR_TABLE[76 ]
+	[239] = &ATTR_TABLE[76 ],
+	[240] = &ATTR_TABLE[77 ]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -593,8 +597,8 @@ const char *const attr_get_string_ethernet_init_error(int value)
 const char *const attr_get_string_ethernet_type(int value)
 {
 	switch (value) {
-		case 1:           return "Ipv4";
-		case 2:           return "Ipv6";
+		case 1:           return "IPv4";
+		case 2:           return "IPv6";
 		default:          return "?";
 	}
 }
@@ -603,7 +607,7 @@ const char *const attr_get_string_ethernet_mode(int value)
 {
 	switch (value) {
 		case 1:           return "Static";
-		case 2:           return "Dhcp";
+		case 2:           return "DHCP";
 		default:          return "?";
 	}
 }

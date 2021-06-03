@@ -95,21 +95,22 @@ extern "C" {
 #define ATTR_ID_ethernetMAC                           222
 #define ATTR_ID_ethernetType                          223
 #define ATTR_ID_ethernetMode                          224
-#define ATTR_ID_ethernetSpeed                         225
-#define ATTR_ID_ethernetDuplex                        226
-#define ATTR_ID_ethernetIPAddress                     227
-#define ATTR_ID_ethernetNetmaskLength                 228
-#define ATTR_ID_ethernetGateway                       229
-#define ATTR_ID_ethernetDNS                           230
-#define ATTR_ID_ethernetStaticIPAddress               231
-#define ATTR_ID_ethernetStaticNetmaskLength           232
-#define ATTR_ID_ethernetStaticGateway                 233
-#define ATTR_ID_ethernetStaticDNS                     234
-#define ATTR_ID_ethernetDHCPLeaseTime                 235
-#define ATTR_ID_ethernetDHCPRenewTime                 236
-#define ATTR_ID_ethernetDHCPState                     237
-#define ATTR_ID_ethernetDHCPAttempts                  238
-#define ATTR_ID_ethernetDHCPAction                    239
+#define ATTR_ID_ethernetCableDetected                 225
+#define ATTR_ID_ethernetSpeed                         226
+#define ATTR_ID_ethernetDuplex                        227
+#define ATTR_ID_ethernetIPAddress                     228
+#define ATTR_ID_ethernetNetmaskLength                 229
+#define ATTR_ID_ethernetGateway                       230
+#define ATTR_ID_ethernetDNS                           231
+#define ATTR_ID_ethernetStaticIPAddress               232
+#define ATTR_ID_ethernetStaticNetmaskLength           233
+#define ATTR_ID_ethernetStaticGateway                 234
+#define ATTR_ID_ethernetStaticDNS                     235
+#define ATTR_ID_ethernetDHCPLeaseTime                 236
+#define ATTR_ID_ethernetDHCPRenewTime                 237
+#define ATTR_ID_ethernetDHCPState                     238
+#define ATTR_ID_ethernetDHCPAttempts                  239
+#define ATTR_ID_ethernetDHCPAction                    240
 /* pyend */
 
 /******************************************************************************/
@@ -117,8 +118,8 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                      77
-#define ATTR_TABLE_MAX_ID                                    239
+#define ATTR_TABLE_SIZE                                      78
+#define ATTR_TABLE_MAX_ID                                    240
 #define ATTR_TABLE_WRITABLE_COUNT                            40
 #define ATTR_MAX_STR_LENGTH                                  254
 #define ATTR_MAX_STR_SIZE                                    255
@@ -151,10 +152,10 @@ extern "C" {
 #define ATTR_LWM2M_PEER_URL_MAX_STR_SIZE                     129
 #define ATTR_ETHERNET_IP_ADDRESS_MAX_STR_SIZE                16
 #define ATTR_ETHERNET_GATEWAY_MAX_STR_SIZE                   16
-#define ATTR_ETHERNET_DNS_MAX_STR_SIZE                       32
+#define ATTR_ETHERNET_DNS_MAX_STR_SIZE                       16
 #define ATTR_ETHERNET_STATIC_IP_ADDRESS_MAX_STR_SIZE         16
 #define ATTR_ETHERNET_STATIC_GATEWAY_MAX_STR_SIZE            16
-#define ATTR_ETHERNET_STATIC_DNS_MAX_STR_SIZE                32
+#define ATTR_ETHERNET_STATIC_DNS_MAX_STR_SIZE                16
 
 /* Attribute Byte Array Lengths */
 #define ATTR_CT_AES_KEY_SIZE                                 16
@@ -295,10 +296,10 @@ BUILD_ASSERT(sizeof(enum fota_status) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum generate_psk) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum cloud_error) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum ethernet_init_error) == ATTR_SIZE_S8);
-BUILD_ASSERT(sizeof(enum ethernet_type) == ATTR_SIZE_S8);
-BUILD_ASSERT(sizeof(enum ethernet_mode) == ATTR_SIZE_S8);
-BUILD_ASSERT(sizeof(enum ethernet_speed) == ATTR_SIZE_S8);
-BUILD_ASSERT(sizeof(enum ethernet_duplex) == ATTR_SIZE_S8);
+BUILD_ASSERT(sizeof(enum ethernet_type) == ATTR_SIZE_U8);
+BUILD_ASSERT(sizeof(enum ethernet_mode) == ATTR_SIZE_U8);
+BUILD_ASSERT(sizeof(enum ethernet_speed) == ATTR_SIZE_U8);
+BUILD_ASSERT(sizeof(enum ethernet_duplex) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum ethernet_dhcp_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum ethernet_dhcp_action) == ATTR_SIZE_U8);
 /* pyend */

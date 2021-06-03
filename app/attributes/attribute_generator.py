@@ -687,6 +687,9 @@ class attributes:
                 s += "\t}\n}\n\n"
                 # Handle special cases
                 s = s.replace("Lwm2 M", "LwM2M")
+                s = s.replace("Dhcp", "DHCP")
+                s = s.replace("Ipv4", "IPv4")
+                s = s.replace("Ipv6", "IPv6")
                 lst.append(s)
 
         return ''.join(lst)

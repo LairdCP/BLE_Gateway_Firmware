@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.11"
+    "version": "0.4.17"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2054,7 +2054,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.11",
+              "x-default": "0.4.17",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -4226,7 +4226,9 @@
             ],
             "schema": {
               "type": "integer",
-              "x-ctype": "int8_t",
+              "minimum": 1.0,
+              "maximum": 2.0,
+              "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "0",
               "x-readable": true,
@@ -4248,9 +4250,11 @@
             ],
             "schema": {
               "type": "integer",
-              "x-ctype": "int8_t",
-              "x-default": "0",
-              "x-example": "0",
+              "minimum": 1.0,
+              "maximum": 2.0,
+              "x-ctype": "uint8_t",
+              "x-default": "2",
+              "x-example": "1",
               "x-readable": true,
               "x-savable": true,
               "x-writeable": true,
@@ -4261,8 +4265,8 @@
             }
           },
           {
-            "name": "ethernetSpeed",
-            "summary": "Connectivity speed of Ethernet module",
+            "name": "ethernetCableDetected",
+            "summary": "If there is a cable attached to the Ethernet module",
             "required": true,
             "x-id": 225,
             "x-projects": [
@@ -4270,7 +4274,23 @@
             ],
             "schema": {
               "type": "integer",
-              "x-ctype": "int8_t",
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "false",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "ethernetSpeed",
+            "summary": "Bitmask value specifying the connectivity speed the Ethernet module is operating in/supports",
+            "required": true,
+            "x-id": 226,
+            "x-projects": [
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "0",
               "x-readable": true,
@@ -4284,15 +4304,15 @@
           },
           {
             "name": "ethernetDuplex",
-            "summary": "Operating duplex mode of Ethernet module",
+            "summary": "Bitmask value specifying if the Ethernet module is operating/supports full or half duplex",
             "required": true,
-            "x-id": 226,
+            "x-id": 227,
             "x-projects": [
               "BL5340"
             ],
             "schema": {
               "type": "integer",
-              "x-ctype": "int8_t",
+              "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "0",
               "x-readable": true,
@@ -4307,7 +4327,7 @@
             "name": "ethernetIPAddress",
             "summary": "Read to get the current active IP address of the Ethernet module",
             "required": true,
-            "x-id": 227,
+            "x-id": 228,
             "x-projects": [
               "BL5340"
             ],
@@ -4325,7 +4345,7 @@
             "name": "ethernetNetmaskLength",
             "summary": "Read to get the current active netmask length of the Ethernet module",
             "required": true,
-            "x-id": 228,
+            "x-id": 229,
             "x-projects": [
               "BL5340"
             ],
@@ -4343,7 +4363,7 @@
             "name": "ethernetGateway",
             "summary": "Read to get the current active gateway IP address of the Ethernet module",
             "required": true,
-            "x-id": 229,
+            "x-id": 230,
             "x-projects": [
               "BL5340"
             ],
@@ -4359,19 +4379,19 @@
           },
           {
             "name": "ethernetDNS",
-            "summary": "Read to get the current active DNS IP addresses of the Ethernet module",
+            "summary": "Read to get the current active DNS server IP address of the Ethernet module",
             "required": true,
-            "x-id": 230,
+            "x-id": 231,
             "x-projects": [
               "BL5340"
             ],
             "schema": {
               "type": "string",
               "minimum": 7,
-              "maximum": 31,
+              "maximum": 15,
               "x-ctype": "string",
-              "x-default": "0.0.0.0,0.0.0.0",
-              "x-example": "192.168.1.1,192.168.1.5",
+              "x-default": "0.0.0.0",
+              "x-example": "192.168.1.1",
               "x-readable": true
             }
           },
@@ -4379,7 +4399,7 @@
             "name": "ethernetStaticIPAddress",
             "summary": "The IP address of the Ethernet module which is used when configured in static operating mode",
             "required": true,
-            "x-id": 231,
+            "x-id": 232,
             "x-projects": [
               "BL5340"
             ],
@@ -4399,7 +4419,7 @@
             "name": "ethernetStaticNetmaskLength",
             "summary": "The netmask length of the Ethernet module which is used when configured in static operating mode",
             "required": true,
-            "x-id": 232,
+            "x-id": 233,
             "x-projects": [
               "BL5340"
             ],
@@ -4419,7 +4439,7 @@
             "name": "ethernetStaticGateway",
             "summary": "The gateway IP address of the Ethernet module which is used when configured in static operating mode",
             "required": true,
-            "x-id": 233,
+            "x-id": 234,
             "x-projects": [
               "BL5340"
             ],
@@ -4437,19 +4457,19 @@
           },
           {
             "name": "ethernetStaticDNS",
-            "summary": "The DNS IP addresses of the Ethernet module which are used when configured in static operating mode",
+            "summary": "The DNS server IP address of the Ethernet module which is used when configured in static operating mode",
             "required": true,
-            "x-id": 234,
+            "x-id": 235,
             "x-projects": [
               "BL5340"
             ],
             "schema": {
               "type": "string",
               "minimum": 7,
-              "maximum": 31,
+              "maximum": 15,
               "x-ctype": "string",
-              "x-default": "0.0.0.0,0.0.0.0",
-              "x-example": "192.168.1.1,192.168.1.5",
+              "x-default": "0.0.0.0",
+              "x-example": "192.168.1.1",
               "x-readable": true,
               "x-savable": true,
               "x-writeable": true
@@ -4459,7 +4479,7 @@
             "name": "ethernetDHCPLeaseTime",
             "summary": "The DHCP lease time of the ethernet module (if DHCP is active)",
             "required": true,
-            "x-id": 235,
+            "x-id": 236,
             "x-projects": [
               "BL5340"
             ],
@@ -4477,7 +4497,7 @@
             "name": "ethernetDHCPRenewTime",
             "summary": "The DHCP renew time of the ethernet module (if DHCP is active)",
             "required": true,
-            "x-id": 236,
+            "x-id": 237,
             "x-projects": [
               "BL5340"
             ],
@@ -4495,7 +4515,7 @@
             "name": "ethernetDHCPState",
             "summary": "The current DHCP state of the ethernet module (if DHCP is active)",
             "required": true,
-            "x-id": 237,
+            "x-id": 238,
             "x-projects": [
               "BL5340"
             ],
@@ -4522,7 +4542,7 @@
             "name": "ethernetDHCPAttempts",
             "summary": "The number of attempts which were taken to obtain a DHCP lease on the ethernet module (if DHCP is active)",
             "required": true,
-            "x-id": 238,
+            "x-id": 239,
             "x-projects": [
               "BL5340"
             ],
@@ -4540,7 +4560,7 @@
             "name": "ethernetDHCPAction",
             "summary": "An action to perform using DHCP on the ethernet module (if DHCP is active)",
             "required": true,
-            "x-id": 239,
+            "x-id": 240,
             "x-projects": [
               "BL5340"
             ],

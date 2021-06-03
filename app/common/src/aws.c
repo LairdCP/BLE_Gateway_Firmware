@@ -40,9 +40,15 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #include "sensor_gateway_parser.h"
 #endif
 
-#ifdef CONFIG_BOARD_MG100
+#if defined(CONFIG_BOARD_MG100)
 #include "lairdconnect_battery.h"
+#endif
+
+#if defined(CONFIG_LCZ_MOTION_LOG_LEVEL)
 #include "lcz_motion.h"
+#endif
+
+#if defined(CONFIG_SD_CARD_LOG)
 #include "sdcard_log.h"
 #endif
 
@@ -64,10 +70,7 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #endif
 
 #define CONVERSION_MAX_STR_LEN 10
-#define JSON_QUOTE_STR_LEN 2
-#define ETHERNET_IP_MAX_STR_LEN 15 /* IPv4 */
-#define ETHERNET_DNS_MAX_STR_LEN ((ETHERNET_IP_MAX_STR_LEN + 1) * 2) /* 2x IPv4 addresses with comma separator */
-#define ETHERNET_MAX_DNS_ADDRESSES 2
+#define HEX_CHARS_PER_HEX_VALUE 2
 
 struct topics {
 	uint8_t update[CONFIG_AWS_TOPIC_MAX_SIZE];
@@ -161,6 +164,7 @@ static uint16_t rand16_nonzero_get(void);
 static void publish_watchdog_work_handler(struct k_work *work);
 static void keep_alive_work_handler(struct k_work *work);
 static int aws_send_data(bool binary, char *data, uint32_t len, uint8_t *topic);
+static char *net_sprint_ll_addr_lower(const uint8_t *ll);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -329,52 +333,6 @@ int awsGetAcceptedUnsub(void)
 	return awsSubscribe(topics.get_accepted, false);
 }
 
-#ifdef CONFIG_NET_L2_ETHERNET
-/* Functions taken from net_private.h
- * Copyright (c) 2016 Intel Corporation
- */
-static char *net_sprint_ll_addr_buf_lower(const uint8_t *ll, uint8_t ll_len,
-			     char *buf, int buflen)
-{
-	uint8_t i, len, blen;
-	char *ptr = buf;
-
-	switch (ll_len) {
-	case 8:
-		len = 8U;
-		break;
-	case 6:
-		len = 6U;
-		break;
-	case 2:
-		len = 2U;
-		break;
-	default:
-		len = 6U;
-		break;
-	}
-
-	for (i = 0U, blen = buflen; i < len && blen > 0; i++) {
-		ptr = net_byte_to_hex(ptr, (char)ll[i], 'a', true);
-		blen -= 3U;
-	}
-
-	if (!(ptr - buf)) {
-		return NULL;
-	}
-
-	*(ptr - 1) = '\0';
-	return buf;
-}
-
-static inline char *net_sprint_ll_addr_lower(const uint8_t *ll, uint8_t ll_len)
-{
-	static char buf[sizeof("xx:xx:xx:xx:xx:xx:xx:xx")];
-
-	return net_sprint_ll_addr_buf_lower(ll, ll_len, (char *)buf, sizeof(buf));
-}
-#endif
-
 int awsPublishShadowPersistentData()
 {
 	int rc = -ENOMEM;
@@ -383,60 +341,22 @@ int awsPublishShadowPersistentData()
 #ifdef CONFIG_NET_L2_ETHERNET
 	struct shadow_persistent_values *reported =
 		&shadow_persistent_data.state.reported;
-	struct net_if *iface = net_if_get_default();
-	struct dns_resolve_context *ctx = dns_resolve_get_default();
-	struct net_if_ipv4 *ipv4;
-	struct net_if_addr *unicast;
-	uint8_t i = 0;
-	uint8_t count = 0;
-	uint8_t netmaskLength = 0;
-	uint32_t tmpNetmask;
-	static char ethDNS[ETHERNET_DNS_MAX_STR_LEN + 1];
 
-	/* Update persistent shadow with ethernet network details */
-	ipv4 = iface->config.ip.ipv4;
-	unicast = &ipv4->unicast[0];
-	tmpNetmask = ipv4->netmask.s_addr;
-
-	/* Count number of set bits for netmask length */
-	while (tmpNetmask & 0x1) {
-		++netmaskLength;
-		tmpNetmask = tmpNetmask >> 1;
-	}
-
-	/* Format DNS servers into JSON string */
-	ethDNS[0] = 0;
-	while (i < (CONFIG_DNS_RESOLVER_MAX_SERVERS + DNS_MAX_MCAST_SERVERS)) {
-		if (ctx->servers[i].dns_server.sa_family == AF_INET) {
-			snprintf(&ethDNS[strlen(ethDNS)], sizeof(ethDNS)-strlen(ethDNS), "%s,", net_sprint_ipv4_addr(&net_sin(&ctx->servers[i].dns_server)->sin_addr));
-			++count;
-
-			if (count == ETHERNET_MAX_DNS_ADDRESSES) {
-				break;
-			}
-		}
-		++i;
-	}
-
-	/* Remove final comma from DNS server list if present */
-	if (count > 0 && ethDNS[strlen(ethDNS)-1] == ',') {
-		ethDNS[strlen(ethDNS)-1] = 0;
-	}
-
-	reported->ethernet.MAC = net_sprint_ll_addr_lower(net_if_get_link_addr(iface)->addr, net_if_get_link_addr(iface)->len);
+	reported->ethernet.MAC = net_sprint_ll_addr_lower(attr_get_quasi_static(ATTR_ID_ethernetMAC));
 	reported->ethernet.type = (uint32_t)ETHERNET_TYPE_IPV4;
-	reported->ethernet.mode = (uint32_t)ETHERNET_MODE_DHCP;
-	reported->ethernet.speed = (uint32_t)ETHERNET_SPEED_UNKNOWN;
-	reported->ethernet.duplex = (uint32_t)ETHERNET_DUPLEX_UNKNOWN;
-	reported->ethernet.IPAddress = net_sprint_ipv4_addr(&unicast->address.in_addr);
-	reported->ethernet.netmaskLength = (uint32_t)netmaskLength;
-	reported->ethernet.gateway = net_sprint_ipv4_addr(&ipv4->gw);
-	reported->ethernet.DNS = ethDNS;
+	reported->ethernet.mode = attr_get_uint32(ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC);
+	reported->ethernet.speed = attr_get_uint32(ATTR_ID_ethernetSpeed, (uint32_t)ETHERNET_SPEED_UNKNOWN);
+	reported->ethernet.duplex = attr_get_uint32(ATTR_ID_ethernetDuplex, (uint32_t)ETHERNET_DUPLEX_UNKNOWN);
+	reported->ethernet.IPAddress = attr_get_quasi_static(ATTR_ID_ethernetIPAddress);
+	reported->ethernet.netmaskLength = attr_get_uint32(ATTR_ID_ethernetNetmaskLength, 0);
+	reported->ethernet.gateway = attr_get_quasi_static(ATTR_ID_ethernetGateway);
+	reported->ethernet.DNS = attr_get_quasi_static(ATTR_ID_ethernetDNS);
+
 #if defined(CONFIG_NET_DHCPV4)
-	reported->ethernet.DHCPLeaseTime = iface->config.dhcpv4.lease_time;
-	reported->ethernet.DHCPRenewTime = iface->config.dhcpv4.renewal_time;
-	reported->ethernet.DHCPState = iface->config.dhcpv4.state;
-	reported->ethernet.DHCPAttempts = iface->config.dhcpv4.attempts;
+	reported->ethernet.DHCPLeaseTime = attr_get_uint32(ATTR_ID_ethernetDHCPLeaseTime, 0);
+	reported->ethernet.DHCPRenewTime = attr_get_uint32(ATTR_ID_ethernetDHCPRenewTime, 0);
+	reported->ethernet.DHCPState = attr_get_uint32(ATTR_ID_ethernetDHCPState, 0);
+	reported->ethernet.DHCPAttempts = attr_get_uint32(ATTR_ID_ethernetDHCPAttempts, 0);
 #endif
 #endif
 
@@ -986,6 +906,32 @@ static int aws_send_data(bool binary, char *data, uint32_t len, uint8_t *topic)
 
 	return rc;
 }
+
+#ifdef CONFIG_NET_L2_ETHERNET
+/* Function taken from net_private.h
+ * Copyright (c) 2016 Intel Corporation
+ */
+static char *net_sprint_ll_addr_lower(const uint8_t *ll)
+{
+	static char buf[sizeof("xxxxxxxxxxxx")];
+	uint8_t i, len, blen;
+	char *ptr = buf;
+
+	len = (sizeof(buf) - 1) / HEX_CHARS_PER_HEX_VALUE;
+
+	for (i = 0U, blen = sizeof(buf); i < len && blen > 0; i++) {
+		ptr = net_byte_to_hex(ptr, (char)ll[i], 'a', true);
+		blen -= 3U;
+	}
+
+	if (!(ptr - buf)) {
+		return NULL;
+	}
+
+	*(ptr - 1) = '\0';
+	return buf;
+}
+#endif
 
 /******************************************************************************/
 /* Override in application                                                    */

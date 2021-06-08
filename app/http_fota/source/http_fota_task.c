@@ -23,9 +23,6 @@ LOG_MODULE_REGISTER(http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
 #include <net/fota_download.h>
 
 #include "lcz_memfault.h"
-#ifdef CONFIG_LCZ_MEMFAULT
-#include "memfault/http/root_certs.h"
-#endif
 
 #include "http_fota_task.h"
 
@@ -327,10 +324,7 @@ static void fota_fsm(fota_context_t *pCtx)
 		} else {
 #endif
 			LOG_WRN("Entering mcuboot");
-#ifdef CONFIG_LCZ_MEMFAULT
-			memfault_reboot_tracking_mark_reset_imminent(
-				kMfltRebootReason_FirmwareUpdate, NULL);
-#endif
+			LCZ_MEMFAULT_REBOOT_TRACK_FIRMWARE_UPDATE();
 			/* Allow last print to occur. */
 			k_sleep(K_MSEC(CONFIG_LOG_PROCESS_THREAD_SLEEP_MS));
 			sys_reboot(SYS_REBOOT_COLD);
@@ -355,10 +349,7 @@ static void fota_fsm(fota_context_t *pCtx)
 			next_state = FOTA_FSM_MODEM_WAIT;
 		} else {
 			LOG_WRN("Rebooting for modem update to be completed.");
-#ifdef CONFIG_LCZ_MEMFAULT
-			memfault_reboot_tracking_mark_reset_imminent(
-				kMfltRebootReason_FirmwareUpdate, NULL);
-#endif
+			LCZ_MEMFAULT_REBOOT_TRACK_FIRMWARE_UPDATE();
 			/* Allow last print to occur. */
 			k_sleep(K_MSEC(CONFIG_LOG_PROCESS_THREAD_SLEEP_MS));
 			sys_reboot(SYS_REBOOT_COLD);

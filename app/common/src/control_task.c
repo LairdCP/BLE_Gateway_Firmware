@@ -97,9 +97,9 @@ static FwkMsgHandler_t lwm2m_msg_handler;
 #endif
 
 static void commission_handler(void);
+static void random_join_handler(attr_index_t idx);
 
 #ifdef CONFIG_MODEM_HL7800
-static void random_join_handler(attr_index_t idx);
 static void update_apn_handler(void);
 static void update_modem_log_level_handler(void);
 static void update_rat_handler(void);
@@ -158,9 +158,10 @@ static void control_task_thread_internal(void *pArg1, void *pArg2, void *pArg3)
 {
 	control_task_obj_t *pObj = (control_task_obj_t *)pArg1;
 
+	random_join_handler(ATTR_ID_joinDelay);
+
 #ifdef CONFIG_MODEM_HL7800
 	attr_prepare_modemBoot();
-	random_join_handler(ATTR_ID_joinDelay);
 	update_modem_log_level_handler();
 #endif
 
@@ -224,11 +225,11 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 #endif
 			break;
 
-#ifdef CONFIG_MODEM_HL7800
 		case ATTR_ID_joinDelay:
 			random_join_handler(pb->list[i]);
 			break;
 
+#ifdef CONFIG_MODEM_HL7800
 		case ATTR_ID_apnControlPoint:
 			/* Flag prevents ordering issues when processing a file. */
 			update_apn = true;
@@ -430,9 +431,7 @@ static void update_apn_handler(void)
 		(char *)attr_get_quasi_static(ATTR_ID_apn));
 	attr_set_signed32(ATTR_ID_apnStatus, status);
 }
-#endif
 
-#ifdef CONFIG_MODEM_HL7800
 static void update_modem_log_level_handler(void)
 {
 	uint32_t desired =
@@ -441,9 +440,7 @@ static void update_modem_log_level_handler(void)
 	LOG_INF("modem log level: desired: %u new_level: %u", desired,
 		new_level);
 }
-#endif
 
-#ifdef CONFIG_MODEM_HL7800
 static void update_rat_handler(void)
 {
 	mdm_hl7800_update_rat(attr_get_uint32(ATTR_ID_lteRat, MDM_RAT_CAT_M1));

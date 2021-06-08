@@ -506,12 +506,13 @@ static void advertise_on_startup(void)
 
 static void configure_sd_card(void)
 {
-	int rc;
 #ifdef CONFIG_SD_CARD_LOG
+	int rc;
+
 	rc = sdCardLogInit();
 #ifdef CONFIG_CONTACT_TRACING
 	if (rc == 0) {
-		sdCardCleanup();
+		sdCardLogCleanup();
 	}
 #endif
 #endif

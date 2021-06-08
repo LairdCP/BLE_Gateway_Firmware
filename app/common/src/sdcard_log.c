@@ -80,7 +80,6 @@ static int batteryLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static bool batteryLogFileOpened = false;
 static int sensorLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static int bl654LogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
-static struct sdcard_status sdCardLogStatus;
 
 #ifdef CONFIG_SCAN_FOR_BT510
 static struct fs_file_t sensorLogFileZfp;
@@ -105,16 +104,7 @@ static struct fs_file_t sdLogZfp;
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-struct sdcard_status *sdCardLogGetStatus()
-{
-	sdCardLogStatus.currLogSize = GetLogSize();
-	sdCardLogStatus.maxLogSize = GetMaxLogSize();
-	sdCardLogStatus.freeSpace = GetFSFree();
-
-	return (&sdCardLogStatus);
-}
-
-int UpdateMaxLogSize(int Value)
+int sdCardLogUpdateMaxSize(int Value)
 {
 	int ValueB = Value * B_PER_MB;
 	sensorLogMaxLength = ValueB;
@@ -125,13 +115,13 @@ int UpdateMaxLogSize(int Value)
 	return attr_set_uint32(ATTR_ID_sdLogMaxSize, Value);
 }
 
-int GetMaxLogSize()
+int sdCardLogGetMaxSize(void)
 {
 	int LengthB = sensorLogMaxLength / B_PER_MB;
 	return (LengthB);
 }
 
-int GetFSFree()
+int sdCardLogGetFree(void)
 {
 	struct fs_statvfs Stats;
 	unsigned long FreeSpace = 0;
@@ -153,7 +143,7 @@ int GetFSFree()
 	return (Ret);
 }
 
-int GetLogSize()
+int sdCardLogGetSize(void)
 {
 	struct fs_dirent fileStat;
 	int LogSize = 0;
@@ -182,7 +172,7 @@ int GetLogSize()
 	return (Ret);
 }
 
-int sdCardLogInit()
+int sdCardLogInit(void)
 {
 	int ret = 0;
 	int LogLength = 0;
@@ -200,13 +190,17 @@ int sdCardLogInit()
 		LogLength = SDCARD_LOG_DEFAULT_MAX_LENGTH;
 	}
 
-	UpdateMaxLogSize(LogLength);
+	sdCardLogUpdateMaxSize(LogLength);
 
 #ifdef CONFIG_BOARD_MG100
 	/* enable the voltage translator between the nRF52 and SD card */
 	sdcardEnable = device_get_binding(SD_OE_PORT);
-	gpio_pin_configure(sdcardEnable, SD_OE_PIN, GPIO_OUTPUT);
-	gpio_pin_set(sdcardEnable, SD_OE_PIN, SD_OE_ENABLED);
+	if (sdcardEnable) {
+		gpio_pin_configure(sdcardEnable, SD_OE_PIN, GPIO_OUTPUT);
+		gpio_pin_set(sdcardEnable, SD_OE_PIN, GPIO_OUTPUT_ACTIVE);
+	} else {
+		LOG_ERR("Could not bind");
+	}
 #endif
 
 	do {
@@ -466,7 +460,7 @@ int sdCardLogBatteryData(void *data, int length)
 
 #ifdef CONFIG_CONTACT_TRACING
 
-int sdCardCleanup(void)
+int sdCardLogCleanup(void)
 {
 	/* if there are more than 256 entries, delete the oldest files beyond 256 */
 
@@ -599,7 +593,7 @@ int sdCardLsDir(const char *path)
 	return ret;
 }
 
-int sdCardLsDirToString(const char *path, char *buf, int maxlen)
+int sdCardLogLsDirToString(const char *path, char *buf, int maxlen)
 {
 	/* ("/", sd_log_publish_buf, SD_LOG_PUBLISH_MAX_CHUNK_LEN); */
 	int ret, i;

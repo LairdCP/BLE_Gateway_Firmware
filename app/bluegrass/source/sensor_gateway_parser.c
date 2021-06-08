@@ -131,6 +131,18 @@ static const uint16_t LocalConfigUpdateBits[MAX_WRITEABLE_LOCAL_OBJECTS] = {
 	LOCAL_UPDATE_BIT_MAX_LOG_SIZE,
 };
 
+#ifndef CONFIG_SD_CARD_LOG
+static int no_sd_card_update_max_size(int Value)
+{
+	return -1;
+}
+
+static int no_sd_card_get_max_size(void)
+{
+	return -1;
+}
+#endif
+
 static int (*LocalConfigUpdate[MAX_WRITEABLE_LOCAL_OBJECTS])(int) = {
 	UpdateBatteryLowThreshold,
 	UpdateBatteryThreshold0,
@@ -142,14 +154,24 @@ static int (*LocalConfigUpdate[MAX_WRITEABLE_LOCAL_OBJECTS])(int) = {
 	lcz_motion_set_and_update_odr,
 	lcz_motion_set_and_update_scale,
 	lcz_motion_set_and_update_threshold,
-	UpdateMaxLogSize,
+	IS_ENABLED(CONFIG_SD_CARD_LOG) ? sdCardLogUpdateMaxSize :
+					       no_sd_card_update_max_size,
 };
 
 static int (*LocalConfigGet[MAX_WRITEABLE_LOCAL_OBJECTS])() = {
-	GetBatteryLowThreshold,	  GetBatteryThreshold0, GetBatteryThreshold1,
-	GetBatteryThreshold2,	  GetBatteryThreshold3, GetBatteryThreshold4,
-	GetBatteryBadThreshold,	  lcz_motion_get_odr,	lcz_motion_get_scale,
-	lcz_motion_get_threshold, GetMaxLogSize,
+	GetBatteryLowThreshold,
+	GetBatteryThreshold0,
+	GetBatteryThreshold1,
+	GetBatteryThreshold2,
+	GetBatteryThreshold3,
+	GetBatteryThreshold4,
+	GetBatteryBadThreshold,
+	lcz_motion_get_odr,
+	lcz_motion_get_scale,
+	lcz_motion_get_threshold,
+	IS_ENABLED(CONFIG_SD_CARD_LOG) ? sdCardLogGetMaxSize :
+					       no_sd_card_get_max_size,
+
 };
 #endif /* CONFIG_BOARD_MG100 */
 

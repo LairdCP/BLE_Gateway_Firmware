@@ -257,8 +257,8 @@ static void process_log_dir_command(void)
 #ifdef CONFIG_SD_CARD_LOG
 	char *topic = ct_ble_get_log_topic();
 
-	if (0 == sdCardLsDirToString("/", sd_log_publish_buf,
-				     SD_LOG_PUBLISH_MAX_CHUNK_LEN)) {
+	if (0 == sdCardLogLsDirToString("/", sd_log_publish_buf,
+					SD_LOG_PUBLISH_MAX_CHUNK_LEN)) {
 		LOG_DBG("\t\tpublishing log dir to %s", log_strdup(topic));
 		awsSendData(sd_log_publish_buf, topic);
 	}

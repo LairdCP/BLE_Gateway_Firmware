@@ -42,24 +42,9 @@ typedef struct log_get_state_s {
 } log_get_state_t;
 #endif
 
-struct sdcard_status {
-	int currLogSize;
-	int maxLogSize;
-	int freeSpace;
-};
-
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
-/**
- * @brief this function initializes the sdcard logging sub-system.
- *
- * @param none
- *
- * @retval struct sdcard_status * - returns the sdcard shadow parameter data.
- */
-struct sdcard_status *sdCardLogGetStatus(void);
-
 /**
  * @brief this function initializes the sdcard logging sub-system.
  *
@@ -77,7 +62,8 @@ int sdCardLogInit(void);
  *    to allow for the full length it will also start overwriting at the
  *    beginning of the file.
  *
- * @param void * data - the pointer to the data to write, int length - the length of the data.
+ * @param void * data - the pointer to the data to write,
+ * int length - the length of the data.
  *
  * @retval int - Write status - Values < 0 are errors, 0 = success.
  */
@@ -92,7 +78,8 @@ int sdCardLogBatteryData(void *data, int length);
  *    to allow for the full length it will also start overwriting at the
  *    beginning of the file.
  *
- * @param void * data - the pointer to the data to write, int length - the length of the data.
+ * @param void * data - the pointer to the data to write,
+ * int length - the length of the data.
  *
  * @retval int - Write status - Values < 0 are errors, 0 = success.
  */
@@ -108,47 +95,52 @@ int sdCardLogAdEvent(LczSensorAdEvent_t *event);
  *    to allow for the full length it will also start overwriting at the
  *    beginning of the file.
  *
- * @param void * data - the pointer to the data to write, int length - the length of the data.
+ * @param void * data - the pointer to the data to write,
+ * int length - the length of the data.
  *
  * @retval int - Write status - Values < 0 are errors, 0 = success.
  */
 int sdCardLogBL654Data(BL654SensorMsg_t *msg);
 #endif
 /**
- * @brief this function is called by the gateway JSON parser to set the maximum log size.
+ * @brief this function is called by the gateway JSON parser to set
+ * the maximum log size.
  *
  * @param int Value - the maximum log size in MB.
  *
  * @retval negative error code, 0 on success
  */
-int UpdateMaxLogSize(int Value);
+int sdCardLogUpdateMaxSize(int Value);
 
 /**
- * @brief this function is called by the gateway JSON parser to get the maximum log size.
+ * @brief this function is called by the gateway JSON parser to get
+ * the maximum log size.
  *
  * @param none
  *
  * @retval int Value - the maximum log size in in MB.
  */
-int GetMaxLogSize();
+int sdCardLogGetMaxSize(void);
 
 /**
- * @brief this function is called by the gateway JSON parser to get the current log size.
+ * @brief this function is called by the gateway JSON parser
+ * to get the current log size.
  *
  * @param none
  *
  * @retval int Value - the current log size in MB.
  */
-int GetLogSize();
+int sdCardLogGetSize(void);
 
 /**
- * @brief this function is called by the gateway JSON parser to get the sdcard's free space.
+ * @brief this function is called by the gateway JSON parser
+ * to get the free space on the SD card.
  *
  * @param none
  *
  * @retval int Value - the freespace in MB.
  */
-int GetFSFree();
+int sdCardLogGetFree(void);
 
 /**
  * @brief list the contents of a directory on the SD card
@@ -160,9 +152,9 @@ int GetFSFree();
 int sdCardLsDir(const char *path);
 
 #ifdef CONFIG_CONTACT_TRACING
-int sdCardCleanup(void);
+int sdCardLogCleanup(void);
 
-int sdCardLsDirToString(const char *path, char *buf, int maxlen);
+int sdCardLogLsDirToString(const char *path, char *buf, int maxlen);
 
 int sdCardLogGet(char *pbuf, log_get_state_t *lstate, uint32_t maxlen);
 

@@ -460,15 +460,18 @@ int awsPublishHeartbeat(void)
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_MG100_SDCARD_FREE) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_REPORTED_END)];
 
-#ifdef CONFIG_SD_CARD_LOG
-	struct sdcard_status *sdcard = sdCardLogGetStatus();
-#else
-	struct sdcard_status sd_log_disabled_status = { -1, -1, -1 };
-	struct sdcard_status *sdcard = &sd_log_disabled_status;
-#endif
-
 	struct battery_data *battery = batteryGetStatus();
 	struct motion_status *motion = lcz_motion_get_status();
+
+	int log_size = -1;
+	int max_log_size = -1;
+	int free_space = -1;
+
+#ifdef CONFIG_SD_CARD_LOG
+	log_size = sdCardLogGetSize();
+	max_log_size = sdCardLogGetMaxSize();
+	free_space = sdCardLogGetFree();
+#endif
 
 	snprintf(
 		msg, sizeof(msg),
@@ -488,9 +491,9 @@ int awsPublishHeartbeat(void)
 		battery->ambientTemperature, SHADOW_MG100_ODR, motion->odr,
 		SHADOW_MG100_SCALE, motion->scale, SHADOW_MG100_ACT_THS,
 		motion->thr, SHADOW_MG100_MOVEMENT, motion->alarm,
-		SHADOW_MG100_MAX_LOG_SIZE, sdcard->maxLogSize,
-		SHADOW_MG100_CURR_LOG_SIZE, sdcard->currLogSize,
-		SHADOW_MG100_SDCARD_FREE, sdcard->freeSpace, SHADOW_RADIO_RSSI,
+		SHADOW_MG100_MAX_LOG_SIZE, max_log_size,
+		SHADOW_MG100_CURR_LOG_SIZE, log_size, SHADOW_MG100_SDCARD_FREE,
+		free_space, SHADOW_RADIO_RSSI,
 		attr_get_signed32(ATTR_ID_lteRsrp, 0), SHADOW_RADIO_SINR,
 		attr_get_signed32(ATTR_ID_lteSinr, 0), SHADOW_REPORTED_END);
 

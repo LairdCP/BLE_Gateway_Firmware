@@ -125,6 +125,8 @@ static void on_button_release_isr(int64_t time)
 {
 	size_t i;
 
+	LOG_DBG("delta: %i ms", (int32_t)time);
+
 	for (i = 0; i < button_config_count; i++) {
 		if (min_hold_met(time, button_config->min_hold) &&
 		    max_hold_met(time, button_config->max_hold)) {

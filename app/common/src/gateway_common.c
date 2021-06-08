@@ -455,11 +455,11 @@ static void configure_button(void)
 {
 #ifdef CONFIG_CONTACT_TRACING
 	static const button_config_t BUTTON_CONFIG[] = {
-		{ 0, 0, ct_adv_on_button_isr }
+		{ 50, 0, ct_adv_on_button_isr }
 	};
 #else
 	static const button_config_t BUTTON_CONFIG[] = {
-		{ 0, 0, adv_on_button_isr }
+		{ 50, 0, adv_on_button_isr }
 	};
 #endif
 

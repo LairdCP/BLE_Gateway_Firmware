@@ -23,6 +23,7 @@ LOG_MODULE_REGISTER(sensor_task, CONFIG_SENSOR_TASK_LOG_LEVEL);
 #include "FrameworkIncludes.h"
 #include "lcz_bracket.h"
 #include "lcz_bluetooth.h"
+#include "lcz_bt_security.h"
 #include "lcz_bt_scan.h"
 #include "vsp_definitions.h"
 #include "lcz_qrtc.h"
@@ -73,6 +74,7 @@ typedef struct SensorTask {
 	uint16_t mtu;
 	bool connected;
 	bool paired;
+	bool bonded;
 	bool resetSent;
 	bool configComplete;
 	bracket_t *pBracket;
@@ -141,13 +143,10 @@ static void SendSetEpochCommand(void);
 static void ConnectedCallback(struct bt_conn *conn, uint8_t err);
 static void DisconnectedCallback(struct bt_conn *conn, uint8_t reason);
 
-static int RegisterSecurityCallbacks(void);
-static int EncryptLink(SensorTaskObj_t *pObj);
-static void PasskeyDisplayCallback(struct bt_conn *conn, unsigned int passkey);
+static void RegisterSecurityCallbacks(void);
+static void EncryptLink(SensorTaskObj_t *pObj);
 static void PasskeyEntryCallback(struct bt_conn *conn);
-static void PasskeyConfirmCallback(struct bt_conn *conn, unsigned int passkey);
-static void SecurityCancelCallback(struct bt_conn *conn);
-static void PairingConfirmCallback(struct bt_conn *conn);
+static void PairingCancelled(struct bt_conn *conn);
 static void PairingCompleteCallback(struct bt_conn *conn, bool bonded);
 static void PairingFailedCallback(struct bt_conn *conn,
 				  enum bt_security_err reason);
@@ -547,20 +546,21 @@ static void RegisterConnectionCallbacks(void)
 	bt_conn_cb_register(&connectionCallbacks);
 }
 
-static int RegisterSecurityCallbacks(void)
+static void RegisterSecurityCallbacks(void)
 {
-	static struct bt_conn_auth_cb securityCallbacks = {
-		.passkey_display = PasskeyDisplayCallback,
+	int status;
+
+	static const struct bt_conn_auth_cb securityCallbacks = {
 		.passkey_entry = PasskeyEntryCallback,
-		.passkey_confirm = PasskeyConfirmCallback,
-		.cancel = SecurityCancelCallback,
-		.pairing_confirm = PairingConfirmCallback,
+		.cancel = PairingCancelled,
 		.pairing_complete = PairingCompleteCallback,
 		.pairing_failed = PairingFailedCallback
 	};
-	int status = bt_conn_auth_cb_register(&securityCallbacks);
-	FRAMEWORK_ASSERT(status == BT_SUCCESS);
-	return status;
+
+	status = lcz_bt_security_register_cb(&securityCallbacks);
+	if (status < 0) {
+		LOG_ERR("Unable to register security callbacks");
+	}
 }
 
 static int Discover(void)
@@ -692,33 +692,27 @@ static void ConnectedCallback(struct bt_conn *conn, uint8_t err)
 
 static void DisconnectedCallback(struct bt_conn *conn, uint8_t reason)
 {
-	LOG_DBG("%x-%u %s", (uint32_t)POINTER_TO_UINT(conn),
-		bt_conn_index(conn), lbt_get_hci_err_string(reason));
 	if (conn == st.conn) {
+		LOG_DBG("%x-%u %s", (uint32_t)POINTER_TO_UINT(conn),
+			bt_conn_index(conn), lbt_get_hci_err_string(reason));
+		st.paired = false;
+		st.bonded = false;
 		FRAMEWORK_MSG_SEND_TO_SELF(FWK_ID_SENSOR_TASK, FMC_DISCONNECT);
 	}
 }
 
-static int EncryptLink(SensorTaskObj_t *pObj)
+static void EncryptLink(SensorTaskObj_t *pObj)
 {
 	int status = bt_conn_set_security(pObj->conn, BT_SECURITY_L3);
 	LOG_DBG("%d", status);
-	return status;
-}
-
-static void PasskeyDisplayCallback(struct bt_conn *conn, unsigned int passkey)
-{
-	LOG_DBG("%d", passkey);
-	if (conn == st.conn) {
-	}
 }
 
 static void PasskeyEntryCallback(struct bt_conn *conn)
 {
 	/* Bug 16696 - Sensor connection only supports default pin */
-	LOG_DBG(".");
 	const unsigned int PIN = SENSOR_PIN_DEFAULT;
 	if (conn == st.conn) {
+		LOG_DBG(".");
 		__ASSERT_EVAL((void)bt_conn_auth_passkey_entry(conn, PIN),
 			      int result =
 				      bt_conn_auth_passkey_entry(conn, PIN),
@@ -726,51 +720,35 @@ static void PasskeyEntryCallback(struct bt_conn *conn)
 	}
 }
 
-static void PasskeyConfirmCallback(struct bt_conn *conn, unsigned int passkey)
+static void PairingCancelled(struct bt_conn *conn)
 {
-	LOG_DBG(".");
 	if (conn == st.conn) {
-		(void)bt_conn_auth_passkey_confirm(conn);
-	}
-}
-
-static void SecurityCancelCallback(struct bt_conn *conn)
-{
-	LOG_DBG(".");
-	if (conn == st.conn) {
-	}
-}
-
-static void SecurityChangedCallback(struct bt_conn *conn, bt_security_t level,
-				    enum bt_security_err err)
-{
-	LOG_DBG("%u", level);
-	if (conn == st.conn) {
-	}
-}
-
-static void PairingConfirmCallback(struct bt_conn *conn)
-{
-	LOG_DBG(".");
-	if (conn == st.conn) {
-		(void)bt_conn_auth_pairing_confirm(conn);
+		LOG_DBG(".");
 	}
 }
 
 static void PairingCompleteCallback(struct bt_conn *conn, bool bonded)
 {
-	LOG_DBG("%s bonded", bonded ? "" : "NOT");
 	if (conn == st.conn) {
 		st.paired = true;
+		st.bonded = bonded;
 	}
 }
 
 static void PairingFailedCallback(struct bt_conn *conn,
 				  enum bt_security_err reason)
 {
-	LOG_DBG(".");
 	if (conn == st.conn) {
 		st.paired = false;
+		st.bonded = false;
+	}
+}
+
+static void SecurityChangedCallback(struct bt_conn *conn, bt_security_t level,
+				    enum bt_security_err err)
+{
+	if (conn == st.conn) {
+		LOG_DBG("%u", level);
 	}
 }
 

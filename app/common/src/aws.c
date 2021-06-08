@@ -164,7 +164,10 @@ static uint16_t rand16_nonzero_get(void);
 static void publish_watchdog_work_handler(struct k_work *work);
 static void keep_alive_work_handler(struct k_work *work);
 static int aws_send_data(bool binary, char *data, uint32_t len, uint8_t *topic);
+
+#ifdef CONFIG_NET_L2_ETHERNET
 static char *net_sprint_ll_addr_lower(const uint8_t *ll);
+#endif
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -342,21 +345,32 @@ int awsPublishShadowPersistentData()
 	struct shadow_persistent_values *reported =
 		&shadow_persistent_data.state.reported;
 
-	reported->ethernet.MAC = net_sprint_ll_addr_lower(attr_get_quasi_static(ATTR_ID_ethernetMAC));
+	reported->ethernet.MAC = net_sprint_ll_addr_lower(
+		attr_get_quasi_static(ATTR_ID_ethernetMAC));
 	reported->ethernet.type = (uint32_t)ETHERNET_TYPE_IPV4;
-	reported->ethernet.mode = attr_get_uint32(ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC);
-	reported->ethernet.speed = attr_get_uint32(ATTR_ID_ethernetSpeed, (uint32_t)ETHERNET_SPEED_UNKNOWN);
-	reported->ethernet.duplex = attr_get_uint32(ATTR_ID_ethernetDuplex, (uint32_t)ETHERNET_DUPLEX_UNKNOWN);
-	reported->ethernet.IPAddress = attr_get_quasi_static(ATTR_ID_ethernetIPAddress);
-	reported->ethernet.netmaskLength = attr_get_uint32(ATTR_ID_ethernetNetmaskLength, 0);
-	reported->ethernet.gateway = attr_get_quasi_static(ATTR_ID_ethernetGateway);
+	reported->ethernet.mode = attr_get_uint32(
+		ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC);
+	reported->ethernet.speed = attr_get_uint32(
+		ATTR_ID_ethernetSpeed, (uint32_t)ETHERNET_SPEED_UNKNOWN);
+	reported->ethernet.duplex = attr_get_uint32(
+		ATTR_ID_ethernetDuplex, (uint32_t)ETHERNET_DUPLEX_UNKNOWN);
+	reported->ethernet.IPAddress =
+		attr_get_quasi_static(ATTR_ID_ethernetIPAddress);
+	reported->ethernet.netmaskLength =
+		attr_get_uint32(ATTR_ID_ethernetNetmaskLength, 0);
+	reported->ethernet.gateway =
+		attr_get_quasi_static(ATTR_ID_ethernetGateway);
 	reported->ethernet.DNS = attr_get_quasi_static(ATTR_ID_ethernetDNS);
 
 #if defined(CONFIG_NET_DHCPV4)
-	reported->ethernet.DHCPLeaseTime = attr_get_uint32(ATTR_ID_ethernetDHCPLeaseTime, 0);
-	reported->ethernet.DHCPRenewTime = attr_get_uint32(ATTR_ID_ethernetDHCPRenewTime, 0);
-	reported->ethernet.DHCPState = attr_get_uint32(ATTR_ID_ethernetDHCPState, 0);
-	reported->ethernet.DHCPAttempts = attr_get_uint32(ATTR_ID_ethernetDHCPAttempts, 0);
+	reported->ethernet.DHCPLeaseTime =
+		attr_get_uint32(ATTR_ID_ethernetDHCPLeaseTime, 0);
+	reported->ethernet.DHCPRenewTime =
+		attr_get_uint32(ATTR_ID_ethernetDHCPRenewTime, 0);
+	reported->ethernet.DHCPState =
+		attr_get_uint32(ATTR_ID_ethernetDHCPState, 0);
+	reported->ethernet.DHCPAttempts =
+		attr_get_uint32(ATTR_ID_ethernetDHCPAttempts, 0);
 #endif
 #endif
 

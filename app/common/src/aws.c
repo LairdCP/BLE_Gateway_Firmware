@@ -945,7 +945,7 @@ static char *net_sprint_ll_addr_lower(const uint8_t *ll)
 		return NULL;
 	}
 
-	*(ptr - 1) = '\0';
+	*(ptr) = '\0';
 	return buf;
 }
 #endif

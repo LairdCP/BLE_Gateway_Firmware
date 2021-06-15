@@ -527,7 +527,9 @@ static void aws_set_default_client_id(void)
 
 	/* Doesn't handle the board changing. */
 	if (strlen(s) == 0) {
-#ifdef CONFIG_BOARD_MG100
+#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+		s = "bl5340";
+#elif defined(CONFIG_BOARD_MG100)
 		s = "mg100";
 #else
 		s = "pinnacle100_oob";

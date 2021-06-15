@@ -150,6 +150,12 @@ int ethernet_network_init(void)
 		iface_down_evt_handler(NULL, NET_EVENT_IF_DOWN, iface);
 	}
 
+	if (attr_get_uint32(ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_DHCP) {
+		/* Start DHCP */
+		ETHERNET_LOG_DBG("Starting DHCP for network");
+		net_dhcpv4_start(iface);
+	}
+
 exit:
 	attr_set_signed32(ATTR_ID_ethernetInitError, rc);
 	return rc;
@@ -305,11 +311,7 @@ static void iface_up_evt_handler(struct net_mgmt_event_callback *cb,
 
 #if defined(CONFIG_NET_DHCPV4)
 	if (networkSetup == false) {
-		if (attr_get_uint32(ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_DHCP) {
-			/* Start DHCP */
-			ETHERNET_LOG_DBG("Starting DHCP for network");
-			net_dhcpv4_start(iface);
-		} else {
+		if (attr_get_uint32(ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_STATIC) {
 #endif
 			/* Setup static configuration */
 			ETHERNET_LOG_DBG("Setting static network config");

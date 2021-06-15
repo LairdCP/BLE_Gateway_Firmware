@@ -118,8 +118,6 @@ static int ble_addr_init(void)
 		}
 	}
 
-LOG_ERR("gateway id is now %s", log_strdup(bd_addr));
-
 	attr_set_string(ATTR_ID_gatewayId, bd_addr, size - 1);
 #endif
 

@@ -1228,7 +1228,7 @@ static void SensorAddrToString(SensorEntry_t *pEntry)
 	int count =
 #endif
 		snprintk(pEntry->addrString, SENSOR_ADDR_STR_SIZE,
-			 "%02X%02X%02X%02X%02X%02X", pEntry->ad.addr.val[5],
+			 "%02x%02x%02x%02x%02x%02x", pEntry->ad.addr.val[5],
 			 pEntry->ad.addr.val[4], pEntry->ad.addr.val[3],
 			 pEntry->ad.addr.val[2], pEntry->ad.addr.val[1],
 			 pEntry->ad.addr.val[0]);

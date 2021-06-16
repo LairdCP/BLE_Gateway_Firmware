@@ -28,6 +28,9 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 #ifdef CONFIG_BLUEGRASS
 #include "bluegrass.h"
 #endif
+#ifdef CONFIG_LWM2M
+#include "lcz_lwm2m_client.h"
+#endif
 #include "gateway_fsm.h"
 
 /******************************************************************************/
@@ -96,9 +99,6 @@ static uint32_t get_reconnect_cloud_delay(void);
 #if defined(CONFIG_LWM2M) || defined(CONFIG_NET_L2_ETHERNET)
 static int unused_function(void);
 #endif
-#if defined(CONFIG_LWM2M)
-static bool status_true(void);
-#endif
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -110,7 +110,7 @@ void gateway_fsm_init(void)
 	/* MG100 or Pinnacle 100 LwM2M */
 	gsm.modem_init = lte_init;
 	gsm.network_init = lte_network_init;
-	gsm.network_is_connected = status_true;
+	gsm.network_is_connected = lte_ready;
 #elif defined(CONFIG_NET_L2_ETHERNET)
 	/* BL5340 LwM2M */
 	gsm.modem_init = unused_function;
@@ -121,10 +121,10 @@ void gateway_fsm_init(void)
 #error "Unknown board/network configuration, add to gateway_fsm_init()"
 #endif
 
-	gsm.resolve_server = unused_function;
-	gsm.cloud_connect = unused_function;
+	gsm.resolve_server = lwm2mGetServerAddr;
+	gsm.cloud_connect = lwm2mConnect;
 	gsm.cloud_disconnect = unused_function;
-	gsm.cloud_is_connected = status_true;
+	gsm.cloud_is_connected = lwm2mConnected;
 	gsm.cert_load = unused_function;
 	gsm.cert_unload = unused_function;
 #else
@@ -177,6 +177,8 @@ void gateway_fsm(void)
 #if defined(CONFIG_LWM2M)
 		if (!gsm.network_is_connected()) {
 			set_state(GATEWAY_STATE_NETWORK_DISCONNECTED);
+		} else {
+			set_state(GATEWAY_STATE_RESOLVE_SERVER);
 		}
 #else
 		set_state(GATEWAY_STATE_WAIT_FOR_COMMISSION);
@@ -483,13 +485,6 @@ static uint32_t get_reconnect_cloud_delay(void)
 static int unused_function(void)
 {
 	return 0;
-}
-#endif
-
-#if defined(CONFIG_LWM2M)
-static bool status_true(void)
-{
-	return true;
 }
 #endif
 

@@ -49,14 +49,14 @@ LOG_MODULE_REGISTER(lwm2m_client);
 static uint8_t led_state;
 static uint32_t lwm2m_time;
 static struct lwm2m_ctx client;
-static bool lwm2m_initialized;
+static bool lwm2m_dns_resolved;
+static bool lwm2m_connection_started;
+static bool lwm2m_connected;
 static char server_addr[CONFIG_DNS_RESOLVER_ADDR_MAX_SIZE];
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static void lwm2m_client_init_internal(void);
-
 static int device_reboot_cb(uint16_t obj_inst_id, uint8_t *args,
 			    uint16_t args_len);
 static int device_factory_default_cb(uint16_t obj_inst_id, uint8_t *args,
@@ -67,7 +67,6 @@ static void rd_client_event(struct lwm2m_ctx *client,
 static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
 			 uint16_t res_inst_id, uint8_t *data, uint16_t data_len,
 			 bool last_block, size_t total_size);
-static int resolve_server_address(void);
 static void create_bl654_sensor_objects(void);
 static struct float32_value make_float_value(float v);
 static size_t lwm2m_str_size(const char *s);
@@ -77,7 +76,6 @@ static size_t lwm2m_str_size(const char *s);
 /******************************************************************************/
 void lwm2m_client_init(void)
 {
-	lwm2m_client_init_internal();
 }
 
 int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
@@ -85,7 +83,7 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 {
 	int result = 0;
 
-	if (lwm2m_initialized) {
+	if (lwm2m_connected) {
 		struct float32_value float_value;
 
 #ifdef CONFIG_LWM2M_IPSO_TEMP_SENSOR
@@ -145,6 +143,83 @@ int lwm2m_generate_psk(void)
 	}
 
 	return r;
+}
+
+int lwm2mGetServerAddr(void)
+{
+	if (lwm2m_dns_resolved) {
+		/* DNS already resolved, no need to resolve again */
+		return 0;
+	}
+
+	struct addrinfo hints = {
+		.ai_family = AF_UNSPEC,
+		.ai_socktype = SOCK_DGRAM,
+	};
+
+	static struct addrinfo *result;
+	int ret = dns_resolve_server_addr(
+		attr_get_quasi_static(ATTR_ID_lwm2mPeerUrl), NULL, &hints,
+		&result);
+
+	if (ret == 0) {
+		ret = dns_build_addr_string(server_addr, result);
+	}
+	freeaddrinfo(result);
+
+	if (ret == 0) {
+		ret = lwm2m_setup(
+#ifdef CONFIG_MODEM_HL7800
+			  attr_get_quasi_static(ATTR_ID_lteSerialNumber),
+#else
+			  /* For non-Pinnacle 100 devices which do not contain
+			   * modems, use the gateway ID as the serial number
+			   */
+			  attr_get_quasi_static(ATTR_ID_gatewayId),
+#endif
+			  attr_get_quasi_static(ATTR_ID_gatewayId));
+
+		if (ret < 0) {
+			LOG_ERR("Cannot setup LWM2M fields (%d)", ret);
+		}
+	}
+
+	if (ret == 0) {
+		lwm2m_dns_resolved = true;
+	}
+
+	return ret;
+}
+
+bool lwm2mConnected(void)
+{
+	return lwm2m_connected;
+}
+
+int lwm2mConnect(void)
+{
+	if (!lwm2m_connection_started) {
+		uint32_t flags = IS_ENABLED(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP) ?
+				      LWM2M_RD_CLIENT_FLAG_BOOTSTRAP :
+				      0;
+
+		(void)memset(&client, 0x0, sizeof(client));
+#if defined(CONFIG_LWM2M_DTLS_SUPPORT)
+		client.tls_tag = TLS_TAG;
+#endif
+
+		/* client.sec_obj_inst is 0 as a starting point */
+		char endpoint_name[CONFIG_LWM2M_CLIENT_ENDPOINT_MAX_SIZE];
+		memset(endpoint_name, 0, sizeof(endpoint_name));
+		snprintk(endpoint_name, CONFIG_LWM2M_CLIENT_ENDPOINT_MAX_SIZE, "%s_%s",
+			 dis_get_model_number(),
+			 (char *)attr_get_quasi_static(ATTR_ID_gatewayId));
+		LOG_DBG("Endpoint name: %s", log_strdup(endpoint_name));
+		lwm2m_rd_client_start(&client, endpoint_name, flags, rd_client_event);
+		lwm2m_connection_started = true;
+	}
+
+	return 0;
 }
 
 /******************************************************************************/
@@ -269,30 +344,37 @@ static void rd_client_event(struct lwm2m_ctx *client,
 
 	case LWM2M_RD_CLIENT_EVENT_BOOTSTRAP_REG_FAILURE:
 		LOG_DBG("Bootstrap registration failure!");
+		lwm2m_connected = false;
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_BOOTSTRAP_REG_COMPLETE:
 		LOG_DBG("Bootstrap registration complete");
+		lwm2m_connected = true;
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_BOOTSTRAP_TRANSFER_COMPLETE:
 		LOG_DBG("Bootstrap transfer complete");
+		lwm2m_connected = true;
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REGISTRATION_FAILURE:
 		LOG_DBG("Registration failure!");
+		lwm2m_connected = false;
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REGISTRATION_COMPLETE:
 		LOG_DBG("Registration complete");
+		lwm2m_connected = true;
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REG_UPDATE_FAILURE:
 		LOG_DBG("Registration update failure!");
+		lwm2m_connected = false;
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REG_UPDATE_COMPLETE:
 		LOG_DBG("Registration update complete");
+		lwm2m_connected = true;
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_DEREGISTER_FAILURE:
@@ -301,6 +383,7 @@ static void rd_client_event(struct lwm2m_ctx *client,
 
 	case LWM2M_RD_CLIENT_EVENT_DISCONNECT:
 		LOG_DBG("Disconnected");
+		lwm2m_connected = false;
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_QUEUE_MODE_RX_OFF:
@@ -309,76 +392,9 @@ static void rd_client_event(struct lwm2m_ctx *client,
 
 	case LWM2M_RD_CLIENT_EVENT_NETWORK_ERROR:
 		LOG_DBG("Network Error");
+		lwm2m_connected = false;
 		break;
 	}
-}
-
-static int resolve_server_address(void)
-{
-	struct addrinfo hints = {
-		.ai_family = AF_UNSPEC,
-		.ai_socktype = SOCK_DGRAM,
-	};
-
-	static struct addrinfo *result;
-	int ret = dns_resolve_server_addr(
-		attr_get_quasi_static(ATTR_ID_lwm2mPeerUrl), NULL, &hints,
-		&result);
-	if (ret == 0) {
-		ret = dns_build_addr_string(server_addr, result);
-	}
-	freeaddrinfo(result);
-	return ret;
-}
-
-static void lwm2m_client_init_internal(void)
-{
-	uint32_t flags;
-	int ret;
-
-	if (lwm2m_initialized) {
-		return;
-	}
-
-	flags = IS_ENABLED(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP) ?
-			      LWM2M_RD_CLIENT_FLAG_BOOTSTRAP :
-			      0;
-
-	ret = resolve_server_address();
-	if (ret < 0) {
-		return;
-	}
-
-	ret = lwm2m_setup(
-#ifdef CONFIG_MODEM_HL7800
-			  attr_get_quasi_static(ATTR_ID_lteSerialNumber),
-#else
-			  /* For non-Pinnacle 100 devices which do not contain
-			   * modems, use the gateway ID as the serial number
-			   */
-			  attr_get_quasi_static(ATTR_ID_gatewayId),
-#endif
-			  attr_get_quasi_static(ATTR_ID_gatewayId));
-	if (ret < 0) {
-		LOG_ERR("Cannot setup LWM2M fields (%d)", ret);
-		return;
-	}
-
-	(void)memset(&client, 0x0, sizeof(client));
-#if defined(CONFIG_LWM2M_DTLS_SUPPORT)
-	client.tls_tag = TLS_TAG;
-#endif
-
-	/* client.sec_obj_inst is 0 as a starting point */
-	char endpoint_name[CONFIG_LWM2M_CLIENT_ENDPOINT_MAX_SIZE];
-	memset(endpoint_name, 0, sizeof(endpoint_name));
-	snprintk(endpoint_name, CONFIG_LWM2M_CLIENT_ENDPOINT_MAX_SIZE, "%s_%s",
-		 dis_get_model_number(),
-		 (char *)attr_get_quasi_static(ATTR_ID_gatewayId));
-	LOG_DBG("Endpoint name: %s", log_strdup(endpoint_name));
-	lwm2m_rd_client_start(&client, endpoint_name, flags, rd_client_event);
-
-	lwm2m_initialized = true;
 }
 
 static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,

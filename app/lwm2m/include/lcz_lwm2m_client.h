@@ -44,6 +44,27 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
  */
 int lwm2m_generate_psk(void);
 
+/**
+ * @brief Resolves server hostname to IP address
+ *
+ * @retval 0 on success, negative errno otherwise.
+ */
+int lwm2mGetServerAddr(void);
+
+/**
+ * @brief Check if connected to the LwM2M server
+ *
+ * @retval true if connected, false otherwise
+ */
+bool lwm2mConnected(void);
+
+/**
+ * @brief Connects to the LwM2M server
+ *
+ * @retval 0 on success, negative errno otherwise.
+ */
+int lwm2mConnect(void);
+
 #ifdef __cplusplus
 }
 #endif

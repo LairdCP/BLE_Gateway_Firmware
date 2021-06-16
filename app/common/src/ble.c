@@ -99,27 +99,23 @@ static int ble_addr_init(void)
 	for (i = 0, j = 0; j < size - 1; i++) {
 		if (addr_str[i] != ':') {
 			bd_addr[j] = addr_str[i];
+			if (bd_addr[j] >= 'A' && bd_addr[j] <= 'Z') {
+				bd_addr[j] += ('a' - 'A');
+			}
 			j += 1;
 		}
 	}
 	bd_addr[j] = 0;
 	attr_set_string(ATTR_ID_bluetoothAddress, bd_addr, size - 1);
 
+#ifndef CONFIG_MODEM_HL7800
+	attr_set_string(ATTR_ID_gatewayId, bd_addr, size - 1);
+#endif
+
 	/* Use the Bluetooth address to make the name unique
 	 * (when the modem init is delayed by application).
 	 */
 	ble_update_name(bd_addr);
-
-#ifndef CONFIG_MODEM_HL7800
-	/* Change the case to lower for the gateway ID */
-	for (i = 0; i < size - 1; i++) {
-		if (bd_addr[i] >= 'A' && bd_addr[i] <= 'Z') {
-			bd_addr[i] += ('a' - 'A');
-		}
-	}
-
-	attr_set_string(ATTR_ID_gatewayId, bd_addr, size - 1);
-#endif
 
 	return r;
 }

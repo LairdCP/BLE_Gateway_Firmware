@@ -209,48 +209,57 @@ static void set_ip_config(struct net_if *iface)
 	/* Update persistent shadow with ethernet network details */
 	ipv4 = iface->config.ip.ipv4;
 	unicast = &ipv4->unicast[0];
-	tmpNetmask = ipv4->netmask.s_addr;
 
-	/* Count number of set bits for netmask length */
-	while (tmpNetmask & 0x1) {
-		++netmaskLength;
-		tmpNetmask = tmpNetmask >> 1;
-	}
+	if (unicast->is_used) {
+		tmpNetmask = ipv4->netmask.s_addr;
 
-	/* Format DNS servers into JSON string */
-	ethDNS[0] = 0;
-	while (i < (CONFIG_DNS_RESOLVER_MAX_SERVERS + DNS_MAX_MCAST_SERVERS)) {
-		if (ctx->servers[i].dns_server.sa_family == AF_INET) {
-			snprintf(&ethDNS[strlen(ethDNS)], sizeof(ethDNS)-strlen(ethDNS), "%s,", net_sprint_ipv4_addr(&net_sin(&ctx->servers[i].dns_server)->sin_addr));
-			++count;
+		/* Count number of set bits for netmask length */
+		while (tmpNetmask & 0x1) {
+			++netmaskLength;
+			tmpNetmask = tmpNetmask >> 1;
+		}
 
-			if (count == ETHERNET_MAX_DNS_ADDRESSES) {
-				break;
+		/* Format DNS servers into JSON string */
+		ethDNS[0] = 0;
+		while (i < (CONFIG_DNS_RESOLVER_MAX_SERVERS + DNS_MAX_MCAST_SERVERS)) {
+			if (ctx->servers[i].dns_server.sa_family == AF_INET) {
+				snprintf(&ethDNS[strlen(ethDNS)], sizeof(ethDNS)-strlen(ethDNS), "%s,", net_sprint_ipv4_addr(&net_sin(&ctx->servers[i].dns_server)->sin_addr));
+				++count;
+
+				if (count == ETHERNET_MAX_DNS_ADDRESSES) {
+					break;
+				}
+			}
+			++i;
+		}
+
+		/* Remove final comma from DNS server list if present */
+		if (count > 0 && ethDNS[strlen(ethDNS)-1] == ',') {
+			ethDNS[strlen(ethDNS)-1] = 0;
+		}
+
+		if (api->get_config != NULL) {
+			/* Query link speed and duplex from ethernet driver */
+			if (api->get_config(dev, ETHERNET_CONFIG_TYPE_LINK, &config) == 0) {
+				attr_set_uint32(ATTR_ID_ethernetSpeed, (uint32_t)(config.l.link_100bt ? ETHERNET_SPEED_100MBPS : (config.l.link_10bt ? ETHERNET_SPEED_10MBPS : ETHERNET_SPEED_UNKNOWN)));
+			}
+
+			if (api->get_config(dev, ETHERNET_CONFIG_TYPE_DUPLEX, &config) == 0) {
+				attr_set_uint32(ATTR_ID_ethernetDuplex, (uint32_t)(config.full_duplex ? ETHERNET_DUPLEX_FULL : ETHERNET_DUPLEX_HALF));
 			}
 		}
-		++i;
+
+		attr_set_string(ATTR_ID_ethernetIPAddress, net_sprint_ipv4_addr(&unicast->address.in_addr), strlen(net_sprint_ipv4_addr(&unicast->address.in_addr)));
+		attr_set_uint32(ATTR_ID_ethernetNetmaskLength, (uint32_t)netmaskLength);
+		attr_set_string(ATTR_ID_ethernetGateway, net_sprint_ipv4_addr(&ipv4->gw), strlen(net_sprint_ipv4_addr(&ipv4->gw)));
+		attr_set_string(ATTR_ID_ethernetDNS, ethDNS, strlen(ethDNS));
+	} else {
+		/* No IP currently set, use empty values */
+		attr_set_string(ATTR_ID_ethernetIPAddress, ETHERNET_NETWORK_UNSET_IP, (sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
+		attr_set_uint32(ATTR_ID_ethernetNetmaskLength, 0);
+		attr_set_string(ATTR_ID_ethernetGateway, ETHERNET_NETWORK_UNSET_IP, (sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
+		attr_set_string(ATTR_ID_ethernetDNS, ETHERNET_NETWORK_UNSET_IP, (sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
 	}
-
-	/* Remove final comma from DNS server list if present */
-	if (count > 0 && ethDNS[strlen(ethDNS)-1] == ',') {
-		ethDNS[strlen(ethDNS)-1] = 0;
-	}
-
-	if (api->get_config != NULL) {
-		/* Query link speed and duplex from ethernet driver */
-		if (api->get_config(dev, ETHERNET_CONFIG_TYPE_LINK, &config) == 0) {
-			attr_set_uint32(ATTR_ID_ethernetSpeed, (uint32_t)(config.l.link_100bt ? ETHERNET_SPEED_100MBPS : (config.l.link_10bt ? ETHERNET_SPEED_10MBPS : ETHERNET_SPEED_UNKNOWN)));
-		}
-
-		if (api->get_config(dev, ETHERNET_CONFIG_TYPE_DUPLEX, &config) == 0) {
-			attr_set_uint32(ATTR_ID_ethernetDuplex, (uint32_t)(config.full_duplex ? ETHERNET_DUPLEX_FULL : ETHERNET_DUPLEX_HALF));
-		}
-	}
-
-	attr_set_string(ATTR_ID_ethernetIPAddress, net_sprint_ipv4_addr(&unicast->address.in_addr), strlen(net_sprint_ipv4_addr(&unicast->address.in_addr)));
-	attr_set_uint32(ATTR_ID_ethernetNetmaskLength, (uint32_t)netmaskLength);
-	attr_set_string(ATTR_ID_ethernetGateway, net_sprint_ipv4_addr(&ipv4->gw), strlen(net_sprint_ipv4_addr(&ipv4->gw)));
-	attr_set_string(ATTR_ID_ethernetDNS, ethDNS, strlen(ethDNS));
 
 #if defined(CONFIG_NET_DHCPV4)
 	set_ip_dhcp_config(iface);

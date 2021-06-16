@@ -31,10 +31,10 @@ One sensor that can be used is the BL654 sensor. This sensor ships with the deve
 
 Another supported sensor is the BT510. It records temperature and movement. The BT510 can also be configured to detect a door opened/closed.
 
-The Pinnacle 100 device scans for the BL654 sensor and connects to the first one it finds. At the same time, the device gathers data for the BT510 sensors from advertisements without creating a connection.
+The Pinnacle 100/MG100/BL5340 device scans for the BL654 sensor and connects to the first one it finds. At the same time, the device gathers data for the BT510 sensors from advertisements without creating a connection.
 The demo supports one BL654 sensor and up to five BT510 sensors. The demo can be recompiled to remove support for either sensor.
 
-Using the Laird Pinnacle Connect mobile app, the user can provision the Pinnacle 100 device to connect to AWS. Once connected to AWS, the device sends sensor data (if a sensor is found) to the cloud every 60 seconds.
+Using the Laird Pinnacle Connect mobile app, the user can provision the Pinnacle 100/MG100/BL5340 device to connect to AWS. Once connected to AWS, the device sends sensor data (if a sensor is found) to the cloud every 60 seconds.
 Once a BT510 is discovered and enabled via the web portal, its sensor data is reported. The details of the BT510 data reporting are detailed [below](#bt510-sensor-data).
 
 ```
@@ -77,6 +77,7 @@ X                                X
 
 - [MG100 product page](https://www.lairdconnect.com/iot-devices/iot-gateways/sentrius-mg100-gateway-lte-mnb-iot-and-bluetooth-5)
 - [Pinnacle 100 Modem product page](https://www.lairdconnect.com/wireless-modules/cellular-solutions/pinnacle-100-cellular-modem)
+- [BL5340 product page](https://www.lairdconnect.com/wireless-modules/bluetooth-modules/bluetooth-5-modules/bl5340-series-multi-core-bluetooth-52-802154-nfc-modules)
 - [BT510 Product page](https://www.lairdconnect.com/iot-devices/iot-sensors/bt510-bluetooth-5-long-range-ip67-multi-sensor)
 
 ## Prerequisites
@@ -84,14 +85,14 @@ X                                X
 The following are required to fully exercise this demo firmware:
 
 - An activated SIM card. See [here](https://www.lairdconnect.com/documentation/truphone-sim-setup-guide) for instructions on activating the SIM card that came with your kit.
-- DVK or MG100 programmed with the latest LTE-M/AWS firmware. Releases available [here!](https://github.com/LairdCP/Pinnacle_100_firmware/releases)
+- Pinnacle 100/MG100 programmed with the latest LTE-M/AWS firmware. Releases available [here!](https://github.com/LairdCP/Pinnacle_100_firmware/releases)
 - Laird Pinnacle Connect app installed on a mobile device. An active internet connection on the mobile device is required.
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)
   - [iOS app](https://apps.apple.com/us/app/laird-pinnacle-connect/id1481075861?ls=1)
 
 ## Setup
 
-To set up the Pinnacle 100 device, follow these steps:
+To set up the Pinnacle 100/MG100 device, follow these steps:
 
 1. Ensure an _activated_ SIM card is inserted into the Pinnacle 100 SIM slot.
 2. On your phone, launch the Pinnacle mobile app and follow the on-screen prompts.

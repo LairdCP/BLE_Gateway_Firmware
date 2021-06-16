@@ -8,12 +8,12 @@ The gateway shadow is described in [yaml](ble_gateway_shadow.schema.yml).
 
 ## Gateway Topics
 
-The gateway uses the following topics. The IMEI of the device is used to differentiate gateways. For example, "\$aws/things/deviceId-354616090287629/shadow/get/accepted".
+The gateway uses the following topics. The IMEI of the device is used to differentiate gateways (for Pinnacle 100/MG100) or the Bluetooth address (in lower case, for BL5340). For example, "\$aws/things/deviceId-354616090287629/shadow/get/accepted" or "\$aws/things/deviceId-e4ce941e2a01/shadow/get/accepted".
 
-1. "\$aws/things/deviceId-<imei>/shadow/update" (publish)
-2. "\$aws/things/deviceId-<imei>/shadow/update/delta" (subscribe)
-3. "\$aws/things/deviceId-<imei>/shadow/get" (publish)
-4. "\$aws/things/deviceId-<imei>/shadow/get/accepted" (subscribe)
+1. "\$aws/things/deviceId-<id>/shadow/update" (publish)
+2. "\$aws/things/deviceId-<id>/shadow/update/delta" (subscribe)
+3. "\$aws/things/deviceId-<id>/shadow/get" (publish)
+4. "\$aws/things/deviceId-<id>/shadow/get/accepted" (subscribe)
 
 After reset the gateway subscribes to the "get/accepted" topic and then publishes a message to "get". The publish to "get" causes the shadow to be received on the "get/accepted" topic. The gateway then processes the received shadow to restore its state. Once "get/accepted" has been processed the gateway unsubscribes from "get/accepted" and starts publishing to "shadow/update". Unsubscribing from "get/accepted" isn't required. However, it is used as trigger in the system to allow different sources to publish to the shadow. The gateway subscribes to the "update/delta" topic to receive state changes from AWS.
 

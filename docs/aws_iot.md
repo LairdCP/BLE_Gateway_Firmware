@@ -61,7 +61,7 @@ Click Create a single thing.
 
 Enter a name and click Next.
 
-> **Note:** The OOB demo firmware expects the thing name to be in this format `deviceId-<IMEI>` where `<IMEI>` should be replaced by the IMEI of your device.
+> **Note:** The OOB demo firmware expects the thing name to be in this format `deviceId-<id>` where `<id>` should be replaced by the IMEI of your device (for Pinnacle 100/MG100) or the Bluetooth address (in lower-case) of your device (for BL5340).
 
 ![Thing Name](images/aws/thing_name.png)  
 _Thing Name_
@@ -85,12 +85,12 @@ _Attach Policy_
 
 ## Configure Device for AWS Connection
 
-The Pinnacle 100 device can be provisioned to communicate with the Bluegrass AWS demo site via the mobile app. In order to connect to an alternate AWS IoT Core instance, the device can be provisioned via UART.
+The Pinnacle 100/MG100/BL5340 device can be provisioned to communicate with the Bluegrass AWS demo site via the mobile app. In order to connect to an alternate AWS IoT Core instance, the device can be provisioned via UART.
 
 ### Prerequisites
 
 1. [mcumgr CLI](https://github.com/apache/mynewt-mcumgr#command-line-tool) (cross platform)
-2. Pinnacle 100 device running AWS OOB demo firmware v3.x or greater
+2. Pinnacle 100/MG100/BL5340 device running AWS OOB demo firmware v3.x or greater
 3. Terminal program: Putty (Windows,Linux,macOS), Teraterm (Windows), Serial (macOS)
 
 ### Provisioning the Device Via UART
@@ -153,7 +153,7 @@ The Pinnacle 100 device can be provisioned to communicate with the Bluegrass AWS
 
 With the AWS IoT console, you can watch for MQTT data sent by the device. Got to the left-hand menu in the console and click on test.
 
-In Subscription topic, enter `$aws/things/deviceId-<my_imei>/shadow/update` where `<my_imei>` is replaced by the imei of your device. Then click Subscribe to topic. JSON data will be displayed once the MG100 sends data.
+In Subscription topic, enter `$aws/things/deviceId-<id>/shadow/update` where `<id>` is replaced by the IMEI of your device (for Pinnacle 100/MG100) or the Bluetooth address (in lower-case) of your device (for BL5340). Then click Subscribe to topic. JSON data will be displayed once the device sends data.
 
 ![MQTT Data](images/aws/mqtt_data.png)  
 _MQTT Data_

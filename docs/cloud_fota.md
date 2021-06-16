@@ -16,7 +16,7 @@
 
 ## Introduction
 
-Cloud FOTA updates to the Pinnacle 100 and MG100 require, at a minimum, a webserver that can serve up a static webpage containing the \*.bin upgrade file (NOTE: The Pinnacle 100 and MG100 request this file using partial content HTTPS requests to the static webpage). The relevant code to include this functionality in your own project is located in the _<project_folder>/pinnacle_100_firmware/app/http_fota_ folder when you clone the [Pinnacle 100 Firmware Manifest](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest).
+Cloud FOTA updates to the Pinnacle 100/MG100/BL5340 require, at a minimum, a webserver that can serve up a static webpage containing the \*.bin upgrade file (NOTE: Devices request this file using partial content HTTPS requests to the static webpage). The relevant code to include this functionality in your own project is located in the _<project_folder>/pinnacle_100_firmware/app/http_fota_ folder when you clone the [Pinnacle 100 Firmware Manifest](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest).
 
 The following discusses how to perform the upgrade two ways, using an Amazon Web Services (AWS) S3 Bucket and using an NGINX webserver running on an AWS EC2 instance.
 
@@ -31,17 +31,17 @@ DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE(=64) "Maximum hostname length (stack)"
 
 ## Prerequisites
 
-1. Pinnacle 100 or MG100 that supports Cloud HTTP FOTA upgrades, this would include any unit running the OOB Demo v4.0 or above and any custom firmware implementation that includes the Cloud HTTP FOTA functionality
-2. \*.bin file for the Firmware you want to load, desired revision must be different than current revision on Pinnacle 100 or MG100
+1. Pinnacle 100/MG100/BL5340 that supports Cloud HTTP FOTA upgrades, this would include any unit running the OOB Demo v4.0 or above and any custom firmware implementation that includes the Cloud HTTP FOTA functionality
+2. \*.bin file for the Firmware you want to load, desired revision must be different than current revision on Pinnacle 100/MG100/BL5340
    - Official releases available [here!](https://github.com/LairdCP/Pinnacle_100_firmware/releases)
      - 480-00052 for Pinnacle 100 Modem
-     - 480-00070 MG100 Gateway
+     - 480-00070 for MG100 Gateway
    - Custom FW builds use **_app_update.bin_** which is located in the build directory `<project_folder>/pinnacle_100_firmware/build/<project>/zephyr/app_update.bin`
 3. HTTP or HTTPS endpoint serving a static webpage containing the \*.bin upgrade file, e.g. `http://pinnacle100.com/<bin_filename>.bin`  
    **WARNING:** To use HTTPS, the file must be served from an AWS S3 bucket. There is no support for using a custom HTTPS server at this time.
 4. Ability to publish an MQTT message to the Pinnacle 100 or MG100, this could be:
-   - Pinnacle 100 or MG100 running the OOB Demo and connected as a Thing through IoT Core in AWS, See [here](aws_iot.md) for instructions
-   - Pinnacle 100 or MG100 running custom firmware that includes the Cloud HTTP FOTA and MQTT functionality, used with an MQTT broker like Mosquitto
+   - Pinnacle 100/MG100/BL5340 running the OOB Demo and connected as a Thing through IoT Core in AWS, See [here](aws_iot.md) for instructions
+   - Pinnacle 100/MG100/BL5340 running custom firmware that includes the Cloud HTTP FOTA and MQTT functionality, used with an MQTT broker like Mosquitto
 
 ## Upgrade from AWS S3 Bucket
 
@@ -118,15 +118,15 @@ _Turning off Public Access_
 
 ## Trigger Cloud FOTA Upgrade
 
-To start a firmware update, publish an MQTT message to the device update topic for the Pinnacle 100 or MG100 (e.g. `$aws/things/deviceId-<Pinnacle_MG100_deviceId>/shadow/update`). Do not attempt to do both modem and app firmware at the same time.
+To start a firmware update, publish an MQTT message to the device update topic for the Pinnacle 100/MG100/BL5340 (e.g. `$aws/things/deviceId-<id>/shadow/update`). Do not attempt to do both modem and app firmware at the same time.
 
-### Pinnacle 100 and MG100 App Only
+### Pinnacle 100/MG100/BL5340 App Only
 
 Replace the values under "app" with those that correspond to your update. If you use a folder structure in your S3 Bucket or NGINX Server, be sure to note that in the `downloadFile` entry (e.g. fw/480-00052-R4.0.0.1614788169_LTE-M_FOTA.bin).
 
 **NOTE 1:** If using an S3 Bucket as the host, only copy in the piece up to and including the _'.com'_ to `downloadHost` , the remaining bit (file location) gets copied into `downloadFile` (excluding the leading _'/'_)
 
-**NOTE 2:** The Pinnacle 100/MG100 will request the download using a Partial Content Header and defaults to 2KB chunks with each request. To change the size of these chunks see information [here](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/1.5.1/nrf/include/net/download_client.html#download-client-https)
+**NOTE 2:** The Pinnacle 100/MG100/BL5340 will request the download using a Partial Content Header and defaults to 2KB chunks with each request. To change the size of these chunks see information [here](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/1.5.1/nrf/include/net/download_client.html#download-client-https)
 
 ```
 {
@@ -148,7 +148,7 @@ The `desired` firmware version must be different from the running firmware versi
 `start` is the time used to schedule when to download the update. If time is in the past, it will begin immediately.
 `switchover` is the time used to schedule when to install the update. If time is in the past, it will begin immediately.
 
-### HL7800 Cellular Modem Only
+### HL7800 Cellular Modem Only (Pinnacle 100/MG100 only)
 
 IMPORTANT NOTE: Contact Laird Connectivity technical support to obtain an official modem update. Flashing in an
 unsupported version may cause your device to malfunction.

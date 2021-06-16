@@ -18,9 +18,9 @@
 ## Introduction
 
 When using NB-IoT, we do not recommend using the TCP protocol due to the network latencies inherent to NB-IoT. UDP is recommended for NB-IoT data transfer.
-In this configuration, the Pinnacle 100 device is configured to use LwM2M and DTLS with pre-shared keys. [LightweightM2M (LwM2M)](http://www.openmobilealliance.org/wp/Overviews/lightweightm2m_overview.html) is a protocol that runs on top of [CoAP](https://coap.technology/).
+In this configuration, the Pinnacle 100/BL5340 device is configured to use LwM2M and DTLS with pre-shared keys. [LightweightM2M (LwM2M)](http://www.openmobilealliance.org/wp/Overviews/lightweightm2m_overview.html) is a protocol that runs on top of [CoAP](https://coap.technology/).
 
-A [Leshan Server](https://www.eclipse.org/leshan/) is used to display information about the Pinnacle 100 device and a connected BL654 BLE sensor.
+A [Leshan Server](https://www.eclipse.org/leshan/) is used to display information about the Pinnacle 100/BL5340 device and a connected BL654 BLE sensor.
 
 The software version, model, manufacturer, serial number, and current time can be read. If a sensor is connected, then temperature, humidity, and pressure can be read. In addition, the green LED on the Pinnacle 100 device can be turned on and off using the light control object.
 
@@ -64,13 +64,14 @@ X                                X
 
 - [MG100 product page](https://www.lairdconnect.com/iot-devices/iot-gateways/sentrius-mg100-gateway-lte-mnb-iot-and-bluetooth-5)
 - [Pinnacle 100 Modem product page](https://www.lairdconnect.com/wireless-modules/cellular-solutions/pinnacle-100-cellular-modem)
+- [BL5340 product page](https://www.lairdconnect.com/wireless-modules/bluetooth-modules/bluetooth-5-modules/bl5340-series-multi-core-bluetooth-52-802154-nfc-modules)
 
 ## Prerequisites
 
 The following are required to fully exercise this demo firmware:
 
 - An activated SIM card. The Truphone SIM card that comes with the DVK does not currently support NB-IoT. If you have purchased a DVK in Europe, then please contact [sales](mailto:sales@lairdconnect.com) to obtain a SIM card that is NB-IoT capable.
-- Pinnacle 100 device programmed with NB-IoT/LwM2M demo firmware.
+- Pinnacle 100/BL5340 device programmed with NB-IoT/LwM2M demo firmware.
 - Laird Pinnacle Connect app installed on a mobile device
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)
   - [iOS app](https://apps.apple.com/us/app/laird-pinnacle-connect/id1481075861?ls=1)

@@ -1,4 +1,4 @@
-# Cellular Network Information
+# Cellular Network Information (Pinnacle 100/MG100 only)
 
 There are multiple commands that can be issued from the shell to get cellular information.
 

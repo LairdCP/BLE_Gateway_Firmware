@@ -115,7 +115,7 @@ void gateway_fsm_init(void)
 	/* BL5340 LwM2M */
 	gsm.modem_init = unused_function;
 	gsm.network_init = ethernet_network_init;
-	gsm.network_is_connected = status_true;
+	gsm.network_is_connected = ethernet_network_connected;
 #else
 	/* Unknown board LwM2M */
 #error "Unknown board/network configuration, add to gateway_fsm_init()"

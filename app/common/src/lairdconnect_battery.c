@@ -239,20 +239,16 @@ uint16_t BatteryCalculateRunningAvg(uint16_t Voltage)
 	uint8_t idx = 0;
 
 	/* store the latest voltage reading */
-	previousVoltageReadings[lastVoltageReadingIdx] = Voltage;
+	previousVoltageReadings[lastVoltageReadingIdx++] = Voltage;
 
-	/* increment the index, but reset to zero if we are passed
-	   the max number of saved readings.
-	*/
-	if (++lastVoltageReadingIdx >= BATTERY_NUM_READINGS) {
-		lastVoltageReadingIdx = 0;
-	}
+	/* Mod operation to insure index is between 0 and BATTERY_NUM_READINGS*/
+	lastVoltageReadingIdx %= BATTERY_NUM_READINGS;
 
 	/* calculate the average voltage of the last
 	   BATTERY_NUM_READINGS number of samples.
 	*/
 	for (idx = 0; idx < BATTERY_NUM_READINGS; idx++) {
-		if (previousVoltageReadings[idx] != 0.0) {
+		if (previousVoltageReadings[idx]) {
 			total += previousVoltageReadings[idx];
 		} else {
 			break;
@@ -350,14 +346,9 @@ enum battery_status BatteryCalculateRemainingCapacity(uint16_t Volts)
 #ifdef CONFIG_LAIRD_CONNECT_BATTERY_LOGGING
 static void BatteryLogData(int16_t voltage, int32_t temp)
 {
-	char *logStr = k_malloc(MAX_LOG_STR_SIZE);
-	logStr = k_malloc(MAX_LOG_STR_SIZE);
-	snprintk(logStr, MAX_LOG_STR_SIZE, "%d,%d", voltage, temp);
-	if (logStr > 0) {
-		sdCardLogBatteryData(logStr, strlen(logStr));
-		k_free(logStr);
-		logStr = 0;
-	}
+	char log_str[MAX_LOG_STR_SIZE];
+	snprintk(log_str, MAX_LOG_STR_SIZE, "%d,%d", voltage, temp);
+	sdCardLogBatteryData(log_str, strlen(log_str));
 }
 #endif
 

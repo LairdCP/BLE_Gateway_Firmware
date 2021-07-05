@@ -59,7 +59,7 @@ static bool awsExecCommandReceived = false;
 static uint8_t sd_log_publish_buf[SD_LOG_PUBLISH_BUF_SIZE];
 static log_get_state_t log_get_state;
 
-static struct k_delayed_work ct_app_work;
+static struct k_work_delayable ct_app_work;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -80,9 +80,9 @@ int ct_app_init(void)
 {
 	ct_ble_initialize();
 
-	k_delayed_work_init(&ct_app_work, ct_app_work_handler);
-	k_delayed_work_submit(&ct_app_work,
-			      K_SECONDS(CONFIG_CT_APP_TICK_RATE_SECONDS));
+	k_work_init_delayable(&ct_app_work, ct_app_work_handler);
+	k_work_schedule(&ct_app_work,
+			K_SECONDS(CONFIG_CT_APP_TICK_RATE_SECONDS));
 
 	return 0;
 }
@@ -96,8 +96,8 @@ static void ct_app_work_handler(struct k_work *work)
 
 	ct_publisher(lcz_qrtc_get_epoch());
 
-	k_delayed_work_submit(&ct_app_work,
-			      K_SECONDS(CONFIG_CT_APP_TICK_RATE_SECONDS));
+	k_work_schedule(&ct_app_work,
+			K_SECONDS(CONFIG_CT_APP_TICK_RATE_SECONDS));
 }
 
 static int publish_clear_command(void)

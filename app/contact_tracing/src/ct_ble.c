@@ -237,7 +237,7 @@ static struct {
 	uint16_t smp_service_handle;
 	struct bt_gatt_subscribe_params smp_subscribe_params;
 	uint32_t inactivity;
-	struct k_delayed_work inactivity_work;
+	struct k_work_delayable inactivity_work;
 	uint16_t mtu;
 	struct bt_conn *conn;
 	bool encrypt_req;
@@ -250,8 +250,8 @@ static struct k_work smp_challenge_req_work;
 static struct k_work smp_fs_download_work;
 static struct k_work change_advert_type_work;
 static struct k_work send_stashed_entries_work;
-static struct k_delayed_work ct_adv_watchdog;
-static struct k_delayed_work disable_connectable_adv_work;
+static struct k_work_delayable ct_adv_watchdog;
+static struct k_work_delayable disable_connectable_adv_work;
 
 static struct k_sem sending_to_aws_sem;
 
@@ -348,18 +348,18 @@ void ct_ble_initialize(void)
 		    send_stashed_entries_work_handler);
 	k_sem_init(&sending_to_aws_sem, 1, 1);
 	k_work_init(&aws_work.work, aws_work_handler);
-	k_delayed_work_init(&ct_adv_watchdog, ct_adv_watchdog_work_handler);
-	k_delayed_work_init(&remote.inactivity_work,
-			    ct_conn_inactivity_work_handler);
+	k_work_init_delayable(&ct_adv_watchdog, ct_adv_watchdog_work_handler);
+	k_work_init_delayable(&remote.inactivity_work,
+			      ct_conn_inactivity_work_handler);
 
 	if (CONFIG_CT_CONN_INACTIVITY_TICK_RATE_SECONDS != 0) {
-		k_delayed_work_submit(
+		k_work_schedule(
 			&remote.inactivity_work,
 			K_SECONDS(CONFIG_CT_CONN_INACTIVITY_TICK_RATE_SECONDS));
 	}
 
-	k_delayed_work_init(&disable_connectable_adv_work,
-			    disable_connectable_adv_work_handler);
+	k_work_init_delayable(&disable_connectable_adv_work,
+			      disable_connectable_adv_work_handler);
 
 	ct_mfg_data.networkId =
 		attr_get_uint32(ATTR_ID_networkId, CT_DEFAULT_NETWORK_ID);
@@ -447,7 +447,7 @@ int ct_adv_on_button_isr(void)
 
 	if (central_conn == NULL) {
 		if (CONFIG_CT_CONNECTABLE_ADV_DURATION_SECONDS != 0) {
-			r = k_delayed_work_submit(
+			r = k_work_schedule(
 				&disable_connectable_adv_work,
 				K_SECONDS(
 					CONFIG_CT_CONNECTABLE_ADV_DURATION_SECONDS));
@@ -906,7 +906,7 @@ static void ct_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 	ct.all_ads++;
 
 	if (CONFIG_CT_ADV_WATCHDOG_SECONDS != 0) {
-		err = k_delayed_work_submit(
+		err = k_work_schedule(
 			&ct_adv_watchdog,
 			K_SECONDS(CONFIG_CT_ADV_WATCHDOG_SECONDS));
 		if (err) {

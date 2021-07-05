@@ -126,8 +126,8 @@ static struct shadow_reported_struct shadow_persistent_data;
 
 static struct topics topics;
 
-static struct k_delayed_work publish_watchdog;
-static struct k_delayed_work keep_alive;
+static struct k_work_delayable publish_watchdog;
+static struct k_work_delayable keep_alive;
 
 static struct {
 	uint32_t consecutive_connection_failures;
@@ -212,8 +212,8 @@ int awsInit(void)
 				AWS_RX_THREAD_PRIORITY, 0, K_NO_WAIT),
 		"aws");
 
-	k_delayed_work_init(&publish_watchdog, publish_watchdog_work_handler);
-	k_delayed_work_init(&keep_alive, keep_alive_work_handler);
+	k_work_init_delayable(&publish_watchdog, publish_watchdog_work_handler);
+	k_work_init_delayable(&keep_alive, keep_alive_work_handler);
 
 	return 0;
 }
@@ -606,15 +606,15 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 		aws_connected = true;
 		k_sem_give(&connected_sem);
 		AWS_LOG_INF("MQTT client connected!");
-		k_delayed_work_submit(&keep_alive,
-				      K_SECONDS(CONFIG_MQTT_KEEPALIVE / 2));
+		k_work_schedule(&keep_alive,
+				K_SECONDS(CONFIG_MQTT_KEEPALIVE / 2));
 		break;
 
 	case MQTT_EVT_DISCONNECT:
 		AWS_LOG_INF("MQTT client disconnected %d", evt->result);
 		aws_connected = false;
 		aws_disconnect = true;
-		k_delayed_work_cancel(&keep_alive);
+		k_work_cancel_delayable(&keep_alive);
 		aws_stats.disconnects += 1;
 		break;
 
@@ -881,8 +881,8 @@ static void keep_alive_work_handler(struct k_work *work)
 			AWS_LOG_ERR("mqtt_live (%d)", rc);
 		}
 
-		k_delayed_work_submit(&keep_alive,
-				      K_SECONDS(CONFIG_MQTT_KEEPALIVE));
+		k_work_schedule(&keep_alive,
+				K_SECONDS(CONFIG_MQTT_KEEPALIVE));
 	}
 }
 
@@ -911,7 +911,7 @@ static int aws_send_data(bool binary, char *data, uint32_t len, uint8_t *topic)
 		aws_stats.success += 1;
 		aws_stats.consecutive_fails = 0;
 		if (CONFIG_AWS_PUBLISH_WATCHDOG_SECONDS != 0) {
-			k_delayed_work_submit(
+			k_work_schedule(
 				&publish_watchdog,
 				K_SECONDS(CONFIG_AWS_PUBLISH_WATCHDOG_SECONDS));
 		}

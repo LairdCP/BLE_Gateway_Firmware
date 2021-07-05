@@ -63,7 +63,7 @@ struct wdt_obj {
 	const struct device *dev;
 	int channel_id;
 	struct k_work_q work_q;
-	struct k_delayed_work feed;
+	struct k_work_delayable feed;
 };
 
 static struct wdt_obj wdt;
@@ -175,13 +175,14 @@ int wdt_initialize(const struct device *device)
 			break;
 		}
 
-		k_work_q_start(&wdt.work_q, wdt_workq_stack,
-			       K_THREAD_STACK_SIZEOF(wdt_workq_stack),
-			       K_LOWEST_APPLICATION_THREAD_PRIO);
+		k_work_queue_start(&wdt.work_q, wdt_workq_stack,
+				   K_THREAD_STACK_SIZEOF(wdt_workq_stack),
+				   K_LOWEST_APPLICATION_THREAD_PRIO,
+				   NULL);
 
-		k_delayed_work_init(&wdt.feed, wdt_feeder);
-		r = k_delayed_work_submit_to_queue(&wdt.work_q, &wdt.feed,
-						   K_NO_WAIT);
+		k_work_init_delayable(&wdt.feed, wdt_feeder);
+		r = k_work_schedule_for_queue(&wdt.work_q, &wdt.feed,
+					      K_NO_WAIT);
 		if (r < 0) {
 			LOG_ERR("watchdog feeder init error: %d", r);
 			break;
@@ -234,8 +235,8 @@ static void wdt_feeder(struct k_work *work)
 		LOG_ERR("Unable to feed watchdog");
 	}
 
-	k_delayed_work_submit_to_queue(&w->work_q, &w->feed,
-				       K_MSEC(WDT_FEED_RATE_MS));
+	k_work_schedule_for_queue(&w->work_q, &w->feed,
+				  K_MSEC(WDT_FEED_RATE_MS));
 }
 
 static bool wdt_valid_user_id(int id)

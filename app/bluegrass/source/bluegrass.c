@@ -54,7 +54,7 @@ static struct {
 	bool gateway_subscribed;
 	bool subscribed_to_get_accepted;
 	bool get_shadow_processed;
-	struct k_delayed_work heartbeat;
+	struct k_work_delayable heartbeat;
 	uint32_t subscription_delay;
 #ifdef CONFIG_HTTP_FOTA
 	struct k_timer fota_timer;
@@ -84,7 +84,7 @@ static FwkMsgHandler_t heartbeat_msg_handler;
 /******************************************************************************/
 void bluegrass_initialize(void)
 {
-	k_delayed_work_init(&bg.heartbeat, heartbeat_work_handler);
+	k_work_init_delayable(&bg.heartbeat, heartbeat_work_handler);
 
 #ifdef CONFIG_HTTP_FOTA
 	k_timer_init(&bg.fota_timer, fota_timer_callback_isr, NULL);
@@ -104,7 +104,7 @@ void bluegrass_connected_callback(void)
 {
 	lcz_led_turn_on(CLOUD_LED);
 
-	k_delayed_work_submit(&bg.heartbeat, K_NO_WAIT);
+	k_work_schedule(&bg.heartbeat, K_NO_WAIT);
 
 	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED, FMC_AWS_CONNECTED);
 
@@ -324,8 +324,8 @@ static DispatchResult_t heartbeat_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	awsPublishHeartbeat();
 
 #if CONFIG_AWS_HEARTBEAT_SECONDS != 0
-	k_delayed_work_submit(&bg.heartbeat,
-			      K_SECONDS(CONFIG_AWS_HEARTBEAT_SECONDS));
+	k_work_schedule(&bg.heartbeat,
+			K_SECONDS(CONFIG_AWS_HEARTBEAT_SECONDS));
 #endif
 
 	return DISPATCH_OK;

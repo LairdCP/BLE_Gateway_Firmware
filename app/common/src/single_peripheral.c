@@ -64,7 +64,7 @@ static struct {
 	struct bt_conn_cb conn_callbacks;
 	struct k_timer timer;
 	struct k_work adv_work;
-	struct k_delayed_work conn_work;
+	struct k_work_delayable conn_work;
 } sp;
 
 /******************************************************************************/
@@ -112,7 +112,7 @@ static int single_peripheral_initialize(const struct device *device)
 		bt_conn_cb_register(&sp.conn_callbacks);
 		k_timer_init(&sp.timer, stop_adv_timer_callback, NULL);
 		k_work_init(&sp.adv_work, start_stop_adv);
-		k_delayed_work_init(&sp.conn_work, disconnect_req_handler);
+		k_work_init_delayable(&sp.conn_work, disconnect_req_handler);
 		sp.initialized = true;
 
 		r = register_security_callbacks();
@@ -298,7 +298,7 @@ static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
 		/* Don't call disconnect in callback from BT thread because it
 		 * prevents stack from cleaning up nicely.
 		 */
-		k_delayed_work_submit(&sp.conn_work, K_MSEC(500));
+		k_work_schedule(&sp.conn_work, K_MSEC(500));
 		sp.paired = false;
 		sp.bonded = false;
 	}

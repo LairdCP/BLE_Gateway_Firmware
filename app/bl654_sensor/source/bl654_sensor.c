@@ -122,7 +122,7 @@ static struct bt_uuid_16 uuid = BT_UUID_INIT_16(0);
 
 static struct bt_gatt_discover_params discover_params;
 
-static struct k_delayed_work discover_services_work;
+static struct k_work_delayable discover_services_work;
 
 static struct remote_ble_sensor remote;
 
@@ -149,8 +149,8 @@ static struct bt_uuid_16 last_searched_uuid;
 /******************************************************************************/
 void bl654_sensor_initialize(void)
 {
-	k_delayed_work_init(&discover_services_work,
-			    discover_services_work_callback);
+	k_work_init_delayable(&discover_services_work,
+			      discover_services_work_callback);
 
 	bt_conn_cb_register(&conn_callbacks);
 
@@ -247,9 +247,8 @@ static uint8_t notify_func_callback(struct bt_conn *conn,
 			   remote.pressure_subscribe_params.value_handle) {
 			LOG_WRN("Unsubscribed from pressure");
 		}
-		k_delayed_work_submit(
-			&discover_services_work,
-			K_SECONDS(DISCOVER_SERVICES_DELAY_SECONDS));
+		k_work_schedule(&discover_services_work,
+				K_SECONDS(DISCOVER_SERVICES_DELAY_SECONDS));
 		params->value_handle = 0;
 		return BT_GATT_ITER_STOP;
 	}
@@ -526,8 +525,8 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	* characteristic notifications.
 	* We dont want that to interfere with use enabling
 	* notifications when we discover characteristics */
-	k_delayed_work_submit(&discover_services_work,
-			      K_SECONDS(DISCOVER_SERVICES_DELAY_SECONDS));
+	k_work_schedule(&discover_services_work,
+			K_SECONDS(DISCOVER_SERVICES_DELAY_SECONDS));
 
 	return;
 

@@ -23,6 +23,9 @@ LOG_MODULE_REGISTER(button, CONFIG_BUTTON_LOG_LEVEL);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
+#define GPIO_PIN_ACTIVE 1
+#define GPIO_PIN_INACTIVE 0
+
 #define SW0_NODE DT_ALIAS(sw0)
 
 #if DT_NODE_HAS_STATUS(SW0_NODE, okay)
@@ -110,14 +113,16 @@ int button_initialize(const button_config_t *const config, size_t count,
 static void button_pressed_isr(const struct device *dev,
 			       struct gpio_callback *cb, uint32_t pins)
 {
-	int ps = gpio_pin_get_raw(dev, SW0_GPIO_PIN);
-	if (ps) {
-		LOG_DBG("Rising");
-		on_button_release_isr(k_uptime_delta(&button_edge_time));
-	} else {
-		LOG_DBG("Falling");
+	int ps = gpio_pin_get(dev, SW0_GPIO_PIN);
+	if (ps == GPIO_PIN_ACTIVE) {
+		LOG_ERR("Pressed");
 		(void)k_uptime_delta(&button_edge_time);
 		on_button_press_isr();
+	} else if (ps == GPIO_PIN_INACTIVE) {
+		LOG_ERR("Released");
+		on_button_release_isr(k_uptime_delta(&button_edge_time));
+	} else {
+		LOG_ERR("Error: %d", ps);
 	}
 }
 

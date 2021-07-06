@@ -15,7 +15,7 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #define AWS_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
 #define AWS_LOG_INF(...) LOG_INF(__VA_ARGS__)
 #define AWS_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
-#define AWS_LOG_ACK(...) Z_LOG(CONFIG_AWS_PUBACK_LOG_LEVEL, __VA_ARGS__)
+#define AWS_LOG_ACK(...) LOG_DBG(__VA_ARGS__)
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -881,8 +881,7 @@ static void keep_alive_work_handler(struct k_work *work)
 			AWS_LOG_ERR("mqtt_live (%d)", rc);
 		}
 
-		k_work_schedule(&keep_alive,
-				K_SECONDS(CONFIG_MQTT_KEEPALIVE));
+		k_work_schedule(&keep_alive, K_SECONDS(CONFIG_MQTT_KEEPALIVE));
 	}
 }
 

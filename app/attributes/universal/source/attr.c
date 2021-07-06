@@ -10,7 +10,7 @@
 #include <logging/log.h>
 LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 
-#define LOG_SHOW(...) Z_LOG(CONFIG_ATTR_SHOW_LOG_LEVEL, __VA_ARGS__)
+#define LOG_SHOW LOG_INF
 
 /******************************************************************************/
 /* Includes                                                                   */

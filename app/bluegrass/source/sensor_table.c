@@ -40,7 +40,7 @@ LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 /******************************************************************************/
 #define VERBOSE_AD_LOG(...)
 
-#define LOG_EVT(...) Z_LOG(CONFIG_SENSOR_TABLE_NEW_EVENT_LOG_LEVEL, __VA_ARGS__)
+#define LOG_EVT LOG_INF
 
 #define SENSOR_UPDATE_TOPIC_FMT_STR CONFIG_SENSOR_TOPIC_FMT_STR_PREFIX "/update"
 

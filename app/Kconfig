@@ -151,11 +151,6 @@ config SENSOR_CONFIG_DELAY_SECONDS
         occurs when a sensor is enabled in Bluegrass
         (for the first time).
 
-config SENSOR_TABLE_NEW_EVENT_LOG_LEVEL
-    int "Log level for sensor table new event detection"
-    range 0 4
-    default 3
-
 config VSP_TX_ECHO
     bool "Print Virtual Serial Port data transmitted to sensors"
     help
@@ -250,11 +245,6 @@ config APP_TOPIC_PREFIX_FILE_NAME
 
 config AWS_LOG_LEVEL
     int "AWS Log level"
-    range 0 4
-    default 3
-
-config AWS_PUBACK_LOG_LEVEL
-    int "Log level for publish acknowledgements"
     range 0 4
     default 3
 

@@ -42,14 +42,6 @@ config ATTR_SHELL_SHOW_ALL_DELAY_MS
     help
         This is used to prevent log system overflow.
 
-config ATTR_SHOW_LOG_LEVEL
-    int "Log level for attribute value changes"
-    range 0 4
-    default 3
-    help
-        Logging for individual attributes is
-        controlled by the shell command 'quiet'
-
 config ATTR_SHOW_FMT
     string "Format for the attribute show command index name"
     default "[%03u] %-30s"

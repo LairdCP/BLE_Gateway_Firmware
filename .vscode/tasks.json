@@ -83,9 +83,9 @@
     {
       "label": "build lwm2m",
       "type": "shell",
-      "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix}\"",
+      "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_lwm2m_pinnacle_100_config_unix}\"",
       "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows}\""
+        "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_lwm2m_pinnacle_100_config_windows}\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -147,9 +147,9 @@
       "dependsOn": [
         "increment build version"
       ],
-      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
+      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_lwm2m_pinnacle_100_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
       "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
+        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_lwm2m_pinnacle_100_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
       },
       "problemMatcher": {
         "base": "$gcc",

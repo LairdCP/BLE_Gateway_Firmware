@@ -40,6 +40,11 @@ LOG_MODULE_REGISTER(ethernet_network, CONFIG_ETHERNET_LOG_LEVEL);
 #include "bluegrass.h"
 #endif
 
+#ifdef CONFIG_SNTP
+#include <net/sntp.h>
+#include "lcz_qrtc.h"
+#endif
+
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
@@ -57,6 +62,13 @@ struct mgmt_events {
 #define ETHERNET_MAX_DNS_ADDRESSES 1
 #define ETHERNET_NETWORK_UNSET_IP "0.0.0.0"
 
+#define SNTP_SERVER "time.windows.com"
+#define SNTP_RESPONSE_TIMEOUT 300
+#define SNTP_PRIORITY 5
+#define SNTP_SYNC_DELAY 5 /* Delay SNTP query for 5 seconds after IP is added */
+#define SNTP_RESYNC_DURATION 3600 /* Re-syncronise with SNTP server every 1 hour */
+#define SNTP_ERROR_SYNC_DURATION 300 /* Retry SNTP syncronisation every 5 minutes upon failure */
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -69,10 +81,16 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 static void set_ip_config(struct net_if *iface);
 static void reset_iface_details(void);
 static void setup_iface_events(void);
+static void setup_static_ethernet_ip(struct k_work *item);
 #if defined(CONFIG_NET_DHCPV4)
 static void set_ip_dhcp_config(struct net_if *iface);
 static void iface_dhcp_bound_evt_handler(struct net_mgmt_event_callback *cb,
 					 uint32_t mgmt_event, struct net_if *iface);
+#endif
+#if defined(CONFIG_SNTP)
+static void ethernet_sync_qrtc(void);
+static void sntp_recheck_timer_callback(struct k_timer *dummy);
+static void sntp_thread(void *unused1, void *unused2, void *unused3);
 #endif
 
 /******************************************************************************/
@@ -84,6 +102,7 @@ static struct dns_resolve_context *dns;
 static bool connected = false;
 static bool initialised = false;
 static bool networkSetup = false;
+static struct k_work ethernet_work;
 
 static struct mgmt_events iface_events[] = {
 	{ .event = NET_EVENT_DNS_SERVER_ADD,
@@ -99,6 +118,14 @@ static struct mgmt_events iface_events[] = {
 	{ 0 } /* The for loop below requires this extra location. */
 };
 
+#if defined(CONFIG_SNTP)
+K_THREAD_STACK_DEFINE(sntp_stack_area, 2048);
+static struct k_timer sntp_timer;
+static k_tid_t sntp_tid;
+static struct k_thread sntp_thread_data;
+static struct k_sem sntp_sem;
+#endif
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -109,12 +136,26 @@ int ethernet_network_init(void)
 	if (!initialised) {
 		initialised = true;
 
+		k_work_init(&ethernet_work, setup_static_ethernet_ip);
+
 		setup_iface_events();
 		reset_iface_details();
 
 #ifdef CONFIG_BLUEGRASS
 		/* Generate Bluegrass topic IDs */
 		bluegrass_init_shadow_request();
+#endif
+
+#if defined(CONFIG_SNTP)
+		/* Setup timer and thread for SNTP operation */
+		k_timer_init(&sntp_timer, sntp_recheck_timer_callback, NULL);
+
+		k_sem_init(&sntp_sem, 0, 1);
+		sntp_tid = k_thread_create(&sntp_thread_data, sntp_stack_area,
+						 K_THREAD_STACK_SIZEOF(
+							sntp_stack_area),
+						 sntp_thread, NULL, NULL, NULL,
+						 SNTP_PRIORITY, 0, K_NO_WAIT);
 #endif
 	}
 
@@ -249,16 +290,26 @@ static void set_ip_config(struct net_if *iface)
 			}
 		}
 
-		attr_set_string(ATTR_ID_ethernetIPAddress, net_sprint_ipv4_addr(&unicast->address.in_addr), strlen(net_sprint_ipv4_addr(&unicast->address.in_addr)));
-		attr_set_uint32(ATTR_ID_ethernetNetmaskLength, (uint32_t)netmaskLength);
-		attr_set_string(ATTR_ID_ethernetGateway, net_sprint_ipv4_addr(&ipv4->gw), strlen(net_sprint_ipv4_addr(&ipv4->gw)));
+		attr_set_string(ATTR_ID_ethernetIPAddress,
+				net_sprint_ipv4_addr(&unicast->address.in_addr),
+				strlen(net_sprint_ipv4_addr(&unicast->address.in_addr)));
+		attr_set_uint32(ATTR_ID_ethernetNetmaskLength,
+				(uint32_t)netmaskLength);
+		attr_set_string(ATTR_ID_ethernetGateway,
+				net_sprint_ipv4_addr(&ipv4->gw),
+				strlen(net_sprint_ipv4_addr(&ipv4->gw)));
 		attr_set_string(ATTR_ID_ethernetDNS, ethDNS, strlen(ethDNS));
 	} else {
 		/* No IP currently set, use empty values */
-		attr_set_string(ATTR_ID_ethernetIPAddress, ETHERNET_NETWORK_UNSET_IP, (sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
+		attr_set_string(ATTR_ID_ethernetIPAddress,
+				ETHERNET_NETWORK_UNSET_IP,
+				(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
 		attr_set_uint32(ATTR_ID_ethernetNetmaskLength, 0);
-		attr_set_string(ATTR_ID_ethernetGateway, ETHERNET_NETWORK_UNSET_IP, (sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
-		attr_set_string(ATTR_ID_ethernetDNS, ETHERNET_NETWORK_UNSET_IP, (sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
+		attr_set_string(ATTR_ID_ethernetGateway,
+				ETHERNET_NETWORK_UNSET_IP,
+				(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
+		attr_set_string(ATTR_ID_ethernetDNS, ETHERNET_NETWORK_UNSET_IP,
+				(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
 	}
 
 #if defined(CONFIG_NET_DHCPV4)
@@ -269,15 +320,29 @@ static void set_ip_config(struct net_if *iface)
 #if defined(CONFIG_NET_DHCPV4)
 static void set_ip_dhcp_config(struct net_if *iface)
 {
-	attr_set_uint32(ATTR_ID_ethernetDHCPLeaseTime, (uint32_t)iface->config.dhcpv4.lease_time);
-	attr_set_uint32(ATTR_ID_ethernetDHCPRenewTime, (uint32_t)iface->config.dhcpv4.renewal_time);
-	attr_set_uint32(ATTR_ID_ethernetDHCPState, (uint32_t)iface->config.dhcpv4.state);
-	attr_set_uint32(ATTR_ID_ethernetDHCPAttempts, (uint32_t)iface->config.dhcpv4.attempts);
+	attr_set_uint32(ATTR_ID_ethernetDHCPLeaseTime,
+			(uint32_t)iface->config.dhcpv4.lease_time);
+	attr_set_uint32(ATTR_ID_ethernetDHCPRenewTime,
+			(uint32_t)iface->config.dhcpv4.renewal_time);
+	attr_set_uint32(ATTR_ID_ethernetDHCPState,
+			(uint32_t)iface->config.dhcpv4.state);
+	attr_set_uint32(ATTR_ID_ethernetDHCPAttempts,
+			(uint32_t)iface->config.dhcpv4.attempts);
+
+#if defined(CONFIG_SNTP)
+	if (iface->config.dhcpv4.state == NET_DHCPV4_BOUND) {
+		/* Work around issue with not getting DHCP bound callback in
+		 * Zephyr 2.6
+		 */
+		ethernet_sync_qrtc();
+	}
+#endif
 }
 #endif
 
 static void iface_dns_added_evt_handler(struct net_mgmt_event_callback *cb,
-					uint32_t mgmt_event, struct net_if *iface)
+					uint32_t mgmt_event,
+					struct net_if *iface)
 {
 	if (mgmt_event != NET_EVENT_DNS_SERVER_ADD) {
 		return;
@@ -289,16 +354,30 @@ static void iface_dns_added_evt_handler(struct net_mgmt_event_callback *cb,
 	connected = true;
 
 	set_ip_config(iface);
+
+#if defined(CONFIG_SNTP)
+	if (attr_get_uint32(ATTR_ID_ethernetMode,
+		(uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_STATIC) {
+		/* Static IP, safe to query SNTP server for time */
+		k_timer_start(&sntp_timer, K_SECONDS(SNTP_SYNC_DELAY),
+			      K_NO_WAIT);
+	}
+#endif
 }
 
 static void reset_iface_details(void)
 {
-	attr_set_uint32(ATTR_ID_ethernetSpeed, (uint32_t)ETHERNET_SPEED_UNKNOWN);
-	attr_set_uint32(ATTR_ID_ethernetDuplex, (uint32_t)ETHERNET_DUPLEX_UNKNOWN);
-	attr_set_string(ATTR_ID_ethernetIPAddress, ETHERNET_NETWORK_UNSET_IP, (sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
+	attr_set_uint32(ATTR_ID_ethernetSpeed,
+			(uint32_t)ETHERNET_SPEED_UNKNOWN);
+	attr_set_uint32(ATTR_ID_ethernetDuplex,
+			(uint32_t)ETHERNET_DUPLEX_UNKNOWN);
+	attr_set_string(ATTR_ID_ethernetIPAddress, ETHERNET_NETWORK_UNSET_IP,
+			(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
 	attr_set_uint32(ATTR_ID_ethernetNetmaskLength, 0);
-	attr_set_string(ATTR_ID_ethernetGateway, ETHERNET_NETWORK_UNSET_IP, (sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
-	attr_set_string(ATTR_ID_ethernetDNS, ETHERNET_NETWORK_UNSET_IP, (sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
+	attr_set_string(ATTR_ID_ethernetGateway, ETHERNET_NETWORK_UNSET_IP,
+			(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
+	attr_set_string(ATTR_ID_ethernetDNS, ETHERNET_NETWORK_UNSET_IP,
+			(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
 #if defined(CONFIG_NET_DHCPV4)
 	attr_set_uint32(ATTR_ID_ethernetDHCPLeaseTime, 0);
 	attr_set_uint32(ATTR_ID_ethernetDHCPRenewTime, 0);
@@ -318,87 +397,19 @@ static void iface_up_evt_handler(struct net_mgmt_event_callback *cb,
 	attr_set_uint32(ATTR_ID_ethernetCableDetected, (uint32_t)true);
 	ethernet_network_event(ETHERNET_EVT_CABLE_DETECTED);
 
-#if defined(CONFIG_NET_DHCPV4)
 	if (networkSetup == false) {
-		if (attr_get_uint32(ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_STATIC) {
-#endif
-			/* Setup static configuration */
-			ETHERNET_LOG_DBG("Setting static network config");
-
-			int rc, i;
-			struct in_addr ipAddress, ipNetmask, ipGateway;
-			struct dns_resolve_context *ctx;
-			struct sockaddr_in dns;
-			const struct sockaddr *dns_servers[] = {
-				(struct sockaddr *)&dns, NULL
-			};
-
-			(void)memset(&dns, 0, sizeof(dns));
-
-			rc = net_addr_pton(AF_INET, attr_get_quasi_static(ATTR_ID_ethernetStaticDNS), &dns.sin_addr.s4_addr);
-			if (rc) {
-				/* Invalid DNS */
-				ETHERNET_LOG_ERR("Invalid ethernet DNS (%d)", rc);
-				goto finished;
-			}
-
-			rc = net_addr_pton(AF_INET, attr_get_quasi_static(ATTR_ID_ethernetStaticIPAddress), &ipAddress);
-			if (rc) {
-				/* Invalid IP address */
-				ETHERNET_LOG_ERR("Invalid ethernet IP address (%d)", rc);
-				goto finished;
-			}
-
-			/* Convert subnet mask length to subnet mask value */
-			ipNetmask.s4_addr32[0] = 0;
-			i = 0;
-			rc = (int)attr_get_uint32(ATTR_ID_ethernetStaticNetmaskLength, 0);
-			while (rc > 0) {
-				ipNetmask.s4_addr32[0] = ipNetmask.s4_addr32[0] << 1;
-				ipNetmask.s4_addr32[0] |= 0b1;
-				--rc;
-			}
-
-			rc = net_addr_pton(AF_INET, attr_get_quasi_static(ATTR_ID_ethernetStaticGateway), &ipGateway);
-			if (rc) {
-				/* Invalid gateway */
-				ETHERNET_LOG_ERR("Invalid ethernet gateway (%d)", rc);
-				goto finished;
-			}
-
-			/* Add the IP details to the interface as a manual address type with no expiration time */
-			net_if_ipv4_addr_add(iface, &ipAddress, NET_ADDR_MANUAL, 0);
-			net_if_ipv4_set_netmask(iface, &ipNetmask);
-			net_if_ipv4_set_gw(iface, &ipGateway);
-
-			/* DNS code taken from zephyr/subsys/net/ip/dhcpv4.c */
-			ctx = dns_resolve_get_default();
-			for (i = 0; i < CONFIG_DNS_NUM_CONCUR_QUERIES; i++) {
-				if (!ctx->queries[i].cb) {
-					continue;
-				}
-
-				dns_resolve_cancel(ctx, ctx->queries[i].id);
-			}
-
-			dns_resolve_close(ctx);
-
-			dns.sin_family = AF_INET;
-			rc = dns_resolve_init(ctx, NULL, dns_servers);
-			if (rc < 0) {
-				ETHERNET_LOG_ERR("Failed to add static ethernet DNS (%d)", rc);
-				goto finished;
-			}
-		}
-
-		networkSetup = true;
-
 #if defined(CONFIG_NET_DHCPV4)
-	}
+		if (attr_get_uint32(ATTR_ID_ethernetMode,
+			(uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_STATIC) {
 #endif
-
-finished:
-	set_ip_config(iface);
+			k_work_submit(&ethernet_work);
+#if defined(CONFIG_NET_DHCPV4)
+		}
+#endif
+	} else {
+		/* Network already setup which includes DNS */
+		iface_dns_added_evt_handler(cb, NET_EVENT_DNS_SERVER_ADD, iface);
+	}
 }
 
 static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
@@ -416,11 +427,17 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 
 	/* Reset IP details to empty */
 	reset_iface_details();
+
+#if defined(CONFIG_SNTP)
+	/* Cancel SNTP syncronisation */
+	k_timer_stop(&sntp_timer);
+#endif
 }
 
 #if defined(CONFIG_NET_DHCPV4)
 static void iface_dhcp_bound_evt_handler(struct net_mgmt_event_callback *cb,
-					 uint32_t mgmt_event, struct net_if *iface)
+					 uint32_t mgmt_event,
+					 struct net_if *iface)
 {
 	if (mgmt_event != NET_EVENT_IPV4_CMD_DHCP_BOUND) {
 		return;
@@ -429,6 +446,11 @@ static void iface_dhcp_bound_evt_handler(struct net_mgmt_event_callback *cb,
 	ETHERNET_LOG_DBG("Ethernet DHCP bound");
 
 	set_ip_config(iface);
+
+#if defined(CONFIG_SNTP)
+	/* DHCP IP assigned, query SNTP server for the time */
+	ethernet_sync_qrtc();
+#endif
 }
 #endif
 
@@ -448,4 +470,145 @@ static void setup_iface_events(void)
 __weak void ethernet_network_event(enum ethernet_network_event event)
 {
 	ARG_UNUSED(event);
+}
+
+#if defined(CONFIG_SNTP)
+static void ethernet_sync_qrtc(void)
+{
+		k_sem_give(&sntp_sem);
+}
+
+static void sntp_recheck_timer_callback(struct k_timer *dummy)
+{
+	ARG_UNUSED(dummy);
+
+	ethernet_sync_qrtc();
+}
+
+static void sntp_thread(void *unused1, void *unused2, void *unused3)
+{
+	struct sntp_time sntp_server_time;
+	struct tm *sntp_server_time_tm;
+	int rc;
+	uint32_t qrtc_epoch;
+
+	while (1) {
+		k_sem_take(&sntp_sem, K_FOREVER);
+
+		rc = sntp_simple(SNTP_SERVER, SNTP_RESPONSE_TIMEOUT,
+				 &sntp_server_time);
+
+		if (rc == 0) {
+			sntp_server_time_tm = gmtime(&sntp_server_time.seconds);
+			qrtc_epoch = lcz_qrtc_set_epoch_from_tm(
+						sntp_server_time_tm, 0);
+
+			ETHERNET_LOG_INF("SNTP response %02d/%02d/%04d "
+					 "@ %02d:%02d:%02d, "
+					 "QRTC Epoch set to %u",
+					 sntp_server_time_tm->tm_mday,
+					 (sntp_server_time_tm->tm_mon + 1),
+					 (sntp_server_time_tm->tm_year + 1900),
+					 sntp_server_time_tm->tm_hour,
+					 sntp_server_time_tm->tm_min,
+					 sntp_server_time_tm->tm_sec,
+					 qrtc_epoch);
+
+			k_timer_start(&sntp_timer,
+				      K_SECONDS(SNTP_RESYNC_DURATION),
+				      K_NO_WAIT);
+		} else {
+			ETHERNET_LOG_WRN("Get time from SNTP server failed!"
+					 " (%d)", rc);
+
+			k_timer_start(&sntp_timer,
+				      K_SECONDS(SNTP_ERROR_SYNC_DURATION),
+				      K_NO_WAIT);
+		}
+	}
+}
+#endif
+
+static void setup_static_ethernet_ip(struct k_work *item)
+{
+	/* Setup static configuration */
+	ETHERNET_LOG_DBG("Setting static network config");
+
+	int rc, i;
+	struct in_addr ipAddress, ipNetmask, ipGateway;
+	struct dns_resolve_context *ctx;
+	struct sockaddr_in dns;
+	const struct sockaddr *dns_servers[] = {
+		(struct sockaddr *)&dns, NULL
+	};
+
+	(void)memset(&dns, 0, sizeof(dns));
+
+	rc = net_addr_pton(AF_INET,
+			   attr_get_quasi_static(ATTR_ID_ethernetStaticDNS),
+			   &dns.sin_addr.s4_addr);
+	if (rc) {
+		/* Invalid DNS */
+		ETHERNET_LOG_ERR("Invalid ethernet DNS (%d)", rc);
+		goto finished;
+	}
+
+	rc = net_addr_pton(AF_INET, attr_get_quasi_static(
+					ATTR_ID_ethernetStaticIPAddress),
+			   &ipAddress);
+	if (rc) {
+		/* Invalid IP address */
+		ETHERNET_LOG_ERR("Invalid ethernet IP address (%d)", rc);
+		goto finished;
+	}
+
+	/* Convert subnet mask length to subnet mask value */
+	ipNetmask.s4_addr32[0] = 0;
+	i = 0;
+	rc = (int)attr_get_uint32(ATTR_ID_ethernetStaticNetmaskLength, 0);
+	while (rc > 0) {
+		ipNetmask.s4_addr32[0] = ipNetmask.s4_addr32[0] << 1;
+		ipNetmask.s4_addr32[0] |= 0b1;
+		--rc;
+	}
+
+	rc = net_addr_pton(AF_INET, attr_get_quasi_static(
+					ATTR_ID_ethernetStaticGateway),
+			   &ipGateway);
+	if (rc) {
+		/* Invalid gateway */
+		ETHERNET_LOG_ERR("Invalid ethernet gateway (%d)", rc);
+		goto finished;
+	}
+
+	/* Add the IP details to the interface as a manual address type with
+	 * no expiration time
+	 */
+	net_if_ipv4_addr_add(iface, &ipAddress, NET_ADDR_MANUAL, 0);
+	net_if_ipv4_set_netmask(iface, &ipNetmask);
+	net_if_ipv4_set_gw(iface, &ipGateway);
+
+	/* DNS code taken from zephyr/subsys/net/ip/dhcpv4.c */
+	ctx = dns_resolve_get_default();
+	for (i = 0; i < CONFIG_DNS_NUM_CONCUR_QUERIES; i++) {
+		if (!ctx->queries[i].cb) {
+			continue;
+		}
+
+		dns_resolve_cancel(ctx, ctx->queries[i].id);
+	}
+
+	dns_resolve_close(ctx);
+
+	dns.sin_family = AF_INET;
+	rc = dns_resolve_init(ctx, NULL, dns_servers);
+	if (rc < 0) {
+		ETHERNET_LOG_ERR("Failed to add static ethernet DNS (%d)", rc);
+		goto finished;
+	}
+
+	networkSetup = true;
+
+finished:
+	set_ip_config(iface);
 }

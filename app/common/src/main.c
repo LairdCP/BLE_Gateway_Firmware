@@ -35,8 +35,14 @@ const char *get_app_type(void)
 
 void main(void)
 {
-	printk("\n" CONFIG_BOARD " - %s v%s\n", get_app_type(),
-	       APP_VERSION_STRING);
+	printk("\n" CONFIG_BOARD " - %s v%s (%s)\n", get_app_type(),
+	       APP_VERSION_STRING,
+#if defined(BUILD_VERSION_LOCAL)
+	       STRINGIFY(BUILD_VERSION_LOCAL)
+#else
+	       "Unknown application version"
+#endif
+	);
 
 	control_task_initialize();
 	control_task_thread();

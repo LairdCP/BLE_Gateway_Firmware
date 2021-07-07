@@ -21,6 +21,7 @@ LOG_MODULE_REGISTER(single_peripheral, CONFIG_SINGLE_PERIPHERAL_LOG_LEVEL);
 #include "lcz_bluetooth.h"
 #include "lcz_bt_security.h"
 #include "single_peripheral.h"
+#include "led_configuration.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -29,6 +30,14 @@ static const struct bt_data AD[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA_BYTES(BT_DATA_UUID128_ALL, DFU_SMP_UUID_SERVICE),
 };
+
+#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+static const struct lcz_led_blink_pattern LED_ADVERTISING_PATTERN = {
+	.on_time = CONFIG_DEFAULT_LED_ON_TIME_FOR_1_SECOND_BLINK,
+	.off_time = CONFIG_DEFAULT_LED_OFF_TIME_FOR_1_SECOND_BLINK,
+	.repeat_count = REPEAT_INDEFINITELY
+};
+#endif
 
 #define ADV_DURATION CONFIG_SINGLE_PERIPHERAL_ADV_DURATION_SECONDS
 
@@ -142,7 +151,7 @@ static void sp_connected(struct bt_conn *conn, uint8_t err)
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	if (err) {
-		LOG_ERR("Failed to connect to central %s (%u)",
+		LOG_ERR("Central device failed to connect %s (%u)",
 			log_strdup(addr), err);
 		bt_conn_unref(conn);
 		sp.conn_handle = NULL;
@@ -154,6 +163,11 @@ static void sp_connected(struct bt_conn *conn, uint8_t err)
 		single_peripheral_stop_advertising();
 
 		encrypt_link();
+
+#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+		/* Turn LED on to indicate in a connection */
+		lcz_led_turn_on(BLUETOOTH_ADVERTISING_LED);
+#endif
 	}
 }
 
@@ -205,6 +219,11 @@ static void start_stop_adv(struct k_work *work)
 
 			if (err >= 0) {
 				sp.advertising = true;
+
+#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+				/* Blink LED on to indicate advertising */
+				lcz_led_blink(BLUETOOTH_ADVERTISING_LED, &LED_ADVERTISING_PATTERN);
+#endif
 			}
 
 		} else {
@@ -222,6 +241,13 @@ static void start_stop_adv(struct k_work *work)
 		err = bt_le_adv_stop();
 		LOG_INF("Advertising stop status: %d", err);
 		sp.advertising = false;
+
+#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+		if (err == 0) {
+			/* Turn LED off to indicate not advertising */
+			lcz_led_turn_off(BLUETOOTH_ADVERTISING_LED);
+		}
+#endif
 	}
 }
 

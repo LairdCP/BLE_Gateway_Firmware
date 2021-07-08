@@ -910,7 +910,7 @@ static int aws_send_data(bool binary, char *data, uint32_t len, uint8_t *topic)
 		aws_stats.success += 1;
 		aws_stats.consecutive_fails = 0;
 		if (CONFIG_AWS_PUBLISH_WATCHDOG_SECONDS != 0) {
-			k_work_schedule(
+			k_work_reschedule(
 				&publish_watchdog,
 				K_SECONDS(CONFIG_AWS_PUBLISH_WATCHDOG_SECONDS));
 		}

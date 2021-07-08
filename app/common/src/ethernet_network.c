@@ -513,6 +513,9 @@ static void sntp_thread(void *unused1, void *unused2, void *unused3)
 				 &sntp_server_time);
 
 		if (rc == 0) {
+#if CONFIG_ETHERNET_LOG_LEVEL >= 3
+			uint32_t old_epoch = lcz_qrtc_get_epoch();
+#endif
 			qrtc_epoch = lcz_qrtc_set_epoch(sntp_server_time.seconds);
 
 #if CONFIG_ETHERNET_LOG_LEVEL >= 3
@@ -528,6 +531,18 @@ static void sntp_thread(void *unused1, void *unused2, void *unused3)
 					 sntp_server_time_tm->tm_min,
 					 sntp_server_time_tm->tm_sec,
 					 qrtc_epoch);
+
+			if (qrtc_epoch == old_epoch) {
+				/* Epochs matched */
+				ETHERNET_LOG_INF("System epoch matched SNTP time");
+			} else {
+				/* Epochs did not match */
+				ETHERNET_LOG_INF("System epoch was %d second%s"
+						 " %s SNTP time",
+						 abs(qrtc_epoch - old_epoch),
+						 (abs(qrtc_epoch - old_epoch) == 1 ? "" : "s"),
+						 (qrtc_epoch > old_epoch ? "behind" : "ahead of"));
+			}
 #endif
 
 

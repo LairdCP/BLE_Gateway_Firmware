@@ -241,7 +241,7 @@ uint16_t BatteryCalculateRunningAvg(uint16_t Voltage)
 	/* store the latest voltage reading */
 	previousVoltageReadings[lastVoltageReadingIdx++] = Voltage;
 
-	/* Mod operation to insure index is between 0 and BATTERY_NUM_READINGS*/
+	/* Mod operation to insure index is between 0 and BATTERY_NUM_READINGS */
 	lastVoltageReadingIdx %= BATTERY_NUM_READINGS;
 
 	/* calculate the average voltage of the last

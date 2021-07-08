@@ -115,11 +115,11 @@ static void button_pressed_isr(const struct device *dev,
 {
 	int ps = gpio_pin_get(dev, SW0_GPIO_PIN);
 	if (ps == GPIO_PIN_ACTIVE) {
-		LOG_ERR("Pressed");
+		LOG_DBG("Pressed");
 		(void)k_uptime_delta(&button_edge_time);
 		on_button_press_isr();
 	} else if (ps == GPIO_PIN_INACTIVE) {
-		LOG_ERR("Released");
+		LOG_DBG("Released");
 		on_button_release_isr(k_uptime_delta(&button_edge_time));
 	} else {
 		LOG_ERR("Error: %d", ps);

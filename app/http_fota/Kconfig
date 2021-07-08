@@ -41,12 +41,14 @@ config HTTP_FOTA_ERROR_DELAY
 
 config HTTP_FOTA_MODEM_INSTALL_DELAY
     int "Seconds to wait to allow modem to install update"
+    depends on MODEM_HL7800
     default 600
     help
         Used to prevent starting duplicate update cycle while the modem reboots by
         keeping cloud state machine in FOTA state until modem has rebooted.
 
 config HTTP_FOTA_DELETE_FILE_AFTER_UPDATE
+    depends on MODEM_HL7800
     bool "Delete HL7800 update file after update"
     default y
 

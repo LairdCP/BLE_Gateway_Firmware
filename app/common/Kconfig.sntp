@@ -55,7 +55,7 @@ config SNTP_ERROR_ATTEMPTS
         server which have failed before waiting for
         SNTP_RESYNCRONISATION_SECONDS before retrying to allow the
         network connectivity issue to recover (0 will disable this
-        check and continue indefinately without a longer pause).
+        check and continue indefinitely without a longer pause).
 
 config SNTP_THREAD_PRIORITY
     int "SNTP thread priority"

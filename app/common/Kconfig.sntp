@@ -1,0 +1,70 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menu "SNTP settings"
+
+if SNTP
+
+config SNTP_SERVER_HOSTNAME
+    string "IP/hostname of SNTP server to query"
+    default "time.windows.com"
+    help
+        This is the IP/Hostname of the SNTP server to query for the
+        time - note that the default port 123 will be used.
+
+config SNTP_TIMEOUT_MILLISECONDS
+    int "SNTP timeout in milliseconds"
+    range 300 1200000
+    default 1000
+    help
+        Timeout value in milliseconds if the SNTP time request should be
+        aborted if it was not sucessfully retrieved from the server.
+
+config SNTP_SYNCRONISATION_DELAY_SECONDS
+    int "Delay in seconds before querying SNTP server"
+    range 1 60
+    default 5
+    help
+        This allows the network connectivity to settle before an
+        attempt is made to query the SNTP server and applies when the
+        network is brought online or recovers from being down.
+
+config SNTP_RESYNCRONISATION_SECONDS
+    int "Delay in seconds after successful query before resyncronisation"
+    range 1 108000
+    default 3600
+    help
+        Time between resyncronising the module's time with the SNTP
+        server's time to prevent clock drift, applies after a
+        successful SNTP syncronisation.
+
+config SNTP_ERROR_SYNCRONISATION_SECONDS
+    int "Delay in seconds after failed query before attempting again"
+    range 1 108000
+    default 30
+    help
+        Time between re-trying to retrieve the time from the SNTP
+        server after it has failed.
+
+config SNTP_ERROR_ATTEMPTS
+    int "Number of failed attempts to syncronise before delaying"
+    range 0 60
+    default 5
+    help
+        Number of attempts trying to retrieve the time from the SNTP
+        server which have failed before waiting for
+        SNTP_RESYNCRONISATION_SECONDS before retrying to allow the
+        network connectivity issue to recover (0 will disable this
+        check and continue indefinately without a longer pause).
+
+config SNTP_THREAD_PRIORITY
+    int "SNTP thread priority"
+    default 5
+
+config SNTP_THREAD_STACK_SIZE
+    int "SNTP thread stack size in bytes"
+    default 2048
+
+endif # SNTP
+
+endmenu

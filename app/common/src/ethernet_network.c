@@ -62,12 +62,17 @@ struct mgmt_events {
 #define ETHERNET_MAX_DNS_ADDRESSES 1
 #define ETHERNET_NETWORK_UNSET_IP "0.0.0.0"
 
-#define SNTP_SERVER "time.windows.com"
-#define SNTP_RESPONSE_TIMEOUT 300
-#define SNTP_PRIORITY 5
-#define SNTP_SYNC_DELAY 5 /* Delay SNTP query for 5 seconds after IP is added */
-#define SNTP_RESYNC_DURATION 3600 /* Re-syncronise with SNTP server every 1 hour */
-#define SNTP_ERROR_SYNC_DURATION 300 /* Retry SNTP syncronisation every 5 minutes upon failure */
+#if defined(CONFIG_SNTP) && !defined(CONFIG_USER_APPLICATION)
+/* Application configuration option disabled, use defaults for SNTP */
+#define CONFIG_SNTP_SERVER_HOSTNAME "time.windows.com"
+#define CONFIG_SNTP_TIMEOUT_MILLISECONDS 300
+#define CONFIG_SNTP_SYNCRONISATION_DELAY_SECONDS 5 /* Delay SNTP query for 5 seconds after IP is added */
+#define CONFIG_SNTP_RESYNCRONISATION_SECONDS 3600 /* Re-syncronise with SNTP server every 1 hour */
+#define CONFIG_SNTP_ERROR_SYNCRONISATION_SECONDS 30 /* Retry SNTP syncronisation every 30 seconds upon failure */
+#define CONFIG_SNTP_ERROR_ATTEMPTS 5 /* Try 5 times to syncronise SNTP before delaying */
+#define CONFIG_SNTP_THREAD_PRIORITY 5
+#define CONFIG_SNTP_THREAD_STACK_SIZE 2048
+#endif
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -119,11 +124,14 @@ static struct mgmt_events iface_events[] = {
 };
 
 #if defined(CONFIG_SNTP)
-K_THREAD_STACK_DEFINE(sntp_stack_area, 2048);
+K_THREAD_STACK_DEFINE(sntp_stack_area, CONFIG_SNTP_THREAD_STACK_SIZE);
 static struct k_timer sntp_timer;
 static k_tid_t sntp_tid;
 static struct k_thread sntp_thread_data;
 static struct k_sem sntp_sem;
+#if CONFIG_SNTP_ERROR_ATTEMPTS != 0
+uint8_t sntp_fail_count;
+#endif
 #endif
 
 /******************************************************************************/
@@ -155,7 +163,11 @@ int ethernet_network_init(void)
 						 K_THREAD_STACK_SIZEOF(
 							sntp_stack_area),
 						 sntp_thread, NULL, NULL, NULL,
-						 SNTP_PRIORITY, 0, K_NO_WAIT);
+						 CONFIG_SNTP_THREAD_PRIORITY, 0, K_NO_WAIT);
+
+#if CONFIG_SNTP_ERROR_ATTEMPTS != 0
+		sntp_fail_count = 0;
+#endif
 #endif
 	}
 
@@ -359,7 +371,8 @@ static void iface_dns_added_evt_handler(struct net_mgmt_event_callback *cb,
 	if (attr_get_uint32(ATTR_ID_ethernetMode,
 		(uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_STATIC) {
 		/* Static IP, safe to query SNTP server for time */
-		k_timer_start(&sntp_timer, K_SECONDS(SNTP_SYNC_DELAY),
+		k_timer_start(&sntp_timer,
+			      K_SECONDS(CONFIG_SNTP_SYNCRONISATION_DELAY_SECONDS),
 			      K_NO_WAIT);
 	}
 #endif
@@ -475,7 +488,7 @@ __weak void ethernet_network_event(enum ethernet_network_event event)
 #if defined(CONFIG_SNTP)
 static void ethernet_sync_qrtc(void)
 {
-		k_sem_give(&sntp_sem);
+	k_sem_give(&sntp_sem);
 }
 
 static void sntp_recheck_timer_callback(struct k_timer *dummy)
@@ -495,13 +508,15 @@ static void sntp_thread(void *unused1, void *unused2, void *unused3)
 	while (1) {
 		k_sem_take(&sntp_sem, K_FOREVER);
 
-		rc = sntp_simple(SNTP_SERVER, SNTP_RESPONSE_TIMEOUT,
+		rc = sntp_simple(CONFIG_SNTP_SERVER_HOSTNAME,
+				 CONFIG_SNTP_TIMEOUT_MILLISECONDS,
 				 &sntp_server_time);
 
 		if (rc == 0) {
+			qrtc_epoch = lcz_qrtc_set_epoch(sntp_server_time.seconds);
+
+#if CONFIG_ETHERNET_LOG_LEVEL >= 3
 			sntp_server_time_tm = gmtime(&sntp_server_time.seconds);
-			qrtc_epoch = lcz_qrtc_set_epoch_from_tm(
-						sntp_server_time_tm, 0);
 
 			ETHERNET_LOG_INF("SNTP response %02d/%02d/%04d "
 					 "@ %02d:%02d:%02d, "
@@ -513,17 +528,53 @@ static void sntp_thread(void *unused1, void *unused2, void *unused3)
 					 sntp_server_time_tm->tm_min,
 					 sntp_server_time_tm->tm_sec,
 					 qrtc_epoch);
+#endif
+
 
 			k_timer_start(&sntp_timer,
-				      K_SECONDS(SNTP_RESYNC_DURATION),
+				      K_SECONDS(CONFIG_SNTP_RESYNCRONISATION_SECONDS),
 				      K_NO_WAIT);
+
+#if CONFIG_SNTP_ERROR_ATTEMPTS != 0
+			sntp_fail_count = 0;
+#endif
 		} else {
 			ETHERNET_LOG_WRN("Get time from SNTP server failed!"
 					 " (%d)", rc);
 
-			k_timer_start(&sntp_timer,
-				      K_SECONDS(SNTP_ERROR_SYNC_DURATION),
-				      K_NO_WAIT);
+#if CONFIG_SNTP_ERROR_ATTEMPTS != 0
+			++sntp_fail_count;
+
+			if (sntp_fail_count >= CONFIG_SNTP_ERROR_ATTEMPTS) {
+				/* Too many failures for now, delay for a
+				 * longer time to allow network connectivity
+				 * issues to resolve
+				 */
+				sntp_fail_count = 0;
+
+				ETHERNET_LOG_WRN("Too many consecutive SNTP "
+						 "failures, delaying SNTP "
+						 "syncronisation for %d "
+						 "seconds",
+						 CONFIG_SNTP_RESYNCRONISATION_SECONDS);
+
+				k_timer_start(&sntp_timer,
+					      K_SECONDS(CONFIG_SNTP_RESYNCRONISATION_SECONDS),
+					      K_NO_WAIT);
+			} else {
+				ETHERNET_LOG_WRN("SNTP consecutive fail count "
+						 "%d, next SNTP syncronisation"
+						 " in %d seconds",
+						 sntp_fail_count,
+						 CONFIG_SNTP_ERROR_SYNCRONISATION_SECONDS);
+#endif
+
+				k_timer_start(&sntp_timer,
+					      K_SECONDS(CONFIG_SNTP_ERROR_SYNCRONISATION_SECONDS),
+					      K_NO_WAIT);
+#if CONFIG_SNTP_ERROR_ATTEMPTS != 0
+			}
+#endif
 		}
 	}
 }

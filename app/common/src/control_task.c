@@ -103,6 +103,7 @@ static void random_join_handler(attr_index_t idx);
 static void update_apn_handler(void);
 static void update_modem_log_level_handler(void);
 static void update_rat_handler(void);
+static void update_gps_rate_handler(void);
 #endif
 
 /******************************************************************************/
@@ -163,6 +164,7 @@ static void control_task_thread_internal(void *pArg1, void *pArg2, void *pArg3)
 #ifdef CONFIG_MODEM_HL7800
 	attr_prepare_modemBoot();
 	update_modem_log_level_handler();
+	update_gps_rate_handler();
 #endif
 
 	configure_app();
@@ -241,6 +243,10 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 
 		case ATTR_ID_lteRat:
 			update_rat = true;
+			break;
+
+		case ATTR_ID_gpsRate:
+			update_gps_rate_handler();
 			break;
 #endif
 
@@ -439,6 +445,17 @@ static void update_modem_log_level_handler(void)
 	uint32_t new_level = mdm_hl7800_log_filter_set(desired);
 	LOG_INF("modem log level: desired: %u new_level: %u", desired,
 		new_level);
+}
+
+static void update_gps_rate_handler(void)
+{
+	if (IS_ENABLED(CONFIG_MODEM_HL7800_GPS)) {
+		attr_set_signed32(ATTR_ID_gpsStatus,
+				  mdm_hl7800_set_gps_rate(
+					  attr_get_uint32(ATTR_ID_gpsRate, 0)));
+	} else {
+		LOG_INF("GPS not enabled");
+	}
 }
 
 static void update_rat_handler(void)

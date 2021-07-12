@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.23"
+    "version": "0.4.24"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.23",
+              "x-default": "0.4.24",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -4598,6 +4598,219 @@
               "x-savable": true,
               "x-writeable": true,
               "x-readable": true
+            }
+          },
+          {
+            "name": "gpsRate",
+            "summary": "Start or Stop GPS.  When non-zero the value is the number of seconds between location requests.  Modem will be put into Airplane mode when non-zero.",
+            "required": true,
+            "x-id": 242,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-writeable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-validator": "cp32"
+            }
+          },
+          {
+            "name": "gpsLatitude",
+            "summary": "",
+            "required": true,
+            "x-id": 243,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "49 Deg 10 Min 21.49 Sec N",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gpsLongitude",
+            "summary": "",
+            "required": true,
+            "x-id": 244,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "123 Deg 4 Min 14.76 Sec W",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gpsTime",
+            "summary": "GPS time and date of the fix in \"yyyy mm dd hh:mm:ss\" format",
+            "required": true,
+            "x-id": 245,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "2009 01 30 20:27:18",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gpsFixType",
+            "summary": "",
+            "required": true,
+            "x-id": 246,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 3,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "3D",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gpsHepe",
+            "summary": "Horizontal Estimated Position Error",
+            "required": true,
+            "x-id": 247,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 16,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "8.485 m",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gpsAltitude",
+            "summary": "Altitude in meters",
+            "required": true,
+            "x-id": 248,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 16,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "3.0 m",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gpsAltUnc",
+            "summary": "Altitude Uncertainty in meters",
+            "required": true,
+            "x-id": 249,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 16,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "3.0 m",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gpsHeading",
+            "summary": "Direction the UE is headed",
+            "required": true,
+            "x-id": 250,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 16,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "0.0 deg",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gpsHorSpeed",
+            "summary": "Horizontal speed in m/s",
+            "required": true,
+            "x-id": 251,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 16,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "0.0 m/s",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gpsVerSpeed",
+            "summary": "Vertical speed in m/s",
+            "required": true,
+            "x-id": 252,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 16,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "0.0 m/s",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gpsStatus",
+            "summary": "Current status of GPS Position",
+            "required": true,
+            "x-id": 253,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "-1",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "INVALID": -1,
+                "FIX_LOST_OR_NOT_AVAILABLE": 0,
+                "PREDICTION_AVAILABLE": 1,
+                "2D_AVAILABLE": 2,
+                "3D_AVAILABLE": 3,
+                "FIXED_TO_INVALID": 4
+              }
             }
           }
         ]

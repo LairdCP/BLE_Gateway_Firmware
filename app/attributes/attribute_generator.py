@@ -691,6 +691,8 @@ class attributes:
                 s = s.replace("Dhcp", "DHCP")
                 s = s.replace("Ipv4", "IPv4")
                 s = s.replace("Ipv6", "IPv6")
+                s = s.replace("2 D", "2D")
+                s = s.replace("3 D", "3D")
                 lst.append(s)
 
         return ''.join(lst)

@@ -96,6 +96,10 @@ static uint32_t lte_version_to_int(char *ver);
 extern int memfault_ncs_device_id_set(const char *device_id, size_t len);
 #endif
 
+#ifdef CONFIG_MODEM_HL7800_GPS
+static void gps_str_handler(void *event_data);
+#endif
+
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
@@ -434,11 +438,63 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 #endif
 		break;
 
+#ifdef CONFIG_MODEM_HL7800_GPS
+	case HL7800_EVENT_GPS:
+		gps_str_handler(event_data);
+		break;
+
+	case HL7800_EVENT_GPS_POSITION_STATUS:
+		attr_set_signed32(ATTR_ID_gpsStatus,
+				  (int32_t) * ((int8_t *)event_data));
+		break;
+#endif
+
 	default:
 		LOG_ERR("Unknown modem event");
 		break;
 	}
 }
+
+#ifdef CONFIG_MODEM_HL7800_GPS
+static void gps_str_handler(void *event_data)
+{
+	uint8_t code = ((struct mdm_hl7800_compound_event *)event_data)->code;
+	char *str = ((struct mdm_hl7800_compound_event *)event_data)->string;
+
+	switch (code) {
+	case HL7800_GPS_STR_LATITUDE:
+		attr_set_string(ATTR_ID_gpsLatitude, str, strlen(str));
+		break;
+	case HL7800_GPS_STR_LONGITUDE:
+		attr_set_string(ATTR_ID_gpsLongitude, str, strlen(str));
+		break;
+	case HL7800_GPS_STR_GPS_TIME:
+		attr_set_string(ATTR_ID_gpsTime, str, strlen(str));
+		break;
+	case HL7800_GPS_STR_FIX_TYPE:
+		attr_set_string(ATTR_ID_gpsFixType, str, strlen(str));
+		break;
+	case HL7800_GPS_STR_HEPE:
+		attr_set_string(ATTR_ID_gpsHepe, str, strlen(str));
+		break;
+	case HL7800_GPS_STR_ALTITUDE:
+		attr_set_string(ATTR_ID_gpsAltitude, str, strlen(str));
+		break;
+	case HL7800_GPS_STR_ALT_UNC:
+		attr_set_string(ATTR_ID_gpsAltUnc, str, strlen(str));
+		break;
+	case HL7800_GPS_STR_DIRECTION:
+		attr_set_string(ATTR_ID_gpsHeading, str, strlen(str));
+		break;
+	case HL7800_GPS_STR_HOR_SPEED:
+		attr_set_string(ATTR_ID_gpsHorSpeed, str, strlen(str));
+		break;
+	case HL7800_GPS_STR_VER_SPEED:
+		attr_set_string(ATTR_ID_gpsVerSpeed, str, strlen(str));
+		break;
+	}
+}
+#endif /* CONFIG_MODEM_HL7800_GPS */
 
 static void get_local_time_from_modem(struct k_work *item)
 {

@@ -128,6 +128,18 @@ extern "C" {
 #define ATTR_ID_commissioningBusy                     218
 #define ATTR_ID_imsi                                  219
 #define ATTR_ID_modemFunctionality                    220
+#define ATTR_ID_gpsRate                               242
+#define ATTR_ID_gpsLatitude                           243
+#define ATTR_ID_gpsLongitude                          244
+#define ATTR_ID_gpsTime                               245
+#define ATTR_ID_gpsFixType                            246
+#define ATTR_ID_gpsHepe                               247
+#define ATTR_ID_gpsAltitude                           248
+#define ATTR_ID_gpsAltUnc                             249
+#define ATTR_ID_gpsHeading                            250
+#define ATTR_ID_gpsHorSpeed                           251
+#define ATTR_ID_gpsVerSpeed                           252
+#define ATTR_ID_gpsStatus                             253
 /* pyend */
 
 /******************************************************************************/
@@ -135,9 +147,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                 95
-#define ATTR_TABLE_MAX_ID                               220
-#define ATTR_TABLE_WRITABLE_COUNT                       44
+#define ATTR_TABLE_SIZE                                 107
+#define ATTR_TABLE_MAX_ID                               253
+#define ATTR_TABLE_WRITABLE_COUNT                       45
 #define ATTR_MAX_STR_LENGTH                             254
 #define ATTR_MAX_STR_SIZE                               255
 #define ATTR_MAX_BIN_SIZE                               16
@@ -176,6 +188,16 @@ extern "C" {
 #define ATTR_LWM2M_CLIENT_ID_MAX_STR_SIZE               33
 #define ATTR_LWM2M_PEER_URL_MAX_STR_SIZE                129
 #define ATTR_IMSI_MAX_STR_SIZE                          16
+#define ATTR_GPS_LATITUDE_MAX_STR_SIZE                  33
+#define ATTR_GPS_LONGITUDE_MAX_STR_SIZE                 33
+#define ATTR_GPS_TIME_MAX_STR_SIZE                      33
+#define ATTR_GPS_FIX_TYPE_MAX_STR_SIZE                  4
+#define ATTR_GPS_HEPE_MAX_STR_SIZE                      17
+#define ATTR_GPS_ALTITUDE_MAX_STR_SIZE                  17
+#define ATTR_GPS_ALT_UNC_MAX_STR_SIZE                   17
+#define ATTR_GPS_HEADING_MAX_STR_SIZE                   17
+#define ATTR_GPS_HOR_SPEED_MAX_STR_SIZE                 17
+#define ATTR_GPS_VER_SPEED_MAX_STR_SIZE                 17
 
 /* Attribute Byte Array Lengths */
 #define ATTR_CT_AES_KEY_SIZE                            16
@@ -301,6 +323,15 @@ enum modem_functionality {
 	MODEM_FUNCTIONALITY_AIRPLANE = 4,
 };
 
+enum gps_status {
+	GPS_STATUS_INVALID = -1,
+	GPS_STATUS_FIX_LOST_OR_NOT_AVAILABLE = 0,
+	GPS_STATUS_PREDICTION_AVAILABLE = 1,
+	GPS_STATUS_2D_AVAILABLE = 2,
+	GPS_STATUS_3D_AVAILABLE = 3,
+	GPS_STATUS_FIXED_TO_INVALID = 4,
+};
+
 enum attr_dump {
 	ATTR_DUMP_RW = 0,
 	ATTR_DUMP_W = 1,
@@ -323,6 +354,7 @@ BUILD_ASSERT(sizeof(enum generate_psk) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_init_error) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum cloud_error) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum modem_functionality) == ATTR_SIZE_S8);
+BUILD_ASSERT(sizeof(enum gps_status) == ATTR_SIZE_S8);
 /* pyend */
 
 /******************************************************************************/
@@ -352,6 +384,7 @@ const char *const attr_get_string_generate_psk(int value);
 const char *const attr_get_string_lte_init_error(int value);
 const char *const attr_get_string_cloud_error(int value);
 const char *const attr_get_string_modem_functionality(int value);
+const char *const attr_get_string_gps_status(int value);
 /* pyend */
 
 #ifdef __cplusplus

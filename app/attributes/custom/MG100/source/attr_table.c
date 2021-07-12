@@ -72,6 +72,7 @@ typedef struct rw_attribute {
 	uint8_t lwm2mPsk[16];
 	char lwm2mClientId[32 + 1];
 	char lwm2mPeerUrl[128 + 1];
+	uint32_t gpsRate;
 	/* pyend */
 } rw_attribute_t;
 
@@ -118,7 +119,8 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.floaty = 0.13,
 	.lwm2mPsk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
 	.lwm2mClientId = "Client_identity",
-	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com"
+	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com",
+	.gpsRate = 0
 	/* pyend */
 };
 
@@ -177,6 +179,17 @@ typedef struct ro_attribute {
 	bool commissioningBusy;
 	char imsi[15 + 1];
 	enum modem_functionality modemFunctionality;
+	char gpsLatitude[32 + 1];
+	char gpsLongitude[32 + 1];
+	char gpsTime[32 + 1];
+	char gpsFixType[3 + 1];
+	char gpsHepe[16 + 1];
+	char gpsAltitude[16 + 1];
+	char gpsAltUnc[16 + 1];
+	char gpsHeading[16 + 1];
+	char gpsHorSpeed[16 + 1];
+	char gpsVerSpeed[16 + 1];
+	enum gps_status gpsStatus;
 	/* pyend */
 } ro_attribute_t;
 
@@ -188,7 +201,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.22",
+	.attributeVersion = "0.4.24",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -234,7 +247,18 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.cloudError = 0,
 	.commissioningBusy = false,
 	.imsi = "",
-	.modemFunctionality = 0
+	.modemFunctionality = 0,
+	.gpsLatitude = "",
+	.gpsLongitude = "",
+	.gpsTime = "",
+	.gpsFixType = "",
+	.gpsHepe = "",
+	.gpsAltitude = "",
+	.gpsAltUnc = "",
+	.gpsHeading = "",
+	.gpsHorSpeed = "",
+	.gpsVerSpeed = "",
+	.gpsStatus = -1
 	/* pyend */
 };
 
@@ -252,6 +276,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 #define attr_get_string_lteInitError        attr_get_string_lte_init_error
 #define attr_get_string_cloudError          attr_get_string_cloud_error
 #define attr_get_string_modemFunctionality  attr_get_string_modem_functionality
+#define attr_get_string_gpsStatus           attr_get_string_gps_status
 /* pyend */
 
 /******************************************************************************/
@@ -381,7 +406,19 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[91 ] = { 217, RO_ATTRE(cloudError)                    , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[92 ] = { 218, RO_ATTRX(commissioningBusy)             , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[93 ] = { 219, RO_ATTRS(imsi)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 14        , .max.ux = 15         },
-	[94 ] = { 220, RO_ATTRE(modemFunctionality)            , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , attr_prepare_modemFunctionality     , .min.ux = 0         , .max.ux = 0          }
+	[94 ] = { 220, RO_ATTRE(modemFunctionality)            , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , attr_prepare_modemFunctionality     , .min.ux = 0         , .max.ux = 0          },
+	[95 ] = { 242, RW_ATTRX(gpsRate)                       , ATTR_TYPE_U32           , y, y, n, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[96 ] = { 243, RO_ATTRS(gpsLatitude)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[97 ] = { 244, RO_ATTRS(gpsLongitude)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[98 ] = { 245, RO_ATTRS(gpsTime)                       , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[99 ] = { 246, RO_ATTRS(gpsFixType)                    , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 3          },
+	[100] = { 247, RO_ATTRS(gpsHepe)                       , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[101] = { 248, RO_ATTRS(gpsAltitude)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[102] = { 249, RO_ATTRS(gpsAltUnc)                     , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[103] = { 250, RO_ATTRS(gpsHeading)                    , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[104] = { 251, RO_ATTRS(gpsHorSpeed)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[105] = { 252, RO_ATTRS(gpsVerSpeed)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[106] = { 253, RO_ATTRE(gpsStatus)                     , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          }
 	/* pyend */
 };
 
@@ -484,7 +521,19 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[217] = &ATTR_TABLE[91 ],
 	[218] = &ATTR_TABLE[92 ],
 	[219] = &ATTR_TABLE[93 ],
-	[220] = &ATTR_TABLE[94 ]
+	[220] = &ATTR_TABLE[94 ],
+	[242] = &ATTR_TABLE[95 ],
+	[243] = &ATTR_TABLE[96 ],
+	[244] = &ATTR_TABLE[97 ],
+	[245] = &ATTR_TABLE[98 ],
+	[246] = &ATTR_TABLE[99 ],
+	[247] = &ATTR_TABLE[100],
+	[248] = &ATTR_TABLE[101],
+	[249] = &ATTR_TABLE[102],
+	[250] = &ATTR_TABLE[103],
+	[251] = &ATTR_TABLE[104],
+	[252] = &ATTR_TABLE[105],
+	[253] = &ATTR_TABLE[106]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -726,6 +775,19 @@ const char *const attr_get_string_modem_functionality(int value)
 		case 0:           return "Minimum";
 		case 1:           return "Full";
 		case 4:           return "Airplane";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_gps_status(int value)
+{
+	switch (value) {
+		case -1:          return "Invalid";
+		case 0:           return "Fix Lost Or Not Available";
+		case 1:           return "Prediction Available";
+		case 2:           return "2D Available";
+		case 3:           return "3D Available";
+		case 4:           return "Fixed To Invalid";
 		default:          return "?";
 	}
 }

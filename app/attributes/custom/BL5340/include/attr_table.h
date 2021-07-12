@@ -111,6 +111,7 @@ extern "C" {
 #define ATTR_ID_ethernetDHCPState                     238
 #define ATTR_ID_ethernetDHCPAttempts                  239
 #define ATTR_ID_ethernetDHCPAction                    240
+#define ATTR_ID_sntpServer                            241
 /* pyend */
 
 /******************************************************************************/
@@ -118,9 +119,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                      78
-#define ATTR_TABLE_MAX_ID                                    240
-#define ATTR_TABLE_WRITABLE_COUNT                            40
+#define ATTR_TABLE_SIZE                                      79
+#define ATTR_TABLE_MAX_ID                                    241
+#define ATTR_TABLE_WRITABLE_COUNT                            41
 #define ATTR_MAX_STR_LENGTH                                  254
 #define ATTR_MAX_STR_SIZE                                    255
 #define ATTR_MAX_BIN_SIZE                                    16
@@ -156,6 +157,7 @@ extern "C" {
 #define ATTR_ETHERNET_STATIC_IP_ADDRESS_MAX_STR_SIZE         16
 #define ATTR_ETHERNET_STATIC_GATEWAY_MAX_STR_SIZE            16
 #define ATTR_ETHERNET_STATIC_DNS_MAX_STR_SIZE                16
+#define ATTR_SNTP_SERVER_MAX_STR_SIZE                        65
 
 /* Attribute Byte Array Lengths */
 #define ATTR_CT_AES_KEY_SIZE                                 16

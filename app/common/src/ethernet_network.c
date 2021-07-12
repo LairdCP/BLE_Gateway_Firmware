@@ -64,7 +64,6 @@ struct mgmt_events {
 
 #if defined(CONFIG_SNTP) && !defined(CONFIG_USER_APPLICATION)
 /* Application configuration option disabled, use defaults for SNTP */
-#define CONFIG_SNTP_SERVER_HOSTNAME "time.windows.com"
 #define CONFIG_SNTP_TIMEOUT_MILLISECONDS 300
 #define CONFIG_SNTP_SYNCRONISATION_DELAY_SECONDS 5 /* Delay SNTP query for 5 seconds after IP is added */
 #define CONFIG_SNTP_RESYNCRONISATION_SECONDS 3600 /* Re-syncronise with SNTP server every 1 hour */
@@ -508,7 +507,7 @@ static void sntp_thread(void *unused1, void *unused2, void *unused3)
 	while (1) {
 		k_sem_take(&sntp_sem, K_FOREVER);
 
-		rc = sntp_simple(CONFIG_SNTP_SERVER_HOSTNAME,
+		rc = sntp_simple(attr_get_quasi_static(ATTR_ID_sntpServer),
 				 CONFIG_SNTP_TIMEOUT_MILLISECONDS,
 				 &sntp_server_time);
 

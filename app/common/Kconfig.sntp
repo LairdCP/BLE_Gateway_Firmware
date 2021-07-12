@@ -5,13 +5,6 @@ menu "SNTP settings"
 
 if SNTP
 
-config SNTP_SERVER_HOSTNAME
-    string "IP/hostname of SNTP server to query"
-    default "time.windows.com"
-    help
-        This is the IP/Hostname of the SNTP server to query for the
-        time - note that the default port 123 will be used.
-
 config SNTP_TIMEOUT_MILLISECONDS
     int "SNTP timeout in milliseconds"
     range 300 1200000

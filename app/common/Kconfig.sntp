@@ -58,6 +58,11 @@ config SNTP_THREAD_STACK_SIZE
     int "SNTP thread stack size in bytes"
     default 2048
 
+config LCZ_SNTP_SHELL
+    bool "Enable shell commands"
+    default y
+    depends on SHELL
+
 endif # SNTP
 
 endmenu

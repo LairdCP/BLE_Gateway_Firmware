@@ -41,6 +41,15 @@ bool ethernet_network_ready(void);
  */
 bool ethernet_network_connected(void);
 
+#ifdef CONFIG_SNTP
+/**
+ * @brief Force an SNTP time update
+ *
+ * @retval false if failed, true if succesfully submitted
+ */
+bool sntp_update_time(void);
+#endif
+
 /**
  * @brief Callback from ethernet driver that can be implemented in application.
  */

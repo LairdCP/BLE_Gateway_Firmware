@@ -32,6 +32,7 @@ HEADER_FILE_PATH = "%BASE%/include/"
 SOURCE_FILE_PATH = "%BASE%/source/"
 TABLE_FILE_NAME = "attr_table"
 
+
 def ToYesNo(b) -> str:
     if b:
         return "y"
@@ -435,7 +436,7 @@ class attributes:
             savable = self.savable[i]
             writable = self.writable[i]
             readable = self.readable[i]
-            if (category == 'rw' and (writable or savable)) or (
+            if (category == 'rw' and savable) or (
                     (category == 'ro') and not savable):
                 name = self.name[i]
                 # string is required in test tool, c requires char type
@@ -742,19 +743,24 @@ if __name__ == "__main__":
     # Ensure path directories exists, else create them
     if (not os.path.isdir(BASE_FILE_PATH)):
         os.mkdir(BASE_FILE_PATH)
-        print("Created base folder for project " + project + " at " + BASE_FILE_PATH)
+        print("Created base folder for project " +
+              project + " at " + BASE_FILE_PATH)
     if (not os.path.isdir(HEADER_FILE_PATH)):
         os.mkdir(HEADER_FILE_PATH)
-        print("Created header folder for project " + project + " at " + HEADER_FILE_PATH)
+        print("Created header folder for project " +
+              project + " at " + HEADER_FILE_PATH)
     if (not os.path.isdir(SOURCE_FILE_PATH)):
         os.mkdir(SOURCE_FILE_PATH)
-        print("Created source folder for project " + project + " at " + SOURCE_FILE_PATH)
+        print("Created source folder for project " +
+              project + " at " + SOURCE_FILE_PATH)
 
     # Ensure .h and .c file exist
     if (not os.path.exists(HEADER_FILE_PATH + TABLE_FILE_NAME + ".h")):
-        raise Exception("Missing header file for project " + project + " at " + HEADER_FILE_PATH + TABLE_FILE_NAME + ".h")
+        raise Exception("Missing header file for project " + project +
+                        " at " + HEADER_FILE_PATH + TABLE_FILE_NAME + ".h")
     if (not os.path.exists(SOURCE_FILE_PATH + TABLE_FILE_NAME + ".c")):
-        raise Exception("Missing source file for project " + project + " at " + SOURCE_FILE_PATH + TABLE_FILE_NAME + ".c")
+        raise Exception("Missing source file for project " + project +
+                        " at " + SOURCE_FILE_PATH + TABLE_FILE_NAME + ".c")
 
     # Parse attributes
     a = attributes(project, file_name)

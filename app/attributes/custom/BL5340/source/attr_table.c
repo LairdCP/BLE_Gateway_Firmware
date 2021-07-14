@@ -57,12 +57,9 @@ typedef struct rw_attribute {
 	uint16_t joinMax;
 	uint32_t joinInterval;
 	bool delayCloudReconnect;
-	enum fota_control_point fotaControlPoint;
-	char fotaFileName[64 + 1];
 	char loadPath[32 + 1];
 	char dumpPath[32 + 1];
 	float floaty;
-	enum generate_psk generatePsk;
 	uint8_t lwm2mPsk[16];
 	char lwm2mClientId[32 + 1];
 	char lwm2mPeerUrl[128 + 1];
@@ -72,7 +69,6 @@ typedef struct rw_attribute {
 	uint8_t ethernetStaticNetmaskLength;
 	char ethernetStaticGateway[15 + 1];
 	char ethernetStaticDNS[15 + 1];
-	enum ethernet_dhcp_action ethernetDHCPAction;
 	char sntpServer[64 + 1];
 	/* pyend */
 } rw_attribute_t;
@@ -106,12 +102,9 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.joinMax = 100,
 	.joinInterval = 1,
 	.delayCloudReconnect = false,
-	.fotaControlPoint = 0,
-	.fotaFileName = "",
 	.loadPath = "/lfs/params.txt",
 	.dumpPath = "/lfs/dump.txt",
 	.floaty = 0.13,
-	.generatePsk = 0,
 	.lwm2mPsk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
 	.lwm2mClientId = "Client_identity",
 	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com",
@@ -121,7 +114,6 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.ethernetStaticNetmaskLength = 0,
 	.ethernetStaticGateway = "0.0.0.0",
 	.ethernetStaticDNS = "0.0.0.0",
-	.ethernetDHCPAction = 0,
 	.sntpServer = "time.windows.com"
 	/* pyend */
 };
@@ -176,7 +168,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.bluetoothAddress = "0",
 	.resetCount = 0,
 	.upTime = 0,
-	.attributeVersion = "0.4.19",
+	.attributeVersion = "0.4.21",
 	.qrtc = 0,
 	.name = "",
 	.board = "",

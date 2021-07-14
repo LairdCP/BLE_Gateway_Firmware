@@ -64,16 +64,11 @@ typedef struct rw_attribute {
 	uint16_t joinMax;
 	uint32_t joinInterval;
 	bool delayCloudReconnect;
-	char apn[64 + 1];
-	uint8_t apnControlPoint;
 	uint32_t modemDesiredLogLevel;
-	enum fota_control_point fotaControlPoint;
-	char fotaFileName[64 + 1];
 	char loadPath[32 + 1];
 	char dumpPath[32 + 1];
 	bool nvImported;
 	float floaty;
-	enum generate_psk generatePsk;
 	uint8_t lwm2mPsk[16];
 	char lwm2mClientId[32 + 1];
 	char lwm2mPeerUrl[128 + 1];
@@ -116,16 +111,11 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.joinMax = 100,
 	.joinInterval = 1,
 	.delayCloudReconnect = false,
-	.apn = "",
-	.apnControlPoint = 0,
 	.modemDesiredLogLevel = 1,
-	.fotaControlPoint = 0,
-	.fotaFileName = "",
 	.loadPath = "/lfs/params.txt",
 	.dumpPath = "/lfs/dump.txt",
 	.nvImported = false,
 	.floaty = 0.13,
-	.generatePsk = 0,
 	.lwm2mPsk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
 	.lwm2mClientId = "Client_identity",
 	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com"
@@ -186,7 +176,6 @@ typedef struct ro_attribute {
 	bool commissioningBusy;
 	char imsi[15 + 1];
 	enum modem_functionality modemFunctionality;
-	enum ethernet_init_error ethernetInitError;
 	/* pyend */
 } ro_attribute_t;
 
@@ -197,7 +186,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.5",
+	.attributeVersion = "0.4.20",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -243,8 +232,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.cloudError = 0,
 	.commissioningBusy = false,
 	.imsi = "",
-	.modemFunctionality = 0,
-	.ethernetInitError = 0
+	.modemFunctionality = 0
 	/* pyend */
 };
 
@@ -262,7 +250,6 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 #define attr_get_string_lteInitError        attr_get_string_lte_init_error
 #define attr_get_string_cloudError          attr_get_string_cloud_error
 #define attr_get_string_modemFunctionality  attr_get_string_modem_functionality
-#define attr_get_string_ethernetInitError   attr_get_string_ethernet_init_error
 /* pyend */
 
 /******************************************************************************/
@@ -391,8 +378,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[90 ] = { 217, RO_ATTRE(cloudError)                    , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[91 ] = { 218, RO_ATTRX(commissioningBusy)             , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[92 ] = { 219, RO_ATTRS(imsi)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 14        , .max.ux = 15         },
-	[93 ] = { 220, RO_ATTRE(modemFunctionality)            , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , attr_prepare_modemFunctionality     , .min.ux = 0         , .max.ux = 0          },
-	[94 ] = { 221, RO_ATTRE(ethernetInitError)             , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          }
+	[93 ] = { 220, RO_ATTRE(modemFunctionality)            , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , attr_prepare_modemFunctionality     , .min.ux = 0         , .max.ux = 0          }
 	/* pyend */
 };
 
@@ -494,8 +480,7 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[217] = &ATTR_TABLE[90 ],
 	[218] = &ATTR_TABLE[91 ],
 	[219] = &ATTR_TABLE[92 ],
-	[220] = &ATTR_TABLE[93 ],
-	[221] = &ATTR_TABLE[94 ]
+	[220] = &ATTR_TABLE[93 ]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -737,17 +722,6 @@ const char *const attr_get_string_modem_functionality(int value)
 		case 0:           return "Minimum";
 		case 1:           return "Full";
 		case 4:           return "Airplane";
-		default:          return "?";
-	}
-}
-
-const char *const attr_get_string_ethernet_init_error(int value)
-{
-	switch (value) {
-		case 0:           return "None";
-		case -1:          return "No Iface";
-		case -2:          return "Iface Cfg";
-		case -3:          return "Dns Cfg";
 		default:          return "?";
 	}
 }

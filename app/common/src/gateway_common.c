@@ -91,22 +91,11 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
-#ifdef CONFIG_LCZ_MEMFAULT
-#define BUILD_ID_SIZE 9
-#define BUILD_ID_DELIM "+"
-#endif
-
 #define RESET_COUNT_FNAME CONFIG_FSU_MOUNT_POINT "/reset_count"
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
-#ifdef CONFIG_LCZ_MEMFAULT
-static char build_id[BUILD_ID_SIZE];
-static char software_ver[sizeof(APP_VERSION_STRING) + sizeof(BUILD_ID_DELIM) +
-			 sizeof(build_id)];
-#endif
-
 #if defined(CONFIG_SCAN_FOR_BT510_CODED)
 static struct bt_le_scan_param scanParameters = BT_LE_SCAN_PARAM_INIT(
 	BT_LE_SCAN_TYPE_ACTIVE,
@@ -123,6 +112,8 @@ static struct bt_le_scan_param scanParameters = BT_LE_SCAN_PARAM_INIT(
 /******************************************************************************/
 static void configure_leds(void);
 static void configure_button(void);
+static void reset_reason_cleared_by_memfault_handler(void);
+static void reset_reason_not_cleared_by_memfault_handler(void);
 static void reset_reason_handler(void);
 static void reset_count_handler(void);
 static void app_type_handler(void);
@@ -158,7 +149,7 @@ int configure_app(void)
 
 	reboot_handler();
 
-	LCZ_MEMFAULT_HTTP_INIT(CONFIG_LCZ_MEMFAULT_PROJECT_API_KEY);
+	LCZ_MEMFAULT_HTTP_INIT();
 
 #ifdef CONFIG_MODEM_HL7800
 	nv_deprecation_handler();
@@ -312,33 +303,6 @@ void Framework_AssertionHandler(char *file, int line)
 	lcz_software_reset_after_assert(CONFIG_FWK_RESET_DELAY_MS);
 }
 
-#ifdef CONFIG_LCZ_MEMFAULT
-void memfault_platform_get_device_info(sMemfaultDeviceInfo *info)
-{
-	memset(software_ver, 0, sizeof(software_ver));
-	memfault_build_id_get_string(build_id, sizeof(build_id));
-	strcat(software_ver, APP_VERSION_STRING);
-	strcat(software_ver, BUILD_ID_DELIM);
-	strcat(software_ver, build_id);
-
-	/* platform specific version information */
-	*info = (sMemfaultDeviceInfo){
-		.device_serial = attr_get_quasi_static(ATTR_ID_gatewayId),
-#ifdef CONFIG_LWM2M
-		.software_type = "OOB_demo_LwM2M",
-#elif defined CONFIG_CONTACT_TRACING
-		.software_type = "Contact_Tracing",
-#else
-		.software_type = "OOB_demo_AWS",
-#endif
-		.software_version = software_ver,
-		.hardware_version = CONFIG_BOARD,
-	};
-
-	attr_set_string(ATTR_ID_buildId, build_id, strlen(build_id));
-}
-#endif /* CONFIG_LCZ_MEMFAULT */
-
 #ifdef CONFIG_LCZ_POWER
 /* Override weak implementation in laird_power.c */
 void power_measurement_callback(uint8_t integer, uint8_t decimal)
@@ -466,20 +430,33 @@ static void configure_button(void)
 	button_initialize(BUTTON_CONFIG, ARRAY_SIZE(BUTTON_CONFIG), NULL);
 }
 
-static void reset_reason_handler(void)
+static void reset_reason_cleared_by_memfault_handler(void)
 {
-#ifdef CONFIG_LCZ_MEMFAULT
 	const char *s = "use memfault";
+
 	attr_set_string(ATTR_ID_resetReason, s, strlen(s));
-#else
+}
+
+static void reset_reason_not_cleared_by_memfault_handler(void)
+{
 	uint32_t reset_reason = lbt_get_and_clear_nrf52_reset_reason_register();
 	const char *reset_str =
 		lbt_get_nrf52_reset_reason_string_from_register(reset_reason);
 
 	attr_set_string(ATTR_ID_resetReason, reset_str, strlen(reset_str));
 
+#ifndef CONFIG_LCZ_MEMFAULT
 	LOG_WRN("reset reason: %s (%08X)", reset_str, reset_reason);
 #endif
+}
+
+static void reset_reason_handler(void)
+{
+	if (IS_ENABLED(CONFIG_MEMFAULT_CLEAR_RESET_REG)) {
+		reset_reason_cleared_by_memfault_handler();
+	} else {
+		reset_reason_not_cleared_by_memfault_handler();
+	}
 }
 
 #ifndef CONFIG_CONTACT_TRACING

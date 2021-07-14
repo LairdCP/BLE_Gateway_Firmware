@@ -20,9 +20,9 @@
       "dependsOn": [
         "increment build version"
       ],
-      "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app",
+      "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION_PREFIX=\"${input:get_fw_ver}+\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
       "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app"
+        "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION_PREFIX=\\\"${input:get_fw_ver}+\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -35,9 +35,9 @@
       "dependsOn": [
         "increment build version"
       ],
-      "command": "${config:clear_static_partitions_unix} && west build -p -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app",
+      "command": "${config:clear_static_partitions_unix} && west build -p -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION_PREFIX=\"${input:get_fw_ver}+\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
       "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -p -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app"
+        "command": "${config:clear_static_partitions_windows} && west build -p -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION_PREFIX=\\\"${input:get_fw_ver}+\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -99,9 +99,9 @@
         "apply contact tracing patches",
         "increment build version"
       ],
-      "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix}\"",
+      "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix}\" '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION_PREFIX=\"${input:get_fw_ver}+\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"Contact_Tracing\"'",
       "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows}\""
+        "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows}\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION_PREFIX=\\\"${input:get_fw_ver}+\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"Contact_Tracing\\\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -132,9 +132,9 @@
       "dependsOn": [
         "increment build version"
       ],
-      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
+      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION_PREFIX=\"${input:get_fw_ver}+\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
       "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
+        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=C:/one6/ble_gateway_firmware/app/boards/pinnacle_100.overlay -Dmcuboot_CONF_FILE=C:/one6/modules/zephyr_lib/mcuboot_config/pinnacle_100.conf -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION_PREFIX=\\\"${input:get_fw_ver}+\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -147,9 +147,9 @@
       "dependsOn": [
         "increment build version"
       ],
-      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_lwm2m_pinnacle_100_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
+      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_lwm2m_pinnacle_100_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"'",
       "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_lwm2m_pinnacle_100_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
+        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_lwm2m_pinnacle_100_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\" -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -163,9 +163,9 @@
         "apply contact tracing patches",
         "increment build version"
       ],
-      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:app_ver}\"'",
+      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix} ${config:app_mcuboot_config_unix}\" -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_unix}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}/app/boards/pinnacle_100.overlay '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION_PREFIX=\"${input:get_fw_ver}+\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"Contact_Tracing\"'",
       "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\""
+        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows} ${config:app_mcuboot_config_windows}\" -Dmcuboot_DTC_OVERLAY_FILE=${workspaceRoot}\\app\\boards\\pinnacle_100.overlay -Dmcuboot_CONF_FILE=\"${config:mcuboot_config_windows}\" -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION_PREFIX=\\\"${input:get_fw_ver}+\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"Contact_Tracing\\\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -329,9 +329,15 @@
       "default": "enter file name"
     },
     {
-      "id": "app_ver",
-      "description": "firmware version",
-      "type": "promptString"
+      "id": "get_fw_ver",
+      // read key-value pair in file created by increment_build_version python script
+      "type": "command",
+      "command": "extension.commandvariable.file.content",
+      "args": {
+        // Doesn't work with workspaceRoot
+        "fileName": "${workspaceFolder}/version.txt",
+        "key": "version"
+      }
     }
   ]
 }

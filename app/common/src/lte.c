@@ -71,6 +71,10 @@ static const struct lcz_led_blink_pattern NETWORK_SEARCH_LED_PATTERN = {
 	.repeat_count = REPEAT_INDEFINITELY
 };
 
+#ifdef CONFIG_LCZ_MEMFAULT
+#define BUILD_ID_SIZE 9
+#endif
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -89,6 +93,7 @@ static void lte_sync_qrtc(void);
 
 #ifdef CONFIG_LCZ_MEMFAULT
 static uint32_t lte_version_to_int(char *ver);
+extern int memfault_ncs_device_id_set(const char *device_id, size_t len);
 #endif
 
 /******************************************************************************/
@@ -115,12 +120,17 @@ static struct mgmt_events iface_events[] = {
 	{ 0 } /* The for loop below requires this extra location. */
 };
 
+#ifdef CONFIG_LCZ_MEMFAULT
+static char build_id[BUILD_ID_SIZE];
+#endif
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
 int lte_init(void)
 {
 	char *str;
+	char *device_id;
 	int rc = LTE_INIT_ERROR_NONE;
 	int operator_index;
 
@@ -163,6 +173,16 @@ int lte_init(void)
 	attr_prepare_modemFunctionality();
 
 	attr_set_signed32(ATTR_ID_lteInitError, rc);
+
+#ifdef CONFIG_LCZ_MEMFAULT
+	/* Provide ID after it is known. */
+	device_id = attr_get_quasi_static(ATTR_ID_gatewayId);
+	memfault_ncs_device_id_set(device_id, strlen(device_id));
+
+	memfault_build_id_get_string(build_id, sizeof(build_id));
+	attr_set_string(ATTR_ID_buildId, build_id, strlen(build_id));
+#endif
+
 	return rc;
 }
 

@@ -244,9 +244,8 @@ bool ethernet_network_connected(void)
 #ifdef CONFIG_SNTP
 bool sntp_update_time(void)
 {
-	if (ethernet_network_connected() &&
-            !k_work_is_pending(&ethernet_work)) {
-		k_work_submit(&ethernet_work);
+	if (ethernet_network_connected()) {
+		ethernet_sync_qrtc();
 		return true;
 	}
 

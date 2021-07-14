@@ -423,12 +423,12 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 static void get_local_time_from_modem(struct k_work *item)
 {
 	ARG_UNUSED(item);
-
+	uint32_t epoch;
 	int32_t status = mdm_hl7800_get_local_time(&local_time, &local_offset);
 
 	if (status == 0) {
-		LOG_INF("Epoch set to %u",
-			lcz_qrtc_set_epoch_from_tm(&local_time, local_offset));
+		epoch = lcz_qrtc_set_epoch_from_tm(&local_time, local_offset);
+		LOG_INF("Epoch set to %u", epoch);
 	} else {
 		LOG_WRN("Get local time from modem failed! (%d)", status);
 	}

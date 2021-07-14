@@ -73,6 +73,8 @@ typedef struct rw_attribute {
 	char lwm2mClientId[32 + 1];
 	char lwm2mPeerUrl[128 + 1];
 	uint32_t gpsRate;
+	char polteUser[16 + 1];
+	char poltePassword[16 + 1];
 	/* pyend */
 } rw_attribute_t;
 
@@ -120,7 +122,9 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.lwm2mPsk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
 	.lwm2mClientId = "Client_identity",
 	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com",
-	.gpsRate = 0
+	.gpsRate = 0,
+	.polteUser = "",
+	.poltePassword = ""
 	/* pyend */
 };
 
@@ -190,6 +194,12 @@ typedef struct ro_attribute {
 	char gpsHorSpeed[16 + 1];
 	char gpsVerSpeed[16 + 1];
 	enum gps_status gpsStatus;
+	enum polte_control_point polteControlPoint;
+	enum polte_status polteStatus;
+	float polteLatitude;
+	float polteLongitude;
+	float polteConfidence;
+	uint32_t polteTimestamp;
 	/* pyend */
 } ro_attribute_t;
 
@@ -201,7 +211,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.24",
+	.attributeVersion = "0.4.25",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -258,7 +268,13 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.gpsHeading = "",
 	.gpsHorSpeed = "",
 	.gpsVerSpeed = "",
-	.gpsStatus = -1
+	.gpsStatus = -1,
+	.polteControlPoint = 0,
+	.polteStatus = 0,
+	.polteLatitude = 0.0,
+	.polteLongitude = 0.0,
+	.polteConfidence = 0.0,
+	.polteTimestamp = 0
 	/* pyend */
 };
 
@@ -277,6 +293,8 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 #define attr_get_string_cloudError          attr_get_string_cloud_error
 #define attr_get_string_modemFunctionality  attr_get_string_modem_functionality
 #define attr_get_string_gpsStatus           attr_get_string_gps_status
+#define attr_get_string_polteControlPoint   attr_get_string_polte_control_point
+#define attr_get_string_polteStatus         attr_get_string_polte_status
 /* pyend */
 
 /******************************************************************************/
@@ -418,7 +436,15 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[103] = { 250, RO_ATTRS(gpsHeading)                    , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
 	[104] = { 251, RO_ATTRS(gpsHorSpeed)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
 	[105] = { 252, RO_ATTRS(gpsVerSpeed)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[106] = { 253, RO_ATTRE(gpsStatus)                     , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          }
+	[106] = { 253, RO_ATTRE(gpsStatus)                     , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[107] = { 254, RO_ATTRE(polteControlPoint)             , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[108] = { 255, RO_ATTRE(polteStatus)                   , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[109] = { 256, RW_ATTRS(polteUser)                     , ATTR_TYPE_STRING        , y, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[110] = { 257, RW_ATTRS(poltePassword)                 , ATTR_TYPE_STRING        , y, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[111] = { 258, RO_ATTRX(polteLatitude)                 , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 0.0        },
+	[112] = { 259, RO_ATTRX(polteLongitude)                , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 0.0        },
+	[113] = { 260, RO_ATTRX(polteConfidence)               , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 0.0        },
+	[114] = { 261, RO_ATTRX(polteTimestamp)                , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          }
 	/* pyend */
 };
 
@@ -533,7 +559,15 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[250] = &ATTR_TABLE[103],
 	[251] = &ATTR_TABLE[104],
 	[252] = &ATTR_TABLE[105],
-	[253] = &ATTR_TABLE[106]
+	[253] = &ATTR_TABLE[106],
+	[254] = &ATTR_TABLE[107],
+	[255] = &ATTR_TABLE[108],
+	[256] = &ATTR_TABLE[109],
+	[257] = &ATTR_TABLE[110],
+	[258] = &ATTR_TABLE[111],
+	[259] = &ATTR_TABLE[112],
+	[260] = &ATTR_TABLE[113],
+	[261] = &ATTR_TABLE[114]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -788,6 +822,37 @@ const char *const attr_get_string_gps_status(int value)
 		case 2:           return "2D Available";
 		case 3:           return "3D Available";
 		case 4:           return "Fixed To Invalid";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_polte_control_point(int value)
+{
+	switch (value) {
+		case 0:           return "Reserved";
+		case 1:           return "Register";
+		case 2:           return "Enable";
+		case 3:           return "Locate";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_polte_status(int value)
+{
+	switch (value) {
+		case 0:           return "Success";
+		case 1:           return "Modem Invalid State";
+		case 2:           return "Bad Number Of Frames To Capture";
+		case 3:           return "Not Enough Memory";
+		case 4:           return "Pending Response From Modem";
+		case 5:           return "Retrying Capture Attempt";
+		case 6:           return "Reserved";
+		case 7:           return "Device Id Unavailable";
+		case 8:           return "Delaying Capture Attempt Because Of Ongoing Paging";
+		case 9:           return "Flash Write Failure";
+		case 10:          return "Server Error";
+		case 100:         return "Locate In Progress";
+		case 127:         return "Busy";
 		default:          return "?";
 	}
 }

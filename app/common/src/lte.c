@@ -100,6 +100,12 @@ extern int memfault_ncs_device_id_set(const char *device_id, size_t len);
 static void gps_str_handler(void *event_data);
 #endif
 
+#ifdef CONFIG_MODEM_HL7800_POLTE
+static void polte_registration_handler(void *event_data);
+static void polte_locate_status_handler(void *event_data);
+static void polte_handler(void *event_data);
+#endif
+
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
@@ -449,6 +455,20 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		break;
 #endif
 
+#if CONFIG_MODEM_HL7800_POLTE
+	case HL7800_EVENT_POLTE_REGISTRATION:
+		polte_registration_handler(event_data);
+		break;
+
+	case HL7800_EVENT_POLTE_LOCATE_STATUS:
+		polte_locate_status_handler(event_data);
+		break;
+
+	case HL7800_EVENT_POLTE:
+		polte_handler(event_data);
+		break;
+#endif
+
 	default:
 		LOG_ERR("Unknown modem event");
 		break;
@@ -495,6 +515,51 @@ static void gps_str_handler(void *event_data)
 	}
 }
 #endif /* CONFIG_MODEM_HL7800_GPS */
+
+#ifdef CONFIG_MODEM_HL7800_POLTE
+static void polte_registration_handler(void *event_data)
+{
+	struct mdm_hl7800_polte_registration_event_data *p = event_data;
+
+	if (p != NULL) {
+		attr_set_signed32(ATTR_ID_polteStatus, p->status);
+		if (p->status == 0) {
+			attr_set_string(ATTR_ID_polteUser, p->user,
+					strlen(p->user));
+			attr_set_string(ATTR_ID_poltePassword, p->password,
+					strlen(p->password));
+		}
+	}
+}
+
+static void polte_locate_status_handler(void *event_data)
+{
+	int status = *(int *)event_data;
+
+	if (status != 0) {
+		attr_set_signed32(ATTR_ID_polteStatus, status);
+	} else {
+		attr_set_signed32(ATTR_ID_polteStatus,
+				  POLTE_STATUS_LOCATE_IN_PROGRESS);
+	}
+}
+
+static void polte_handler(void *event_data)
+{
+	struct mdm_hl7800_polte_location_data *p = event_data;
+
+	if (p != NULL) {
+		attr_set_signed32(ATTR_ID_polteStatus, p->status);
+		if (p->status == 0) {
+			attr_set_float(ATTR_ID_polteLatitude, p->latitude);
+			attr_set_float(ATTR_ID_polteLongitude, p->longitude);
+			attr_set_uint32(ATTR_ID_polteTimestamp, p->timestamp);
+			attr_set_float(ATTR_ID_polteConfidence,
+				       p->confidence_in_meters);
+		}
+	}
+}
+#endif /* CONFIG_MODEM_HL7800_POLTE */
 
 static void get_local_time_from_modem(struct k_work *item)
 {

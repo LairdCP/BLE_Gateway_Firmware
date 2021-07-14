@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.24"
+    "version": "0.4.25"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.24",
+              "x-default": "0.4.25",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -4811,6 +4811,164 @@
                 "3D_AVAILABLE": 3,
                 "FIXED_TO_INVALID": 4
               }
+            }
+          },
+          {
+            "name": "polteControlPoint",
+            "summary": "Used to issue PoLTE commands",
+            "notes": "The register and locate commands can take 20-120 seconds to complete",
+            "required": true,
+            "x-id": 254,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-writeable": true,
+              "x-broadcast": true,
+              "x-validator": "cp8",
+              "enum": {
+                "RESERVED": 0,
+                "REGISTER": 1,
+                "ENABLE": 2,
+                "LOCATE": 3
+              }
+            }
+          },
+          {
+            "name": "polteStatus",
+            "summary": "PoLTE status: 0 on success, positive PoLTE error code, else negative errno",
+            "required": true,
+            "x-id": 255,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true,
+              "enum": {
+                "SUCCESS": 0,
+                "MODEM_INVALID_STATE": 1,
+                "BAD_NUMBER_OF_FRAMES_TO_CAPTURE": 2,
+                "NOT_ENOUGH_MEMORY": 3,
+                "PENDING_RESPONSE_FROM_MODEM": 4,
+                "RETRYING_CAPTURE_ATTEMPT": 5,
+                "RESERVED": 6,
+                "DEVICE_ID_UNAVAILABLE": 7,
+                "DELAYING_CAPTURE_ATTEMPT_BECAUSE_OF_ONGOING_PAGING": 8,
+                "FLASH_WRITE_FAILURE": 9,
+                "SERVER_ERROR": 10,
+                "LOCATE_IN_PROGRESS": 100,
+                "BUSY": 127
+              }
+            }
+          },
+          {
+            "name": "polteUser",
+            "summary": "User name for PoLTE (Modem doesn't store this in NV)",
+            "required": true,
+            "x-id": 256,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 16,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "69691f6d6e2",
+              "x-readable": true,
+              "x-writable": true,
+              "x-savable": true
+            }
+          },
+          {
+            "name": "poltePassword",
+            "summary": "Password for PoLTE (Modem doesn't store this in NV)",
+            "required": true,
+            "x-id": 257,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 16,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "7d2100928da",
+              "x-readable": true,
+              "x-writable": true,
+              "x-savable": true
+            }
+          },
+          {
+            "name": "polteLatitude",
+            "summary": "",
+            "required": false,
+            "x-id": 258,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "float",
+              "x-default": "0.0",
+              "x-example": "0.0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "polteLongitude",
+            "summary": "",
+            "required": false,
+            "x-id": 259,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "float",
+              "x-default": "0.0",
+              "x-example": "0.0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "polteConfidence",
+            "summary": "Certainty of fix in meters",
+            "required": false,
+            "x-id": 260,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "float",
+              "x-default": "0.0",
+              "x-example": "0.0",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "polteTimestamp",
+            "summary": "Timestamp of the position in seconds from January 1, 1970",
+            "required": false,
+            "x-id": 261,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint32_t",
+              "x-default": "0",
+              "x-example": "0",
+              "x-readable": true
             }
           }
         ]

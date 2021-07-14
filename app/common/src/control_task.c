@@ -104,6 +104,7 @@ static void update_apn_handler(void);
 static void update_modem_log_level_handler(void);
 static void update_rat_handler(void);
 static void update_gps_rate_handler(void);
+static void polte_cmd_handler(void);
 #endif
 
 /******************************************************************************/
@@ -248,6 +249,11 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 		case ATTR_ID_gpsRate:
 			update_gps_rate_handler();
 			break;
+
+		case ATTR_ID_polteControlPoint:
+			polte_cmd_handler();
+			break;
+
 #endif
 
 		case ATTR_ID_fotaControlPoint:
@@ -456,6 +462,41 @@ static void update_gps_rate_handler(void)
 	} else {
 		LOG_INF("GPS not enabled");
 	}
+}
+
+static void polte_cmd_handler(void)
+{
+	uint8_t cmd = attr_get_uint32(ATTR_ID_polteControlPoint, 0);
+	int32_t status = -EPERM;
+
+	if (IS_ENABLED(CONFIG_MODEM_HL7800_POLTE)) {
+		attr_set_signed32(ATTR_ID_polteStatus, POLTE_STATUS_BUSY);
+
+		switch (cmd) {
+		case POLTE_CONTROL_POINT_REGISTER:
+			status = mdm_hl7800_polte_register();
+			break;
+
+		case POLTE_CONTROL_POINT_ENABLE:
+			status = mdm_hl7800_polte_enable(
+				attr_get_quasi_static(ATTR_ID_polteUser),
+				attr_get_quasi_static(ATTR_ID_poltePassword));
+			break;
+
+		case POLTE_CONTROL_POINT_LOCATE:
+			status = mdm_hl7800_polte_locate();
+			break;
+		}
+
+		/* If command was issued without and error,
+		 * wait for second response from modem.
+		 */
+		if (status < 0 || cmd == POLTE_CONTROL_POINT_ENABLE) {
+			attr_set_signed32(ATTR_ID_polteStatus, status);
+		}
+	}
+
+	LOG_DBG("PoLTE command status %d", status);
 }
 
 static void update_rat_handler(void)

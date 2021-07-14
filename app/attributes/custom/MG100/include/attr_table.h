@@ -140,6 +140,14 @@ extern "C" {
 #define ATTR_ID_gpsHorSpeed                           251
 #define ATTR_ID_gpsVerSpeed                           252
 #define ATTR_ID_gpsStatus                             253
+#define ATTR_ID_polteControlPoint                     254
+#define ATTR_ID_polteStatus                           255
+#define ATTR_ID_polteUser                             256
+#define ATTR_ID_poltePassword                         257
+#define ATTR_ID_polteLatitude                         258
+#define ATTR_ID_polteLongitude                        259
+#define ATTR_ID_polteConfidence                       260
+#define ATTR_ID_polteTimestamp                        261
 /* pyend */
 
 /******************************************************************************/
@@ -147,9 +155,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                 107
-#define ATTR_TABLE_MAX_ID                               253
-#define ATTR_TABLE_WRITABLE_COUNT                       45
+#define ATTR_TABLE_SIZE                                 115
+#define ATTR_TABLE_MAX_ID                               261
+#define ATTR_TABLE_WRITABLE_COUNT                       46
 #define ATTR_MAX_STR_LENGTH                             254
 #define ATTR_MAX_STR_SIZE                               255
 #define ATTR_MAX_BIN_SIZE                               16
@@ -198,6 +206,8 @@ extern "C" {
 #define ATTR_GPS_HEADING_MAX_STR_SIZE                   17
 #define ATTR_GPS_HOR_SPEED_MAX_STR_SIZE                 17
 #define ATTR_GPS_VER_SPEED_MAX_STR_SIZE                 17
+#define ATTR_POLTE_USER_MAX_STR_SIZE                    17
+#define ATTR_POLTE_PASSWORD_MAX_STR_SIZE                17
 
 /* Attribute Byte Array Lengths */
 #define ATTR_CT_AES_KEY_SIZE                            16
@@ -332,6 +342,29 @@ enum gps_status {
 	GPS_STATUS_FIXED_TO_INVALID = 4,
 };
 
+enum polte_control_point {
+	POLTE_CONTROL_POINT_RESERVED = 0,
+	POLTE_CONTROL_POINT_REGISTER = 1,
+	POLTE_CONTROL_POINT_ENABLE = 2,
+	POLTE_CONTROL_POINT_LOCATE = 3,
+};
+
+enum polte_status {
+	POLTE_STATUS_SUCCESS = 0,
+	POLTE_STATUS_MODEM_INVALID_STATE = 1,
+	POLTE_STATUS_BAD_NUMBER_OF_FRAMES_TO_CAPTURE = 2,
+	POLTE_STATUS_NOT_ENOUGH_MEMORY = 3,
+	POLTE_STATUS_PENDING_RESPONSE_FROM_MODEM = 4,
+	POLTE_STATUS_RETRYING_CAPTURE_ATTEMPT = 5,
+	POLTE_STATUS_RESERVED = 6,
+	POLTE_STATUS_DEVICE_ID_UNAVAILABLE = 7,
+	POLTE_STATUS_DELAYING_CAPTURE_ATTEMPT_BECAUSE_OF_ONGOING_PAGING = 8,
+	POLTE_STATUS_FLASH_WRITE_FAILURE = 9,
+	POLTE_STATUS_SERVER_ERROR = 10,
+	POLTE_STATUS_LOCATE_IN_PROGRESS = 100,
+	POLTE_STATUS_BUSY = 127,
+};
+
 enum attr_dump {
 	ATTR_DUMP_RW = 0,
 	ATTR_DUMP_W = 1,
@@ -355,6 +388,8 @@ BUILD_ASSERT(sizeof(enum lte_init_error) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum cloud_error) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum modem_functionality) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum gps_status) == ATTR_SIZE_S8);
+BUILD_ASSERT(sizeof(enum polte_control_point) == ATTR_SIZE_U8);
+BUILD_ASSERT(sizeof(enum polte_status) == ATTR_SIZE_S8);
 /* pyend */
 
 /******************************************************************************/
@@ -385,6 +420,8 @@ const char *const attr_get_string_lte_init_error(int value);
 const char *const attr_get_string_cloud_error(int value);
 const char *const attr_get_string_modem_functionality(int value);
 const char *const attr_get_string_gps_status(int value);
+const char *const attr_get_string_polte_control_point(int value);
+const char *const attr_get_string_polte_status(int value);
 /* pyend */
 
 #ifdef __cplusplus

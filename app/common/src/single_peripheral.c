@@ -19,7 +19,6 @@ LOG_MODULE_REGISTER(single_peripheral, CONFIG_SINGLE_PERIPHERAL_LOG_LEVEL);
 #include <bluetooth/services/dfu_smp.h>
 
 #include "lcz_bluetooth.h"
-#include "lcz_bt_security.h"
 #include "single_peripheral.h"
 #include "led_configuration.h"
 
@@ -49,16 +48,6 @@ static void sp_disconnected(struct bt_conn *conn, uint8_t reason);
 static void sp_connected(struct bt_conn *conn, uint8_t err);
 static void stop_adv_timer_callback(struct k_timer *timer_id);
 static void start_stop_adv(struct k_work *work);
-
-static int encrypt_link(void);
-static void disconnect_req_handler(struct k_work *work);
-
-static int register_security_callbacks(void);
-static void passkey_display(struct bt_conn *conn, unsigned int passkey);
-static void passkey_confirm(struct bt_conn *conn, unsigned int passkey);
-static void pairing_complete(struct bt_conn *conn, bool bonded);
-static void cancel(struct bt_conn *conn);
-static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -121,10 +110,7 @@ static int single_peripheral_initialize(const struct device *device)
 		bt_conn_cb_register(&sp.conn_callbacks);
 		k_timer_init(&sp.timer, stop_adv_timer_callback, NULL);
 		k_work_init(&sp.adv_work, start_stop_adv);
-		k_work_init_delayable(&sp.conn_work, disconnect_req_handler);
 		sp.initialized = true;
-
-		r = register_security_callbacks();
 
 #ifdef CONFIG_SINGLE_PERIPHERAL_ADV_ON_INIT
 		single_peripheral_start_advertising();
@@ -162,23 +148,11 @@ static void sp_connected(struct bt_conn *conn, uint8_t err)
 		/* Stop advertising so another central cannot connect. */
 		single_peripheral_stop_advertising();
 
-		encrypt_link();
-
 #if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
 		/* Turn LED on to indicate in a connection */
 		lcz_led_turn_on(BLUETOOTH_ADVERTISING_LED);
 #endif
 	}
-}
-
-/* L3 is selected, but the shell (display) may not be enabled/connected. */
-static int encrypt_link(void)
-{
-	int status = bt_conn_set_security(sp.conn_handle, BT_SECURITY_L3);
-
-	LOG_DBG("%d", status);
-
-	return status;
 }
 
 static void sp_disconnected(struct bt_conn *conn, uint8_t reason)
@@ -256,83 +230,4 @@ static void stop_adv_timer_callback(struct k_timer *dummy)
 	ARG_UNUSED(dummy);
 
 	single_peripheral_stop_advertising();
-}
-
-static int register_security_callbacks(void)
-{
-	int r;
-
-	static const struct bt_conn_auth_cb callbacks = {
-		.passkey_display = passkey_display,
-		.passkey_confirm = passkey_confirm,
-		.cancel = cancel,
-		.pairing_complete = pairing_complete,
-		.pairing_failed = pairing_failed
-	};
-
-	r = lcz_bt_security_register_cb(&callbacks);
-	if (r < 0) {
-		LOG_ERR("Unable to register security callbacks");
-	}
-
-	return r;
-}
-
-static void passkey_display(struct bt_conn *conn, unsigned int passkey)
-{
-	if (conn == sp.conn_handle) {
-		LOG_WRN("pairing passkey: %d", passkey);
-	}
-}
-
-/* The gateway only advertises after the button is pressed.
- *
- * The gateway doesn't require a button press or the value to be viewed on the
- * terminal - it bypasses the MITM protection.
- */
-static void passkey_confirm(struct bt_conn *conn, unsigned int passkey)
-{
-	int r;
-
-	if (conn == sp.conn_handle) {
-		LOG_WRN("passkey: %d", passkey);
-		r = bt_conn_auth_passkey_confirm(conn);
-		LOG_DBG("status: %d", r);
-	}
-}
-
-static void pairing_complete(struct bt_conn *conn, bool bonded)
-{
-	if (conn == sp.conn_handle) {
-		sp.paired = true;
-		sp.bonded = bonded;
-	}
-}
-
-static void cancel(struct bt_conn *conn)
-{
-	if (conn == sp.conn_handle) {
-		LOG_DBG("Pairing cancelled");
-	}
-}
-
-static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
-{
-	ARG_UNUSED(reason);
-
-	if (conn == sp.conn_handle) {
-		/* Don't call disconnect in callback from BT thread because it
-		 * prevents stack from cleaning up nicely.
-		 */
-		k_work_schedule(&sp.conn_work, K_MSEC(500));
-		sp.paired = false;
-		sp.bonded = false;
-	}
-}
-
-static void disconnect_req_handler(struct k_work *work)
-{
-	ARG_UNUSED(work);
-	int r = bt_conn_disconnect(sp.conn_handle, BT_HCI_ERR_AUTH_FAIL);
-	LOG_DBG("Security failed disconnect status: %d", r);
 }

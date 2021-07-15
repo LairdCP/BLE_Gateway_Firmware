@@ -85,7 +85,7 @@ X                                X
 The following are required to fully exercise this demo firmware:
 
 - An activated SIM card. See [here](https://www.lairdconnect.com/documentation/truphone-sim-setup-guide) for instructions on activating the SIM card that came with your kit.
-- Pinnacle 100/MG100 programmed with the latest LTE-M/AWS firmware. Releases available [here!](https://github.com/LairdCP/Pinnacle_100_firmware/releases)
+- Pinnacle 100/MG100 programmed with the latest LTE-M/AWS firmware. Releases available [here!](https://github.com/LairdCP/Pinnacle-100-firmware/releases)
 - Laird Pinnacle Connect app installed on a mobile device. An active internet connection on the mobile device is required.
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)
   - [iOS app](https://apps.apple.com/us/app/laird-pinnacle-connect/id1481075861?ls=1)

@@ -110,8 +110,9 @@ void bluegrass_connected_callback(void)
 
 	aws_init_shadow();
 
-	LCZ_MEMFAULT_BUILD_TOPIC(CONFIG_BOARD,
-				 attr_get_quasi_static(ATTR_ID_gatewayId));
+	LCZ_MEMFAULT_BUILD_TOPIC(CONFIG_LCZ_MEMFAULT_MQTT_TOPIC, CONFIG_BOARD,
+				 attr_get_quasi_static(ATTR_ID_gatewayId),
+				 CONFIG_MEMFAULT_NCS_PROJECT_KEY);
 
 #ifdef CONFIG_CONTACT_TRACING
 	ct_ble_publish_dummy_data_to_aws();
@@ -324,8 +325,7 @@ static DispatchResult_t heartbeat_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	awsPublishHeartbeat();
 
 #if CONFIG_AWS_HEARTBEAT_SECONDS != 0
-	k_work_schedule(&bg.heartbeat,
-			K_SECONDS(CONFIG_AWS_HEARTBEAT_SECONDS));
+	k_work_schedule(&bg.heartbeat, K_SECONDS(CONFIG_AWS_HEARTBEAT_SECONDS));
 #endif
 
 	return DISPATCH_OK;

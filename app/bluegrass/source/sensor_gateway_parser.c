@@ -224,28 +224,27 @@ void SensorGatewayParser(const char *pTopic, const char *pJson)
 #ifdef CONFIG_SENSOR_TASK
 		GatewayParser(pTopic);
 #endif
+
 #ifdef CONFIG_BOARD_MG100
 		MiniGatewayParser(pTopic);
 #endif
+
 #if defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA)
 		FotaParser(pTopic, APP_IMAGE_TYPE);
+#ifdef CONFIG_MODEM_HL7800
 		FotaParser(pTopic, MODEM_IMAGE_TYPE);
 #endif
+#endif
+
 #ifdef CONFIG_COAP_FOTA
 		FotaHostParser(pTopic);
 		FotaBlockSizeParser(pTopic);
 #endif
+
 #ifdef CONFIG_CONTACT_TRACING
 		rpc_params_gateway_parser(getAcceptedTopic);
 #endif
-#if defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA)
-		FotaParser(pTopic, APP_IMAGE_TYPE);
-		FotaParser(pTopic, MODEM_IMAGE_TYPE);
-#endif
-#ifdef CONFIG_COAP_FOTA
-		FotaHostParser(pTopic);
-		FotaBlockSizeParser(pTopic);
-#endif
+
 		UnsubscribeToGetAcceptedHandler();
 	} else {
 #ifdef CONFIG_SENSOR_TASK

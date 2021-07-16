@@ -59,22 +59,22 @@ The Bluetooth address can be found on the BT510 and is labeled BLE ID.
 				Publish
 			],
 			[
-				"DE901D27B28D",
+				"de901d27b28d",
 				1614731727,
 				true
 			],
 			[
-				"C630157769EE",
+				"c630157769ee",
 				1614731684,
 				false
 			],
 			[
-				"DFB086DF3F7D",
+				"dfb086df3f7d",
 				1614731727,
 				false
 			],
 			[
-				"C7CD78B9CABB",
+				"c7cd78b9cabb",
 				1613762866,
 				false
 			]
@@ -90,30 +90,34 @@ Change true to false for any sensor that should have its data published.
 For example,
 
 ```
-"desired": {
-    "bt510": {
+{
+  "state": {
+    "desired": {
+      "bt510": {
         "sensors": [
-            [
-                "C7CD78B9CABB",
-                1613762866,
-                true
-            ]
+          [
+            "c7cd78b9cabb",
+            1613762866,
+            true
+          ]
         ]
+      }
     }
+  }
 }
 ```
 
 ## BT510 Configuration
 
-The Bluegrass GUI sets values in the **sensor's** shadow to change its configuration.  This can also be done manually using AWS IoT.
+The Bluegrass GUI sets values in the **sensor's** shadow to change its configuration. This can also be done manually using AWS IoT.
 
 First navigate to the sensor shadow.
 
 ![SensorShadow](images/bt510_shadow.png)
 
-Then add the configuration that you want to change to the "desired" section of the shadow.  
+Then add the configuration that you want to change to the "desired" section of the shadow.
 
-The configVersion must also be incremented.  This value is used by the MG100 gateway to filter duplicate requests.  In this example, the output data rate (odr) of the accelerometer is changed.
+The configVersion must also be incremented. This value is used by the MG100 gateway to filter duplicate requests. In this example, the output data rate (odr) of the accelerometer is changed.
 
 ```
   "desired" : {
@@ -124,9 +128,9 @@ The configVersion must also be incremented.  This value is used by the MG100 gat
 
 ![SensorDesired](images/bt510_desired.png)
 
-The gateway generates a JSON-RPC set command using the "/delta" shadow of the sensor.  The gateway cannot update a sensor if it isn't advertising.
+The gateway generates a JSON-RPC set command using the "/delta" shadow of the sensor. The gateway cannot update a sensor if it isn't advertising.
 
-Once the shadow has been processed by the gateway, the desired portion of shadow will become non-existent.  If the desired value was accepted, it will appear in the "reported" section of the shadow.  If desired remains, then the gateway may be waiting to communicate with a sensor or the value provided may not be valid.  It is possible to set multiple values at once.
+Once the shadow has been processed by the gateway, the desired portion of shadow will become non-existent. If the desired value was accepted, it will appear in the "reported" section of the shadow. If desired remains, then the gateway may be waiting to communicate with a sensor or the value provided may not be valid. It is possible to set multiple values at once.
 
 ```
 {
@@ -136,4 +140,4 @@ Once the shadow has been processed by the gateway, the desired portion of shadow
 }
 ```
 
-The configuration parameters of the BT510 can be found in the [user guide](https://www.lairdconnect.com/documentation/sentrius-bt510-user-guide).  
+The configuration parameters of the BT510 can be found in the [user guide](https://www.lairdconnect.com/documentation/sentrius-bt510-user-guide).

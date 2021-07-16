@@ -157,7 +157,7 @@
       }
     },
     {
-      "label": "build ct with mcuboot",
+      "label": "build contact tracing with mcuboot",
       "type": "shell",
       "dependsOn": [
         "apply contact tracing patches",

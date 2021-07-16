@@ -165,6 +165,8 @@ The Red LED blinks when the Pinnacle 100 device is searching for a cellular netw
 
 The firmware can be built to work with or without the mcuboot bootloader. Building without mcuboot is faster and easier for development and debug, but gives up the ability to update the Zephyr app via UART or BLE.
 
+> **Note:** If using [VS Code for development](development.md) the `build lwm2m with mcuboot` and `build lwm2m` tasks can be used to easily build the firmware.
+
 Issue these commands **from the pinnacle_100_firmware directory**.
 
 > **WARNING:** If using windows, checkout code to a path of 12 characters or less to avoid build issues related to path length limits.

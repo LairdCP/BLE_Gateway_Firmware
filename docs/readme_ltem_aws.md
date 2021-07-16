@@ -297,6 +297,8 @@ If you wish to connect to your own AWS instance, [See here](aws_iot.md) for inst
 
 The firmware can be built to work with or without the mcuboot bootloader. Building without mcuboot is faster and easier for development and debug, but gives up the ability to update the Zephyr app via UART or BLE.
 
+> **Note:** If using [VS Code for development](development.md) the `build with mcuboot` and `build` tasks can be used to easily build the firmware.
+
 Issue these commands **from the pinnacle_100_firmware directory**.
 
 > **WARNING:** If using windows, checkout code to a path of 12 characters or less to avoid build issues related to path length limits.

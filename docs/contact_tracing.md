@@ -90,6 +90,8 @@ The Sentrius™ MG100-CT Gateway firmware implements an RPC mechanism providing 
 
 # Building for Contact Tracing
 
+> **Note:** If using [VS Code for development](development.md) the `build contact tracing with mcuboot` and `build contact tracing` tasks can be used to easily build the firmware.
+
 The steps to build the Contact Tracing application are similar to the [Out-of-Box Demo](readme_ltem_aws.md#building-the-firmware).
 However, the contact tracing build requires another configuration file.
 

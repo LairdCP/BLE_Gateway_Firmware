@@ -299,6 +299,8 @@ The firmware can be built to work with or without the mcuboot bootloader. Buildi
 
 > **Note:** If using [VS Code for development](development.md) the `build with mcuboot` and `build` tasks can be used to easily build the firmware.
 
+> **Note:** The OOB demo integrates the Memfault SDK. See [here for more details.](memfault.md)
+
 Issue these commands **from the pinnacle_100_firmware directory**.
 
 > **WARNING:** If using windows, checkout code to a path of 12 characters or less to avoid build issues related to path length limits.

@@ -32,7 +32,6 @@ typedef struct rw_attribute {
 	/* pystart - rw attributes */
 	char location[32 + 1];
 	bool lock;
-	char resetReason[12 + 1];
 	int8_t txPower;
 	uint16_t networkId;
 	uint8_t configVersion;
@@ -77,7 +76,6 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	/* pystart - rw defaults */
 	.location = "",
 	.lock = false,
-	.resetReason = "RESETPIN",
 	.txPower = 0,
 	.networkId = 0,
 	.configVersion = 0,
@@ -121,6 +119,7 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 typedef struct ro_attribute {
 	/* pystart - ro attributes */
 	char firmwareVersion[11 + 1];
+	char resetReason[12 + 1];
 	char bluetoothAddress[12 + 1];
 	uint32_t resetCount;
 	int64_t upTime;
@@ -165,6 +164,7 @@ typedef struct ro_attribute {
 static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	/* pystart - ro defaults */
 	.firmwareVersion = "0.0.0",
+	.resetReason = "RESETPIN",
 	.bluetoothAddress = "0",
 	.resetCount = 0,
 	.upTime = 0,
@@ -259,7 +259,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[0  ] = { 1  , RW_ATTRS(location)                      , ATTR_TYPE_STRING        , y, y, y, y, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[1  ] = { 5  , RW_ATTRX(lock)                          , ATTR_TYPE_BOOL          , y, y, y, y, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[2  ] = { 11 , RO_ATTRS(firmwareVersion)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 3         , .max.ux = 11         },
-	[3  ] = { 12 , RW_ATTRS(resetReason)                   , ATTR_TYPE_STRING        , y, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 12         },
+	[3  ] = { 12 , RO_ATTRS(resetReason)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 12         },
 	[4  ] = { 13 , RO_ATTRS(bluetoothAddress)              , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 12        , .max.ux = 12         },
 	[5  ] = { 14 , RO_ATTRX(resetCount)                    , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[6  ] = { 16 , RO_ATTRX(upTime)                        , ATTR_TYPE_S64           , n, n, y, n, n, n, av_int64            , attr_prepare_upTime                 , .min.ux = 0         , .max.ux = 0          },

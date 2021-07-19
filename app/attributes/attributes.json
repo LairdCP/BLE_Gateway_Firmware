@@ -296,8 +296,7 @@
               "maximum": 12,
               "x-default": "RESETPIN",
               "x-example": "DOG",
-              "x-readable": true,
-              "x-savable": true
+              "x-readable": true
             }
           },
           {

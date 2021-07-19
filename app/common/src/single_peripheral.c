@@ -19,6 +19,7 @@ LOG_MODULE_REGISTER(single_peripheral, CONFIG_SINGLE_PERIPHERAL_LOG_LEVEL);
 #include <bluetooth/services/dfu_smp.h>
 
 #include "lcz_bluetooth.h"
+#include "attr.h"
 #include "single_peripheral.h"
 #include "led_configuration.h"
 
@@ -40,6 +41,9 @@ static const struct lcz_led_blink_pattern LED_ADVERTISING_PATTERN = {
 
 #define ADV_DURATION CONFIG_SINGLE_PERIPHERAL_ADV_DURATION_SECONDS
 
+#define PAIRING_COMPLETE_TIMEOUT_MS 30000
+#define PAIRING_FAILURE_DISCONNECT_DELAY_MS 500
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -48,6 +52,13 @@ static void sp_disconnected(struct bt_conn *conn, uint8_t reason);
 static void sp_connected(struct bt_conn *conn, uint8_t err);
 static void stop_adv_timer_callback(struct k_timer *timer_id);
 static void start_stop_adv(struct k_work *work);
+
+static void disconnect_req_handler(struct k_work *work);
+static void pairing_timeout_handler(struct k_work *work);
+
+static int setup_security(void);
+static void pairing_complete(struct bt_conn *conn, bool bonded);
+static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -63,6 +74,7 @@ static struct {
 	struct k_timer timer;
 	struct k_work adv_work;
 	struct k_work_delayable conn_work;
+	struct k_work_delayable pair_work;
 } sp;
 
 /******************************************************************************/
@@ -96,6 +108,15 @@ void single_peripheral_stop_advertising(void)
 	}
 }
 
+bool single_peripheral_security_busy(void)
+{
+	if (IS_ENABLED(CONFIG_MCUMGR_SMP_BT_AUTHEN)) {
+		return sp.advertising || (sp.conn_handle != NULL && !sp.paired);
+	} else {
+		return false;
+	}
+}
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
@@ -110,6 +131,8 @@ static int single_peripheral_initialize(const struct device *device)
 		bt_conn_cb_register(&sp.conn_callbacks);
 		k_timer_init(&sp.timer, stop_adv_timer_callback, NULL);
 		k_work_init(&sp.adv_work, start_stop_adv);
+		k_work_init_delayable(&sp.conn_work, disconnect_req_handler);
+		k_work_init_delayable(&sp.pair_work, pairing_timeout_handler);
 		sp.initialized = true;
 
 #ifdef CONFIG_SINGLE_PERIPHERAL_ADV_ON_INIT
@@ -148,6 +171,17 @@ static void sp_connected(struct bt_conn *conn, uint8_t err)
 		/* Stop advertising so another central cannot connect. */
 		single_peripheral_stop_advertising();
 
+		/* If CONFIG_MCUMGR_SMP_BT_AUTHEN is true,
+		 * then it will cause encryption to be started when
+		 * the SMP service is accessed.
+		 */
+
+		/* Close connection if pairing isn't completed. */
+		if (IS_ENABLED(CONFIG_MCUMGR_SMP_BT_AUTHEN)) {
+			k_work_reschedule(&sp.pair_work,
+					  K_MSEC(PAIRING_COMPLETE_TIMEOUT_MS));
+		}
+
 #if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
 		/* Turn LED on to indicate in a connection */
 		lcz_led_turn_on(BLUETOOTH_ADVERTISING_LED);
@@ -183,23 +217,33 @@ static void start_stop_adv(struct k_work *work)
 
 	if (sp.start) {
 		if (sp.conn_handle != NULL) {
+			/* Technically possible - not desired for this application. */
 			LOG_INF("Cannot start advertising while connected");
 			err = -EPERM;
 		} else if (!sp.advertising) {
-			err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, AD,
-					      ARRAY_SIZE(AD), NULL, 0);
-
-			LOG_INF("Advertising start status: %d", err);
-
-			if (err >= 0) {
-				sp.advertising = true;
-
-#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
-				/* Blink LED on to indicate advertising */
-				lcz_led_blink(BLUETOOTH_ADVERTISING_LED, &LED_ADVERTISING_PATTERN);
-#endif
+			/* Security callbacks can be overridden by sensor task
+			 * when peripheral is idle.
+			 */
+			if (IS_ENABLED(CONFIG_MCUMGR_SMP_BT_AUTHEN)) {
+				err = setup_security();
 			}
 
+			if (err == 0) {
+				err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, AD,
+						      ARRAY_SIZE(AD), NULL, 0);
+
+				LOG_INF("Advertising start status: %d", err);
+
+				if (err >= 0) {
+					sp.advertising = true;
+
+#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+					/* Blink LED to indicate advertising */
+					lcz_led_blink(BLUETOOTH_ADVERTISING_LED,
+						      &LED_ADVERTISING_PATTERN);
+#endif
+				}
+			}
 		} else {
 			LOG_INF("Advertising duration timer restarted");
 		}
@@ -230,4 +274,71 @@ static void stop_adv_timer_callback(struct k_timer *dummy)
 	ARG_UNUSED(dummy);
 
 	single_peripheral_stop_advertising();
+}
+
+static int setup_security(void)
+{
+	int r;
+
+	static const struct bt_conn_auth_cb callbacks = {
+		.pairing_complete = pairing_complete,
+		.pairing_failed = pairing_failed
+	};
+
+	r = bt_passkey_set(attr_get_uint32(ATTR_ID_passkey, 123456));
+	if (r < 0) {
+		LOG_ERR("Unable to set passkey: %d", r);
+	} else {
+		/* With multiple users callbacks must be cleared first. */
+		r = bt_conn_auth_cb_register(NULL);
+		if (r == 0) {
+			r = bt_conn_auth_cb_register(&callbacks);
+		}
+		if (r < 0) {
+			LOG_ERR("Unable to register security callbacks %d", r);
+		}
+	}
+
+	return r;
+}
+
+static void pairing_complete(struct bt_conn *conn, bool bonded)
+{
+	if (conn == sp.conn_handle) {
+		sp.paired = true;
+		sp.bonded = bonded;
+	}
+}
+
+static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
+{
+	ARG_UNUSED(reason);
+
+	if (conn == sp.conn_handle) {
+		/* Don't call disconnect in callback from BT thread because it
+		 * prevents stack from cleaning up nicely.
+		 */
+		k_work_reschedule(&sp.conn_work,
+				  K_MSEC(PAIRING_FAILURE_DISCONNECT_DELAY_MS));
+		sp.paired = false;
+		sp.bonded = false;
+	}
+}
+
+static void disconnect_req_handler(struct k_work *work)
+{
+	ARG_UNUSED(work);
+	int r = bt_conn_disconnect(sp.conn_handle, BT_HCI_ERR_AUTH_FAIL);
+	LOG_DBG("Security failed disconnect status: %d", r);
+}
+
+static void pairing_timeout_handler(struct k_work *work)
+{
+	ARG_UNUSED(work);
+	int r;
+
+	if (sp.conn_handle && !sp.paired) {
+		r = bt_conn_disconnect(sp.conn_handle, BT_HCI_ERR_AUTH_FAIL);
+		LOG_INF("Pairing timeout disconnect status: %d", r);
+	}
 }

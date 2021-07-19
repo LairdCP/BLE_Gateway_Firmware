@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.21"
+    "version": "0.4.23"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -114,7 +114,9 @@
             "x-id": 4,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT510",
+              "MG100",
+              "BL5340"
             ],
             "schema": {
               "type": "integer",
@@ -2053,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.21",
+              "x-default": "0.4.23",
               "x-example": "123.456.789",
               "x-readable": true
             }

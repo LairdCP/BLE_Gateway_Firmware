@@ -28,12 +28,13 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute indices */
-#define ATTR_INDEX_lock                               1
-#define ATTR_INDEX_loadPath                           81
+#define ATTR_INDEX_lock                               2
+#define ATTR_INDEX_loadPath                           82
 /* pyend */
 
 /* pystart - attribute ids */
 #define ATTR_ID_location                              1
+#define ATTR_ID_passkey                               4
 #define ATTR_ID_lock                                  5
 #define ATTR_ID_firmwareVersion                       11
 #define ATTR_ID_resetReason                           12
@@ -134,9 +135,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                 94
+#define ATTR_TABLE_SIZE                                 95
 #define ATTR_TABLE_MAX_ID                               220
-#define ATTR_TABLE_WRITABLE_COUNT                       43
+#define ATTR_TABLE_WRITABLE_COUNT                       44
 #define ATTR_MAX_STR_LENGTH                             254
 #define ATTR_MAX_STR_SIZE                               255
 #define ATTR_MAX_BIN_SIZE                               16

@@ -45,6 +45,14 @@ void single_peripheral_start_advertising(void);
  */
 void single_peripheral_stop_advertising(void);
 
+/**
+ * @brief Accessor
+ *
+ * @return true if advertising or trying to pair
+ * @return false otherwise
+ */
+bool single_peripheral_security_busy(void);
+
 #ifdef __cplusplus
 }
 #endif

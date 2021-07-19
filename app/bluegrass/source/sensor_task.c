@@ -23,13 +23,13 @@ LOG_MODULE_REGISTER(sensor_task, CONFIG_SENSOR_TASK_LOG_LEVEL);
 #include "FrameworkIncludes.h"
 #include "lcz_bracket.h"
 #include "lcz_bluetooth.h"
-#include "lcz_bt_security.h"
 #include "lcz_bt_scan.h"
 #include "vsp_definitions.h"
 #include "lcz_qrtc.h"
 #include "sensor_cmd.h"
 #include "sensor_table.h"
 #include "sensor_task.h"
+#include "single_peripheral.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -96,6 +96,11 @@ typedef struct SensorTask {
 				BT_GAP_SCAN_FAST_INTERVAL,                     \
 				BT_GAP_SCAN_FAST_INTERVAL)
 
+#if defined(CONFIG_MCUMGR_SMP_BT_AUTHEN) &&                                    \
+	CONFIG_SINGLE_PERIPHERAL_ADV_DURATION_SECONDS == 0
+#error "Indefinite advertising not supported because security callbacks are shared between central and peripheral."
+#endif
+
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
@@ -143,8 +148,7 @@ static void SendSetEpochCommand(void);
 static void ConnectedCallback(struct bt_conn *conn, uint8_t err);
 static void DisconnectedCallback(struct bt_conn *conn, uint8_t reason);
 
-static void RegisterSecurityCallbacks(void);
-static void EncryptLink(SensorTaskObj_t *pObj);
+static int RegisterSecurityCallbacks(void);
 static void PasskeyEntryCallback(struct bt_conn *conn);
 static void PairingCancelled(struct bt_conn *conn);
 static void PairingCompleteCallback(struct bt_conn *conn, bool bonded);
@@ -230,7 +234,6 @@ void SensorTask_Initialize(void)
 
 	st.conn = NULL;
 	RegisterConnectionCallbacks();
-	RegisterSecurityCallbacks();
 }
 
 /******************************************************************************/
@@ -330,7 +333,6 @@ static DispatchResult_t DiscoveryMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 	if (pMsg->header.msgCode == FMC_DISCOVERY_COMPLETE) {
 		k_timer_start(&pObj->msgTask.timer, ENCRYPTION_TIMEOUT_TICKS,
 			      K_NO_WAIT);
-		EncryptLink(pObj);
 	} else {
 		RequestDisconnect(pObj, "Discovery Failure");
 	}
@@ -465,26 +467,38 @@ static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 	int err;
 	SensorTaskObj_t *pObj = FWK_TASK_CONTAINER(SensorTaskObj_t);
 
-	if (pObj->pCmdMsg == NULL && pObj->conn == NULL) { /* not busy */
-		lcz_bt_scan_stop(pObj->scanUserId);
-		lcz_bracket_reset(pObj->pBracket);
-		pObj->pCmdMsg = (SensorCmdMsg_t *)pMsg;
-		pObj->connected = false;
-		pObj->paired = false;
-		pObj->resetSent = false;
-		pObj->configComplete = false;
-		err = bt_conn_le_create(&pObj->pCmdMsg->addr,
-					pObj->pCmdMsg->useCodedPhy ?
-						      BT_CONN_CODED_CREATE_CONN :
-						      BT_CONN_LE_CREATE_CONN,
-					BT_LE_CONN_PARAM_DEFAULT, &pObj->conn);
+	if (!single_peripheral_security_busy() &&
+	    (pObj->pCmdMsg == NULL && pObj->conn == NULL)) { /* not busy */
+		/* If the peripheral isn't busy then register security callbacks
+		 * used by sensor task.  If peripheral starts advertising and
+		 * overrides callbacks, then pairing will fail.  The sensor will
+		 * close the connection and gateway will attempt the connection
+		 * again.
+		 */
+		err = RegisterSecurityCallbacks();
+		if (err == 0) {
+			lcz_bt_scan_stop(pObj->scanUserId);
+			lcz_bracket_reset(pObj->pBracket);
+			pObj->pCmdMsg = (SensorCmdMsg_t *)pMsg;
+			pObj->connected = false;
+			pObj->paired = false;
+			pObj->bonded = false;
+			pObj->resetSent = false;
+			pObj->configComplete = false;
+			err = bt_conn_le_create(
+				&pObj->pCmdMsg->addr,
+				pObj->pCmdMsg->useCodedPhy ?
+					      BT_CONN_CODED_CREATE_CONN :
+					      BT_CONN_LE_CREATE_CONN,
+				BT_LE_CONN_PARAM_DEFAULT, &pObj->conn);
 
-		LOG_INF("Connection Request (%u): '%s' (%s) %x-%u",
-			pObj->pCmdMsg->attempts,
-			log_strdup(pObj->pCmdMsg->name),
-			log_strdup(pObj->pCmdMsg->addrString),
-			(uint32_t)POINTER_TO_UINT(pObj->conn),
-			bt_conn_index(pObj->conn));
+			LOG_INF("Connection Request (%u): '%s' (%s) %x-%u",
+				pObj->pCmdMsg->attempts,
+				log_strdup(pObj->pCmdMsg->name),
+				log_strdup(pObj->pCmdMsg->addrString),
+				(uint32_t)POINTER_TO_UINT(pObj->conn),
+				bt_conn_index(pObj->conn));
+		}
 
 		if (err) {
 			return RetryConfigRequest(pObj);
@@ -546,7 +560,7 @@ static void RegisterConnectionCallbacks(void)
 	bt_conn_cb_register(&connectionCallbacks);
 }
 
-static void RegisterSecurityCallbacks(void)
+static int RegisterSecurityCallbacks(void)
 {
 	int status;
 
@@ -557,10 +571,16 @@ static void RegisterSecurityCallbacks(void)
 		.pairing_failed = PairingFailedCallback
 	};
 
-	status = lcz_bt_security_register_cb(&securityCallbacks);
-	if (status < 0) {
-		LOG_ERR("Unable to register security callbacks");
+	/* With multiple users callbacks must be cleared first. */
+	status = bt_conn_auth_cb_register(NULL);
+	if (status == 0) {
+		status = bt_conn_auth_cb_register(&securityCallbacks);
 	}
+	if (status < 0) {
+		LOG_ERR("Unable to register security callbacks %d", status);
+	}
+
+	return status;
 }
 
 static int Discover(void)
@@ -699,12 +719,6 @@ static void DisconnectedCallback(struct bt_conn *conn, uint8_t reason)
 		st.bonded = false;
 		FRAMEWORK_MSG_SEND_TO_SELF(FWK_ID_SENSOR_TASK, FMC_DISCONNECT);
 	}
-}
-
-static void EncryptLink(SensorTaskObj_t *pObj)
-{
-	int status = bt_conn_set_security(pObj->conn, BT_SECURITY_L3);
-	LOG_DBG("%d", status);
 }
 
 static void PasskeyEntryCallback(struct bt_conn *conn)

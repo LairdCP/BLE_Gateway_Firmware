@@ -268,10 +268,14 @@ config SD_CARD_LOG_LEVEL
     range 0 4
     default 3
 
+config LCZ_MOTION
+    bool "Enable motion driver"
+    depends on (BOARD_MG100 || BOARD_BL5340_DVK_CPUAPP)
+
 config LCZ_MOTION_LOG_LEVEL
     int "Motion driver log level"
+    depends on LCZ_MOTION
     range 0 4
-    depends on (BOARD_MG100 || BOARD_BL5340_DVK_CPUAPP)
     default 3
 
 config SENSOR_GATEWAY_PARSER_LOG_LEVEL

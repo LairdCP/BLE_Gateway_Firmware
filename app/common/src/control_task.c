@@ -39,7 +39,7 @@ LOG_MODULE_REGISTER(control, CONFIG_CONTROL_TASK_LOG_LEVEL);
 #include "ct_ble.h"
 #endif
 
-#ifdef CONFIG_LCZ_MOTION_LOG_LEVEL
+#ifdef CONFIG_LCZ_MOTION
 #include "lcz_motion.h"
 #endif
 
@@ -264,7 +264,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 #endif
 			break;
 
-#ifdef CONFIG_LCZ_MOTION_LOG_LEVEL
+#ifdef CONFIG_LCZ_MOTION
 		case ATTR_ID_motionOdr:
 			lcz_motion_update_odr();
 			break;

@@ -73,7 +73,7 @@ target_sources(app PRIVATE
 )
 endif()
 
-if(CONFIG_LCZ_MOTION_LOG_LEVEL)
+if(CONFIG_LCZ_MOTION)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/lcz_motion.c
 )

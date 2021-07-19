@@ -42,7 +42,7 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 #include "lairdconnect_battery.h"
 #endif
 
-#ifdef CONFIG_LCZ_MOTION_LOG_LEVEL
+#ifdef CONFIG_LCZ_MOTION
 #include "lcz_motion.h"
 #endif
 
@@ -185,7 +185,7 @@ int configure_app(void)
 	BatteryInit();
 #endif
 
-#ifdef CONFIG_LCZ_MOTION_LOG_LEVEL
+#ifdef CONFIG_LCZ_MOTION
 	lcz_motion_init();
 #endif
 
@@ -320,7 +320,7 @@ void power_measurement_callback(uint8_t integer, uint8_t decimal)
 }
 #endif
 
-#ifdef CONFIG_LCZ_MOTION_LOG_LEVEL
+#ifdef CONFIG_LCZ_MOTION
 void lcz_motion_set_alarm_state(uint8_t state)
 {
 	attr_set_uint32(ATTR_ID_motionAlarm, state);

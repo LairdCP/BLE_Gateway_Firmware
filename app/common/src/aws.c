@@ -44,7 +44,7 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #include "lairdconnect_battery.h"
 #endif
 
-#if defined(CONFIG_LCZ_MOTION_LOG_LEVEL)
+#if defined(CONFIG_LCZ_MOTION)
 #include "lcz_motion.h"
 #endif
 

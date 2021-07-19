@@ -4,11 +4,11 @@
 
 ### To evaluate the OOB demo, download pre-built firmware images [here!](https://github.com/LairdCP/Pinnacle-100-Firmware/releases) You do not need to build the application if no customizations are necessary.
 
-# Pinnacle 100 Modem and MG100 Out-of-Box (OOB) Demo Firmware
+# BLE Gateway Out-of-Box (OOB) Demo Firmware
 
 [![Pinnacle 100 Modem](docs/images/pinnacle_100_modem.png)](https://www.lairdconnect.com/wireless-modules/cellular-solutions/pinnacle-100-cellular-modem) [![Pinnacle 100 DVK](docs/images/450-00010-K1-Contents_0.jpg)](https://www.lairdconnect.com/wireless-modules/cellular-solutions/pinnacle-100-cellular-modem) [![MG100](docs/images/MG100-Starter-Kit.png)](https://www.lairdconnect.com/iot-devices/iot-gateways/sentrius-mg100-gateway-lte-mnb-iot-and-bluetooth-5)
 
-This repository contains firmware that can run on the Pinnacle 100 Modem development kit (DVK) or the Sentrius MG100 gateway. This firmware is designed to showcase gathering sensor data over BLE and transferring it to the cloud. The AWS Out-of-Box (OOB) Demo firmware for both products connects to the Laird Connectivity Bluegrass Cloud portal by default. However it can be reconfigured over the UART with mcumgr to provision the device to connect to any AWS server.
+This repository contains firmware that can run on the Pinnacle 100 Modem development kit (DVK), Sentrius MG100 gateway, or the BL5340 DVK. This firmware is designed to showcase gathering sensor data over BLE and transferring it to the cloud. The OOB Demo firmware connects to the Laird Connectivity Bluegrass Cloud portal by default. However it can be reconfigured over the UART with mcumgr to provision the device to connect to any AWS server.
 
 The Pinnacle 100 modem can be purchased separately as a device that OEMs embed into their end product. The same Pinnacle modem is pre-integrated by Laird Connectivity into the Sentrius MG100 Gateway. The MG100 is an out-of-the-box product allowing the end user to develop a fully featured IoT solution with minimum effort. With the addition of the optional battery backup, it provides uninterrupted reporting of sensor data. Additionally the sensor data is logged locally on an SD card to ensure data is captured even if the LTE connection is interrupted. Based on Laird Connectivity's Pinnacle 100 modem, the Sentrius MG100 Gateway captures data from Bluetooth 5 sensors and sends it to the cloud via a global low power cellular (LTE-M/NB-IoT) connection. It is based on the innovative integration of Nordic Semiconductor nRF52840 and the Sierra Wireless HL7800 module. This enables the MG100 hardware to support LTE-M/NB-IoT (supports LTE bands 1, 2, 3, 4, 5, 12, 13, 20, and 28) as well as Bluetooth 5 features like CODED PHY, 2M PHY, and LE Advertising Extensions.
 

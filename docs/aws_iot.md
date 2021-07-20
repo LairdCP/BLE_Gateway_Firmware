@@ -95,7 +95,7 @@ The Pinnacle 100/MG100/BL5340 device can be provisioned to communicate with the 
 
 ### Provisioning the Device Via UART
 
-1. Connect a terminal program to the console UART, decommission the device and turn off log messages. Log messages output by the firmware can interfere with the file transfer process.
+1. Connect a terminal program to the console UART (FTDI UART on the DVK), decommission the device and turn off log messages. Log messages output by the firmware can interfere with the file transfer process.
 
    Issue command:
 

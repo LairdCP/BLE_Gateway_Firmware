@@ -85,14 +85,15 @@ X                                X
 The following are required to fully exercise this demo firmware:
 
 - An activated SIM card. See [here](https://www.lairdconnect.com/documentation/truphone-sim-setup-guide) for instructions on activating the SIM card that came with your kit.
-- Pinnacle 100/MG100 programmed with the latest LTE-M/AWS firmware. Releases available [here!](https://github.com/LairdCP/Pinnacle-100-firmware/releases)
+- Pinnacle 100 DVK, MG100, or BL5340 DVK programmed with the latest LTE-M/AWS firmware. Releases available [here!](https://github.com/LairdCP/Pinnacle-100-firmware/releases)
+  - Connect to the FTDI UART on the development kit to view firmware logs
 - Laird Pinnacle Connect app installed on a mobile device. An active internet connection on the mobile device is required.
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)
   - [iOS app](https://apps.apple.com/us/app/laird-pinnacle-connect/id1481075861?ls=1)
 
 ## Setup
 
-To set up the Pinnacle 100/MG100 device, follow these steps:
+To set up the device, follow these steps:
 
 1. Ensure an _activated_ SIM card is inserted into the Pinnacle 100 SIM slot.
 2. On your phone, launch the Pinnacle mobile app and follow the on-screen prompts.
@@ -101,7 +102,7 @@ To set up the Pinnacle 100/MG100 device, follow these steps:
 
 ### Signup and Login
 
-If you do not have an account, you must create one. Use an email address for the username.
+If you do not have an account ([https://demo.lairdconnect.com/](https://demo.lairdconnect.com/)), you must create one. Use an email address for the username.
 
 ![Sign-up screen](images/signup.png) ![Login screen](images/login.png)  
 _Sign-up and Login screens_

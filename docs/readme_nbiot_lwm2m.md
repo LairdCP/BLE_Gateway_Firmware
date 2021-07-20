@@ -72,6 +72,7 @@ The following are required to fully exercise this demo firmware:
 
 - An activated SIM card. The Truphone SIM card that comes with the DVK does not currently support NB-IoT. If you have purchased a DVK in Europe, then please contact [sales](mailto:sales@lairdconnect.com) to obtain a SIM card that is NB-IoT capable.
 - Pinnacle 100/BL5340 device programmed with NB-IoT/LwM2M demo firmware.
+  - Connect to the FTDI UART on the development kit to view firmware logs
 - Laird Pinnacle Connect app installed on a mobile device
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)
   - [iOS app](https://apps.apple.com/us/app/laird-pinnacle-connect/id1481075861?ls=1)

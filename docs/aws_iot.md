@@ -144,7 +144,7 @@ The Pinnacle 100/MG100/BL5340 device can be provisioned to communicate with the 
 5. Set commissioned flag
 
    ```
-   attr commissioned 1
+   attr set commissioned 1
    ```
 
    Setting commissioning to `1` (true) will trigger the device to connect to the AWS instance.

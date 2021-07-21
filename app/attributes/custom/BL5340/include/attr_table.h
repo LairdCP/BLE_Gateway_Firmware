@@ -111,7 +111,6 @@ extern "C" {
 #define ATTR_ID_ethernetDHCPRenewTime                 237
 #define ATTR_ID_ethernetDHCPState                     238
 #define ATTR_ID_ethernetDHCPAttempts                  239
-#define ATTR_ID_ethernetDHCPAction                    240
 #define ATTR_ID_sntpServer                            241
 /* pyend */
 
@@ -120,9 +119,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                      80
+#define ATTR_TABLE_SIZE                                      79
 #define ATTR_TABLE_MAX_ID                                    241
-#define ATTR_TABLE_WRITABLE_COUNT                            42
+#define ATTR_TABLE_WRITABLE_COUNT                            41
 #define ATTR_MAX_STR_LENGTH                                  254
 #define ATTR_MAX_STR_SIZE                                    255
 #define ATTR_MAX_BIN_SIZE                                    16
@@ -276,12 +275,6 @@ enum ethernet_dhcp_state {
 	ETHERNET_DHCP_STATE_BOUND = 6,
 };
 
-enum ethernet_dhcp_action {
-	ETHERNET_DHCP_ACTION_NOP = 0,
-	ETHERNET_DHCP_ACTION_RELEASE = 1,
-	ETHERNET_DHCP_ACTION_RENEW = 2,
-};
-
 enum attr_dump {
 	ATTR_DUMP_RW = 0,
 	ATTR_DUMP_W = 1,
@@ -304,7 +297,6 @@ BUILD_ASSERT(sizeof(enum ethernet_mode) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum ethernet_speed) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum ethernet_duplex) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum ethernet_dhcp_state) == ATTR_SIZE_U8);
-BUILD_ASSERT(sizeof(enum ethernet_dhcp_action) == ATTR_SIZE_U8);
 /* pyend */
 
 /******************************************************************************/
@@ -331,7 +323,6 @@ const char *const attr_get_string_ethernet_mode(int value);
 const char *const attr_get_string_ethernet_speed(int value);
 const char *const attr_get_string_ethernet_duplex(int value);
 const char *const attr_get_string_ethernet_dhcp_state(int value);
-const char *const attr_get_string_ethernet_dhcp_action(int value);
 /* pyend */
 
 #ifdef __cplusplus

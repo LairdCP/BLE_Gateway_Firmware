@@ -159,7 +159,6 @@ typedef struct ro_attribute {
 	uint32_t ethernetDHCPRenewTime;
 	enum ethernet_dhcp_state ethernetDHCPState;
 	uint8_t ethernetDHCPAttempts;
-	enum ethernet_dhcp_action ethernetDHCPAction;
 	/* pyend */
 } ro_attribute_t;
 
@@ -170,7 +169,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.bluetoothAddress = "0",
 	.resetCount = 0,
 	.upTime = 0,
-	.attributeVersion = "0.4.23",
+	.attributeVersion = "0.4.26",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -203,8 +202,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.ethernetDHCPLeaseTime = 0,
 	.ethernetDHCPRenewTime = 0,
 	.ethernetDHCPState = 0,
-	.ethernetDHCPAttempts = 0,
-	.ethernetDHCPAction = 0
+	.ethernetDHCPAttempts = 0
 	/* pyend */
 };
 
@@ -222,7 +220,6 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 #define attr_get_string_ethernetSpeed       attr_get_string_ethernet_speed
 #define attr_get_string_ethernetDuplex      attr_get_string_ethernet_duplex
 #define attr_get_string_ethernetDHCPState   attr_get_string_ethernet_dhcp_state
-#define attr_get_string_ethernetDHCPAction  attr_get_string_ethernet_dhcp_action
 /* pyend */
 
 /******************************************************************************/
@@ -336,8 +333,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[75 ] = { 237, RO_ATTRX(ethernetDHCPRenewTime)         , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
 	[76 ] = { 238, RO_ATTRE(ethernetDHCPState)             , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 6          },
 	[77 ] = { 239, RO_ATTRX(ethernetDHCPAttempts)          , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 100        },
-	[78 ] = { 240, RO_ATTRE(ethernetDHCPAction)            , ATTR_TYPE_U8            , n, y, n, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 2          },
-	[79 ] = { 241, RW_ATTRS(sntpServer)                    , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 64         }
+	[78 ] = { 241, RW_ATTRS(sntpServer)                    , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 64         }
 	/* pyend */
 };
 
@@ -424,8 +420,7 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[237] = &ATTR_TABLE[75 ],
 	[238] = &ATTR_TABLE[76 ],
 	[239] = &ATTR_TABLE[77 ],
-	[240] = &ATTR_TABLE[78 ],
-	[241] = &ATTR_TABLE[79 ]
+	[241] = &ATTR_TABLE[78 ]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -643,16 +638,6 @@ const char *const attr_get_string_ethernet_dhcp_state(int value)
 		case 4:           return "Renewing";
 		case 5:           return "Rebinding";
 		case 6:           return "Bound";
-		default:          return "?";
-	}
-}
-
-const char *const attr_get_string_ethernet_dhcp_action(int value)
-{
-	switch (value) {
-		case 0:           return "Nop";
-		case 1:           return "Release";
-		case 2:           return "Renew";
 		default:          return "?";
 	}
 }

@@ -460,6 +460,7 @@ static void update_gps_rate_handler(void)
 				  mdm_hl7800_set_gps_rate(
 					  attr_get_uint32(ATTR_ID_gpsRate, 0)));
 	} else {
+		attr_set_signed32(ATTR_ID_gpsStatus, -EPERM);
 		LOG_INF("GPS not enabled");
 	}
 }
@@ -487,13 +488,13 @@ static void polte_cmd_handler(void)
 			status = mdm_hl7800_polte_locate();
 			break;
 		}
+	}
 
-		/* If command was issued without and error,
-		 * wait for second response from modem.
-		 */
-		if (status < 0 || cmd == POLTE_CONTROL_POINT_ENABLE) {
-			attr_set_signed32(ATTR_ID_polteStatus, status);
-		}
+	/* If command was issued without an error,
+	 * wait for second response from modem.
+	 */
+	if (status < 0 || cmd == POLTE_CONTROL_POINT_ENABLE) {
+		attr_set_signed32(ATTR_ID_polteStatus, status);
 	}
 
 	LOG_DBG("PoLTE command status %d", status);

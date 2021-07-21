@@ -18,6 +18,7 @@ ATTRIBUTE_VERSION_ARRAY_INDEX = 93
 JSON_INDENT = '  '
 
 # Left Justified Field Widths
+ID_WIDTH = 54
 NAME_MACRO_WIDTH = 40
 AV_FIELD_WIDTH = 20
 AP_WIDTH = 36
@@ -109,6 +110,7 @@ class attributes:
         self.validator = []
         self.prepare = []
         self.enum = []
+        self.enum_include_errno = []
         self.methodEnums = []
         self.methodEnumNames = []
 
@@ -186,6 +188,8 @@ class attributes:
                     self.validator.append(GetStringField(a, 'x-validator'))
                     self.prepare.append(GetBoolField(a, 'x-prepare'))
                     self.enum.append(GetDictionaryField(a, 'enum'))
+                    self.enum_include_errno.append(
+                        GetBoolField(a, 'x-enum-include-errno'))
                     # Max string size is only required for strings.
                     # Min and max are lengths when type is a string.
                     if a['x-ctype'] == "string":
@@ -525,7 +529,7 @@ class attributes:
         """Create attribute ids for header file"""
         ids = []
         for name, id in zip(self.name, self.id):
-            result = f"#define ATTR_ID_{name:<37} {id}" + "\n"
+            result = f"#define ATTR_ID_{name}".ljust(ID_WIDTH) + str(id) + "\n"
             ids.append(result)
         return ''.join(ids)
 
@@ -636,12 +640,19 @@ class attributes:
 
     def CreateEnumSizeCheck(self) -> str:
         lst = []
-        for i, name in zip(self.enum, self.name):
+        for i, errno, name in zip(self.enum, self.enum_include_errno, self.name):
             if len(i) != 0:
                 snake = inflection.underscore(name)
-                s = f"BUILD_ASSERT(sizeof(enum {snake}) == "
-                s += f"{self.GetType(self.name.index(name)).replace('TYPE','SIZE')});\n"
-                lst.append(s)
+                t = self.GetType(self.name.index(name))
+                if errno:
+                    if t != "ATTR_TYPE_S32":
+                        s = f"BUILD_ASSERT(false, \"{snake} "
+                        s += "size must be int32_t\");\n"
+                        lst.append(s)
+                else:
+                    s = f"BUILD_ASSERT(sizeof(enum {snake}) == "
+                    s += f"{t.replace('TYPE','SIZE')});\n"
+                    lst.append(s)
 
         return ''.join(lst)
 
@@ -675,7 +686,7 @@ class attributes:
     def CreateGetStringFunctions(self) -> str:
         """Generate functions that return a string of each enum"""
         lst = []
-        for enum, camel in zip(self.enum, self.name):
+        for enum, camel, include_errno in zip(self.enum, self.name, self.enum_include_errno):
             if len(enum) != 0:
                 snake = inflection.underscore(camel)
                 s = f"const char *const attr_get_string_{snake}(int value)\n"
@@ -684,7 +695,13 @@ class attributes:
                 for key, value in enum.items():
                     s += '\t\t' + f'case {str(value)}:'.ljust(GS_CASE_WIDTH) + \
                         'return "' + inflection.titleize(key) + '";\n'
-                s += '\t\t' + 'default:'.ljust(GS_CASE_WIDTH) + 'return "?";\n'
+                s += '\t\t' + 'default:'.ljust(GS_CASE_WIDTH)
+
+                if include_errno:
+                    s += 'return errno_str_get(value);\n'
+                else:
+                    s += 'return "?";\n'
+
                 s += "\t}\n}\n\n"
                 # Handle special cases
                 s = s.replace("Lwm2 M", "LwM2M")

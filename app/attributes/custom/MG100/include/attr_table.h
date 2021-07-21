@@ -218,7 +218,6 @@ extern "C" {
 enum cert_status {
 	CERT_STATUS_BUSY = 1,
 	CERT_STATUS_SUCCESS = 0,
-	CERT_STATUS_EPERM = -1,
 };
 
 enum gateway_state {
@@ -327,7 +326,6 @@ enum cloud_error {
 };
 
 enum modem_functionality {
-	MODEM_FUNCTIONALITY_ERRNO = -1,
 	MODEM_FUNCTIONALITY_MINIMUM = 0,
 	MODEM_FUNCTIONALITY_FULL = 1,
 	MODEM_FUNCTIONALITY_AIRPLANE = 4,
@@ -374,7 +372,6 @@ enum attr_dump {
 /* pyend */
 
 /* pystart - enum size check */
-BUILD_ASSERT(sizeof(enum cert_status) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum gateway_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_network_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_startup_state) == ATTR_SIZE_U8);
@@ -386,10 +383,8 @@ BUILD_ASSERT(sizeof(enum fota_status) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum generate_psk) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_init_error) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum cloud_error) == ATTR_SIZE_S8);
-BUILD_ASSERT(sizeof(enum modem_functionality) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum gps_status) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum polte_control_point) == ATTR_SIZE_U8);
-BUILD_ASSERT(sizeof(enum polte_status) == ATTR_SIZE_S8);
 /* pyend */
 
 /******************************************************************************/

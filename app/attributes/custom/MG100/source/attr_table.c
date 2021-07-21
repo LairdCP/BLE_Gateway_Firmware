@@ -16,6 +16,7 @@
 #include "attr_validator.h"
 #include "attr_custom_validator.h"
 #include "attr_table.h"
+#include "errno_str.h"
 
 /* clang-format off */
 
@@ -211,7 +212,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.25",
+	.attributeVersion = "0.4.27",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -352,7 +353,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[19 ] = { 144, RO_ATTRS(appType)                       , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
 	[20 ] = { 145, RO_ATTRS(mount)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[21 ] = { 146, RW_ATTRX(commissioned)                  , ATTR_TYPE_BOOL          , y, y, y, n, y, n, av_cpb              , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[22 ] = { 147, RO_ATTRE(certStatus)                    , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[22 ] = { 147, RO_ATTRE(certStatus)                    , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[23 ] = { 148, RW_ATTRS(rootCaName)                    , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
 	[24 ] = { 149, RW_ATTRS(clientCertName)                , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
 	[25 ] = { 150, RW_ATTRS(clientKeyName)                 , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
@@ -424,7 +425,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[91 ] = { 217, RO_ATTRE(cloudError)                    , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[92 ] = { 218, RO_ATTRX(commissioningBusy)             , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[93 ] = { 219, RO_ATTRS(imsi)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 14        , .max.ux = 15         },
-	[94 ] = { 220, RO_ATTRE(modemFunctionality)            , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , attr_prepare_modemFunctionality     , .min.ux = 0         , .max.ux = 0          },
+	[94 ] = { 220, RO_ATTRE(modemFunctionality)            , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , attr_prepare_modemFunctionality     , .min.ux = 0         , .max.ux = 0          },
 	[95 ] = { 242, RW_ATTRX(gpsRate)                       , ATTR_TYPE_U32           , y, y, n, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[96 ] = { 243, RO_ATTRS(gpsLatitude)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[97 ] = { 244, RO_ATTRS(gpsLongitude)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
@@ -438,7 +439,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[105] = { 252, RO_ATTRS(gpsVerSpeed)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
 	[106] = { 253, RO_ATTRE(gpsStatus)                     , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[107] = { 254, RO_ATTRE(polteControlPoint)             , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[108] = { 255, RO_ATTRE(polteStatus)                   , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[108] = { 255, RO_ATTRE(polteStatus)                   , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[109] = { 256, RW_ATTRS(polteUser)                     , ATTR_TYPE_STRING        , y, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
 	[110] = { 257, RW_ATTRS(poltePassword)                 , ATTR_TYPE_STRING        , y, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
 	[111] = { 258, RO_ATTRX(polteLatitude)                 , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 0.0        },
@@ -648,8 +649,7 @@ const char *const attr_get_string_cert_status(int value)
 	switch (value) {
 		case 1:           return "Busy";
 		case 0:           return "Success";
-		case -1:          return "Eperm";
-		default:          return "?";
+		default:          return errno_str_get(value);
 	}
 }
 
@@ -805,11 +805,10 @@ const char *const attr_get_string_cloud_error(int value)
 const char *const attr_get_string_modem_functionality(int value)
 {
 	switch (value) {
-		case -1:          return "Errno";
 		case 0:           return "Minimum";
 		case 1:           return "Full";
 		case 4:           return "Airplane";
-		default:          return "?";
+		default:          return errno_str_get(value);
 	}
 }
 
@@ -853,7 +852,7 @@ const char *const attr_get_string_polte_status(int value)
 		case 10:          return "Server Error";
 		case 100:         return "Locate In Progress";
 		case 127:         return "Busy";
-		default:          return "?";
+		default:          return errno_str_get(value);
 	}
 }
 

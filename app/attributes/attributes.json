@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.26"
+    "version": "0.4.28"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.26",
+              "x-default": "0.4.28",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -2713,14 +2713,14 @@
             ],
             "schema": {
               "type": "integer",
-              "x-ctype": "int8_t",
+              "x-ctype": "int32_t",
               "x-default": "0",
               "x-example": "-1",
               "x-readable": true,
+              "x-enum-include-errno": true,
               "enum": {
                 "BUSY": 1,
-                "SUCCESS": 0,
-                "EPERM": -1
+                "SUCCESS": 0
               }
             }
           },
@@ -4165,13 +4165,13 @@
             ],
             "schema": {
               "type": "number",
-              "x-ctype": "int8_t",
+              "x-ctype": "int32_t",
               "x-default": "0",
               "x-example": "4",
               "x-readable": true,
               "x-prepare": true,
+              "x-enum-include-errno": true,
               "enum": {
-                "ERRNO": -1,
                 "MINIMUM": 0,
                 "FULL": 1,
                 "AIRPLANE": 4
@@ -4825,10 +4825,11 @@
             ],
             "schema": {
               "type": "integer",
-              "x-ctype": "int8_t",
+              "x-ctype": "int32_t",
               "x-default": "0",
               "x-example": "0",
               "x-readable": true,
+              "x-enum-include-errno": true,
               "enum": {
                 "SUCCESS": 0,
                 "MODEM_INVALID_STATE": 1,

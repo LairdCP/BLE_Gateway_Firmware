@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ethernet_network.h"
+#include "sntp_qrtc.h"
 
 /******************************************************************************/
 /* Local Function Definitions                                                 */
@@ -26,7 +26,7 @@ static int shell_sntp_update_time_cmd(const struct shell *shell, size_t argc,
 {
 	int rc = 0;
 
-	shell_print(shell, "%s", (sntp_update_time() == true ?
+	shell_print(shell, "%s", (sntp_qrtc_update_time() == true ?
 					"SNTP update queued" :
 					"Failed to queue SNTP update"));
 

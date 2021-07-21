@@ -63,6 +63,11 @@ config LCZ_SNTP_SHELL
     default y
     depends on SHELL
 
+config SNTP_QRTC_LOG_LEVEL
+    int "Log level for SNTP QRTC module"
+    range 0 4
+    default 3
+
 endif # SNTP
 
 endmenu

@@ -31,6 +31,10 @@ target_sources_ifdef(CONFIG_NET_L2_ETHERNET app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/ethernet_network.c
 )
 
+target_sources_ifdef(CONFIG_SNTP app PRIVATE
+    ${CMAKE_SOURCE_DIR}/common/src/sntp_qrtc.c
+)
+
 target_sources_ifdef(CONFIG_LCZ_SNTP_SHELL app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/lcz_sntp_shell.c
 )

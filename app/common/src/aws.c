@@ -867,7 +867,15 @@ static void publish_watchdog_work_handler(struct k_work *work)
 	ARG_UNUSED(work);
 
 	LOG_WRN("Unable to publish (AWS) in the last hour");
+
+#ifdef CONFIG_MODEM_HL7800
+	if (attr_get_signed32(ATTR_ID_modemFunctionality, 0) !=
+	    MODEM_FUNCTIONALITY_AIRPLANE) {
+		lcz_software_reset_after_assert(0);
+	}
+#else
 	lcz_software_reset_after_assert(0);
+#endif
 }
 
 static void keep_alive_work_handler(struct k_work *work)

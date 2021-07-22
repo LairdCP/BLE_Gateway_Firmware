@@ -79,6 +79,7 @@ config AWS_HEARTBEAT_SECONDS
 
 config AWS_PUBLISH_WATCHDOG_SECONDS
     int "Watchdog timeout for successful AWS publish"
+    default 0 if AWS_HEARTBEAT_SECONDS = 0
     default 3600
     help
         Disabled when 0

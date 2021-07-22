@@ -79,9 +79,11 @@ struct topics {
 	uint8_t get_accepted[CONFIG_AWS_TOPIC_MAX_SIZE];
 };
 
+#if CONFIG_AWS_PUBLISH_WATCHDOG_SECONDS != 0
 BUILD_ASSERT((CONFIG_AWS_PUBLISH_WATCHDOG_SECONDS / 2) >
 		     CONFIG_AWS_HEARTBEAT_SECONDS,
 	     "Incompatible publish watchdog and heartbeat configuration");
+#endif
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */

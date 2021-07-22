@@ -426,7 +426,9 @@ static void disconnected_handler(void)
 
 static void fota_handler(void)
 {
-	if (!gateway_fsm_fota_request()) {
+	if (!gsm.network_is_connected()) {
+		set_state(GATEWAY_STATE_NETWORK_DISCONNECTED);
+	} else if (!gateway_fsm_fota_request()) {
 		set_state(GATEWAY_STATE_WAIT_FOR_NETWORK);
 	}
 }

@@ -44,12 +44,23 @@ config HTTP_FOTA_MODEM_INSTALL_DELAY
     depends on MODEM_HL7800
     default 600
     help
-        Used to prevent starting duplicate update cycle while the modem reboots by
-        keeping cloud state machine in FOTA state until modem has rebooted.
+        Used to prevent starting duplicate update cycle
+        while the modem reboots by keeping cloud state machine
+        in FOTA state until modem has rebooted.
 
 config HTTP_FOTA_DELETE_FILE_AFTER_UPDATE
     depends on MODEM_HL7800
     bool "Delete HL7800 update file after update"
     default y
+
+config HTTP_FOTA_START_DELAY
+    int "Seconds to wait before starting state machine after connect"
+    default 30
+    help
+        First the shadow is read using get accepted.
+        Then the delta topic is subscribed to and FOTA
+        is allowed start.
+        This delay allows time for the delta topic (desired)
+        to be processed and the shadow to be updated.
 
 endif # HTTP_FOTA

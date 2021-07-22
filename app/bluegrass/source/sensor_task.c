@@ -79,7 +79,7 @@ typedef struct SensorTask {
 	bool configComplete;
 	bracket_t *pBracket;
 	SensorCmdMsg_t *pCmdMsg;
-	bool awsReady;
+	bool bluegrassReady;
 	struct k_timer resetTimer;
 	struct k_timer sensorTick;
 	uint32_t fifoTicks;
@@ -197,7 +197,7 @@ static FwkMsgHandler_t *SensorTaskMsgDispatcher(FwkMsgCode_t MsgCode)
 	case FMC_RESPONSE:                 return ResponseHandler;
 	case FMC_SEND_RESET:               return SendResetHandler;
 	case FMC_PERIODIC:                 return PeriodicTimerMsgHandler;
-	case FMC_AWS_CONNECTED:            return AwsConnectionMsgHandler;
+	case FMC_BLUEGRASS_READY:          return AwsConnectionMsgHandler;
 	case FMC_AWS_DISCONNECTED:         return AwsConnectionMsgHandler;
 	case FMC_SUBSCRIBE_ACK:            return SubscriptionAckMsgHandler;
 	case FMC_SENSOR_SHADOW_INIT:       return SensorShadowInitMsgHandler;
@@ -300,7 +300,7 @@ static DispatchResult_t SensorTickHandler(FwkMsgReceiver_t *pMsgRxer,
 {
 	UNUSED_PARAMETER(pMsg);
 	SensorTaskObj_t *pObj = FWK_TASK_CONTAINER(SensorTaskObj_t);
-	if (pObj->awsReady) {
+	if (pObj->bluegrassReady) {
 		SensorTable_TimeToLiveHandler();
 		SensorTable_SubscriptionHandler(); /* sensor shadow  delta */
 		SensorTable_ConfigRequestHandler();
@@ -420,11 +420,12 @@ static DispatchResult_t AwsConnectionMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 						FwkMsg_t *pMsg)
 {
 	SensorTaskObj_t *pObj = FWK_TASK_CONTAINER(SensorTaskObj_t);
-	if (pMsg->header.msgCode == FMC_AWS_CONNECTED) {
-		pObj->awsReady = true;
+	if (pMsg->header.msgCode == FMC_BLUEGRASS_READY) {
+		pObj->bluegrassReady = true;
+		SensorTable_EnableGatewayShadowGeneration();
 		StartSensorTick(pObj);
 	} else {
-		pObj->awsReady = false;
+		pObj->bluegrassReady = false;
 		SensorTable_DisableGatewayShadowGeneration();
 		SensorTable_UnsubscribeAll();
 	}

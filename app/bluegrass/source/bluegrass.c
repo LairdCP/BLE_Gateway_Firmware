@@ -23,14 +23,6 @@ LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 #include "led_configuration.h"
 #include "attr.h"
 
-#ifdef CONFIG_COAP_FOTA
-#include "coap_fota_shadow.h"
-#endif
-
-#ifdef CONFIG_HTTP_FOTA
-#include "http_fota_shadow.h"
-#endif
-
 #ifdef CONFIG_CONTACT_TRACING
 #include "ct_ble.h"
 #endif
@@ -56,19 +48,11 @@ static struct {
 	bool get_shadow_processed;
 	struct k_work_delayable heartbeat;
 	uint32_t subscription_delay;
-#ifdef CONFIG_HTTP_FOTA
-	struct k_timer fota_timer;
-#endif
 } bg;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-#ifdef CONFIG_HTTP_FOTA
-static void fota_timer_callback_isr(struct k_timer *timer_id);
-static void start_fota_timer(void);
-#endif
-
 static void heartbeat_work_handler(struct k_work *work);
 static void aws_init_shadow(void);
 
@@ -85,10 +69,6 @@ static FwkMsgHandler_t heartbeat_msg_handler;
 void bluegrass_initialize(void)
 {
 	k_work_init_delayable(&bg.heartbeat, heartbeat_work_handler);
-
-#ifdef CONFIG_HTTP_FOTA
-	k_timer_init(&bg.fota_timer, fota_timer_callback_isr, NULL);
-#endif
 
 #ifdef CONFIG_SENSOR_TASK
 	SensorTask_Initialize();
@@ -193,16 +173,9 @@ int bluegrass_subscription_handler(void)
 		rc = awsSubscribe(GATEWAY_TOPIC, true);
 		if (rc == 0) {
 			bg.gateway_subscribed = true;
-#ifdef CONFIG_SENSOR_TASK
-			SensorTable_EnableGatewayShadowGeneration();
-#endif
-#ifdef CONFIG_COAP_FOTA
-			coap_fota_enable_shadow_generation();
-#endif
-#ifdef CONFIG_HTTP_FOTA
-			http_fota_enable_shadow_generation();
-			start_fota_timer();
-#endif
+
+			FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_CLOUD,
+							   FMC_BLUEGRASS_READY);
 		}
 	}
 
@@ -212,13 +185,6 @@ int bluegrass_subscription_handler(void)
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-#ifdef CONFIG_HTTP_FOTA
-static void start_fota_timer(void)
-{
-	k_timer_start(&bg.fota_timer, K_SECONDS(10), K_NO_WAIT);
-}
-#endif
-
 static void heartbeat_work_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
@@ -330,18 +296,3 @@ static DispatchResult_t heartbeat_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 
 	return DISPATCH_OK;
 }
-
-/******************************************************************************/
-/* Interrupt Service Routines                                                 */
-/******************************************************************************/
-#ifdef CONFIG_HTTP_FOTA
-static void fota_timer_callback_isr(struct k_timer *timer_id)
-{
-	UNUSED_PARAMETER(timer_id);
-	/* Kick off FOTA task now that we have processed any possible
-	 * shadow changes.
-	 */
-	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_RESERVED, FWK_ID_HTTP_FOTA_TASK,
-				      FMC_FOTA_START);
-}
-#endif

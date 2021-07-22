@@ -121,7 +121,7 @@ static FwkMsgHandler_t *control_task_msg_dispatcher(FwkMsgCode_t MsgCode)
 	case FMC_FACTORY_RESET:              return factory_reset_msg_handler;
 	case FMC_CLOUD_CONNECTED:            return cloud_state_msg_handler;
 	case FMC_CLOUD_DISCONNECTED:         return cloud_state_msg_handler;
-	case FMC_FOTA_START:                 return fota_msg_handler;
+	case FMC_FOTA_START_REQ:             return fota_msg_handler;
 	case FMC_FOTA_DONE:                  return fota_msg_handler;
 	default:                             return default_msg_handler;
 	}
@@ -352,7 +352,7 @@ static DispatchResult_t fota_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	ARG_UNUSED(pMsgRxer);
 	control_task_obj_t *pObj = FWK_TASK_CONTAINER(control_task_obj_t);
 
-	if (pMsg->header.msgCode == FMC_FOTA_START) {
+	if (pMsg->header.msgCode == FMC_FOTA_START_REQ) {
 		pObj->fota_request = true;
 		FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_CONTROL_TASK,
 						   FMC_FOTA_START_ACK);

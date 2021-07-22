@@ -76,8 +76,9 @@ void http_fota_disable_shadow_generation(void);
  *
  * @note Assumes AWS messages can be sent at any time.
  *
+ * @retval true if there is an update in progress, false otherwise
  */
-void http_fota_shadow_update_handler(void);
+bool http_fota_shadow_update_handler(void);
 
 /**
  * @brief Set the version that is currently running.
@@ -94,7 +95,8 @@ void http_fota_set_desired_version(enum fota_image_type type, const char *p,
 /**
  * @brief Set host where image is downloaded from.
  */
-void http_fota_set_download_host(enum fota_image_type type, const char *p, size_t length);
+void http_fota_set_download_host(enum fota_image_type type, const char *p,
+				 size_t length);
 
 /**
  * @brief Accessor function.
@@ -106,7 +108,8 @@ const char *http_fota_get_download_host(enum fota_image_type type);
 /**
  * @brief Set file name of image to download from the host.
  */
-void http_fota_set_download_file(enum fota_image_type type, const char *p, size_t length);
+void http_fota_set_download_file(enum fota_image_type type, const char *p,
+				 size_t length);
 
 /**
  * @brief Accessor function.
@@ -203,8 +206,8 @@ const char *http_fota_get_hash(enum fota_image_type type);
  *
  * @retval non-zero when the string was succesfully converted.
  */
-size_t http_fota_convert_hash(enum fota_image_type type, uint8_t * buf,
-					size_t buf_len);
+size_t http_fota_convert_hash(enum fota_image_type type, uint8_t *buf,
+			      size_t buf_len);
 
 /**
  * @brief Set the hash value being used for the image integrity check.
@@ -214,7 +217,7 @@ size_t http_fota_convert_hash(enum fota_image_type type, uint8_t * buf,
  * @param length the length of the data to be set
  */
 void http_fota_set_hash(enum fota_image_type type, const char *p,
-				 size_t length);
+			size_t length);
 
 #ifdef __cplusplus
 }

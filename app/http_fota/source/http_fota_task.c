@@ -17,23 +17,19 @@ LOG_MODULE_REGISTER(http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
 #include <zephyr.h>
 #include <net/tls_credentials.h>
 #include <power/reboot.h>
-#ifdef CONFIG_MODEM_HL7800
-#include <drivers/modem/hl7800.h>
-#endif
 #include <net/fota_download.h>
 
+#ifdef CONFIG_MODEM_HL7800
+#include <drivers/modem/hl7800.h>
+#include "hl7800_http_fota.h"
+#endif
+
 #include "lcz_memfault.h"
-
-#include "http_fota_task.h"
-
 #include "FrameworkIncludes.h"
 #include "laird_utility_macros.h"
 #include "file_system_utilities.h"
-
 #include "http_fota_shadow.h"
-#ifdef CONFIG_MODEM_HL7800
-#include "hl7800_http_fota.h"
-#endif
+#include "http_fota_task.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -51,15 +47,17 @@ static K_SEM_DEFINE(wait_fota_download, 0, 1);
 typedef struct http_fota_task {
 	FwkMsgTask_t msgTask;
 	bool fs_mounted;
+	bool network_connected;
 	bool aws_connected;
+	bool bluegrass_ready;
+	bool shadow_update;
 	bool allow_start;
+	uint32_t delay_timer;
 	fota_context_t app_context;
 #ifdef CONFIG_MODEM_HL7800
 	fota_context_t modem_context;
 #endif
 } http_fota_task_obj_t;
-
-K_THREAD_STACK_DEFINE(http_fota_task_stack, CONFIG_HTTP_FOTA_TASK_STACK_SIZE);
 
 K_MSGQ_DEFINE(http_fota_task_queue, FWK_QUEUE_ENTRY_SIZE,
 	      CONFIG_HTTP_FOTA_TASK_QUEUE_DEPTH, FWK_QUEUE_ALIGNMENT);
@@ -69,19 +67,19 @@ K_MSGQ_DEFINE(http_fota_task_queue, FWK_QUEUE_ENTRY_SIZE,
 /******************************************************************************/
 static http_fota_task_obj_t tctx;
 
+static K_THREAD_STACK_DEFINE(http_fota_task_stack,
+			     CONFIG_HTTP_FOTA_TASK_STACK_SIZE);
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
 static void http_fota_task_thread(void *pArg1, void *pArg2, void *pArg3);
 static int tls_init(void);
-static DispatchResult_t http_start_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-					       FwkMsg_t *pMsg);
-static DispatchResult_t http_start_ack_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-						   FwkMsg_t *pMsg);
-static DispatchResult_t connection_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-					       FwkMsg_t *pMsg);
-static DispatchResult_t http_fota_tick_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-						   FwkMsg_t *pMsg);
+
+static FwkMsgHandler_t http_start_ack_msg_handler;
+static FwkMsgHandler_t connection_msg_handler;
+static FwkMsgHandler_t http_fota_tick_msg_handler;
+
 static char *fota_state_get_string(fota_fsm_state_t state);
 static char *fota_image_type_get_string(enum fota_image_type type);
 static void fota_fsm(fota_context_t *pCtx);
@@ -98,9 +96,11 @@ static FwkMsgHandler_t *http_fota_taskMsgDispatcher(FwkMsgCode_t MsgCode)
 	switch (MsgCode) {
 	case FMC_INVALID:                return Framework_UnknownMsgHandler;
 	case FMC_PERIODIC:               return http_fota_tick_msg_handler;
+	case FMC_NETWORK_CONNECTED:      return connection_msg_handler;
+	case FMC_NETWORK_DISCONNECTED:   return connection_msg_handler;
 	case FMC_AWS_CONNECTED:          return connection_msg_handler;
 	case FMC_AWS_DISCONNECTED:       return connection_msg_handler;
-	case FMC_FOTA_START:         	 return http_start_msg_handler;
+	case FMC_BLUEGRASS_READY:        return connection_msg_handler;
 	case FMC_FOTA_START_ACK:         return http_start_ack_msg_handler;
 	default:                         return NULL;
 	}
@@ -145,13 +145,10 @@ int http_fota_task_initialize(void)
 /******************************************************************************/
 static void http_fota_task_thread(void *pArg1, void *pArg2, void *pArg3)
 {
-	int rc;
-	http_fota_task_obj_t *pObj;
-
 	ARG_UNUSED(pArg2);
 	ARG_UNUSED(pArg3);
-
-	pObj = (http_fota_task_obj_t *)pArg1;
+	http_fota_task_obj_t *pObj = (http_fota_task_obj_t *)pArg1;
+	int rc;
 
 	if (fsu_lfs_mount() == 0) {
 		pObj->fs_mounted = true;
@@ -175,6 +172,8 @@ static void http_fota_task_thread(void *pArg1, void *pArg2, void *pArg3)
 		LOG_ERR("Could not init HL7800 FOTA download %d", rc);
 	}
 #endif
+
+	Framework_StartTimer(&pObj->msgTask);
 
 	while (true) {
 		Framework_MsgReceiver(&pObj->msgTask.rxer);
@@ -202,18 +201,11 @@ static int tls_init(void)
 	return err;
 }
 
-static DispatchResult_t http_start_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-					       FwkMsg_t *pMsg)
-{
-	http_fota_task_obj_t *pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
-	Framework_StartTimer(&pObj->msgTask);
-	return DISPATCH_OK;
-}
-
 static DispatchResult_t http_start_ack_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 						   FwkMsg_t *pMsg)
 {
 	http_fota_task_obj_t *pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
+
 	pObj->allow_start = true;
 	return DISPATCH_OK;
 }
@@ -225,28 +217,60 @@ static DispatchResult_t http_start_ack_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 static DispatchResult_t connection_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 					       FwkMsg_t *pMsg)
 {
-	http_fota_task_obj_t *pObj;
+	http_fota_task_obj_t *pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
 
-	pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
-	if (pMsg->header.msgCode == FMC_AWS_CONNECTED) {
+	switch (pMsg->header.msgCode) {
+	case FMC_NETWORK_CONNECTED:
+		pObj->network_connected = true;
+		break;
+
+	case FMC_NETWORK_DISCONNECTED:
+		pObj->network_connected = false;
+		break;
+
+	case FMC_BLUEGRASS_READY:
 		pObj->aws_connected = true;
-	} else {
+		pObj->bluegrass_ready = true;
+		http_fota_enable_shadow_generation();
+		break;
+
+	case FMC_AWS_CONNECTED:
+		pObj->aws_connected = true;
+		break;
+
+	case FMC_AWS_DISCONNECTED:
 		pObj->aws_connected = false;
+		pObj->bluegrass_ready = false;
+		http_fota_disable_shadow_generation();
+		break;
 	}
+
 	return DISPATCH_OK;
 }
 
 static DispatchResult_t http_fota_tick_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 						   FwkMsg_t *pMsg)
 {
-	http_fota_task_obj_t *pObj;
-
 	UNUSED_PARAMETER(pMsg);
+	http_fota_task_obj_t *pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
 
-	pObj = FWK_TASK_CONTAINER(http_fota_task_obj_t);
+	if (pObj->bluegrass_ready) {
+		pObj->shadow_update = http_fota_shadow_update_handler();
+	} else {
+		pObj->shadow_update = false;
+	}
 
-	if (pObj->aws_connected) {
-		http_fota_shadow_update_handler();
+	/* Allow possible delta shadow changes to be processed before starting.
+	 * Allow FOTA shadow updates to be sent before disconnecting from AWS.
+	 */
+
+	if (pObj->network_connected && pObj->bluegrass_ready &&
+	    !pObj->shadow_update) {
+		if (pObj->delay_timer < CONFIG_HTTP_FOTA_START_DELAY) {
+			pObj->delay_timer += 1;
+		}
+	} else {
+		pObj->delay_timer = 0;
 	}
 
 	if (pObj->fs_mounted) {
@@ -378,10 +402,13 @@ static void fota_fsm(fota_context_t *pCtx)
 		break;
 
 	case FOTA_FSM_IDLE:
-		if (http_fota_request(pCtx->type)) {
-			FRAMEWORK_MSG_CREATE_AND_SEND(
-				FWK_ID_RESERVED, FWK_ID_CLOUD, FMC_FOTA_START);
-			next_state = FOTA_FSM_START;
+		if (tctx.delay_timer >= CONFIG_HTTP_FOTA_START_DELAY) {
+			if (http_fota_request(pCtx->type)) {
+				FRAMEWORK_MSG_CREATE_AND_SEND(
+					FWK_ID_RESERVED, FWK_ID_CLOUD,
+					FMC_FOTA_START_REQ);
+				next_state = FOTA_FSM_START;
+			}
 		}
 		break;
 

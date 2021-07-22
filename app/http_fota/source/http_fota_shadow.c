@@ -158,21 +158,21 @@ void http_fota_disable_shadow_generation(void)
 	fota_shadow.enabled = false;
 }
 
-void http_fota_shadow_update_handler(void)
+bool http_fota_shadow_update_handler(void)
 {
-#ifdef CONFIG_BLUEGRASS
-	if (!awsConnected() || !fota_shadow.enabled) {
-		return;
+	bool update_in_progress = fota_shadow.json_update_request;
+
+	if (!fota_shadow.enabled) {
+		return false;
 	}
-#else
-	return;
-#endif
 
 	fota_shadow_handler();
 	fota_null_desired_image_handler(APP_IMAGE_TYPE);
 #ifdef CONFIG_MODEM_HL7800
 	fota_null_desired_image_handler(MODEM_IMAGE_TYPE);
 #endif
+
+	return update_in_progress;
 }
 
 const char *http_fota_get_image_name(enum fota_image_type type)
@@ -205,10 +205,9 @@ void http_fota_set_running_version(enum fota_image_type type, const char *p,
 		}
 	}
 #endif
-	/* This isn't set from the shadow */
-	fota_shadow.json_update_request =
-		set_shadow_str(pImg->running, sizeof(pImg->running),
-			       p + offset + 1, length - offset);
+	/* This isn't printed because it isn't set from the shadow */
+	set_shadow_str(pImg->running, sizeof(pImg->running), p + offset + 1,
+		       length - offset);
 }
 
 void http_fota_set_desired_version(enum fota_image_type type, const char *p,
@@ -220,7 +219,6 @@ void http_fota_set_desired_version(enum fota_image_type type, const char *p,
 	}
 
 	if (set_shadow_str(pImg->desired, sizeof(pImg->desired), p, length)) {
-		fota_shadow.json_update_request = true;
 		LOG_DBG("%s desired version: %s", log_strdup(pImg->name),
 			log_strdup(pImg->desired));
 	}
@@ -237,7 +235,6 @@ void http_fota_set_download_host(enum fota_image_type type, const char *p,
 	}
 
 	if (set_shadow_str(pImg->host, sizeof(pImg->host), p, length)) {
-		fota_shadow.json_update_request = true;
 		LOG_DBG("%s host name: %s", log_strdup(pImg->name),
 			log_strdup(pImg->host));
 	}
@@ -268,7 +265,6 @@ void http_fota_set_download_file(enum fota_image_type type, const char *p,
 	}
 
 	if (set_shadow_str(pImg->file, sizeof(pImg->file), p, length)) {
-		fota_shadow.json_update_request = true;
 		LOG_DBG("%s file name: %s", log_strdup(pImg->name),
 			log_strdup(pImg->file));
 	}
@@ -303,7 +299,6 @@ void http_fota_set_downloaded_filename(enum fota_image_type type, const char *p,
 	 */
 	if (set_shadow_str(pImg->downloaded_filename,
 			   sizeof(pImg->downloaded_filename), p, length)) {
-		fota_shadow.json_update_request = true;
 		LOG_DBG("%s downloaded filename: %s", log_strdup(pImg->name),
 			log_strdup(pImg->downloaded_filename));
 	}
@@ -497,7 +492,6 @@ void http_fota_set_hash(enum fota_image_type type, const char *p, size_t length)
 	}
 
 	if (set_shadow_str(pImg->hash, sizeof(pImg->hash), p, length)) {
-		fota_shadow.json_update_request = true;
 		LOG_DBG("%s image hash: %s", log_strdup(pImg->name),
 			log_strdup(pImg->hash));
 	}
@@ -530,6 +524,7 @@ static bool set_shadow_str(char *dest, size_t dest_size, const char *src,
 		/* Strings from the jsmn parser aren't null terminated. */
 		memset(dest, 0, dest_size);
 		strncpy(dest, src, MIN(dest_size - 1, src_len));
+		fota_shadow.json_update_request = true;
 		updated = true;
 	}
 	k_mutex_unlock(&fota_shadow_mutex);
@@ -543,6 +538,7 @@ static bool set_shadow_uint32(uint32_t *dest, uint32_t value)
 	if (*dest != value) {
 		*dest = value;
 		fota_shadow.json_update_request = true;
+		updated = true;
 	}
 	k_mutex_unlock(&fota_shadow_mutex);
 	return updated;
@@ -611,6 +607,7 @@ static int fota_null_desired_handler(const char *name)
 		      SHADOW_FOTA_NULL_DESIRED_FMT_STR_CONVERSION_SIZE;
 	char *msg = k_calloc(size, sizeof(char));
 	if (msg == NULL) {
+		LOG_ERR("Allocation failure: FOTA null desired");
 		return -ENOMEM;
 	}
 	snprintf(msg, size, SHADOW_FOTA_NULL_DESIRED_FMT_STR, name);

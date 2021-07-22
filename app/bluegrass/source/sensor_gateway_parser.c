@@ -3,6 +3,9 @@
  * @brief Uses jsmn to parse JSON from AWS that controls gateway functionality
  * and sensor configuration.
  *
+ * @note The parsers do not process the "desired" section of the get accepted
+ * data.  It is processed when the delta topic is received.
+ *
  * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -226,14 +229,15 @@ void SensorGatewayParser(const char *pTopic, const char *pJson)
 #endif
 
 #ifdef CONFIG_BOARD_MG100
+		/* Bug 19411 - Test this */
 		MiniGatewayParser(pTopic);
 #endif
 
 #if defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA)
 		FotaParser(pTopic, APP_IMAGE_TYPE);
-#ifdef CONFIG_MODEM_HL7800
-		FotaParser(pTopic, MODEM_IMAGE_TYPE);
-#endif
+		if (IS_ENABLED(CONFIG_MODEM_HL7800)) {
+			FotaParser(pTopic, MODEM_IMAGE_TYPE);
+		}
 #endif
 
 #ifdef CONFIG_COAP_FOTA
@@ -438,11 +442,10 @@ static void UnsubscribeToGetAcceptedHandler(void)
 #if defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA)
 static void FotaParser(const char *pTopic, enum fota_image_type Type)
 {
-	const char *img_name;
-
 	UNUSED_PARAMETER(pTopic);
-
+	const char *img_name;
 	int location = 0;
+
 	jsmn_reset_index();
 
 	/* Try to find "state":{"app":{"desired":"2.1.0","switchover":10}} */
@@ -450,11 +453,13 @@ static void FotaParser(const char *pTopic, enum fota_image_type Type)
 	if (getAcceptedTopic) {
 		jsmn_find_type("reported", JSMN_OBJECT, NEXT_PARENT);
 	}
+
 #ifdef CONFIG_COAP_FOTA
 	img_name = coap_fota_get_image_name(Type);
 #else
 	img_name = http_fota_get_image_name(Type);
 #endif
+
 	jsmn_find_type(img_name, JSMN_OBJECT, NEXT_PARENT);
 
 	if (jsmn_index() > 0) {
@@ -500,15 +505,6 @@ static void FotaParser(const char *pTopic, enum fota_image_type Type)
 		}
 
 		jsmn_restore_index();
-		location = jsmn_find_type(SHADOW_FOTA_DOWNLOADED_FILENAME_STR,
-					  JSMN_STRING, NEXT_PARENT);
-		if (location > 0) {
-			http_fota_set_downloaded_filename(
-				Type, jsmn_string(location),
-				jsmn_strlen(location));
-		}
-
-		jsmn_restore_index();
 		location = jsmn_find_type(SHADOW_FOTA_HASH_STR, JSMN_STRING,
 					  NEXT_PARENT);
 		if (location > 0) {
@@ -541,17 +537,20 @@ static void FotaParser(const char *pTopic, enum fota_image_type Type)
 #endif
 		}
 
-		jsmn_restore_index();
-		location = jsmn_find_type(SHADOW_FOTA_ERROR_STR, JSMN_PRIMITIVE,
-					  NEXT_PARENT);
-		if (location > 0) {
+		/* Don't overwrite error count when reading shadow. */
+		if (!getAcceptedTopic) {
+			jsmn_restore_index();
+			location = jsmn_find_type(SHADOW_FOTA_ERROR_STR,
+						  JSMN_PRIMITIVE, NEXT_PARENT);
+			if (location > 0) {
 #ifdef CONFIG_COAP_FOTA
-			coap_fota_set_error_count(Type,
-						  jsmn_convert_uint(location));
+				coap_fota_set_error_count(
+					Type, jsmn_convert_uint(location));
 #else
-			http_fota_set_error_count(Type,
-						  jsmn_convert_uint(location));
+				http_fota_set_error_count(
+					Type, jsmn_convert_uint(location));
 #endif
+			}
 		}
 	}
 }
@@ -580,6 +579,7 @@ static void FotaHostParser(const char *pTopic)
 static void FotaBlockSizeParser(const char *pTopic)
 {
 	UNUSED_PARAMETER(pTopic);
+	int location;
 
 	jsmn_reset_index();
 
@@ -587,8 +587,9 @@ static void FotaBlockSizeParser(const char *pTopic)
 	if (getAcceptedTopic) {
 		jsmn_find_type("reported", JSMN_OBJECT, NEXT_PARENT);
 	}
-	int location = jsmn_find_type(SHADOW_FOTA_BLOCKSIZE_STR, JSMN_PRIMITIVE,
-				      NEXT_PARENT);
+
+	location = jsmn_find_type(SHADOW_FOTA_BLOCKSIZE_STR, JSMN_PRIMITIVE,
+				  NEXT_PARENT);
 	if (location > 0) {
 		coap_fota_set_blocksize(jsmn_convert_uint(location));
 	}
@@ -651,7 +652,8 @@ static void SensorEventLogParser(const char *pTopic)
 
 	/* Now try to find {"state":{"reported": ... "eventLog":
 	 * Parents are required because shadow contains timestamps
-	 * ("eventLog" wont be unique). */
+	 * ("eventLog" wont be unique).
+	 */
 	(void)jsmn_find_type("state", JSMN_OBJECT, NEXT_PARENT);
 	(void)jsmn_find_type("reported", JSMN_OBJECT, NEXT_PARENT);
 	(void)jsmn_find_type("eventLog", JSMN_ARRAY, NEXT_PARENT);

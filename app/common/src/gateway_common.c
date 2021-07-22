@@ -251,6 +251,15 @@ void gateway_fsm_network_connected_callback(void)
 #endif
 
 	LCZ_MEMFAULT_POST_DATA();
+
+	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED,
+					   FMC_NETWORK_CONNECTED);
+}
+
+void gateway_fsm_network_disconnected_callback(void)
+{
+	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED,
+					   FMC_NETWORK_DISCONNECTED);
 }
 
 void gateway_fsm_cloud_connected_callback(void)

@@ -285,7 +285,8 @@ static int setup_security(void)
 		.pairing_failed = pairing_failed
 	};
 
-	r = bt_passkey_set(attr_get_uint32(ATTR_ID_passkey, 123456));
+	r = bt_passkey_set(
+		attr_get_uint32(ATTR_ID_passkey, BT_PASSKEY_INVALID));
 	if (r < 0) {
 		LOG_ERR("Unable to set passkey: %d", r);
 	} else {

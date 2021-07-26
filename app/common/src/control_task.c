@@ -47,6 +47,10 @@ LOG_MODULE_REGISTER(control, CONFIG_CONTROL_TASK_LOG_LEVEL);
 #include "lcz_lwm2m_client.h"
 #endif
 
+#ifdef CONFIG_DISPLAY
+#include "lcd.h"
+#endif
+
 #include "control_task.h"
 
 /******************************************************************************/
@@ -211,6 +215,9 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	bool update_apn = false;
 	bool update_rat = false;
 #endif
+#ifdef CONFIG_DISPLAY
+	bool update_display = false;
+#endif
 
 	pObj->broadcast_count += 1;
 
@@ -288,6 +295,13 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 			break;
 #endif
 
+#ifdef CONFIG_DISPLAY
+		case ATTR_ID_passkey:
+			update_display = true;
+			break;
+#endif
+
+
 		default:
 			/* Don't care about this attribute. This is a broadcast. */
 			break;
@@ -305,6 +319,12 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 
 	if (update_rat) {
 		update_rat_handler();
+	}
+#endif
+
+#ifdef CONFIG_DISPLAY
+	if (update_display) {
+		lcd_display_update_details();
 	}
 #endif
 

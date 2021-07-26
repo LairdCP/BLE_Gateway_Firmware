@@ -39,6 +39,14 @@ target_sources_ifdef(CONFIG_LCZ_SNTP_SHELL app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/lcz_sntp_shell.c
 )
 
+if(CONFIG_DISPLAY)
+include_directories(${CMAKE_SOURCE_DIR}/display/include)
+target_sources_ifdef(CONFIG_DISPLAY app PRIVATE
+    ${CMAKE_SOURCE_DIR}/display/src/bl5340_module.c
+    ${CMAKE_SOURCE_DIR}/display/src/lcd.c
+)
+endif()
+
 if(CONFIG_CONTACT_TRACING)
 zephyr_include_directories(${CMAKE_SOURCE_DIR}/contact_tracing/include)
 target_sources(app PRIVATE

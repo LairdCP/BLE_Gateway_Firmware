@@ -86,6 +86,10 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 #include <dfu/mcuboot.h>
 #endif
 
+#ifdef CONFIG_DISPLAY
+#include "lcd.h"
+#endif
+
 #include "gateway_common.h"
 
 /******************************************************************************/
@@ -212,6 +216,11 @@ int configure_app(void)
 
 #ifdef CONFIG_CONTACT_TRACING
 	ct_app_init();
+#endif
+
+#ifdef CONFIG_DISPLAY
+	lcd_display_init();
+	lcd_display_update_details();
 #endif
 
 	advertise_on_startup();

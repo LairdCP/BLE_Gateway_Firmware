@@ -747,6 +747,8 @@ static void PairingCompleteCallback(struct bt_conn *conn, bool bonded)
 	if (conn == st.conn) {
 		st.paired = true;
 		st.bonded = bonded;
+
+		LOG_DBG("Pairing complete: bonded: %s", bonded ? "yes" : "no");
 	}
 }
 
@@ -756,6 +758,9 @@ static void PairingFailedCallback(struct bt_conn *conn,
 	if (conn == st.conn) {
 		st.paired = false;
 		st.bonded = false;
+
+		LOG_DBG("Pairing failed: reason: %u %s", reason,
+			lbt_get_security_err_string(reason));
 	}
 }
 

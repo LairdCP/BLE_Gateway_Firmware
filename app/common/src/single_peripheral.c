@@ -20,8 +20,9 @@ LOG_MODULE_REGISTER(single_peripheral, CONFIG_SINGLE_PERIPHERAL_LOG_LEVEL);
 
 #include "lcz_bluetooth.h"
 #include "attr.h"
-#include "single_peripheral.h"
 #include "led_configuration.h"
+#include "errno_str.h"
+#include "single_peripheral.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -53,7 +54,8 @@ static void sp_connected(struct bt_conn *conn, uint8_t err);
 static void stop_adv_timer_callback(struct k_timer *timer_id);
 static void start_stop_adv(struct k_work *work);
 
-static void disconnect_req_handler(struct k_work *work);
+static void disconnect_req(const char *reason);
+static void security_failed_handler(struct k_work *work);
 static void pairing_timeout_handler(struct k_work *work);
 
 static int setup_security(void);
@@ -131,7 +133,7 @@ static int single_peripheral_initialize(const struct device *device)
 		bt_conn_cb_register(&sp.conn_callbacks);
 		k_timer_init(&sp.timer, stop_adv_timer_callback, NULL);
 		k_work_init(&sp.adv_work, start_stop_adv);
-		k_work_init_delayable(&sp.conn_work, disconnect_req_handler);
+		k_work_init_delayable(&sp.conn_work, security_failed_handler);
 		k_work_init_delayable(&sp.pair_work, pairing_timeout_handler);
 		sp.initialized = true;
 
@@ -198,8 +200,8 @@ static void sp_disconnected(struct bt_conn *conn, uint8_t reason)
 	char addr[BT_ADDR_LE_STR_LEN];
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-	LOG_INF("Disconnected central: %s (reason %u)", log_strdup(addr),
-		reason);
+	LOG_INF("Disconnected central: %s (reason: %u %s)", log_strdup(addr),
+		reason, lbt_get_hci_err_string(reason));
 	bt_conn_unref(conn);
 	sp.conn_handle = NULL;
 	sp.paired = false;
@@ -308,6 +310,8 @@ static void pairing_complete(struct bt_conn *conn, bool bonded)
 	if (conn == sp.conn_handle) {
 		sp.paired = true;
 		sp.bonded = bonded;
+
+		LOG_DBG("Pairing complete: bonded: %s", bonded ? "yes" : "no");
 	}
 }
 
@@ -323,23 +327,35 @@ static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
 				  K_MSEC(PAIRING_FAILURE_DISCONNECT_DELAY_MS));
 		sp.paired = false;
 		sp.bonded = false;
+
+		LOG_DBG("Pairing failed: reason: %u %s", reason,
+			lbt_get_security_err_string(reason));
 	}
 }
 
-static void disconnect_req_handler(struct k_work *work)
+static void disconnect_req(const char *reason)
+{
+	int r;
+
+	if (sp.conn_handle != NULL) {
+		r = bt_conn_disconnect(sp.conn_handle, BT_HCI_ERR_AUTH_FAIL);
+		LOG_DBG("%s disconnect status: %d %s", reason, r,
+			r == 0 ? "Success" : errno_str_get(r));
+	}
+}
+
+static void security_failed_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
-	int r = bt_conn_disconnect(sp.conn_handle, BT_HCI_ERR_AUTH_FAIL);
-	LOG_DBG("Security failed disconnect status: %d", r);
+
+	disconnect_req("Security failed");
 }
 
 static void pairing_timeout_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
-	int r;
 
-	if (sp.conn_handle && !sp.paired) {
-		r = bt_conn_disconnect(sp.conn_handle, BT_HCI_ERR_AUTH_FAIL);
-		LOG_INF("Pairing timeout disconnect status: %d", r);
+	if (!sp.paired) {
+		disconnect_req("Pairing timeout");
 	}
 }

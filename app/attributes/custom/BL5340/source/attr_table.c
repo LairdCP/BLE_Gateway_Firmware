@@ -16,6 +16,7 @@
 #include "attr_validator.h"
 #include "attr_custom_validator.h"
 #include "attr_table.h"
+#include "errno_str.h"
 
 /* clang-format off */
 

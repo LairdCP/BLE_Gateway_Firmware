@@ -54,6 +54,7 @@ static void sp_connected(struct bt_conn *conn, uint8_t err);
 static void stop_adv_timer_callback(struct k_timer *timer_id);
 static void start_stop_adv(struct k_work *work);
 
+#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
 static void disconnect_req(const char *reason);
 static void security_failed_handler(struct k_work *work);
 static void pairing_timeout_handler(struct k_work *work);
@@ -61,6 +62,7 @@ static void pairing_timeout_handler(struct k_work *work);
 static int setup_security(void);
 static void pairing_complete(struct bt_conn *conn, bool bonded);
 static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason);
+#endif
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -133,8 +135,10 @@ static int single_peripheral_initialize(const struct device *device)
 		bt_conn_cb_register(&sp.conn_callbacks);
 		k_timer_init(&sp.timer, stop_adv_timer_callback, NULL);
 		k_work_init(&sp.adv_work, start_stop_adv);
+#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
 		k_work_init_delayable(&sp.conn_work, security_failed_handler);
 		k_work_init_delayable(&sp.pair_work, pairing_timeout_handler);
+#endif
 		sp.initialized = true;
 
 #ifdef CONFIG_SINGLE_PERIPHERAL_ADV_ON_INIT
@@ -226,9 +230,9 @@ static void start_stop_adv(struct k_work *work)
 			/* Security callbacks can be overridden by sensor task
 			 * when peripheral is idle.
 			 */
-			if (IS_ENABLED(CONFIG_MCUMGR_SMP_BT_AUTHEN)) {
-				err = setup_security();
-			}
+#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
+			err = setup_security();
+#endif
 
 			if (err == 0) {
 				err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, AD,
@@ -278,6 +282,7 @@ static void stop_adv_timer_callback(struct k_timer *dummy)
 	single_peripheral_stop_advertising();
 }
 
+#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
 static int setup_security(void)
 {
 	int r;
@@ -359,3 +364,4 @@ static void pairing_timeout_handler(struct k_work *work)
 		disconnect_req("Pairing timeout");
 	}
 }
+#endif

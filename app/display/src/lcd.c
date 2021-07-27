@@ -94,11 +94,16 @@ void lcd_display_update_details(void)
 					       "to configure firmware\n"
 					       "settings.\n\n"
 					       "Device name:\n  %s\n"
-					       "Passkey:\n  %06u",
-					       APP_VERSION_STRING,
+#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
+					       "Passkey:\n  %06u"
+#endif
+					       , APP_VERSION_STRING,
 					       get_app_type(),
-					       (char *)attr_get_quasi_static(ATTR_ID_name),
-					       attr_get_uint32(ATTR_ID_passkey, 0));
+					       (char *)attr_get_quasi_static(ATTR_ID_name)
+#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
+					       , attr_get_uint32(ATTR_ID_passkey, 0)
+#endif
+					       );
 
 		lv_label_set_text(ui_text_info, display_string_buffer);
 

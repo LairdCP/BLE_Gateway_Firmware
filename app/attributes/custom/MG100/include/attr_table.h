@@ -208,6 +208,9 @@ extern "C" {
 #define ATTR_GPS_VER_SPEED_MAX_STR_SIZE                 17
 #define ATTR_POLTE_USER_MAX_STR_SIZE                    17
 #define ATTR_POLTE_PASSWORD_MAX_STR_SIZE                17
+#define ATTR_POLTE_LATITUDE_MAX_STR_SIZE                33
+#define ATTR_POLTE_LONGITUDE_MAX_STR_SIZE               33
+#define ATTR_POLTE_CONFIDENCE_MAX_STR_SIZE              17
 
 /* Attribute Byte Array Lengths */
 #define ATTR_CT_AES_KEY_SIZE                            16

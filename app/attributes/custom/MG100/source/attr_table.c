@@ -197,9 +197,9 @@ typedef struct ro_attribute {
 	enum gps_status gpsStatus;
 	enum polte_control_point polteControlPoint;
 	enum polte_status polteStatus;
-	float polteLatitude;
-	float polteLongitude;
-	float polteConfidence;
+	char polteLatitude[32 + 1];
+	char polteLongitude[32 + 1];
+	char polteConfidence[16 + 1];
 	uint32_t polteTimestamp;
 	/* pyend */
 } ro_attribute_t;
@@ -212,7 +212,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.29",
+	.attributeVersion = "0.4.31",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -272,9 +272,9 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.gpsStatus = -1,
 	.polteControlPoint = 0,
 	.polteStatus = 0,
-	.polteLatitude = 0.0,
-	.polteLongitude = 0.0,
-	.polteConfidence = 0.0,
+	.polteLatitude = "",
+	.polteLongitude = "",
+	.polteConfidence = "",
 	.polteTimestamp = 0
 	/* pyend */
 };
@@ -442,9 +442,9 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[108] = { 255, RO_ATTRE(polteStatus)                   , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[109] = { 256, RW_ATTRS(polteUser)                     , ATTR_TYPE_STRING        , y, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
 	[110] = { 257, RW_ATTRS(poltePassword)                 , ATTR_TYPE_STRING        , y, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[111] = { 258, RO_ATTRX(polteLatitude)                 , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 0.0        },
-	[112] = { 259, RO_ATTRX(polteLongitude)                , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 0.0        },
-	[113] = { 260, RO_ATTRX(polteConfidence)               , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 0.0        },
+	[111] = { 258, RO_ATTRS(polteLatitude)                 , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[112] = { 259, RO_ATTRS(polteLongitude)                , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[113] = { 260, RO_ATTRS(polteConfidence)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
 	[114] = { 261, RO_ATTRX(polteTimestamp)                , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          }
 	/* pyend */
 };

@@ -95,3 +95,6 @@ Once the firmware is built, debugging can be started by going to **Debug -> Star
 > **Note:** Debugger settings for VS Code are setup in [.vscode/launch.json](../.vscode/launch.json). That file is already setup to work with Cortex-Debug and this demo.
 
 More info on debugging in VS Code can be found [here](https://code.visualstudio.com/docs/editor/debugging)
+
+### Location Services
+See [here](location.md) for examples on how to use GPS and PoLTE.

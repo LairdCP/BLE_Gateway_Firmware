@@ -560,11 +560,14 @@ static void polte_handler(void *event_data)
 	if (p != NULL) {
 		attr_set_signed32(ATTR_ID_polteStatus, p->status);
 		if (p->status == 0) {
-			attr_set_float(ATTR_ID_polteLatitude, p->latitude);
-			attr_set_float(ATTR_ID_polteLongitude, p->longitude);
+			attr_set_string(ATTR_ID_polteLatitude, p->latitude,
+					strlen(p->latitude));
+			attr_set_string(ATTR_ID_polteLongitude, p->longitude,
+					strlen(p->longitude));
 			attr_set_uint32(ATTR_ID_polteTimestamp, p->timestamp);
-			attr_set_float(ATTR_ID_polteConfidence,
-				       p->confidence_in_meters);
+			attr_set_string(ATTR_ID_polteConfidence,
+					p->confidence_in_meters,
+					strlen(p->confidence_in_meters));
 		}
 	}
 }

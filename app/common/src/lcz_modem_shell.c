@@ -185,15 +185,11 @@ static int shell_hl_site_survey_cmd(const struct shell *shell, size_t argc,
 				    char **argv)
 {
 	int rc = 0;
-	struct mdm_hl7800_site_survey survey;
 
-	shell_print(shell, "status: %d",
-		    mdm_hl7800_perform_site_survey(&survey));
+	shell_print(shell, "survey status: %d",
+		    mdm_hl7800_perform_site_survey());
 
-	shell_print(shell, "Tower Id: %u", survey.tower_id);
-	shell_print(shell, "Cell Id: %u", survey.cell_id);
-	shell_print(shell, "RSRP: %d", survey.rsrp);
-	shell_print(shell, "RSRQ: %d", survey.rsrq);
+	/* Results are printed to shell by lte.site_survey_handler() */
 
 	return rc;
 }

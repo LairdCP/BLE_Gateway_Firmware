@@ -24,8 +24,10 @@ LOG_MODULE_REGISTER(lte, CONFIG_LTE_LOG_LEVEL);
 #include <net/net_context.h>
 #include <net/net_mgmt.h>
 #include <net/socket.h>
-
+#include <shell/shell.h>
+#include <shell/shell_uart.h>
 #include <drivers/modem/hl7800.h>
+
 #include "fota_smp.h"
 #include "led_configuration.h"
 #include "lcz_qrtc.h"
@@ -39,6 +41,7 @@ LOG_MODULE_REGISTER(lte, CONFIG_LTE_LOG_LEVEL);
 #ifdef CONFIG_COAP_FOTA
 #include "coap_fota_shadow.h"
 #endif
+
 #if CONFIG_HTTP_FOTA
 #include "http_fota_shadow.h"
 #endif
@@ -47,9 +50,9 @@ LOG_MODULE_REGISTER(lte, CONFIG_LTE_LOG_LEVEL);
 #include "ct_ble.h"
 #endif
 
-#include "lte.h"
-
 #include "lcz_memfault.h"
+
+#include "lte.h"
 
 /******************************************************************************/
 /* Global Data Definitions                                                    */
@@ -105,6 +108,8 @@ static void polte_registration_handler(void *event_data);
 static void polte_locate_status_handler(void *event_data);
 static void polte_handler(void *event_data);
 #endif
+
+static void site_survey_handler(void *event_data);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -469,6 +474,10 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		break;
 #endif
 
+	case HL7800_EVENT_SITE_SURVEY:
+		site_survey_handler(event_data);
+		break;
+
 	default:
 		LOG_ERR("Unknown modem event");
 		break;
@@ -560,6 +569,24 @@ static void polte_handler(void *event_data)
 	}
 }
 #endif /* CONFIG_MODEM_HL7800_POLTE */
+
+/* Site survey is initiated by modem shell */
+static void site_survey_handler(void *event_data)
+{
+#ifdef CONFIG_SHELL_BACKEND_SERIAL
+	struct mdm_hl7800_site_survey *p = event_data;
+	const struct shell *shell = shell_backend_uart_get_ptr();
+
+	if (p != NULL) {
+		shell_print(shell, "EARFCN: %u", p->earfcn);
+		shell_print(shell, "Cell Id: %u", p->cell_id);
+		shell_print(shell, "RSRP: %d", p->rsrp);
+		shell_print(shell, "RSRQ: %d", p->rsrq);
+	}
+#else
+	ARG_UNUSED(event_data);
+#endif
+}
 
 static void get_local_time_from_modem(struct k_work *item)
 {

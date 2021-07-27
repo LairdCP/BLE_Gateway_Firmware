@@ -11,13 +11,17 @@ hl survey
 
 This instructs the modem to scan.  Each scan may return different results.  Be patient, the response can take minutes.
 
-The response will be similar to this
+When successful, the response will be similar to this:
 ```
-status: 0
-Tower Id: 5110
-Cell Id: 291
-RSRP: -67
-RSRQ: -7
+EARFCN: 5110
+Cell Id: 175
+RSRP: -94
+RSRQ: -9
+EARFCN: 5110
+Cell Id: 6
+RSRP: -102
+RSRQ: -17
+survey status: 0
 ```
 
 A status of 0 indicates that the command succeeded.  Any other value is a failure.

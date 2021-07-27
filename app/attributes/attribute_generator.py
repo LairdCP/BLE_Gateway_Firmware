@@ -81,6 +81,21 @@ def PrintDuplicate(lst):
             print(item)
 
 
+def GenEnums(lst, enums, names, errno):
+    for i, name, include_errno in zip(enums, names, errno):
+        if len(i) != 0:
+            snake = inflection.underscore(name)
+            s = f"enum {snake}" + " {" + "\n"
+            if include_errno:
+                s += "\t" + snake.upper() + "_" + \
+                    f"INCLUDE_ERRNO = INT32_MIN,\n"
+            for key, value in i.items():
+                s += "\t" + snake.upper() + "_" \
+                    + key + " = " + str(value) + ",\n"
+            s += "};\n\n"
+            lst.append(s)
+
+
 class attributes:
     def __init__(self, project: str, fname: str):
 
@@ -113,6 +128,7 @@ class attributes:
         self.enum_include_errno = []
         self.methodEnums = []
         self.methodEnumNames = []
+        self.methodEnumIncludeErrno = []
 
         self.IncrementVersion(fname)
         self.LoadConfig(fname)
@@ -160,6 +176,13 @@ class attributes:
                             i['params'][0]['schema']['x-enum-name'])
                     except:
                         print("Method enum not found")
+
+                    try:
+                        self.methodEnumIncludeErrno.append(
+                            i['params'][0]['schema']['x-enum-include-errno'])
+                    except:
+                        self.methodEnumIncludeErrno.append(False)
+
                 except:
                     continue
 
@@ -618,41 +641,25 @@ class attributes:
 
     def CreateEnums(self) -> str:
         lst = []
-        for i, name in zip(self.enum, self.name):
-            if len(i) != 0:
-                snake = inflection.underscore(name)
-                s = f"enum {snake}" + " {" + "\n"
-                for key, value in i.items():
-                    s += "\t" + snake.upper() + "_" + key + " = " + str(value) + ",\n"
-                s += "};\n\n"
-                lst.append(s)
-
-        for name, y in zip(self.methodEnumNames, self.methodEnums):
-            snake = inflection.underscore(name)
-            s = f"enum {snake}" + " {" + "\n"
-            for key, value in y.items():
-                s += "\t" + snake.upper() + "_" + \
-                    key + " = " + str(value) + ",\n"
-            s += "};\n\n"
-            lst.append(s)
-
+        GenEnums(lst, self.enum, self.name, self.enum_include_errno)
+        # Generator for commands/methods that have enums
+        GenEnums(lst, self.methodEnums, self.methodEnumNames,
+                 self.methodEnumIncludeErrno)
         return ''.join(lst)
 
     def CreateEnumSizeCheck(self) -> str:
+        """
+        The C-compiler generates the size of the enum based on the number
+        elements.
+        """
         lst = []
-        for i, errno, name in zip(self.enum, self.enum_include_errno, self.name):
+        for i, name in zip(self.enum, self.name):
             if len(i) != 0:
                 snake = inflection.underscore(name)
                 t = self.GetType(self.name.index(name))
-                if errno:
-                    if t != "ATTR_TYPE_S32":
-                        s = f"BUILD_ASSERT(false, \"{snake} "
-                        s += "size must be int32_t\");\n"
-                        lst.append(s)
-                else:
-                    s = f"BUILD_ASSERT(sizeof(enum {snake}) == "
-                    s += f"{t.replace('TYPE','SIZE')});\n"
-                    lst.append(s)
+                s = f"BUILD_ASSERT(sizeof(enum {snake}) == "
+                s += f"{t.replace('TYPE','SIZE')});\n"
+                lst.append(s)
 
         return ''.join(lst)
 

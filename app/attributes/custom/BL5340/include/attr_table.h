@@ -167,6 +167,7 @@ extern "C" {
 
 /* pystart - enumerations */
 enum cert_status {
+	CERT_STATUS_INCLUDE_ERRNO = INT32_MIN,
 	CERT_STATUS_BUSY = 1,
 	CERT_STATUS_SUCCESS = 0,
 };
@@ -283,6 +284,7 @@ enum attr_dump {
 /* pyend */
 
 /* pystart - enum size check */
+BUILD_ASSERT(sizeof(enum cert_status) == ATTR_SIZE_S32);
 BUILD_ASSERT(sizeof(enum gateway_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum central_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum fota_control_point) == ATTR_SIZE_U8);

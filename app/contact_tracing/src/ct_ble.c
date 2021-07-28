@@ -762,7 +762,8 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	return;
 
 fail:
-	LOG_INF("Failed to connect to central: %s", log_strdup(addr));
+	LOG_INF("Failed to connect to central: %s %u %s", log_strdup(addr), err,
+		lbt_get_hci_err_string(err));
 	bt_conn_unref(conn);
 	central_conn = NULL;
 }
@@ -783,8 +784,8 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-	LOG_INF("Disconnected sensor: %s (reason %u)", log_strdup(addr),
-		reason);
+	LOG_INF("Disconnected sensor: %s (reason %u %s)", log_strdup(addr),
+		reason, lbt_get_hci_err_string(reason));
 
 	bt_conn_unref(conn);
 	central_conn = NULL;
@@ -816,7 +817,8 @@ static void sensor_connected(struct bt_conn *conn, uint8_t err)
 	return;
 
 fail:
-	LOG_ERR("Failed to connect to sensor %s (%u)", log_strdup(addr), err);
+	LOG_ERR("Failed to connect to sensor %s (%u %s)", log_strdup(addr), err,
+		lbt_get_hci_err_string(err));
 	sensor_disconnect_cleanup(conn);
 }
 

@@ -166,8 +166,8 @@ static void sp_connected(struct bt_conn *conn, uint8_t err)
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	if (err) {
-		LOG_ERR("Central device failed to connect %s (%u)",
-			log_strdup(addr), err);
+		LOG_ERR("Central device failed to connect %s (%u %s)",
+			log_strdup(addr), err, lbt_get_hci_err_string(err));
 		bt_conn_unref(conn);
 		sp.conn_handle = NULL;
 	} else {

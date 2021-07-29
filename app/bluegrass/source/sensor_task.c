@@ -53,16 +53,22 @@ LOG_MODULE_REGISTER(sensor_task, CONFIG_SENSOR_TASK_LOG_LEVEL);
 #define SENSOR_TASK_MAX_OUTSTANDING_ADS (SENSOR_TASK_QUEUE_DEPTH / 2)
 #endif
 
-/** At 1 second there are duplicate requests for shadow information. */
+/* At 1 second there are duplicate requests for shadow information. */
 #define SENSOR_TICK_RATE_SECONDS 3
 
-#define ENCRYPTION_TIMEOUT_TICKS K_SECONDS(2)
+#define ENCRYPTION_TIMEOUT_TICKS K_SECONDS(3)
 #define CONNECTION_TIMEOUT_TICKS K_SECONDS(CONFIG_BT_CREATE_CONN_TIMEOUT + 2)
 
 #define FIRST_VALID_HANDLE 0x0001
 #define LAST_VALID_HANDLE UINT16_MAX
 
 #define SENSOR_PIN_DEFAULT 123456
+
+/* Connection parameters to use when connecting to a sensor */
+#define SENSOR_MIN_CONN_INTERVAL 32 /* in 1.25ms units, 32 = 40ms */
+#define SENSOR_MAX_CONN_INTERVAL 60 /* in 1.25ms units, 60 = 75ms */
+#define SENSOR_LATENCY 1
+#define SENSOR_TIMEOUT 400 /* in 10ms units, 400 = 4s */
 
 typedef struct SensorTask {
 	FwkMsgTask_t msgTask;
@@ -491,7 +497,11 @@ static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 				pObj->pCmdMsg->useCodedPhy ?
 					      BT_CONN_CODED_CREATE_CONN :
 					      BT_CONN_LE_CREATE_CONN,
-				BT_LE_CONN_PARAM_DEFAULT, &pObj->conn);
+				BT_LE_CONN_PARAM(SENSOR_MIN_CONN_INTERVAL,
+						 SENSOR_MAX_CONN_INTERVAL,
+						 SENSOR_LATENCY,
+						 SENSOR_TIMEOUT),
+				&pObj->conn);
 
 			LOG_INF("Connection Request (%u): '%s' (%s) %x-%u",
 				pObj->pCmdMsg->attempts,

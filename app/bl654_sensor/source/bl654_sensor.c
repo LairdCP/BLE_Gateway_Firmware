@@ -34,6 +34,10 @@ LOG_MODULE_REGISTER(bl654_sensor, CONFIG_BL654_SENSOR_LOG_LEVEL);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
+#define BL654_SENSOR_MIN_CONN_INTERVAL 80 /* in 1.25ms units, 80 = 100ms */
+#define BL654_SENSOR_MAX_CONN_INTERVAL 160 /* in 1.25ms units, 160 = 200ms */
+#define BL654_SENSOR_LATENCY 2
+#define BL654_SENSOR_TIMEOUT 400 /* in 10ms units, 400 = 4s */
 #define DISCOVER_SERVICES_DELAY_SECONDS 1
 
 static const struct lcz_led_blink_pattern LED_SENSOR_SEARCH_PATTERN = {
@@ -192,7 +196,12 @@ static void bl654_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 	/* Connect to device */
 	bt_addr_le_to_str(addr, bt_addr, sizeof(bt_addr));
 	err = bt_conn_le_create(addr, BT_CONN_LE_CREATE_CONN,
-				BT_LE_CONN_PARAM_DEFAULT, &sensor_conn);
+				BT_LE_CONN_PARAM(BL654_SENSOR_MIN_CONN_INTERVAL,
+						 BL654_SENSOR_MAX_CONN_INTERVAL,
+						 BL654_SENSOR_LATENCY,
+						 BL654_SENSOR_TIMEOUT),
+				&sensor_conn);
+
 	if (err == 0) {
 		LOG_INF("Attempting to connect to remote BLE device %s",
 			log_strdup(bt_addr));

@@ -90,7 +90,7 @@ hl cmd 10 AT+SWITRACEMODE=RnD
 hl cmd 10 AT+CFUN=1,1
 ```
 
-2. Using the **HL7800** shell, issue the following commands. This terminal's settings are also 115200 8-N-1.
+2. Using the **HL7800** shell, issue the following commands. This terminal's settings are also 115200 8-N-1, but the flow control type is none.
 ```
 config -s locsrv.operation.locsrv_enable true
 config -s polte.config.enable true

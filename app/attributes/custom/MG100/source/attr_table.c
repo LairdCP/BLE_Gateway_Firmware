@@ -158,7 +158,7 @@ typedef struct ro_attribute {
 	int16_t lteRsrp;
 	int16_t lteSinr;
 	enum lte_sleep_state lteSleepState;
-	uint8_t lteRat;
+	enum lte_rat lteRat;
 	char iccid[20 + 1];
 	char lteSerialNumber[14 + 1];
 	char lteVersion[29 + 1];
@@ -212,7 +212,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.31",
+	.attributeVersion = "0.4.32",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -285,6 +285,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 #define attr_get_string_lteNetworkState     attr_get_string_lte_network_state
 #define attr_get_string_lteStartupState     attr_get_string_lte_startup_state
 #define attr_get_string_lteSleepState       attr_get_string_lte_sleep_state
+#define attr_get_string_lteRat              attr_get_string_lte_rat
 #define attr_get_string_centralState        attr_get_string_central_state
 #define attr_get_string_modemBoot           attr_get_string_modem_boot
 #define attr_get_string_fotaControlPoint    attr_get_string_fota_control_point
@@ -387,7 +388,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[53 ] = { 179, RO_ATTRX(lteRsrp)                       , ATTR_TYPE_S16           , n, n, y, n, n, n, av_int16            , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[54 ] = { 180, RO_ATTRX(lteSinr)                       , ATTR_TYPE_S16           , n, n, y, n, n, n, av_int16            , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[55 ] = { 181, RO_ATTRE(lteSleepState)                 , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[56 ] = { 182, RO_ATTRX(lteRat)                        , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 1          },
+	[56 ] = { 182, RO_ATTRE(lteRat)                        , ATTR_TYPE_U8            , n, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 1          },
 	[57 ] = { 183, RO_ATTRS(iccid)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 20         },
 	[58 ] = { 184, RO_ATTRS(lteSerialNumber)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 14         },
 	[59 ] = { 185, RO_ATTRS(lteVersion)                    , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 29         },
@@ -440,8 +441,8 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[106] = { 253, RO_ATTRE(gpsStatus)                     , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[107] = { 254, RO_ATTRE(polteControlPoint)             , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[108] = { 255, RO_ATTRE(polteStatus)                   , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[109] = { 256, RW_ATTRS(polteUser)                     , ATTR_TYPE_STRING        , y, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[110] = { 257, RW_ATTRS(poltePassword)                 , ATTR_TYPE_STRING        , y, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[109] = { 256, RW_ATTRS(polteUser)                     , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[110] = { 257, RW_ATTRS(poltePassword)                 , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
 	[111] = { 258, RO_ATTRS(polteLatitude)                 , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[112] = { 259, RO_ATTRS(polteLongitude)                , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[113] = { 260, RO_ATTRS(polteConfidence)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
@@ -714,6 +715,15 @@ const char *const attr_get_string_lte_sleep_state(int value)
 		case 0:           return "Uninitialized";
 		case 1:           return "Asleep";
 		case 2:           return "Awake";
+		default:          return "?";
+	}
+}
+
+const char *const attr_get_string_lte_rat(int value)
+{
+	switch (value) {
+		case 0:           return "Cat M1";
+		case 1:           return "Cat NB1";
 		default:          return "?";
 	}
 }

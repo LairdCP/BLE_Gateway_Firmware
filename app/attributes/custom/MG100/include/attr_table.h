@@ -157,7 +157,7 @@ extern "C" {
 /* pystart - attribute constants */
 #define ATTR_TABLE_SIZE                                 115
 #define ATTR_TABLE_MAX_ID                               261
-#define ATTR_TABLE_WRITABLE_COUNT                       46
+#define ATTR_TABLE_WRITABLE_COUNT                       49
 #define ATTR_MAX_STR_LENGTH                             254
 #define ATTR_MAX_STR_SIZE                               255
 #define ATTR_MAX_BIN_SIZE                               16
@@ -273,6 +273,11 @@ enum lte_sleep_state {
 	LTE_SLEEP_STATE_AWAKE = 2,
 };
 
+enum lte_rat {
+	LTE_RAT_CAT_M1 = 0,
+	LTE_RAT_CAT_NB1 = 1,
+};
+
 enum central_state {
 	CENTRAL_STATE_FINDING_DEVICE = 0,
 	CENTRAL_STATE_FINDING_SERVICE = 1,
@@ -383,6 +388,7 @@ BUILD_ASSERT(sizeof(enum gateway_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_network_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_startup_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum lte_sleep_state) == ATTR_SIZE_U8);
+BUILD_ASSERT(sizeof(enum lte_rat) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum central_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum modem_boot) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum fota_control_point) == ATTR_SIZE_U8);
@@ -415,6 +421,7 @@ const char *const attr_get_string_gateway_state(int value);
 const char *const attr_get_string_lte_network_state(int value);
 const char *const attr_get_string_lte_startup_state(int value);
 const char *const attr_get_string_lte_sleep_state(int value);
+const char *const attr_get_string_lte_rat(int value);
 const char *const attr_get_string_central_state(int value);
 const char *const attr_get_string_modem_boot(int value);
 const char *const attr_get_string_fota_control_point(int value);

@@ -205,6 +205,7 @@ class attributes:
                     self.lockable.append(GetBoolField(a, 'x-lockable'))
                     self.broadcast.append(GetBoolField(a, 'x-broadcast'))
                     self.readable.append(GetBoolField(a, 'x-readable'))
+                    # TODO: As part of Bug 19046 - change spelling to writable
                     self.writable.append(GetBoolField(a, 'x-writeable'))
                     self.savable.append(GetBoolField(a, 'x-savable'))
                     self.deprecated.append(GetBoolField(a, 'x-deprecated'))

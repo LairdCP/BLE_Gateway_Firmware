@@ -301,7 +301,6 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 			break;
 #endif
 
-
 		default:
 			/* Don't care about this attribute. This is a broadcast. */
 			break;
@@ -317,6 +316,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 		update_apn_handler();
 	}
 
+	/* Do this last because radio will reset. */
 	if (update_rat) {
 		update_rat_handler();
 	}

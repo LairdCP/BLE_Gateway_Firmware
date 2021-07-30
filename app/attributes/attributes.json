@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.31"
+    "version": "0.4.32"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.31",
+              "x-default": "0.4.32",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -3400,7 +3400,7 @@
           },
           {
             "name": "lteRat",
-            "summary": "Radio Access Technology: 0 - CAT M1, 1 = CAT NB1",
+            "summary": "Radio Access Technology",
             "required": true,
             "x-id": 182,
             "x-projects": [
@@ -3408,11 +3408,17 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 1.0,
+              "maximum": 1,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "0",
-              "x-readable": true
+              "x-readable": true,
+              "x-writeable": true,
+              "x-broadcast": true,
+              "enum": {
+                "CAT_M1": 0,
+                "CAT_NB1": 1
+              }
             }
           },
           {
@@ -4862,7 +4868,7 @@
               "x-default": "",
               "x-example": "69691f6d6e2",
               "x-readable": true,
-              "x-writable": true,
+              "x-writeable": true,
               "x-savable": true
             }
           },
@@ -4881,7 +4887,7 @@
               "x-default": "",
               "x-example": "7d2100928da",
               "x-readable": true,
-              "x-writable": true,
+              "x-writeable": true,
               "x-savable": true
             }
           },

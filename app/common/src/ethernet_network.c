@@ -96,7 +96,7 @@ static struct mgmt_events iface_events[] = {
 	{ .event = NET_EVENT_IF_DOWN,
 	  .handler = iface_down_evt_handler },
 #if defined(CONFIG_NET_DHCPV4)
-	{ .event = NET_EVENT_IPV4_CMD_DHCP_BOUND,
+	{ .event = NET_EVENT_IPV4_DHCP_BOUND,
 	  .handler = iface_dhcp_bound_evt_handler },
 #endif
 	{ 0 } /* The for loop below requires this extra location. */
@@ -406,7 +406,7 @@ static void iface_dhcp_bound_evt_handler(struct net_mgmt_event_callback *cb,
 					 uint32_t mgmt_event,
 					 struct net_if *iface)
 {
-	if (mgmt_event != NET_EVENT_IPV4_CMD_DHCP_BOUND) {
+	if (mgmt_event != NET_EVENT_IPV4_DHCP_BOUND) {
 		return;
 	}
 

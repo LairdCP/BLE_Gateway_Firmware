@@ -296,15 +296,6 @@ static void set_ip_dhcp_config(struct net_if *iface)
 			(uint32_t)iface->config.dhcpv4.state);
 	attr_set_uint32(ATTR_ID_ethernetDHCPAttempts,
 			(uint32_t)iface->config.dhcpv4.attempts);
-
-#if defined(CONFIG_SNTP)
-	if (iface->config.dhcpv4.state == NET_DHCPV4_BOUND) {
-		/* Work around issue with not getting DHCP bound callback in
-		 * Zephyr 2.6
-		 */
-		sntp_qrtc_start_delay();
-	}
-#endif
 }
 #endif
 

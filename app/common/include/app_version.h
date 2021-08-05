@@ -18,7 +18,7 @@ extern "C" {
 /******************************************************************************/
 #define APP_VERSION_MAJOR 5
 #define APP_VERSION_MINOR 1
-#define APP_VERSION_PATCH 6
+#define APP_VERSION_PATCH 7
 #define APP_VERSION_STRING                                                     \
 	STRINGIFY(APP_VERSION_MAJOR)                                           \
 	"." STRINGIFY(APP_VERSION_MINOR) "." STRINGIFY(APP_VERSION_PATCH)

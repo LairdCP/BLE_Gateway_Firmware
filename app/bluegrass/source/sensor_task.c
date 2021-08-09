@@ -522,7 +522,8 @@ static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 			return DISPATCH_DO_NOT_FREE;
 		}
 	} else {
-		return RetryConfigRequest(pObj);
+		/* Retry message that hasn't been accepted by sensor task. */
+		return SensorTable_RetryConfigRequest((SensorCmdMsg_t *)pMsg);
 	}
 }
 

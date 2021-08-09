@@ -397,10 +397,19 @@ DispatchResult_t SensorTable_RetryConfigRequest(SensorCmdMsg_t *pMsg)
 
 	if (pMsg->tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
 		SensorEntry_t *pEntry = &sensorTable[pMsg->tableIndex];
-		pEntry->configBusy = false;
-		pEntry->pCmd = pMsg;
+
+		if (pEntry->pCmd == NULL) {
+			pEntry->configBusy = false;
+			pEntry->pCmd = pMsg;
+			return DISPATCH_DO_NOT_FREE;
+		} else {
+			LOG_ERR("Discarding config request: Command not empty");
+			return DISPATCH_OK;
+		}
+	} else {
+		LOG_ERR("Discarding config request: Invalid sensor table index");
+		return DISPATCH_OK;
 	}
-	return DISPATCH_DO_NOT_FREE;
 }
 
 void SensorTable_AckConfigRequest(SensorCmdMsg_t *pMsg)
@@ -423,6 +432,8 @@ void SensorTable_AckConfigRequest(SensorCmdMsg_t *pMsg)
 		} else {
 			CreateDumpRequest(pEntry);
 		}
+	} else {
+		LOG_ERR("Invalid Ack request: Invalid sensor table index");
 	}
 
 	BufferPool_Free(pMsg);

@@ -21,14 +21,14 @@ The CT application allows certain parameters to be updated using SMP over BLE or
 Details about mcumgr and generating certificates can be found [here](aws_iot.md).
 
 ```
-.\mcumgr.exe fs upload ./clear.txt /nv/mqtt/save_clear.txt -c ct
-.\mcumgr.exe fs upload ./AmazonRootCA1.pem /nv/mqtt/root_ca.pem.crt -c ct
-.\mcumgr.exe fs upload ./eadb344c02-certificate.pem.crt /nv/mqtt/certificate.pem.crt -c ct
-.\mcumgr.exe fs upload ./eadb344c02-private.pem.key /nv/mqtt/private.pem.key -c ct
-.\mcumgr.exe fs upload ./test_endpoint.txt /nv/mqtt/endpoint.txt -c ct
-.\mcumgr.exe fs upload ./topic_prefix.txt /nv/aws_topic_prefix.txt -c ct
-.\mcumgr.exe fs upload ./save.txt /nv/mqtt/save_clear.txt -c ct
-.\mcumgr.exe reset -c ct
+mcumgr fs upload clear.txt /nv/mqtt/save_clear.txt -c ct
+mcumgr fs upload AmazonRootCA1.pem /nv/mqtt/root_ca.pem.crt -c ct
+mcumgr fs upload eadb344c02-certificate.pem.crt /nv/mqtt/certificate.pem.crt -c ct
+mcumgr fs upload eadb344c02-private.pem.key /nv/mqtt/private.pem.key -c ct
+mcumgr fs upload test_endpoint.txt /nv/mqtt/endpoint.txt -c ct
+mcumgr fs upload topic_prefix.txt /nv/aws_topic_prefix.txt -c ct
+mcumgr fs upload save.txt /nv/mqtt/save_clear.txt -c ct
+mcumgr reset -c ct
 ```
 
 The content of the file "clear.txt" is 0.

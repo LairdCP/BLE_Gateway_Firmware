@@ -16,6 +16,7 @@ definitions:
         description: File name of downloaded version
       hash:
         type: string
+        description: SHA256 hash of file
       start:
         type: number
         description: Epoch that indicates when download can begin
@@ -30,6 +31,7 @@ definitions:
     properties:
       bluetoothAddr:
         type: string
+        description: Bluetooth address of sensor
       lastSeenEpoch:
         type: number
         description: Seconds from Jan 1, 1970
@@ -54,9 +56,11 @@ properties:
       firmware_version:
         type: string
         required: true
+        description: Current running firmware version
       os_version:
         type: string
         required: true
+        description: Version of Zephyr that current firmware is using
       radio_version:
         type: string
         pattern: "HL7800\\.[0-9]{1,2}\\.[0-9]{1,2}\\.[0-9]{1,2}\\.[0-9]{1,2}"
@@ -83,17 +87,17 @@ properties:
       temperature:
         title: Temperature C
         type: number
-        description: Only present if BL654 sensor with BME280 is connected
+        description: Only present if BL654 Sensor Board or another BL5340 running the ESS demo is connected
         required: false
       humidity:
         title: Humidity %
         type: number
-        description: Only present if BL654 sensor with BME280 is connected
+        description: Only present if BL654 Sensor Board or another BL5340 running the ESS demo is connected
         required: false
       pressure:
         title: Air Pressure (Pa)
         type: number
-        description: Only present if BL654 sensor with BME280 is connected
+        description: Only present if BL654 Sensor Board or another BL5340 running the ESS demo is connected
         required: false
       battery_voltage:
         title: Battery Voltage (float)
@@ -102,7 +106,7 @@ properties:
         maximum: 20
       fwBridge:
         type: string
-        description: Hostname (bridge) used during CoAP FOTA.  CoAP FOTA may not be enabled.
+        description: Hostname (bridge) used during CoAP FOTA. CoAP FOTA may not be enabled.
         required: false
       fwProduct:
         type: string
@@ -115,9 +119,11 @@ properties:
       codedPhySupported:
         type: boolean
         required: true
+        description: True if Bluetooth Coded PHY support is enabled
       httpFotaEnabled:
         type: boolean
         required: true
+        description: True if HTTP FOTA system is enabled
       app:
         "$ref": "#/definitions/fota"
         required: true

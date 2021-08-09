@@ -1,7 +1,7 @@
 # Developing and Debugging the Firmware
 
 The out of box demo source code can be used as a starting point for your own IoT cloud applications!
-This document will explain how to use Visual Studio Code to build and debug the application.
+This document will explain how to use Visual Studio Code to build and debug the application (MG100 and Pinnacle 100 only).
 
 > **Note:** These instructions assume you already have the Zephyr tools installed and can build the app successfully. Please see [here](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest#preparing-to-build) if you have not completed those steps.
 

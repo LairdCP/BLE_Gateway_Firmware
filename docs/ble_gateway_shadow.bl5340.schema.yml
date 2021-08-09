@@ -1,0 +1,157 @@
+definitions:
+  fota:
+    type: object
+    properties:
+      running:
+        type: string
+        description: Version of version running
+      desired:
+        type: string
+        description: Version of desired
+      desiredFilename:
+        type: string
+        description: File name of desired version
+      downloadFilename:
+        type: string
+        description: File name of downloaded version
+      hash:
+        type: string
+        description: SHA256 hash of file
+      start:
+        type: number
+        description: Epoch that indicates when download can begin
+      switchover:
+        type: number
+        description: Epoch that indicates when switch to new firmware can begin.
+      errorCount:
+        type: number
+        description: If firmware update fails, this count will be incremented.
+  sensor:
+    type: object
+    properties:
+      bluetoothAddr:
+        type: string
+        description: Bluetooth address of sensor
+      lastSeenEpoch:
+        type: number
+        description: Seconds from Jan 1, 1970
+      enable:
+        type: boolean
+        description: Enable/Disable data collection from sensor.
+
+properties:
+  desired:
+    type: object
+    properties:
+      app:
+        "$ref": "#/definitions/fota"
+      fwBridge:
+        type: string
+
+  reported:
+    type: object
+    properties:
+      firmware_version:
+        type: string
+        required: true
+        description: Current running firmware version
+      os_version:
+        type: string
+        required: true
+        description: Version of Zephyr that current firmware is using
+      temperature:
+        title: Temperature C
+        type: number
+        description: Only present if BL654 Sensor Board or another BL5340 running the ESS demo is connected
+        required: false
+      humidity:
+        title: Humidity %
+        type: number
+        description: Only present if BL654 Sensor Board or another BL5340 running the ESS demo is connected
+        required: false
+      pressure:
+        title: Air Pressure (Pa)
+        type: number
+        description: Only present if BL654 Sensor Board or another BL5340 running the ESS demo is connected
+        required: false
+      fwBridge:
+        type: string
+        description: Hostname (bridge) used during CoAP FOTA. CoAP FOTA may not be enabled.
+        required: false
+      fwProduct:
+        type: string
+        description: The product name is used to generate the file path during CoAP FOTA
+        required: false
+      fwBlockSize:
+        type: number
+        description: The maximum blocksize used during CoAP FOTA
+        required: false
+      codedPhySupported:
+        type: boolean
+        required: true
+        description: True if Bluetooth Coded PHY support is enabled
+      httpFotaEnabled:
+        type: boolean
+        required: true
+        description: True if HTTP FOTA system is enabled
+      app:
+        "$ref": "#/definitions/fota"
+        required: true
+      bt510:
+        type: object
+        required: false
+        sensors:
+          type: array
+          "$ref": "#/definitions/sensor"
+      MAC:
+        type: string
+        description: The MAC address of the network interface
+        required: false
+      type:
+        type: number
+        description: The operating type of the network connection (1 = IPv4, 2 = IPv6)
+        required: false
+      mode:
+        type: number
+        description: The operating mode of the network connection (1 = static, 2 = DHCP)
+        required: false
+      speed:
+        type: number
+        description: The speed of the network connection (0 = unknown, 1 = 10Mbps, 2 = 100Mbps)
+        required: false
+      duplex:
+        type: number
+        description: The duplex of the network connection (0 = unknown, 1 = half, 2 = full)
+        required: false
+      IPAddress:
+        type: string
+        description: The active network interface IP address
+        required: false
+      netmaskLength:
+        type: number
+        description: The number of bits used for the network mask
+        required: false
+      gateway:
+        type: string
+        description: The default gateway IP address
+        required: false
+      DNS:
+        type: string
+        description: The active DNS server IP address
+        required: false
+      DHCPLeaseTime:
+        type: number
+        description: If DHCP is used, the lease time in seconds
+        required: false
+      DHCPRenewTime:
+        type: number
+        description: If DHCP is used, the renewal time in seconds
+        required: false
+      DHCPState:
+        type: number
+        description: DHCP status (0 = disabled, 1 = init, 2 = selecting, 3 = requesting, 4 = renewing, 5 = rebinding, 6 = bound)
+        required: false
+      DHCPAttempts:
+        type: number
+        description: If DHCP is used, the number of attempts before an IP was bound from a DHCP server
+        required: false

@@ -4,7 +4,7 @@
 
 1. [mcumgr CLI](https://github.com/apache/mynewt-mcumgr#command-line-tool) (cross platform)
 2. Pinnacle 100/MG100/BL5340 device running firmware v3.x or greater. See [here](https://github.com/LairdCP/Pinnacle_100_firmware/releases/tag/v3.0.0) for instructions on updating to 3.0.0.
-3. Terminal program: Putty (Windows,Linux,macOS), Teraterm (Windows), Serial (macOS)
+3. Terminal program: Putty (Windows, Linux, macOS), Teraterm (Windows), Serial (macOS)
 
 ## Update Zephyr App Via UART
 
@@ -114,7 +114,7 @@
    log halt
    ```
 
-7. Confirm the image. If the new image is not confirmed, the image will be swapped back to slot 1 on the next reboot.
+7. Confirm the image. If the new image is not confirmed, the image will be swapped back to slot 1 on the next reboot (Note that the BLE gateway firmware will automatically confirm the image when it boots).
 
    ```
    # Linux/macOS
@@ -204,7 +204,7 @@ Using mcumgr CLI and BLE is only supported on Linux or macOS.
 
    ```
 
-## Updating HL7800 Firmware Via UART
+## Updating HL7800 Firmware Via UART (Pinnacle 100/MG100 only)
 
 1. Connect terminal program to console UART and turn off log messages. Log messages output by the firmware can interfere with the firmware transfer process.
 

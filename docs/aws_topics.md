@@ -4,7 +4,7 @@
 
 Communication between the gateway and AWS uses 4 topics.
 
-The gateway shadow is described in [yaml](ble_gateway_shadow.schema.yml).
+The gateway shadow is described in yaml for the [Pinnacle 100 and MG100 here](ble_gateway_shadow.pinnacle100.schema.yml) and for the [BL5340 here](ble_gateway_shadow.bl5340.schema.yml).
 
 ## Gateway Topics
 

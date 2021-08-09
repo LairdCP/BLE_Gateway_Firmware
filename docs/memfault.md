@@ -1,6 +1,6 @@
-# Memfault SDK Integration
+# Memfault SDK Integration (Pinnacle 100 and MG100 only)
 
-The [AWS Out-of-Box (OOB) Demo](readme_ltem_aws.md) (Pinnacle 100 DVK and MG100) integrates the [Memfault](https://docs.memfault.com/docs/mcu/introduction/) SDK.
+The [AWS Out-of-Box (OOB) Demo](readme_aws.md) (Pinnacle 100 DVK and MG100) integrates the [Memfault](https://docs.memfault.com/docs/mcu/introduction/) SDK.
 Memfault allows the user to monitor devices remotely debug firmware and more. See [memfault.com](https://memfault.com) for more info.
 
 The Memfault SDK is integrated in the OOB firmware version 4.x and newer.

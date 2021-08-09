@@ -1,4 +1,4 @@
-# Location Services
+# Location Services (Pinnacle 100 and MG100 only)
 
 ## GPS
 

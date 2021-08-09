@@ -8,7 +8,7 @@ The Sentrius™ tracker’s firmware is designed for detecting and logging when 
 
 # System Requirements for Data Logging
 
-In order to capture data logs from the a Bluetooth tracking device (BT710 or BT510-CT), your system must include a Laird Connectivity gateway with contact tracing (CT) compatible firmware. The tracker will automatically interact with a properly configured gateway over Bluetooth Low Energy, allowing the gateway to download and forward CT data logs to its configured cloud-based endpoint. The Laird Connectivity MG100, IG60-BL654 and IG60-SERIAL gateways are designed for connectivity to the AWS IoT platform, however they may be configured for other platforms with support from the Laird Connectivity Design Services team, if necessary (separate business arrangement and development contract required).
+In order to capture data logs from the a Bluetooth tracking device (BT710 or BT510-CT), your system must include a Laird Connectivity gateway with contact tracing (CT) compatible firmware. The tracker will automatically interact with a properly configured gateway over Bluetooth Low Energy, allowing the gateway to download and forward CT data logs to its configured cloud-based endpoint. The Laird Connectivity MG100, IG60-BL654 and IG60-SERIAL gateways are designed for connectivity to the AWS IoT platform, however they may be configured for other platforms with support from the Laird Connectivity Design Services team, if necessary (separate business arrangement and development contract required). The BL5340 development kit can be used as a demonstration board with a wired (ethernet) internet connection, however is not a ready-to-deploy packaged product.
 The figure below depicts a typical scenario for a small deployment of trackers and an MG100 BLE-to-Cellular gateway. In this scenario, trackers will sense one another, capture CT log data locally and when nearby the MG100 will forward their logs to AWS IoT.
 
 ![Contact Tracing Overview](images/contact_tracing.png)
@@ -90,21 +90,37 @@ The Sentrius™ MG100-CT Gateway firmware implements an RPC mechanism providing 
 
 # Building for Contact Tracing
 
-> **Note:** If using [VS Code for development](development.md) the `build contact tracing with mcuboot` and `build contact tracing` tasks can be used to easily build the firmware.
+> **Note:** If using [VS Code for development](development.md) the `build contact tracing with mcuboot` and `build contact tracing` tasks can be used to easily build the firmware for the MG100. For the BL5340, please follow the below steps.
 
-The steps to build the Contact Tracing application are similar to the [Out-of-Box Demo](readme_ltem_aws.md#building-the-firmware).
+The steps to build the Contact Tracing application are similar to the [Out-of-Box Demo](readme_aws.md#building-the-firmware).
 However, the contact tracing build requires another configuration file.
 
 ```
-# Linux and macOS
+# MG100
+
+## Linux and macOS
 
 cp ../modules/zephyr_lib/mcuboot_config/pm_static.pinnacle100.yml app/pm_static.yml
 
 west build -b [board] -d ${PWD}/build/[board]/ct ${PWD}/app -- -DOVERLAY_CONFIG="${PWD}/app/contact_tracing/overlay_ct.conf ${PWD}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf" -Dmcuboot_DTC_OVERLAY_FILE=${PWD}/app/boards/pinnacle_100.overlay -Dmcuboot_CONF_FILE=${PWD}/../modules/zephyr_lib/mcuboot_config/pinnacle_100.conf
 
-# Windows
+## Windows
 
 copy ..\modules\zephyr_lib\mcuboot_config\pm_static.pinnacle100.yml app\pm_static.yml
 
 west build -b [board] -d %CD%\build\[board]\ct %CD%\app -- -DOVERLAY_CONFIG="%CD%\app\contact_tracing\overlay_ct.conf %CD%\..\modules\zephyr_lib\mcumgr_wrapper\config\overlay-mcuboot.conf" -Dmcuboot_DTC_OVERLAY_FILE=%CD%\app\boards\pinnacle_100.overlay -Dmcuboot_CONF_FILE=%CD%\..\modules\zephyr_lib\mcuboot_config\pinnacle_100.conf
+
+# BL5340
+
+## Linux and macOS
+
+cp app/boards/pm_static_bl5340_dvk.yml app/pm_static.yml
+
+west build -b [board] -d ${PWD}/build/[board]/ct ${PWD}/app -- -DOVERLAY_CONFIG="${PWD}/app/contact_tracing/overlay_ct.conf ${PWD}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf" -Dmcuboot_CONF_FILE=${PWD}/../modules/zephyr_lib/mcuboot_config/bl5340.conf
+
+## Windows
+
+copy app\boards\pm_static_bl5340_dvk.yml app\pm_static.yml
+
+west build -b [board] -d %CD%\build\[board]\ct %CD%\app -- -DOVERLAY_CONFIG="%CD%\app\contact_tracing\overlay_ct.conf %CD%\..\modules\zephyr_lib\mcumgr_wrapper\config\overlay-mcuboot.conf" -Dmcuboot_CONF_FILE=%CD%\..\modules\zephyr_lib\mcuboot_config\bl5340.conf
 ```

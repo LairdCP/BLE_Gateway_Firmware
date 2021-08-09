@@ -16,11 +16,11 @@
 
 ## Introduction
 
-Cloud FOTA updates to the Pinnacle 100/MG100/BL5340 require, at a minimum, a webserver that can serve up a static webpage containing the \*.bin upgrade file (NOTE: Devices request this file using partial content HTTPS requests to the static webpage). The relevant code to include this functionality in your own project is located in the _<project_folder>/pinnacle_100_firmware/app/http_fota_ folder when you clone the [Pinnacle 100 Firmware Manifest](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest).
+Cloud FOTA updates to the Pinnacle 100/MG100/BL5340 require, at a minimum, a webserver that can serve up a static webpage containing the \*.bin upgrade file (NOTE: Devices request this file using partial content HTTPS requests to the static webpage). The relevant code to include this functionality in your own project is located in the _<project_folder>/pinnacle_100_firmware/app/http_fota_ folder when you clone the [Pinnacle 100 Firmware Manifest](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest) or in the _<project_folder>/ble_gateway_firmware/app/http_fota_ folder when you clone the [BL5340 Manifest](https://github.com/LairdCP/BL5340_Firmware_Manifest).
 
 The following discusses how to perform the upgrade two ways, using an Amazon Web Services (AWS) S3 Bucket and using an NGINX webserver running on an AWS EC2 instance.
 
-**NOTE: If you are currently running the OOB Demo Firmware and connected to Laird Connectivity's Bluegrass Demo site, and the desire is to upgrade the OOB Demo Firmware to a newer version, use the instructions [here](https://github.com/LairdCP/Pinnacle-100-Firmware/blob/main/docs/readme_ltem_aws.md#fota-updates-via-the-cloud)**
+**NOTE: If you are currently running the OOB Demo Firmware and connected to Laird Connectivity's Bluegrass Demo site, and the desire is to upgrade the OOB Demo Firmware to a newer version, use the instructions [here](https://github.com/LairdCP/Pinnacle-100-Firmware/blob/main/docs/readme_aws.md#fota-updates-via-the-cloud)**
 
 **WARNING: The Nordic Download Client used to facilitate the HTTPS FOTA Upgrade limits the size of the Download Host DNS and Download File names, the default sizes are as follows:**
 
@@ -33,10 +33,12 @@ DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE(=64) "Maximum hostname length (stack)"
 
 1. Pinnacle 100/MG100/BL5340 that supports Cloud HTTP FOTA upgrades, this would include any unit running the OOB Demo v4.0 or above and any custom firmware implementation that includes the Cloud HTTP FOTA functionality
 2. \*.bin file for the Firmware you want to load, desired revision must be different than current revision on Pinnacle 100/MG100/BL5340
-   - Official releases available [here!](https://github.com/LairdCP/Pinnacle_100_firmware/releases)
+   - Official releases available [here for the Pinnacle 100/MG100](https://github.com/LairdCP/Pinnacle_100_firmware/releases)
      - 480-00052 for Pinnacle 100 Modem
      - 480-00070 for MG100 Gateway
-   - Custom FW builds use **_app_update.bin_** which is located in the build directory `<project_folder>/pinnacle_100_firmware/build/<project>/zephyr/app_update.bin`
+   - Official releases available [here for the BL5340](https://github.com/LairdCP/BL5340_Firmware/releases)
+     - 480-00115 for the BL5340 development kit
+   - Custom FW builds use **_app_update.bin_** which is located in the build directory `<project_folder>/pinnacle_100_firmware/build/<project>/zephyr/app_update.bin` or `<project_folder>/ble_gateway_firmware/build/<project>/zephyr/app_update.bin`
 3. HTTP or HTTPS endpoint serving a static webpage containing the \*.bin upgrade file, e.g. `http://pinnacle100.com/<bin_filename>.bin`  
    **WARNING:** To use HTTPS, the file must be served from an AWS S3 bucket. There is no support for using a custom HTTPS server at this time.
 4. Ability to publish an MQTT message to the Pinnacle 100 or MG100, this could be:
@@ -70,14 +72,14 @@ DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE(=64) "Maximum hostname length (stack)"
 ![Public Access](images/aws/S3_pubaccess.png)  
 _Turning off Public Access_
 
-3. Select **Upload** and drag-and-drop or select **Add Files** to add your \*.bin file to your S# bucket
+3. Select **Upload** and drag-and-drop or select **Add Files** to add your \*.bin file to your S3 bucket
 
 ### Get S3 HTTPS Endpoint
 
 1. Navigate to the location of the \*.bin file in the S3 Bucket
 2. Select the \*.bin file by clicking the file or checking the box next to the filename
 3. Select **_Copy URL_**  
-   **NOTE:** The URL should look similar to this: `https://pinnacle100.s3-us-west-2.amazonaws.com/<finename>.bin`
+   **NOTE:** The URL should look similar to this: `https://pinnacle100.s3-us-west-2.amazonaws.com/<filename>.bin`
 4. Save this address to be used in the [Trigger Cloud FOTA Upgrade](#trigger-cloud-fota-upgrade) section
 
 **_SKIP TO [Trigger Cloud FOTA Upgrade](#trigger-cloud-fota-upgrade) SECTION_**
@@ -87,7 +89,6 @@ _Turning off Public Access_
 ### Setup EC2 Instance
 
 1. Launch a new EC2 Instance
-
    - _Choose AMI_: Ubuntu 20.04 was used for this testing
    - _Choose Instance Type_: t2.micro instance is sufficient
    - Keep defaults for _Configure Instance_, _Add Storage_, and _Add Tags_
@@ -126,7 +127,7 @@ Replace the values under "app" with those that correspond to your update. If you
 
 **NOTE 1:** If using an S3 Bucket as the host, only copy in the piece up to and including the _'.com'_ to `downloadHost` , the remaining bit (file location) gets copied into `downloadFile` (excluding the leading _'/'_)
 
-**NOTE 2:** The Pinnacle 100/MG100/BL5340 will request the download using a Partial Content Header and defaults to 2KB chunks with each request. To change the size of these chunks see information [here](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/1.5.1/nrf/include/net/download_client.html#download-client-https)
+**NOTE 2:** The Pinnacle 100/MG100/BL5340 will request the download using a Partial Content Header and defaults to 2KB chunks with each request. To change the size of these chunks see information [here](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/1.6.1/nrf/include/net/download_client.html#download-client-https)
 
 ```
 {

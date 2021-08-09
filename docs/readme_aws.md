@@ -25,14 +25,14 @@
 
 ## Introduction
 
-The firmware in the AWS configuration gathers sensor data over BLE and sends the data to the cloud (AWS) via LTE-M.
+The firmware in the AWS configuration gathers sensor data over BLE and sends the data to the cloud (AWS) via LTE-M (for Pinnacle 100 and MG100) or Ethernet (for BL5340).
 
-One sensor that can be used is the BL654 sensor. This sensor ships with the development kit (DVK) and measures temperature, humidity, and pressure.
+One sensor that can be used is the BL654 Sensor Board. This sensor ships with the Pinnacle 100 development kit (DVK) and measures temperature, humidity, and pressure - alternatively the BL5340 ESS demo application can be loaded to a second BL5340 which provides the same service, this is available in the sample_apps/ess_demo folder as [seen here](https://github.com/LairdCP/BL5340_Sample_Apps/tree/master/ess_demo) and a pre-built image can be [downloaded from here](https://github.com/LairdCP/BL5340_Firmware_Manifest/releases).
 
 Another supported sensor is the BT510. It records temperature and movement. The BT510 can also be configured to detect a door opened/closed.
 
-The Pinnacle 100/MG100/BL5340 device scans for the BL654 sensor and connects to the first one it finds. At the same time, the device gathers data for the BT510 sensors from advertisements without creating a connection.
-The demo supports one BL654 sensor and up to five BT510 sensors. The demo can be recompiled to remove support for either sensor.
+The Pinnacle 100/MG100/BL5340 device scans for the BL654 Sensor Board/ESS sensor and connects to the first one it finds. At the same time, the device gathers data for the BT510 sensors from advertisements without creating a connection.
+The demo supports up to one BL654 Sensor Board/ESS sensor and up to five BT510 sensors. The demo can be recompiled to remove support for either sensor.
 
 Using the Laird Pinnacle Connect mobile app, the user can provision the Pinnacle 100/MG100/BL5340 device to connect to AWS. Once connected to AWS, the device sends sensor data (if a sensor is found) to the cloud every 60 seconds.
 Once a BT510 is discovered and enabled via the web portal, its sensor data is reported. The details of the BT510 data reporting are detailed [below](#bt510-sensor-data).
@@ -52,7 +52,7 @@ X                                X
            XXXXXXX
                ^
                +
-              LTE-M (MQTT with TLS)
+ LTE-M or Ethernet (MQTT with TLS)
                +
                v
      +---------+----------+
@@ -84,8 +84,8 @@ X                                X
 
 The following are required to fully exercise this demo firmware:
 
-- An activated SIM card. See [here](https://www.lairdconnect.com/documentation/truphone-sim-setup-guide) for instructions on activating the SIM card that came with your kit.
-- Pinnacle 100 DVK, MG100, or BL5340 DVK programmed with the latest LTE-M/AWS firmware. Releases available [here!](https://github.com/LairdCP/Pinnacle-100-firmware/releases)
+- An activated SIM card. See [here](https://www.lairdconnect.com/documentation/truphone-sim-setup-guide) for instructions on activating the SIM card that came with your kit (Pinnacle 100 and MG100 only).
+- Pinnacle 100 DVK, MG100, or BL5340 DVK programmed with the latest AWS firmware. Releases available [here for Pinnacle 100 and MG100](https://github.com/LairdCP/Pinnacle-100-firmware/releases) and [here for BL5340](https://github.com/LairdCP/BL5340_Firmware/releases).
   - Connect to the FTDI UART on the development kit to view firmware logs
 - Laird Pinnacle Connect app installed on a mobile device. An active internet connection on the mobile device is required.
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)
@@ -95,7 +95,7 @@ The following are required to fully exercise this demo firmware:
 
 To set up the device, follow these steps:
 
-1. Ensure an _activated_ SIM card is inserted into the Pinnacle 100 SIM slot.
+1. Ensure an _activated_ SIM card is inserted into the Pinnacle 100 SIM slot (Pinnacle 100/MG100 only).
 2. On your phone, launch the Pinnacle mobile app and follow the on-screen prompts.
 
 ## Using the Demo
@@ -117,7 +117,7 @@ _Scan screen_
 To scan for devices, follow these steps:
 
 1. Click **Find Pinnacle Devices**. Discovered devices are displayed.
-   > **Note:** The device name contains the last seven digits of the IMEI of the device so that you can easily identify the device to which you wish to connect. The IMEI is printed on the label on the bottom of the MG100 housing or on the Pinnacle 100 Modem label.
+   > **Note:** The device name contains the last seven digits of the IMEI of the device so that you can easily identify the device to which you wish to connect. The IMEI is printed on the label on the bottom of the MG100 housing or on the Pinnacle 100 Modem label. For the BL5340 it will show the last digits of the BLE address.
 
 ![Scan screen - devices found](images/devices_found.png)  
 _Scan screen - devices found_
@@ -146,7 +146,7 @@ Once sending provisioning data is complete, a prompt displays and you are direct
 ![Provisioning is complete](images/provision_success.png)  
 _Provisioning is complete_
 
-The provisioning data is committed to non-volatile memory in the Pinnacle 100 device.
+The provisioning data is committed to non-volatile memory in the Pinnacle 100 or BL5340 module.
 
 ![Device commissioned and connected to AWS](images/provisioned_and_commissioned.png)  
 _Device commissioned and connected to AWS_
@@ -179,6 +179,13 @@ The cellular settings page displays status information related to the cellular r
 ![Cellular settings](images/cell_settings.png)  
 _Cell settings_
 
+### Ethernet Settings
+
+The ethernet settings page displays status information related to the ethernet configuration and allows changing the configuration of it. Note that a reboot of the module is required for the changes to be applied.
+
+![Ethernet settings](images/ethernet_settings.png)
+_Ethernet settings_
+
 ### Power Settings
 
 The power settings page displays the battery voltage and allows the user to reboot the modem. MG100 variants, 450-00038-K1 and 450-00054-K1 are equipped with a rechargeable Li-ion battery used for backup power when external power is lost. The battery will automatically start charging again once external power is restored and the the battery is not fully charged. The firmware monitors the battery voltage and temperature to provide remaining capacity left in the battery. This data is sent over BLE or cellular to report voltage and remaining battery capacity. The battery thresholds are defaulted to reasonable values, but they can be modified via BLE or the shadow if customization is desired. The threshold defaults are as follows. The lowest the battery is allowed to discharge to is 2.75V before the under-voltage protection hardware kicks in.
@@ -197,7 +204,7 @@ _Power settings_
 
 ### Firmware Updates
 
-If the Pinnacle 100 device is running firmware 3.0.0 or greater, firmware updates will be available in the mobile app or via the web UI. In LWM2M mode, firmware update can only be done using the mobile app (Bluetooth).
+If the Pinnacle 100/BL5340 module is running firmware 3.0.0 or greater, firmware updates will be available in the mobile app or via the web UI. In LwM2M mode, firmware update can only be done using the mobile app (Bluetooth).
 
 #### FOTA Updates via BLE
 
@@ -227,7 +234,7 @@ The application firmware or HL7800 cellular firmware can be scheduled for update
 
 ## Cloud Data
 
-Once the Pinnacle 100 device is commissioned with the mobile app and it is connected to AWS, the user can log into the web portal to view sensor data.
+Once the Pinnacle 100 or BL5340 module is commissioned with the mobile app and it is connected to AWS, the user can log into the web portal to view sensor data.
 
 The web portal is located at: <https://demo.lairdconnect.com>
 
@@ -245,7 +252,7 @@ Click on the device ID to display its data.
 ![Pinnacle 100 data](images/pinnacle_100_data.png)  
 _Pinnacle 100 data_
 
-If a BL654 sensor is discovered, the Pinnacle device connects and reports sensor data every 60 seconds. The graph only displays live data that is logged while viewing the webpage. If the user leaves the web page and returns, the graph starts over with the most recent data that was received when returning to the page.
+If a BL654 sensor or ESS demo sensor is discovered, the module connects and reports sensor data every 60 seconds. The graph only displays live data that is logged while viewing the webpage. If the user leaves the web page and returns, the graph starts over with the most recent data that was received when returning to the page.
 
 ### BT510 Sensor Data
 
@@ -282,6 +289,8 @@ _BT510 log_
 
 ## LED Behavior
 
+### Pinnacle 100/MG100
+
 The Blue LED blinks once a second when the Pinnacle device is searching for a BL654 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
 
 The Green LED turns on when connected to AWS. When data is sent to AWS the LED turns off and then turns back on. When disconnected from AWS, the LED remains off.
@@ -290,11 +299,25 @@ The Red LED blinks when the device is searching for a cellular network. It remai
 
 > **Note:** Before to version 3.x of the firmware, Red LED performed the Blue LED function. Blue LED performed the Green LED function. Green LED performed the Red LED function.
 
+### BL5340
+
+There are 4 blue LEDs on the BL5340 development kit with buttons above them, the first LED is located on the left and last LED on the right.
+
+The first blue LED blinks once a second when the BL5340 is advertising which allows a phone to connect to it. When a device connects to it, the LED remains on. When the BL5340 stops advertising, the LED remains off. Note that the button above the LED can be used to start the device advertising if it has stopped.
+
+The second blue LED blinks once a second when the BL5340 is searching for a BL654/ESS sensor. When it finds a sensor and successfully connects to it, the LED remains on.
+
+The third blue LED turns on when an ethernet cable is connected and remains off if no cable is detected.
+
+The forth blue LED turns on when connected to AWS. When data is sent to AWS the LED turns off and then turns back on. When disconnected from AWS, the LED remains off.
+
 ## My Own AWS Connection
 
 If you wish to connect to your own AWS instance, [See here](aws_iot.md) for instructions.
 
 ## Building the Firmware
+
+### Pinnacle 100/MG100
 
 The firmware can be built to work with or without the mcuboot bootloader. Building without mcuboot is faster and easier for development and debug, but gives up the ability to update the Zephyr app via UART or BLE.
 
@@ -356,10 +379,58 @@ west flash -d build\[board]\aws
 
 If the firmware was built with mcuboot, `west flash` will program merged.hex which contains the mcuboot bootloader and app in a combined image.
 
+### BL5340
+
+The firmware can be built to work with the mcuboot bootloader.
+
+Issue these commands **from the ble_gateway_firmware directory**.
+
+> **WARNING:** If using windows, checkout code to a path of 12 characters or less to avoid build issues related to path length limits.
+
+Build with mcuboot:
+
+```
+# Linux and macOS
+
+cp app/boards/pm_static_bl5340_dvk.yml app/pm_static.yml
+
+west build -b bl5340_dvk_cpuapp -d ${PWD}/build/bl5340_dvk_cpuapp/aws ${PWD}/app -- -DOVERLAY_CONFIG=${PWD}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf -Dmcuboot_CONF_FILE=${PWD}/../modules/zephyr_lib/mcuboot_config/bl5340.conf
+
+# Windows
+
+copy app\boards\pm_static_bl5340_dvk.yml  app\pm_static.yml
+
+west build -b bl5340_dvk_cpuapp -d %CD%\build\bl5340_dvk_cpuapp\aws %CD%\app -- -DOVERLAY_CONFIG=%CD%\..\modules\zephyr_lib\mcumgr_wrapper\config\overlay-mcuboot.conf -Dmcuboot_CONF_FILE=%CD%\..\modules\zephyr_lib\mcuboot_config\bl5340.conf
+```
+
+After building the firmware, it can be flashed with the following command:
+
+```
+# Linux and macOS
+
+west flash -d build/bl5340_dvk_cpuapp/aws
+
+# Windows
+
+west flash -d build\bl5340_dvk_cpuapp\aws
+```
+
+The full firmware comprising of the application and mcuboot for the application code and Bluetooth stack and mcuboot for the network core will be flashed to the module. Note that if flashing fails, it might need to be performed by doing a recover which an be done by using the following command instead:
+
+```
+# Linux and macOS
+
+west flash --recover -d build/bl5340_dvk_cpuapp/aws
+
+# Windows
+
+west flash --recover -d build\bl5340_dvk_cpuapp\aws
+```
+
 ## Development
 
 See [here](development.md) for help on getting started with custom development.
 
 ## Cellular Network Information
 
-See [here](site_survey.md) for instructions on how to get details about the cell network.
+See [here](site_survey.md) for instructions on how to get details about the cell network (Pinnacle 100/MG100 only).

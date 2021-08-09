@@ -117,7 +117,7 @@ First navigate to the sensor shadow.
 
 Then add the configuration that you want to change to the "desired" section of the shadow.
 
-The configVersion must also be incremented. This value is used by the MG100 gateway to filter duplicate requests. In this example, the output data rate (odr) of the accelerometer is changed.
+The configVersion must also be incremented. This value is used by the gateway to filter duplicate requests. In this example, the output data rate (odr) of the accelerometer is changed.
 
 ```
   "desired" : {

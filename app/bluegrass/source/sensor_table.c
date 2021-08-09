@@ -345,6 +345,9 @@ DispatchResult_t SensorTable_AddConfigRequest(SensorCmdMsg_t *pMsg)
 		pMsg->resetRequest = SensorCmd_RequiresReset(pMsg->cmd);
 	}
 
+	/* The "configVersion" number in the shadow is used to filter out
+	 * identical config changes that may be received on the /delta topic.
+	 */
 	if ((pMsg->configVersion != p->rsp.configVersion) ||
 	    pMsg->dumpRequest) {
 		/* If AWS sends a second config message while the first
@@ -380,7 +383,10 @@ DispatchResult_t SensorTable_AddConfigRequest(SensorCmdMsg_t *pMsg)
 		}
 	}
 
-	LOG_WRN("Config not accepted (version unchanged)");
+	/* When editing the shadow manually (for example, in the AWS IoT console),
+	 * the "configVersion" number must also be changed.
+	 */
+	LOG_WRN("Duplicate request from Bluegrass not accepted (version unchanged)");
 	return DISPATCH_OK;
 }
 

@@ -628,8 +628,8 @@ static void SensorDeltaParser(const char *pTopic)
 		pMsg->size = bufSize;
 		pMsg->length = (bufSize > 0) ? (bufSize - 1) : 0;
 
-		/* The version in the delta document changes anytime a publsh occurs,
-		 * so use a CRC to filter out duplicates.
+		/* The AWS generated version in the delta document changes anytime
+		 * a publsh occurs.  "configVersion" is used to filter duplicates.
 		 */
 		pMsg->configVersion = version;
 

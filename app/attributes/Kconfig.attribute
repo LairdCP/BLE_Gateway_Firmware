@@ -63,6 +63,12 @@ config MCUMGR_CMD_SENTRIUS_MGMT
     select CBOR_FLOATING_POINT
     select CBOR_HALF_FLOAT_TYPE
 
+config SENTRIUS_MGMT_MEMFAULT_FILE_NAME
+    string "File name used for writing memfault data"
+    depends on MCUMGR_CMD_SENTRIUS_MGMT
+    depends on LCZ_MEMFAULT_FILE
+    default "/lfs/mflt.bin"
+
 config MGMT_GROUP_ID_SENTRIUS
 	int "MCU manager group id"
 	default 65

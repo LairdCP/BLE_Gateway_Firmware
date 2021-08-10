@@ -29,6 +29,7 @@
 #include "lcz_qrtc.h"
 #include "lcz_bluetooth.h"
 #include "file_system_utilities.h"
+#include "lcz_memfault.h"
 
 #include "sentrius_mgmt.h"
 
@@ -65,6 +66,7 @@
 #define SENTRIUS_MGMT_ID_DISABLE_NOTIFY                        17
 #define SENTRIUS_MGMT_ID_GENERATE_TEST_LOG                     18
 #define SENTRIUS_MGMT_ID_UART_LOG_HALT                         19
+#define SENTRIUS_MGMT_ID_GENERATE_MEMFAULT_FILE                20
 /* pyend */
 /* clang-format on */
 
@@ -122,6 +124,7 @@ static mgmt_handler_fn get_notify;
 static mgmt_handler_fn disable_notify;
 static mgmt_handler_fn generate_test_log;
 static mgmt_handler_fn uart_log_halt;
+static mgmt_handler_fn generate_memfault_file;
 /* pyend */
 
 static int sentrius_mgmt_init(const struct device *device);
@@ -219,6 +222,10 @@ static const struct mgmt_handler SENTRIUS_MGMT_HANDLERS[] = {
 	},
 	[SENTRIUS_MGMT_ID_UART_LOG_HALT] = {
 		.mh_write = uart_log_halt,
+		.mh_read = NULL
+	},
+	[SENTRIUS_MGMT_ID_GENERATE_MEMFAULT_FILE] = {
+		.mh_write = generate_memfault_file,
 		.mh_read = NULL
 	}
 
@@ -958,6 +965,38 @@ static int uart_log_halt(struct mgmt_ctxt *ctxt)
 }
 #else
 static int uart_log_halt(struct mgmt_ctxt *ctxt)
+{
+	ARG_UNUSED(ctxt);
+
+	return MGMT_ERR_ENOTSUP;
+}
+#endif
+
+#ifdef CONFIG_LCZ_MEMFAULT_FILE
+static int generate_memfault_file(struct mgmt_ctxt *ctxt)
+{
+	CborError err = 0;
+	size_t file_size = 0;
+	bool has_core_dump = false;
+	int r = lcz_memfault_save_data_to_file(
+		CONFIG_SENTRIUS_MGMT_MEMFAULT_FILE_NAME, &file_size,
+		&has_core_dump);
+
+	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
+	err |= cbor_encode_int(&ctxt->encoder, r);
+	err |= cbor_encode_text_stringz(&ctxt->encoder, "s");
+	err |= cbor_encode_int(&ctxt->encoder, file_size);
+	err |= cbor_encode_text_stringz(&ctxt->encoder, "c");
+	err |= cbor_encode_boolean(&ctxt->encoder, has_core_dump);
+	err |= cbor_encode_text_stringz(&ctxt->encoder, "f");
+	err |= cbor_encode_text_string(
+		&ctxt->encoder, CONFIG_SENTRIUS_MGMT_MEMFAULT_FILE_NAME,
+		strlen(CONFIG_SENTRIUS_MGMT_MEMFAULT_FILE_NAME));
+
+	return MGMT_STATUS_CHECK(err);
+}
+#else
+static int generate_memfault_file(struct mgmt_ctxt *ctxt)
 {
 	ARG_UNUSED(ctxt);
 

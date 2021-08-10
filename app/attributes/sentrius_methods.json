@@ -1116,6 +1116,65 @@
                     ]
                 }
             }
+        },
+        {
+            "name": "MemfaultSave",
+            "summary": "Save Memfault data to a file",
+            "description": "",
+            "x-json-msg-type": "Request",
+            "x-interface-serial": true,
+            "x-interface-ble": true,
+            "x-id": 20,
+            "x-group-id": 65,
+            "tags": [
+                {
+                    "name": 65
+                }
+            ],
+            "params": [],
+            "result": {
+                "name": "Result",
+                "schema": {
+                    "items": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "summary": "Negative errno, 0 on success",
+                            "description": "result",
+                            "x-example": "0",
+                            "x-ctype": "int32_t",
+                            "x-sequence-number": 1
+                        },
+                        {
+                            "name": "s",
+                            "type": "integer",
+                            "summary": "Size of file in bytes",
+                            "description": "file size",
+                            "x-example": "10346",
+                            "x-ctype": "uint32_t",
+                            "x-sequence-number": 2
+                        },
+                        {
+                            "name": "c",
+                            "type": "boolean",
+                            "summary": "True if the file contains a core dump",
+                            "description": "has core dump",
+                            "x-example": "true",
+                            "x-ctype": "bool",
+                            "x-sequence-number": 3
+                        },
+                        {
+                            "name": "f",
+                            "type": "string",
+                            "summary": "Absolute file name (includes path) of the memfault file",
+                            "description": "file name",
+                            "x-example": "/lfs/mflt.bin",
+                            "x-ctype": "string",
+                            "x-sequence-number": 4
+                        }
+                    ]
+                }
+            }
         }
     ]
 }

@@ -51,6 +51,8 @@ static const struct lcz_led_blink_pattern LED_ADVERTISING_PATTERN = {
 static int single_peripheral_initialize(const struct device *device);
 static void sp_disconnected(struct bt_conn *conn, uint8_t reason);
 static void sp_connected(struct bt_conn *conn, uint8_t err);
+static void sp_le_param_updated(struct bt_conn *conn, uint16_t interval,
+				uint16_t latency, uint16_t timeout);
 static void stop_adv_timer_callback(struct k_timer *timer_id);
 static void start_stop_adv(struct k_work *work);
 
@@ -132,6 +134,7 @@ static int single_peripheral_initialize(const struct device *device)
 	if (!sp.initialized) {
 		sp.conn_callbacks.connected = sp_connected;
 		sp.conn_callbacks.disconnected = sp_disconnected;
+		sp.conn_callbacks.le_param_updated = sp_le_param_updated;
 		bt_conn_cb_register(&sp.conn_callbacks);
 		k_timer_init(&sp.timer, stop_adv_timer_callback, NULL);
 		k_work_init(&sp.adv_work, start_stop_adv);
@@ -213,6 +216,18 @@ static void sp_disconnected(struct bt_conn *conn, uint8_t reason)
 
 	/* Restart advertising because disconnect may have been unexpected. */
 	single_peripheral_start_advertising();
+}
+
+static void sp_le_param_updated(struct bt_conn *conn, uint16_t interval,
+				uint16_t latency, uint16_t timeout)
+{
+	if (!lbt_peripheral_role(conn)) {
+		return;
+	}
+
+	LOG_DBG("Connection Parameters: "
+		"Interval %d ms, Latency %d s, Timeout %d ms",
+		interval * 100 / 125, latency, timeout * 10);
 }
 
 /* Workqueue allows start/stop to be called from interrupt context. */

@@ -76,6 +76,7 @@ typedef struct rw_attribute {
 	uint32_t gpsRate;
 	char polteUser[16 + 1];
 	char poltePassword[16 + 1];
+	uint32_t blePrepareTimeout;
 	/* pyend */
 } rw_attribute_t;
 
@@ -125,7 +126,8 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com",
 	.gpsRate = 0,
 	.polteUser = "",
-	.poltePassword = ""
+	.poltePassword = "",
+	.blePrepareTimeout = 3600
 	/* pyend */
 };
 
@@ -212,7 +214,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.32",
+	.attributeVersion = "0.4.33",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -446,7 +448,8 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[111] = { 258, RO_ATTRS(polteLatitude)                 , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[112] = { 259, RO_ATTRS(polteLongitude)                , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[113] = { 260, RO_ATTRS(polteConfidence)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[114] = { 261, RO_ATTRX(polteTimestamp)                , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          }
+	[114] = { 261, RO_ATTRX(polteTimestamp)                , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[115] = { 262, RW_ATTRX(blePrepareTimeout)             , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 180       , .max.ux = 172800     }
 	/* pyend */
 };
 
@@ -569,7 +572,8 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[258] = &ATTR_TABLE[111],
 	[259] = &ATTR_TABLE[112],
 	[260] = &ATTR_TABLE[113],
-	[261] = &ATTR_TABLE[114]
+	[261] = &ATTR_TABLE[114],
+	[262] = &ATTR_TABLE[115]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -760,6 +764,8 @@ const char *const attr_get_string_fota_control_point(int value)
 	switch (value) {
 		case 0:           return "Nop";
 		case 2:           return "Modem Start";
+		case 16:          return "Ble Prepare";
+		case 17:          return "Ble Abort";
 		default:          return "?";
 	}
 }

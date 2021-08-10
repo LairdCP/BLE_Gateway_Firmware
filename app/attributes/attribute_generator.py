@@ -718,6 +718,7 @@ class attributes:
                 s = s.replace("Ipv6", "IPv6")
                 s = s.replace("2 D", "2D")
                 s = s.replace("3 D", "3D")
+                s = s.replace("Nb1", "NB1")
                 lst.append(s)
 
         return ''.join(lst)

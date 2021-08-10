@@ -23,6 +23,13 @@ extern "C" {
 /******************************************************************************/
 void bl654_sensor_initialize(void);
 
+/**
+ * @brief If BL654 sensor is connected, then disconnect.
+ *
+ * @return int zero on success or negative error code on failure
+ */
+int bl654_sensor_disconnect(void);
+
 #ifdef __cplusplus
 }
 #endif

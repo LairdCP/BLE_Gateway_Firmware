@@ -144,8 +144,10 @@ static char build_id[BUILD_ID_SIZE];
 /******************************************************************************/
 int lte_init(void)
 {
-	char *str;
+#ifdef CONFIG_LCZ_MEMFAULT
 	char *device_id;
+#endif
+	char *str;
 	int rc = LTE_INIT_ERROR_NONE;
 	int operator_index;
 
@@ -421,7 +423,9 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_FOTA_STATE:
-		fota_smp_state_handler(*((uint8_t *)event_data));
+		if (IS_ENABLED(CONFIG_MODEM_HL7800_FW_UPDATE)) {
+			fota_smp_state_handler(*((uint8_t *)event_data));
+		}
 		break;
 
 	case HL7800_EVENT_FOTA_COUNT:

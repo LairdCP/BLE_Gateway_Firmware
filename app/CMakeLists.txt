@@ -20,11 +20,11 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/gateway_common.c
     ${CMAKE_SOURCE_DIR}/common/src/control_task.c
     ${CMAKE_SOURCE_DIR}/common/src/gateway_fsm.c
+    ${CMAKE_SOURCE_DIR}/common/src/fota_smp.c
 )
 
 target_sources_ifdef(CONFIG_MODEM_HL7800 app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/lte.c
-    ${CMAKE_SOURCE_DIR}/common/src/fota_smp.c
 )
 
 target_sources_ifdef(CONFIG_NET_L2_ETHERNET app PRIVATE

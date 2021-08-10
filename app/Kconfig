@@ -323,6 +323,10 @@ config GATEWAY_FSM_LOG_LEVEL
     range 0 4
     default 4
 
+config FOTA_SMP_DELETE_ON_COMPLETE
+    bool "Delete file on completion of FOTA"
+    default y
+
 rsource "./common/Kconfig.ble"
 rsource "./common/Kconfig.single_peripheral"
 rsource "./common/Kconfig.lairdconnect_battery"

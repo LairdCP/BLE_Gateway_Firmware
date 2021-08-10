@@ -112,6 +112,7 @@ extern "C" {
 #define ATTR_ID_ethernetDHCPState                     238
 #define ATTR_ID_ethernetDHCPAttempts                  239
 #define ATTR_ID_sntpServer                            241
+#define ATTR_ID_blePrepareTimeout                     262
 /* pyend */
 
 /******************************************************************************/
@@ -119,9 +120,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                      79
-#define ATTR_TABLE_MAX_ID                                    241
-#define ATTR_TABLE_WRITABLE_COUNT                            41
+#define ATTR_TABLE_SIZE                                      80
+#define ATTR_TABLE_MAX_ID                                    262
+#define ATTR_TABLE_WRITABLE_COUNT                            42
 #define ATTR_MAX_STR_LENGTH                                  254
 #define ATTR_MAX_STR_SIZE                                    255
 #define ATTR_MAX_BIN_SIZE                                    16
@@ -210,6 +211,8 @@ enum central_state {
 enum fota_control_point {
 	FOTA_CONTROL_POINT_NOP = 0,
 	FOTA_CONTROL_POINT_MODEM_START = 2,
+	FOTA_CONTROL_POINT_BLE_PREPARE = 16,
+	FOTA_CONTROL_POINT_BLE_ABORT = 17,
 };
 
 enum fota_status {

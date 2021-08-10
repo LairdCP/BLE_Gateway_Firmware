@@ -71,6 +71,7 @@ typedef struct rw_attribute {
 	char ethernetStaticGateway[15 + 1];
 	char ethernetStaticDNS[15 + 1];
 	char sntpServer[64 + 1];
+	uint32_t blePrepareTimeout;
 	/* pyend */
 } rw_attribute_t;
 
@@ -115,7 +116,8 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.ethernetStaticNetmaskLength = 0,
 	.ethernetStaticGateway = "0.0.0.0",
 	.ethernetStaticDNS = "0.0.0.0",
-	.sntpServer = "time.windows.com"
+	.sntpServer = "time.windows.com",
+	.blePrepareTimeout = 3600
 	/* pyend */
 };
 
@@ -170,7 +172,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.bluetoothAddress = "0",
 	.resetCount = 0,
 	.upTime = 0,
-	.attributeVersion = "0.4.30",
+	.attributeVersion = "0.4.34",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -334,7 +336,8 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[75 ] = { 237, RO_ATTRX(ethernetDHCPRenewTime)         , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
 	[76 ] = { 238, RO_ATTRE(ethernetDHCPState)             , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 6          },
 	[77 ] = { 239, RO_ATTRX(ethernetDHCPAttempts)          , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 100        },
-	[78 ] = { 241, RW_ATTRS(sntpServer)                    , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 64         }
+	[78 ] = { 241, RW_ATTRS(sntpServer)                    , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 64         },
+	[79 ] = { 262, RW_ATTRX(blePrepareTimeout)             , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 180       , .max.ux = 172800     }
 	/* pyend */
 };
 
@@ -421,7 +424,8 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[237] = &ATTR_TABLE[75 ],
 	[238] = &ATTR_TABLE[76 ],
 	[239] = &ATTR_TABLE[77 ],
-	[241] = &ATTR_TABLE[78 ]
+	[241] = &ATTR_TABLE[78 ],
+	[262] = &ATTR_TABLE[79 ]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -539,6 +543,8 @@ const char *const attr_get_string_fota_control_point(int value)
 	switch (value) {
 		case 0:           return "Nop";
 		case 2:           return "Modem Start";
+		case 16:          return "Ble Prepare";
+		case 17:          return "Ble Abort";
 		default:          return "?";
 	}
 }

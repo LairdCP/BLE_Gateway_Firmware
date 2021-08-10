@@ -35,6 +35,7 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #include "lcz_software_reset.h"
 #include "lte.h"
 #include "attr.h"
+#include "fota_smp.h"
 
 #ifdef CONFIG_BLUEGRASS
 #include "sensor_gateway_parser.h"
@@ -870,14 +871,16 @@ static void publish_watchdog_work_handler(struct k_work *work)
 
 	LOG_WRN("Unable to publish (AWS) in the last hour");
 
+	if (!fota_smp_ble_prepared()) {
 #ifdef CONFIG_MODEM_HL7800
-	if (attr_get_signed32(ATTR_ID_modemFunctionality, 0) !=
-	    MODEM_FUNCTIONALITY_AIRPLANE) {
-		lcz_software_reset_after_assert(0);
-	}
+		if (attr_get_signed32(ATTR_ID_modemFunctionality, 0) !=
+		    MODEM_FUNCTIONALITY_AIRPLANE) {
+			lcz_software_reset_after_assert(0);
+		}
 #else
-	lcz_software_reset_after_assert(0);
+		lcz_software_reset_after_assert(0);
 #endif
+	}
 }
 
 static void keep_alive_work_handler(struct k_work *work)

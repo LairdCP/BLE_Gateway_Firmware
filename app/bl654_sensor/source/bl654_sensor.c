@@ -163,6 +163,17 @@ void bl654_sensor_initialize(void)
 	set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
 }
 
+int bl654_sensor_disconnect(void)
+{
+	int r = 0;
+
+	if (sensor_conn) {
+		r = bt_conn_disconnect(sensor_conn,
+				       BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+	}
+
+	return r;
+}
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/

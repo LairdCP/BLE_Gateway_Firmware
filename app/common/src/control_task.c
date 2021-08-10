@@ -20,9 +20,9 @@ LOG_MODULE_REGISTER(control, CONFIG_CONTROL_TASK_LOG_LEVEL);
 
 #ifdef CONFIG_MODEM_HL7800
 #include <drivers/modem/hl7800.h>
-#include "fota_smp.h"
 #endif
 
+#include "fota_smp.h"
 #include "FrameworkIncludes.h"
 #include "lcz_software_reset.h"
 #include "attr.h"
@@ -194,7 +194,7 @@ static DispatchResult_t gateway_fsm_tick_handler(FwkMsgReceiver_t *pMsgRxer,
 	bluegrass_subscription_handler();
 #endif
 
-#ifdef CONFIG_MODEM_HL7800
+#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 	if (!pObj->cloud_connected) {
 		fota_smp_start_handler();
 	}
@@ -264,11 +264,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 #endif
 
 		case ATTR_ID_fotaControlPoint:
-#ifdef CONFIG_MODEM_HL7800
 			fota_smp_cmd_handler();
-#else
-			attr_set_uint32(ATTR_ID_fotaStatus, FOTA_STATUS_ERROR);
-#endif
 			break;
 
 #ifdef CONFIG_LCZ_MOTION
@@ -556,9 +552,5 @@ static DispatchResult_t lwm2m_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 
 bool gateway_fsm_fota_request(void)
 {
-#ifdef CONFIG_MODEM_HL7800
-	return cto.fota_request || fota_smp_modem_busy();
-#else
 	return cto.fota_request;
-#endif
 }

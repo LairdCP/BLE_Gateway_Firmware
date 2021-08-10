@@ -56,6 +56,7 @@ LOG_MODULE_REGISTER(ct_ble, CONFIG_CT_BLE_LOG_LEVEL);
 #include "aws.h"
 #include "lte.h"
 #include "bluegrass.h"
+#include "fota_smp.h"
 
 #include "ct_ble.h"
 
@@ -908,7 +909,7 @@ static void ct_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 	ct.all_ads++;
 
 	if (CONFIG_CT_ADV_WATCHDOG_SECONDS != 0) {
-		err = k_work_schedule(
+		err = k_work_reschedule(
 			&ct_adv_watchdog,
 			K_SECONDS(CONFIG_CT_ADV_WATCHDOG_SECONDS));
 		if (err) {
@@ -2675,7 +2676,9 @@ static void ct_adv_watchdog_work_handler(struct k_work *work)
 	ARG_UNUSED(work);
 
 	LOG_WRN("Advertisement not received in the last hour");
-	lcz_software_reset_after_assert(0);
+	if (!fota_smp_ble_prepared()) {
+		lcz_software_reset_after_assert(0);
+	}
 }
 
 static bool ct_ble_remote_active_handler(void)

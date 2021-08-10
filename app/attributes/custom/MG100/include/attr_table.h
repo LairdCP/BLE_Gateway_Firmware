@@ -148,6 +148,7 @@ extern "C" {
 #define ATTR_ID_polteLongitude                        259
 #define ATTR_ID_polteConfidence                       260
 #define ATTR_ID_polteTimestamp                        261
+#define ATTR_ID_blePrepareTimeout                     262
 /* pyend */
 
 /******************************************************************************/
@@ -155,9 +156,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                 115
-#define ATTR_TABLE_MAX_ID                               261
-#define ATTR_TABLE_WRITABLE_COUNT                       49
+#define ATTR_TABLE_SIZE                                 116
+#define ATTR_TABLE_MAX_ID                               262
+#define ATTR_TABLE_WRITABLE_COUNT                       50
 #define ATTR_MAX_STR_LENGTH                             254
 #define ATTR_MAX_STR_SIZE                               255
 #define ATTR_MAX_BIN_SIZE                               16
@@ -300,6 +301,8 @@ enum modem_boot {
 enum fota_control_point {
 	FOTA_CONTROL_POINT_NOP = 0,
 	FOTA_CONTROL_POINT_MODEM_START = 2,
+	FOTA_CONTROL_POINT_BLE_PREPARE = 16,
+	FOTA_CONTROL_POINT_BLE_ABORT = 17,
 };
 
 enum fota_status {

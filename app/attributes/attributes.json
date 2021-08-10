@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.32"
+    "version": "0.4.34"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.32",
+              "x-default": "0.4.34",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -3811,6 +3811,7 @@
           {
             "name": "fotaControlPoint",
             "summary": "Firmware update over-the-air Control Point",
+            "notes": "The blePrepareTimeout value applies to modem or app updates.  If a change is desired, the timeout must be set before issuing prepare command.",
             "required": true,
             "x-id": 203,
             "x-projects": [
@@ -3826,7 +3827,9 @@
               "x-broadcast": true,
               "enum": {
                 "NOP": 0,
-                "MODEM_START": 2
+                "MODEM_START": 2,
+                "BLE_PREPARE": 16,
+                "BLE_ABORT": 17
               },
               "x-validator": "cp8"
             }
@@ -4956,6 +4959,27 @@
               "x-default": "0",
               "x-example": "0",
               "x-readable": true
+            }
+          },
+          {
+            "name": "blePrepareTimeout",
+            "summary": "Timeout in seconds for successful FOTA update before re-enabling scanning.",
+            "required": true,
+            "x-id": 262,
+            "x-projects": [
+              "MG100",
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint32_t",
+              "minimum": 180,
+              "maximum": 172800,
+              "x-default": "3600",
+              "x-example": "2400",
+              "x-readable": true,
+              "x-writeable": true,
+              "x-savable": true
             }
           }
         ]

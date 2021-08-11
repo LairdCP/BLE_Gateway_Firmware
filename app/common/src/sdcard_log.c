@@ -70,7 +70,7 @@ static const char *bl654FilePath = "/SD:/mg100bl6.csv";
 #elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
 static const char *batteryFilePath = "/SD:/bl5340B.csv";
 static const char *sensorFilePath = "/SD:/bl5340Ad.csv";
-static const char *bl654FilePath = "/SD:/bl5340bl6.csv";
+static const char *bl654FilePath = "/SD:/bl5340bl.csv";
 #endif
 
 static bool sdCardPresent = false;
@@ -180,7 +180,9 @@ int sdCardLogInit(void)
 	uint32_t blockSize = 0;
 	uint64_t sdCardSize = 0;
 	static const char *diskPdrv = "SD";
+#ifdef CONFIG_BOARD_MG100
 	const struct device *sdcardEnable = 0;
+#endif
 
 	/* initialize the log size based on the stored log size */
 	ret = attr_copy_uint32(&LogLength, ATTR_ID_sdLogMaxSize);
@@ -236,6 +238,17 @@ int sdCardLogInit(void)
 		if (ret == 0) {
 			LOG_INF("Disk mounted.\n");
 			sdCardPresent = true;
+
+			fs_file_t_init(&batteryLogZfp);
+#ifdef CONFIG_SCAN_FOR_BT510
+			fs_file_t_init(&sensorLogFileZfp);
+#endif
+#ifdef CONFIG_BL654_SENSOR
+			fs_file_t_init(&bl654LogFileZfp);
+#endif
+#ifdef CONFIG_CONTACT_TRACING
+			fs_file_t_init(&sdLogZfp);
+#endif
 		} else {
 			LOG_ERR("Error mounting disk.\n");
 		}
@@ -476,6 +489,8 @@ int sdCardLogCleanup(void)
 		return -1;
 	}
 
+	fs_dir_t_init(&dirp);
+
 	ret = fs_opendir(&dirp, full_path);
 	if (ret) {
 		k_sem_give(&sd_card_access_sem);
@@ -563,6 +578,8 @@ int sdCardLsDir(const char *path)
 		return -1;
 	}
 
+	fs_dir_t_init(&dirp);
+
 	ret = fs_opendir(&dirp, full_path);
 	if (ret) {
 		LOG_ERR("Error opening dir %s [%d]", full_path, ret);
@@ -617,6 +634,8 @@ int sdCardLogLsDirToString(const char *path, char *buf, int maxlen)
 	if (k_sem_take(&sd_card_access_sem, SD_ACCESS_SEM_TIMEOUT) != 0) {
 		return -1;
 	}
+
+	fs_dir_t_init(&dirp);
 
 	ret = fs_opendir(&dirp, full_path);
 	if (ret) {

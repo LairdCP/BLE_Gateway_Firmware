@@ -290,11 +290,9 @@ config CERT_LOADER_LOG_LEVEL
     default 3
 
 config SD_CARD_LOG
-    bool
+    bool "Enable logging to SD card"
     depends on (BOARD_MG100 || BOARD_BL5340_DVK_CPUAPP)
-    help
-        This is disabled.
-        Bug 18504 - Fix SD card initialization
+    default y
 
 config CONTROL_TASK_LOG_LEVEL
     int "Log level for control (main) task"

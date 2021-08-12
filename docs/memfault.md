@@ -4,7 +4,7 @@ The [AWS Out-of-Box (OOB) Demo](readme_aws.md) (Pinnacle 100 DVK and MG100) inte
 Memfault allows the user to monitor devices remotely debug firmware and more. See [memfault.com](https://memfault.com) for more info.
 
 The Memfault SDK is integrated in the OOB firmware version 4.x and newer.
-The [pre-built OOB demo binaries](https://github.com/LairdCP/Pinnacle-100-Firmware/releases) are configured to communicate to the Laird Connectivity Memfault project instance.
+The [pre-built OOB demo binaries](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest/releases) are configured to communicate to the Laird Connectivity Memfault project instance.
 
 ## OOB Demo
 

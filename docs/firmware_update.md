@@ -3,7 +3,7 @@
 ## Prerequisites
 
 1. [mcumgr CLI](https://github.com/apache/mynewt-mcumgr#command-line-tool) (cross platform)
-2. Pinnacle 100/MG100/BL5340 device running firmware v3.x or greater. See [here](https://github.com/LairdCP/Pinnacle_100_firmware/releases/tag/v3.0.0) for instructions on updating to 3.0.0.
+2. Pinnacle 100/MG100/BL5340 device running firmware v3.x or greater. See [here](https://github.com/LairdCP/Pinnacle_100_oob_demo/releases/tag/v3.0.1) for instructions on updating to 3.0.1.
 3. Terminal program: Putty (Windows, Linux, macOS), Teraterm (Windows), Serial (macOS)
 
 ## Update Zephyr App Via UART

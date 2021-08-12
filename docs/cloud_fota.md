@@ -20,7 +20,7 @@ Cloud FOTA updates to the Pinnacle 100/MG100/BL5340 require, at a minimum, a web
 
 The following discusses how to perform the upgrade two ways, using an Amazon Web Services (AWS) S3 Bucket and using an NGINX webserver running on an AWS EC2 instance.
 
-**NOTE: If you are currently running the OOB Demo Firmware and connected to Laird Connectivity's Bluegrass Demo site, and the desire is to upgrade the OOB Demo Firmware to a newer version, use the instructions [here](https://github.com/LairdCP/Pinnacle-100-Firmware/blob/main/docs/readme_aws.md#fota-updates-via-the-cloud)**
+**NOTE: If you are currently running the OOB Demo Firmware and connected to Laird Connectivity's Bluegrass Demo site, and the desire is to upgrade the OOB Demo Firmware to a newer version, use the instructions [here](https://github.com/LairdCP/BLE_Gateway_Firmware/blob/main/docs/readme_aws.md#fota-updates-via-the-cloud)**
 
 **WARNING: The Nordic Download Client used to facilitate the HTTPS FOTA Upgrade limits the size of the Download Host DNS and Download File names, the default sizes are as follows:**
 
@@ -33,10 +33,10 @@ DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE(=64) "Maximum hostname length (stack)"
 
 1. Pinnacle 100/MG100/BL5340 that supports Cloud HTTP FOTA upgrades, this would include any unit running the OOB Demo v4.0 or above and any custom firmware implementation that includes the Cloud HTTP FOTA functionality
 2. \*.bin file for the Firmware you want to load, desired revision must be different than current revision on Pinnacle 100/MG100/BL5340
-   - Official releases available [here for the Pinnacle 100/MG100](https://github.com/LairdCP/Pinnacle_100_firmware/releases)
+   - Official releases available [here for the Pinnacle 100/MG100](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest/releases)
      - 480-00052 for Pinnacle 100 Modem
      - 480-00070 for MG100 Gateway
-   - Official releases available [here for the BL5340](https://github.com/LairdCP/BL5340_Firmware/releases)
+   - Official releases available [here for the BL5340](https://github.com/LairdCP/BL5340_Firmware_Manifest/releases)
      - 480-00115 for the BL5340 development kit
    - Custom FW builds use **_app_update.bin_** which is located in the build directory `<project_folder>/pinnacle_100_firmware/build/<project>/zephyr/app_update.bin` or `<project_folder>/ble_gateway_firmware/build/<project>/zephyr/app_update.bin`
 3. HTTP or HTTPS endpoint serving a static webpage containing the \*.bin upgrade file, e.g. `http://pinnacle100.com/<bin_filename>.bin`  

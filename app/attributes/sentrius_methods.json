@@ -1171,6 +1171,15 @@
                             "x-example": "/lfs/mflt.bin",
                             "x-ctype": "string",
                             "x-sequence-number": 4
+                        },
+                        {
+                            "name": "k",
+                            "type": "string",
+                            "summary": "Allows client (mobile app) to forward data to correct project",
+                            "description": "Memfault project key",
+                            "x-example": "lMq1riPv0YbLsfpCiUMfxClU1oLVVjH1",
+                            "x-ctype": "string",
+                            "x-sequence-number": 5
                         }
                     ]
                 }

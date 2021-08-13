@@ -992,6 +992,10 @@ static int generate_memfault_file(struct mgmt_ctxt *ctxt)
 	err |= cbor_encode_text_string(
 		&ctxt->encoder, CONFIG_SENTRIUS_MGMT_MEMFAULT_FILE_NAME,
 		strlen(CONFIG_SENTRIUS_MGMT_MEMFAULT_FILE_NAME));
+	err |= cbor_encode_text_stringz(&ctxt->encoder, "k");
+	err |= cbor_encode_text_string(&ctxt->encoder,
+				       CONFIG_MEMFAULT_NCS_PROJECT_KEY,
+				       strlen(CONFIG_MEMFAULT_NCS_PROJECT_KEY));
 
 	return MGMT_STATUS_CHECK(err);
 }

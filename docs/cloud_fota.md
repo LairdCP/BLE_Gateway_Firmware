@@ -38,7 +38,7 @@ DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE(=64) "Maximum hostname length (stack)"
      - 480-00070 for MG100 Gateway
    - Official releases available [here for the BL5340](https://github.com/LairdCP/BL5340_Firmware_Manifest/releases)
      - 480-00115 for the BL5340 development kit
-   - Custom FW builds use **_app_update.bin_** which is located in the build directory `<project_folder>/pinnacle_100_firmware/build/<project>/zephyr/app_update.bin` or `<project_folder>/ble_gateway_firmware/build/<project>/zephyr/app_update.bin`
+   - Custom FW builds use **_app_update.bin_** which is located in the build directory `<project_folder>/pinnacle_100_firmware/build/<project>/zephyr/app_update.bin` (for Pinnacle 100/MG100) or `<project_folder>/ble_gateway_firmware/build/<project>/zephyr/app_update.bin` (for BL5340)
 3. HTTP or HTTPS endpoint serving a static webpage containing the \*.bin upgrade file, e.g. `http://pinnacle100.com/<bin_filename>.bin`  
    **WARNING:** To use HTTPS, the file must be served from an AWS S3 bucket. There is no support for using a custom HTTPS server at this time.
 4. Ability to publish an MQTT message to the Pinnacle 100 or MG100, this could be:
@@ -175,3 +175,7 @@ To update the hl7800, replace the values under "hl7800" with those that correspo
 ```
 
 The `hash` value is only used to validate the integrity of the downloaded modem images. The hash value is a sha256 hash.
+
+### BL5340 Upgrade Note
+
+Note that at present on the BL5340, only application-core FOTA updates are available, it is not currently possible to FOTA update the network-core application.

@@ -17,12 +17,12 @@
 
 ## Introduction
 
-When using NB-IoT, we do not recommend using the TCP protocol due to the network latencies inherent to NB-IoT. UDP is recommended for NB-IoT data transfer (Applied to Pinnacle 100/MG100 only).
+When using NB-IoT on the Pinnacle 100/MG100, we do not recommend using the TCP protocol due to the network latencies inherent to NB-IoT. UDP is recommended for NB-IoT data transfer (Applies to Pinnacle 100/MG100 only).
 In this configuration, the Pinnacle 100/BL5340 device is configured to use LwM2M and DTLS with pre-shared keys. [LightweightM2M (LwM2M)](http://www.openmobilealliance.org/wp/Overviews/lightweightm2m_overview.html) is a protocol that runs on top of [CoAP](https://coap.technology/).
 
 A [Leshan Server](https://www.eclipse.org/leshan/) is used to display information about the Pinnacle 100/BL5340 device and a connected BL654 Sensor Board/ESS BLE sensor.
 
-The software version, model, manufacturer, serial number, and current time can be read. If a sensor is connected, then temperature, humidity, and pressure can be read. In addition, the green LED on the Pinnacle 100 device can be turned on and off using the light control object.
+The software version, model, manufacturer, serial number, and current time can be read. If a BL654 sensor board/ESS sample module is detected and can be connected to, then temperature, humidity, and pressure can be read. In addition, the green LED on the Pinnacle 100 device and LED 4 on the BL5340 development kit can be turned on and off using the light control object.
 
 ```
                 XXXXX
@@ -39,7 +39,7 @@ X                                X
            XXXXXXX
                ^
                +
-NB-IoT or Ethernet(LwM2M with DTLS)
+NB-IoT or Ethernet (LwM2M with DTLS)
                +
                v
      +---------+----------+
@@ -156,13 +156,27 @@ In addition to the steps in the [Using the Demo](#using-the-demo) section, the P
 
 ## LED Behavior
 
-The Blue LED blinks once a second when the Pinnacle 100 device is searching for a BL654 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
+### Pinnacle 100/MG100
+
+The Blue LED blinks once a second when the Pinnacle 100 device is searching for a BL654 sensor board/ESS service device. When it finds a sensor and successfully connects to it, the LED remains on.
 
 The Green LED can be controlled via the LwM2M server Light Control object.
 
 The Red LED blinks when the Pinnacle 100 device is searching for a cellular network. It remains on and does not blink when connected to a network. If there is an error with the SIM card or network registration, then the LED remains off.
 
+### BL5340
+
+LED 1 blinks when the module is advertising and allowing another device to connect to and configure it. When a central device connects, the LED remains on. When advertising stops, the LED remains off. Button 1 can be pressed to restart advertising.
+
+LED 2 blinks once a second when the Pinnacle 100 device is searching for a BL654 sensor board/ESS service device. When it finds a sensor and successfully connects to it, the LED remains on.
+
+LED 3 is on when network connectivity is established, it remains off when there is no network connection.
+
+LED 4 can be controlled via the LwM2M server Light Control object.
+
 ## Building the Firmware
+
+### Pinnacle 100/MG100
 
 The firmware can be built to work with or without the mcuboot bootloader. Building without mcuboot is faster and easier for development and debug, but gives up the ability to update the Zephyr app via UART or BLE.
 
@@ -221,6 +235,40 @@ west flash -d build\[board]\lwm2m
 ```
 
 If the firmware was built with mcuboot, `west flash` will program merged.hex which contains the mcuboot bootloader and app in a combined image.
+
+### BL5340
+
+The firmware can only be built with mcuboot.
+
+Issue these commands **from the ble_gateway_firmware directory**.
+
+> **WARNING:** If using windows, checkout code to a path of 12 characters or less to avoid build issues related to path length limits.
+
+```
+# Linux and macOS
+
+cp app/boards/pm_static_bl5340_dvk.yml app/pm_static.yml
+
+west build -b bl5340_dvk_cpuapp -d ${PWD}/build/bl5340_dvk_cpuapp/lwm2m ${PWD}/app -- -DOVERLAY_CONFIG="${PWD}/app/overlay_lwm2m_dtls.conf ${PWD}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf" -Dmcuboot_CONF_FILE=${PWD}/../modules/zephyr_lib/mcuboot_config/bl5340.conf
+
+# Windows
+
+copy app\boards\pm_static_bl5340_dvk.yml app\pm_static.yml
+
+west build -b bl5340_dvk_cpuapp -d %CD%\build\bl5340_dvk_cpuapp\lwm2m %CD%\app -- -DOVERLAY_CONFIG="%CD%\app\overlay_lwm2m_dtls.conf %CD%\..\modules\zephyr_lib\mcumgr_wrapper\config\overlay-mcuboot.conf" -Dmcuboot_CONF_FILE=%CD%\..\modules\zephyr_lib\mcuboot_config\bl5340.conf
+```
+
+After building the firmware, it can be flashed with the following command:
+
+```
+# Linux and macOS
+
+west flash -d build/bl5340_dvk_cpuapp/lwm2m
+
+# Windows
+
+west flash -d build\bl5340_dvk_cpuapp\lwm2m
+```
 
 ## Development
 

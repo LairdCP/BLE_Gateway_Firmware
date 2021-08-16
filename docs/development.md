@@ -97,4 +97,5 @@ Once the firmware is built, debugging can be started by going to **Debug -> Star
 More info on debugging in VS Code can be found [here](https://code.visualstudio.com/docs/editor/debugging)
 
 ### Location Services
+
 See [here](location.md) for examples on how to use GPS and PoLTE.

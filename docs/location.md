@@ -15,16 +15,19 @@ Example U.FL cables can be found [here](https://www.sparkfun.com/products/15114)
 The location of the Pinnacle DVK can be obtained by issuing commands at the shell. These commands can also be used as a reference for a custom application. When in GPS mode, the modem is put into airplane mode.
 
 When the GPS rate is non-zero, the application will query the location periodically. For example, every 30 seconds.
+
 ```
 attr set gpsRate 30
 ```
 
 The DVK will indicate when it has received valid GPS information.
+
 ```
 gpsStatus                     3 3D Available
 ```
 
 If a fix is maintained, the location will be reported at the GPS rate.
+
 ```
 gpsLatitude                   '43 Deg 17 Min 6.60 Sec N'
 gpsLongitude                  '87 Deg 59 Min 29.89 Sec W'
@@ -36,11 +39,13 @@ gpsAltUnc                     '0.0 m'
 ```
 
 Exit GPS mode
+
 ```
 attr set gpsRate 0
 ```
 
 GPS works best outside. The following log indicates that the signal is weak.
+
 ```
 [00:02:56.176,544] <inf> attr: [253] gpsStatus                     0 Fix Lost Or Not Available
 [00:03:11.175,659] <inf> attr: [253] gpsStatus                     3 3D Available
@@ -63,11 +68,13 @@ When using this feature the modem sends RF signal information to a server that c
 ### Cloud Server Setup
 
 Issue the following command to the gateway.
+
 ```
 hl imei
 ```
 
 Save the result to a text file.
+
 ```
 123456789123456
 ```
@@ -85,18 +92,21 @@ Step 2 requires a 1.8V FTDI cable.  On the Pinnacle DVK, the 6-pin header is lab
 These steps may not be required in a future version of HL7800 firmware.
 
 1. Using the Application shell, issue the following commands (see image above).  The USB port is labelled FTDI on the silkscreen of the Pinnacle DVK. This terminal's settings are 115200 8-N-1 with RTS/CTS flow control.
+
 ```
 hl cmd 10 AT+SWITRACEMODE=RnD
 hl cmd 10 AT+CFUN=1,1
 ```
 
 2. Using the **HL7800** shell, issue the following commands. This terminal's settings are also 115200 8-N-1, but the flow control type is none.
+
 ```
 config -s locsrv.operation.locsrv_enable true
 config -s polte.config.enable true
 ```
 
 3. Switch back to customer mode and reset the device using the application shell.
+
 ```
 hl cmd 10 AT+SWITRACEMODE=CUSTOMER
 hl cmd 10 AT+CFUN=1,1
@@ -105,16 +115,19 @@ hl cmd 10 AT+CFUN=1,1
 ### Command Line Example
 
 Wait until the network is connected before issuing any of the following commands.
+
 ```
 gatewayState                  3 Network Connected
 ```
 
 The first time a SIM is used it must be registered with the PoLTE service.
+
 ```
 attr set polteControlPoint 1
 ```
 
 This command results in the username and password being stored into application non-volatile memory.
+
 ```
 polteControlPoint             1 Register
 polteStatus                   127 Busy
@@ -129,6 +142,7 @@ Note: After registration, a device's login information can also be found on polt
 
 
 After reset and before issuing a locate command, the PoLTE server login information must be provided to the HL7800 (user/password from register command) and PoLTE events must be enabled.
+
 ```
 attr set polteControlPoint 2
 ```
@@ -141,11 +155,13 @@ control.polte_cmd_handler: PoLTE command status 0
 ```
 
 Now the system is ready and the locate command can be issued.
+
 ```
 attr set polteControlPoint 3
 ```
 
 The locate command can require 120 seconds to complete.  The first response is the status of sending the location command.
+
 ```
 polteControlPoint             3 Locate
 polteStatus                   127 Busy
@@ -153,11 +169,13 @@ polteStatus                   100 Locate In Progress
 ```
 
 If a result is not returned after 2 minutes, then send the locate command again.
+
 ```
 attr set polteControlPoint 3
 ```
 
 The second response contains the location information.  The server error can be ignored in this case.
+
 ```
 polteControlPoint             3 Locate
 polteStatus                   127 Busy

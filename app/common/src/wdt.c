@@ -177,8 +177,7 @@ int wdt_initialize(const struct device *device)
 
 		k_work_queue_start(&wdt.work_q, wdt_workq_stack,
 				   K_THREAD_STACK_SIZEOF(wdt_workq_stack),
-				   K_LOWEST_APPLICATION_THREAD_PRIO,
-				   NULL);
+				   K_LOWEST_APPLICATION_THREAD_PRIO, NULL);
 
 		k_work_init_delayable(&wdt.feed, wdt_feeder);
 		r = k_work_schedule_for_queue(&wdt.work_q, &wdt.feed,
@@ -241,7 +240,7 @@ static void wdt_feeder(struct k_work *work)
 
 static bool wdt_valid_user_id(int id)
 {
-	if (id < WDT_MAX_USERS) {
+	if (id >= 0 && id < WDT_MAX_USERS) {
 		return true;
 	} else {
 		LOG_ERR("Invalid wdt user id");

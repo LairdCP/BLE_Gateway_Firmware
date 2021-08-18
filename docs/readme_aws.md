@@ -85,7 +85,7 @@ X                                X
 The following are required to fully exercise this demo firmware:
 
 - An activated SIM card. See [here](https://www.lairdconnect.com/documentation/truphone-sim-setup-guide) for instructions on activating the SIM card that came with your kit (Pinnacle 100 and MG100 only).
-- Pinnacle 100 DVK, MG100, or BL5340 DVK programmed with the latest AWS firmware. Releases available [here for Pinnacle 100 and MG100](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest/releases) and [here for BL5340](https://github.com/LairdCP/BL5340_Firmware/releases).
+- Pinnacle 100 DVK, MG100, or BL5340 DVK programmed with the latest AWS firmware. Releases available [here for Pinnacle 100 and MG100](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest/releases) and [here for BL5340](https://github.com/LairdCP/BL5340_Firmware_Manifest/releases).
   - Connect to the FTDI UART on the development kit to view firmware logs
 - Laird Pinnacle Connect app installed on a mobile device. An active internet connection on the mobile device is required.
   - [Android app](http://play.google.com/store/apps/details?id=com.lairdconnect.pinnacle.connect)

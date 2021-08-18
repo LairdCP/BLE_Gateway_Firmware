@@ -22,7 +22,7 @@ In this configuration, the Pinnacle 100/BL5340 device is configured to use LwM2M
 
 A [Leshan Server](https://www.eclipse.org/leshan/) is used to display information about the Pinnacle 100/BL5340 device and a connected BL654 Sensor Board/ESS BLE sensor.
 
-The software version, model, manufacturer, serial number, and current time can be read. If a BL654 sensor board/ESS sample module is detected and can be connected to, then temperature, humidity, and pressure can be read. In addition, the green LED on the Pinnacle 100 device and LED 4 on the BL5340 development kit can be turned on and off using the light control object.
+The software version, model, manufacturer, serial number, and current time can be read. If a BL654 Sensor Board/ESS sample module is detected and can be connected to, then temperature, humidity, and pressure can be read. In addition, the green LED on the Pinnacle 100 device and LED 4 on the BL5340 development kit can be turned on and off using the light control object.
 
 ```
                 XXXXX
@@ -98,7 +98,7 @@ _Auto-commission device_
 
 3. Skip to [View Cloud Data](#view-cloud-data) for instructions on interacting with your device.
 
-### Manual Commissioning
+### Manual Commissioning (Pinnacle 100/MG100 only)
 
 1. Open [Laird Connectivity Leshan web page](http://uwterminalx.lairdconnect.com:8080/#/clients).
 2. Go to the Security page.
@@ -145,7 +145,7 @@ _Leshan response timeout_
 ![Leshan read object](images/leshan_read_object.png)  
 _Leshan read object_
 
-- The Light Control object can be used to control the green LED on the dev board. Write `true` or `false` to the On/Off node.
+- The Light Control object can be used to control an LED on the device as [described here below](#led-behavior). Write `true` or `false` to the On/Off node.
 
 ![Leshan light control](images/leshan_light_control.png)  
 _Leshan light control_
@@ -158,9 +158,9 @@ In addition to the steps in the [Using the Demo](#using-the-demo) section, the P
 
 ### Pinnacle 100/MG100
 
-The Blue LED blinks once a second when the Pinnacle 100 device is searching for a BL654 sensor board/ESS service device. When it finds a sensor and successfully connects to it, the LED remains on.
+The Blue LED blinks once a second when the module is searching for a BL654 Sensor Board/ESS service device. When it finds a sensor and successfully connects to it, the LED remains on.
 
-The Green LED can be controlled via the LwM2M server Light Control object.
+The Green LED can be controlled via the LwM2M server Light Control object (Pinnacle 100 only).
 
 The Red LED blinks when the Pinnacle 100 device is searching for a cellular network. It remains on and does not blink when connected to a network. If there is an error with the SIM card or network registration, then the LED remains off.
 
@@ -168,7 +168,7 @@ The Red LED blinks when the Pinnacle 100 device is searching for a cellular netw
 
 LED 1 blinks when the module is advertising and allowing another device to connect to and configure it. When a central device connects, the LED remains on. When advertising stops, the LED remains off. Button 1 can be pressed to restart advertising.
 
-LED 2 blinks once a second when the Pinnacle 100 device is searching for a BL654 sensor board/ESS service device. When it finds a sensor and successfully connects to it, the LED remains on.
+LED 2 blinks once a second when the module is searching for a BL654 Sensor Board/ESS service device. When it finds a sensor and successfully connects to it, the LED remains on.
 
 LED 3 is on when network connectivity is established, it remains off when there is no network connection.
 

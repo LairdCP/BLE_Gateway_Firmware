@@ -26,11 +26,11 @@ These modes are selected at compile time. See the following sections for documen
 
 ## Out-of-Box (OOB) AWS Demo
 
-[**Getting started guide here!**](docs/readme_ltem_aws.md)
+[**Getting started guide here!**](docs/readme_aws.md)
 
 ## LwM2M Demo
 
-[**LwM2M Demo guide here!**](docs/readme_nbiot_lwm2m.md).
+[**LwM2M Demo guide here!**](docs/readme_lwm2m.md).
 
 ## Contact Tracing Firmware
 
@@ -45,7 +45,7 @@ If the Pinnacle 100 device is running v2.0.0 firmware or earlier, firmware updat
 
 Pinnacle 100 devices with firmware version 3.x or greater support firmware updates via UART, BLE or LTE. Updates via LTE on 3.x firmware must be initiated from the Laird Connectivity Bluegrass cloud portal. Only images hosted by Laird Connectivity are supported on the 3.x release. On 4.x releases, updates over HTTPS can be initiated for images hosted on any AWS server.
 
-To update firmware with the Pinnacle Connect mobile app or via the Bluegrass cloud portal [see here.](docs/readme_ltem_aws.md#firmware-updates)
+To update firmware with the Pinnacle Connect mobile app or via the Bluegrass cloud portal [see here.](docs/readme_aws.md#firmware-updates)
 
 To update firmware over UART using the mcumgr CLI. This allows the user to update the device without any wireless connectivity. [see here.](docs/firmware_update.md)
 

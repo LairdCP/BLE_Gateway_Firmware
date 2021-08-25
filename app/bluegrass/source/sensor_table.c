@@ -38,6 +38,9 @@ LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
+BUILD_ASSERT(CONFIG_SENSOR_GREENLIST_SIZE < CONFIG_SENSOR_TABLE_SIZE,
+	     "Invalid greenlist size");
+
 #define VERBOSE_AD_LOG(...)
 
 #define LOG_EVT LOG_INF
@@ -132,6 +135,7 @@ static SensorEntry_t sensorTable[CONFIG_SENSOR_TABLE_SIZE];
 static char queryCmd[CONFIG_SENSOR_QUERY_CMD_MAX_SIZE];
 static uint64_t ttlUptime;
 static bool allowGatewayShadowGeneration;
+static size_t greenCount;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -177,8 +181,8 @@ static void ShadowSpecialHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry);
 static void GatewayShadowMaker(bool GreenlistProcessed);
 
 static char *MangleKey(const char *pKey, const char *pName);
-static uint32_t GreenlistByAddress(const char *pAddrString, bool NextState);
-static void Greenlist(SensorEntry_t *pEntry, bool NextState);
+static size_t GreenlistByAddress(const char *pAddrString, bool NextState);
+static void Greenlist(SensorEntry_t *pEntry, bool Enable);
 
 static int32_t GetTemperature(SensorEntry_t *pEntry);
 static uint32_t GetBattery(SensorEntry_t *pEntry);
@@ -300,7 +304,7 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 
 void SensorTable_ProcessGreenlistRequest(SensorGreenlistMsg_t *pMsg)
 {
-	uint32_t changed = 0;
+	size_t changed = 0;
 	size_t i;
 	for (i = 0; i < pMsg->sensorCount; i++) {
 		changed += GreenlistByAddress(pMsg->sensors[i].addrString,
@@ -1302,7 +1306,7 @@ static void GatewayShadowMaker(bool GreenlistProcessed)
 }
 
 /* Returns 1 if the value was changed from its current state. */
-static uint32_t GreenlistByAddress(const char *pAddrString, bool NextState)
+static size_t GreenlistByAddress(const char *pAddrString, bool NextState)
 {
 	size_t i;
 	for (i = 0; i < CONFIG_SENSOR_TABLE_SIZE; i++) {
@@ -1332,22 +1336,36 @@ static uint32_t GreenlistByAddress(const char *pAddrString, bool NextState)
 	return 0;
 }
 
-static void Greenlist(SensorEntry_t *pEntry, bool NextState)
+static void Greenlist(SensorEntry_t *pEntry, bool Enable)
 {
-	pEntry->greenlisted = NextState;
-	if (pEntry->greenlisted) {
-		pEntry->subscribed = false;
-		pEntry->getAcceptedSubscribed = false;
-		pEntry->subscriptionDispatchTime =
-			k_uptime_get() +
-			(CONFIG_SENSOR_SUBSCRIPTION_DELAY_SECONDS *
-			 MSEC_PER_SEC);
-		if (pEntry->pLog == NULL) {
-			pEntry->pLog =
-				SensorLog_Allocate(CONFIG_SENSOR_LOG_MAX_SIZE);
+	if (Enable) {
+		if (greenCount < CONFIG_SENSOR_GREENLIST_SIZE) {
+			pEntry->greenlisted = true;
+			pEntry->subscribed = false;
+			pEntry->getAcceptedSubscribed = false;
+			pEntry->subscriptionDispatchTime =
+				k_uptime_get() +
+				(CONFIG_SENSOR_SUBSCRIPTION_DELAY_SECONDS *
+				 MSEC_PER_SEC);
+			if (pEntry->pLog == NULL) {
+				pEntry->pLog = SensorLog_Allocate(
+					CONFIG_SENSOR_LOG_MAX_SIZE);
+			}
+			greenCount += 1;
+		} else {
+			/* In this case, Bluegrass will repeatedly try to enable sensor.
+			 * After ~10 seconds it will give up.
+			 */
+			pEntry->greenlisted = false;
+			LOG_ERR("Unable to greenlist more than %d sensors.",
+				CONFIG_SENSOR_GREENLIST_SIZE);
 		}
 	} else {
+		pEntry->greenlisted = false;
 		FreeEntryBuffers(pEntry);
+		if (greenCount > 0) {
+			greenCount -= 1;
+		}
 	}
 }
 

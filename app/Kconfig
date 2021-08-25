@@ -123,16 +123,21 @@ config SHADOW_IN_MAX_SIZE
         The timestamps can make the shadow larger than 7K bytes.
 
 config SENSOR_TABLE_SIZE
-    int "Number of sensors that can be monitored"
-    default 15
-    range 0 15
+    int "Number of sensors viewable on Bluegrass gateway page"
+    default 5
+    range 0 5
+
+config SENSOR_GREENLIST_SIZE
+    int "Number of sensors enabled for config and data collection"
+    default 3
+    range 0 3
 
 config SENSOR_LOG_MAX_SIZE
     int "The maximum number of stored sensor events"
     default 30
     range 1 30
     help
-        Limited by the memory pool
+        Limited by the memory pool (heap) and buffer pool (framework).
         Limited by MQTT or modem.
 
 config SENSOR_SUBSCRIPTION_DELAY_SECONDS

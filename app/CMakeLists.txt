@@ -144,48 +144,6 @@ target_sources_ifdef(CONFIG_MODEM_HL7800 app PRIVATE
 )
 endif() # CONFIG_HTTP_FOTA
 
-if(CONFIG_BOARD_PINNACLE_100_DVK)
-include_directories(${CMAKE_SOURCE_DIR}/attributes/custom/MG100/include)
-target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/attributes/custom/MG100/source/attr_table.c
-    ${CMAKE_SOURCE_DIR}/attributes/custom/MG100/source/attr_custom_validator.c
-)
-endif()
-
-if(CONFIG_BOARD_MG100)
-include_directories(${CMAKE_SOURCE_DIR}/attributes/custom/MG100/include)
-target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/attributes/custom/MG100/source/attr_table.c
-    ${CMAKE_SOURCE_DIR}/attributes/custom/MG100/source/attr_custom_validator.c
-)
-endif()
-
-if(CONFIG_BOARD_BL5340_DVK_CPUAPP)
-include_directories(${CMAKE_SOURCE_DIR}/attributes/custom/BL5340/include)
-target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/attributes/custom/BL5340/source/attr_table.c
-    ${CMAKE_SOURCE_DIR}/attributes/custom/BL5340/source/attr_custom_validator.c
-)
-endif()
-
-include_directories(${CMAKE_SOURCE_DIR}/attributes/universal/include)
-target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/attributes/universal/source/attr.c
-    ${CMAKE_SOURCE_DIR}/attributes/universal/source/attr_validator.c
-)
-
-if(CONFIG_ATTR_SHELL)
-target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/attributes/universal/source/attr_shell.c
-)
-endif()
-
-if(CONFIG_MCUMGR_CMD_SENTRIUS_MGMT)
-target_sources(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/attributes/universal/source/sentrius_mgmt.c
-)
-endif()
-
 if(CONFIG_SHELL AND CONFIG_MODEM_HL7800)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/lcz_modem_shell.c

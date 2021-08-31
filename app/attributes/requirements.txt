@@ -1,2 +1,0 @@
-inflection==0.5.1
-jsonref==0.2

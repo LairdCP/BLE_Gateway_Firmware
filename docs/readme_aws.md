@@ -183,7 +183,7 @@ _Cell settings_
 
 The ethernet settings page displays status information related to the ethernet configuration and allows changing the configuration of it. Note that a reboot of the module is required for the changes to be applied.
 
-![Ethernet settings](images/ethernet_settings.png)
+![Ethernet settings](images/ethernet_settings.png)  
 _Ethernet settings_
 
 ### Power Settings

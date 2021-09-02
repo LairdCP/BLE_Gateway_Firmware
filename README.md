@@ -59,4 +59,4 @@ Details on the BLE profiles used to interface with the mobile app can be found [
 
 ### Development and Debug
 
-See [here](docs/development.md) for details on developing and debugging this app for Pinnacle 100/MG100 or [here](docs/readme_aws.md#building-the-firmware) for details on developing this app for BL5340.
+See [here](docs/development.md) for details on developing and debugging this app for Pinnacle 100/MG100 or [here](docs/readme_aws.md#bl5340-1) for details on building this app for BL5340.

@@ -14,6 +14,7 @@
    [Device Information](#device-information)  
    [MG100 Settings](#mg100-settings)  
    [Cellular Settings](#cellular-settings)  
+   [Ethernet Settings](#ethernet-settings)  
    [Power Settings](#power-settings)  
    [Firmware Updates](#firmware-updates)
 6. **[Cloud Data](#cloud-data)**  
@@ -21,6 +22,8 @@
 7. **[LED Behavior](#led-behavior)**
 8. **[My Own AWS Connection](#my-own-aws-connection)**
 9. **[Building the Firmware](#building-the-firmware)**
+   [Pinnacle 100/MG100](#pinnacle-100mg100-1)  
+   [BL5340](#bl5340-1)  
 10. **[Development](#development)**
 
 ## Introduction
@@ -381,13 +384,11 @@ If the firmware was built with mcuboot, `west flash` will program merged.hex whi
 
 ### BL5340
 
-The firmware can be built to work with the mcuboot bootloader.
+The firmware must be built to work with the mcuboot bootloader.
 
 Issue these commands **from the ble_gateway_firmware directory**.
 
 > **WARNING:** If using windows, checkout code to a path of 12 characters or less to avoid build issues related to path length limits.
-
-Build with mcuboot:
 
 ```
 # Linux and macOS

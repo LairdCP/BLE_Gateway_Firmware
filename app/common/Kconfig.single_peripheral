@@ -24,12 +24,21 @@ config SINGLE_PERIPHERAL_LOG_LEVEL
 config SINGLE_PERIPHERAL_ADV_ON_INIT
     bool "Start advertising after initialization"
     help
-        Advertising after reset is used by the mobile application when updating firmware.
+        Advertising after reset is used by the
+        mobile application when updating firmware.
 
 config SINGLE_PERIPHERAL_ADV_DURATION_SECONDS
     int "Seconds to advertise, 0 is indefinite"
     default 30
     help
         This value is also used to restart advertising after a disconnect.
+
+config SINGLE_PERIPHERAL_PAIR
+    bool "Enable security callbacks and security timeout"
+    default y if MCUMGR_SMP_BT_AUTHEN
+    help
+        The callbacks are configured for Just Works.
+        If MCUMGR_SMP_BT_AUTHEN is enabled, then callbacks must be
+        added because Just Works isn't authenticated.
 
 endif # SINGLE_PERIPHERAL

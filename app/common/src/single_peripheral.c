@@ -45,6 +45,10 @@ static const struct lcz_led_blink_pattern LED_ADVERTISING_PATTERN = {
 #define PAIRING_COMPLETE_TIMEOUT_MS 30000
 #define PAIRING_FAILURE_DISCONNECT_DELAY_MS 500
 
+#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
+#error "Auth requires passkey display/entry callback or fixed passkey"
+#endif
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -53,15 +57,18 @@ static void sp_disconnected(struct bt_conn *conn, uint8_t reason);
 static void sp_connected(struct bt_conn *conn, uint8_t err);
 static void sp_le_param_updated(struct bt_conn *conn, uint16_t interval,
 				uint16_t latency, uint16_t timeout);
+static void sp_security_changed(struct bt_conn *conn, bt_security_t level,
+				enum bt_security_err err);
 static void stop_adv_timer_callback(struct k_timer *timer_id);
 static void start_stop_adv(struct k_work *work);
 
-#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
+#ifdef CONFIG_SINGLE_PERIPHERAL_PAIR
 static void disconnect_req(const char *reason);
 static void security_failed_handler(struct k_work *work);
 static void pairing_timeout_handler(struct k_work *work);
 
-static int setup_security(void);
+static int sp_start_security(struct bt_conn *conn);
+static int setup_security_callbacks(void);
 static void pairing_complete(struct bt_conn *conn, bool bonded);
 static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason);
 #endif
@@ -74,13 +81,14 @@ static struct {
 	bool advertising;
 	bool start;
 	bool paired;
-	bool bonded;
 	struct bt_conn *conn_handle;
 	struct bt_conn_cb conn_callbacks;
 	struct k_timer timer;
 	struct k_work adv_work;
+#ifdef CONFIG_SINGLE_PERIPHERAL_PAIR
 	struct k_work_delayable conn_work;
 	struct k_work_delayable pair_work;
+#endif
 } sp;
 
 /******************************************************************************/
@@ -116,7 +124,7 @@ void single_peripheral_stop_advertising(void)
 
 bool single_peripheral_security_busy(void)
 {
-	if (IS_ENABLED(CONFIG_MCUMGR_SMP_BT_AUTHEN)) {
+	if (IS_ENABLED(CONFIG_SINGLE_PERIPHERAL_PAIR)) {
 		return sp.advertising || (sp.conn_handle != NULL && !sp.paired);
 	} else {
 		return false;
@@ -135,10 +143,11 @@ static int single_peripheral_initialize(const struct device *device)
 		sp.conn_callbacks.connected = sp_connected;
 		sp.conn_callbacks.disconnected = sp_disconnected;
 		sp.conn_callbacks.le_param_updated = sp_le_param_updated;
+		sp.conn_callbacks.security_changed = sp_security_changed;
 		bt_conn_cb_register(&sp.conn_callbacks);
 		k_timer_init(&sp.timer, stop_adv_timer_callback, NULL);
 		k_work_init(&sp.adv_work, start_stop_adv);
-#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
+#ifdef CONFIG_SINGLE_PERIPHERAL_PAIR
 		k_work_init_delayable(&sp.conn_work, security_failed_handler);
 		k_work_init_delayable(&sp.pair_work, pairing_timeout_handler);
 #endif
@@ -180,16 +189,9 @@ static void sp_connected(struct bt_conn *conn, uint8_t err)
 		/* Stop advertising so another central cannot connect. */
 		single_peripheral_stop_advertising();
 
-		/* If CONFIG_MCUMGR_SMP_BT_AUTHEN is true,
-		 * then it will cause encryption to be started when
-		 * the SMP service is accessed.
-		 */
-
-		/* Close connection if pairing isn't completed. */
-		if (IS_ENABLED(CONFIG_MCUMGR_SMP_BT_AUTHEN)) {
-			k_work_reschedule(&sp.pair_work,
-					  K_MSEC(PAIRING_COMPLETE_TIMEOUT_MS));
-		}
+#ifdef CONFIG_SINGLE_PERIPHERAL_PAIR
+		sp_start_security(conn);
+#endif
 
 #if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
 		/* Turn LED on to indicate in a connection */
@@ -212,7 +214,6 @@ static void sp_disconnected(struct bt_conn *conn, uint8_t reason)
 	bt_conn_unref(conn);
 	sp.conn_handle = NULL;
 	sp.paired = false;
-	sp.bonded = false;
 
 	/* Restart advertising because disconnect may have been unexpected. */
 	single_peripheral_start_advertising();
@@ -230,6 +231,23 @@ static void sp_le_param_updated(struct bt_conn *conn, uint16_t interval,
 		interval * 100 / 125, latency, timeout * 10);
 }
 
+static void sp_security_changed(struct bt_conn *conn, bt_security_t level,
+				enum bt_security_err err)
+{
+	if (!lbt_peripheral_role(conn)) {
+		return;
+	}
+
+	if (err == BT_SECURITY_ERR_SUCCESS) {
+		sp.paired = (level >= BT_SECURITY_L2);
+	} else {
+		sp.paired = false;
+	}
+
+	LOG_INF("security level: %d status: %s", level,
+		lbt_get_security_err_string(err));
+}
+
 /* Workqueue allows start/stop to be called from interrupt context. */
 static void start_stop_adv(struct k_work *work)
 {
@@ -242,11 +260,11 @@ static void start_stop_adv(struct k_work *work)
 			LOG_INF("Cannot start advertising while connected");
 			err = -EPERM;
 		} else if (!sp.advertising) {
+#ifdef CONFIG_SINGLE_PERIPHERAL_PAIR
 			/* Security callbacks can be overridden by sensor task
 			 * when peripheral is idle.
 			 */
-#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
-			err = setup_security();
+			err = setup_security_callbacks();
 #endif
 
 			if (err == 0) {
@@ -297,8 +315,28 @@ static void stop_adv_timer_callback(struct k_timer *dummy)
 	single_peripheral_stop_advertising();
 }
 
-#ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
-static int setup_security(void)
+#ifdef CONFIG_SINGLE_PERIPHERAL_PAIR
+static int sp_start_security(struct bt_conn *conn)
+{
+	int r = 0;
+
+#ifndef CONFIG_MCUMGR_SMP_BT_AUTHEN
+	/* Start security manually because the only option for the SMP service
+	 * is authenticated pairing.
+	 *
+	 * This security callbacks defined in this file support Just Works.
+	 */
+	r = bt_conn_set_security(conn, BT_SECURITY_L2);
+	LOG_DBG("set security status: %d", r);
+#endif
+
+	/* Close connection if pairing isn't completed. */
+	k_work_reschedule(&sp.pair_work, K_MSEC(PAIRING_COMPLETE_TIMEOUT_MS));
+
+	return r;
+}
+
+static int setup_security_callbacks(void)
 {
 	int r;
 
@@ -307,19 +345,13 @@ static int setup_security(void)
 		.pairing_failed = pairing_failed
 	};
 
-	r = bt_passkey_set(
-		attr_get_uint32(ATTR_ID_passkey, BT_PASSKEY_INVALID));
+	/* With multiple users, callbacks must be cleared first. */
+	r = bt_conn_auth_cb_register(NULL);
+	if (r == 0) {
+		r = bt_conn_auth_cb_register(&callbacks);
+	}
 	if (r < 0) {
-		LOG_ERR("Unable to set passkey: %d", r);
-	} else {
-		/* With multiple users callbacks must be cleared first. */
-		r = bt_conn_auth_cb_register(NULL);
-		if (r == 0) {
-			r = bt_conn_auth_cb_register(&callbacks);
-		}
-		if (r < 0) {
-			LOG_ERR("Unable to register security callbacks %d", r);
-		}
+		LOG_ERR("Unable to register security callbacks %d", r);
 	}
 
 	return r;
@@ -328,25 +360,19 @@ static int setup_security(void)
 static void pairing_complete(struct bt_conn *conn, bool bonded)
 {
 	if (conn == sp.conn_handle) {
-		sp.paired = true;
-		sp.bonded = bonded;
-
 		LOG_DBG("Pairing complete: bonded: %s", bonded ? "yes" : "no");
 	}
 }
 
 static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
 {
-	ARG_UNUSED(reason);
-
 	if (conn == sp.conn_handle) {
 		/* Don't call disconnect in callback from BT thread because it
-		 * prevents stack from cleaning up nicely.
+		 * causes a confusing message (<err> bt_conn: not connected).
 		 */
 		k_work_reschedule(&sp.conn_work,
 				  K_MSEC(PAIRING_FAILURE_DISCONNECT_DELAY_MS));
 		sp.paired = false;
-		sp.bonded = false;
 
 		LOG_DBG("Pairing failed: reason: %u %s", reason,
 			lbt_get_security_err_string(reason));

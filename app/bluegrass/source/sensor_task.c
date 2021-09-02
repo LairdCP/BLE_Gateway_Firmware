@@ -80,7 +80,6 @@ typedef struct SensorTask {
 	uint16_t mtu;
 	bool connected;
 	bool paired;
-	bool bonded;
 	bool resetSent;
 	bool configComplete;
 	bracket_t *pBracket;
@@ -102,7 +101,7 @@ typedef struct SensorTask {
 				BT_GAP_SCAN_FAST_INTERVAL,                     \
 				BT_GAP_SCAN_FAST_INTERVAL)
 
-#if defined(CONFIG_MCUMGR_SMP_BT_AUTHEN) &&                                    \
+#if defined(CONFIG_SINGLE_PERIPHERAL_PAIR) &&                                  \
 	CONFIG_SINGLE_PERIPHERAL_ADV_DURATION_SECONDS == 0
 #error "Indefinite advertising not supported because security callbacks are shared between central and peripheral."
 #endif
@@ -489,7 +488,6 @@ static DispatchResult_t ConnectRequestMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 			pObj->pCmdMsg = (SensorCmdMsg_t *)pMsg;
 			pObj->connected = false;
 			pObj->paired = false;
-			pObj->bonded = false;
 			pObj->resetSent = false;
 			pObj->configComplete = false;
 			err = bt_conn_le_create(
@@ -728,7 +726,6 @@ static void DisconnectedCallback(struct bt_conn *conn, uint8_t reason)
 		LOG_DBG("%x-%u %s", (uint32_t)POINTER_TO_UINT(conn),
 			bt_conn_index(conn), lbt_get_hci_err_string(reason));
 		st.paired = false;
-		st.bonded = false;
 		FRAMEWORK_MSG_SEND_TO_SELF(FWK_ID_SENSOR_TASK, FMC_DISCONNECT);
 	}
 }
@@ -756,9 +753,6 @@ static void PairingCancelled(struct bt_conn *conn)
 static void PairingCompleteCallback(struct bt_conn *conn, bool bonded)
 {
 	if (conn == st.conn) {
-		st.paired = true;
-		st.bonded = bonded;
-
 		LOG_DBG("Pairing complete: bonded: %s", bonded ? "yes" : "no");
 	}
 }
@@ -768,8 +762,6 @@ static void PairingFailedCallback(struct bt_conn *conn,
 {
 	if (conn == st.conn) {
 		st.paired = false;
-		st.bonded = false;
-
 		LOG_DBG("Pairing failed: reason: %u %s", reason,
 			lbt_get_security_err_string(reason));
 	}
@@ -779,7 +771,13 @@ static void SecurityChangedCallback(struct bt_conn *conn, bt_security_t level,
 				    enum bt_security_err err)
 {
 	if (conn == st.conn) {
-		LOG_DBG("%u", level);
+		if (err == BT_SECURITY_ERR_SUCCESS) {
+			st.paired = (level >= BT_SECURITY_L2);
+		} else {
+			st.paired = false;
+		}
+		LOG_INF("security level: %d status: %s", level,
+			lbt_get_security_err_string(err));
 	}
 }
 

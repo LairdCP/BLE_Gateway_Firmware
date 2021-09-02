@@ -147,33 +147,28 @@ static int no_sd_card_get_max_size(void)
 #endif
 
 static int (*LocalConfigUpdate[MAX_WRITEABLE_LOCAL_OBJECTS])(int) = {
-	UpdateBatteryLowThreshold,
-	UpdateBatteryThreshold0,
-	UpdateBatteryThreshold1,
-	UpdateBatteryThreshold2,
-	UpdateBatteryThreshold3,
-	UpdateBatteryThreshold4,
-	UpdateBatteryBadThreshold,
-	lcz_motion_set_and_update_odr,
-	lcz_motion_set_and_update_scale,
-	lcz_motion_set_and_update_threshold,
-	IS_ENABLED(CONFIG_SD_CARD_LOG) ? sdCardLogUpdateMaxSize :
-					       no_sd_card_update_max_size,
+	UpdateBatteryLowThreshold,	 UpdateBatteryThreshold0,
+	UpdateBatteryThreshold1,	 UpdateBatteryThreshold2,
+	UpdateBatteryThreshold3,	 UpdateBatteryThreshold4,
+	UpdateBatteryBadThreshold,	 lcz_motion_set_and_update_odr,
+	lcz_motion_set_and_update_scale, lcz_motion_set_and_update_threshold,
+#ifdef CONFIG_SD_CARD_LOG
+	sdCardLogUpdateMaxSize,
+#else
+	no_sd_card_update_max_size,
+#endif
 };
 
 static int (*LocalConfigGet[MAX_WRITEABLE_LOCAL_OBJECTS])() = {
-	GetBatteryLowThreshold,
-	GetBatteryThreshold0,
-	GetBatteryThreshold1,
-	GetBatteryThreshold2,
-	GetBatteryThreshold3,
-	GetBatteryThreshold4,
-	GetBatteryBadThreshold,
-	lcz_motion_get_odr,
-	lcz_motion_get_scale,
+	GetBatteryLowThreshold,	  GetBatteryThreshold0, GetBatteryThreshold1,
+	GetBatteryThreshold2,	  GetBatteryThreshold3, GetBatteryThreshold4,
+	GetBatteryBadThreshold,	  lcz_motion_get_odr,	lcz_motion_get_scale,
 	lcz_motion_get_threshold,
-	IS_ENABLED(CONFIG_SD_CARD_LOG) ? sdCardLogGetMaxSize :
-					       no_sd_card_get_max_size,
+#ifdef CONFIG_SD_CARD_LOG
+	sdCardLogGetMaxSize,
+#else
+	no_sd_card_get_max_size,
+#endif
 
 };
 #endif /* CONFIG_BOARD_MG100 */

@@ -21,7 +21,7 @@
    [BT510 Sensor Data](#bt510-sensor-data)
 7. **[LED Behavior](#led-behavior)**
 8. **[My Own AWS Connection](#my-own-aws-connection)**
-9. **[Building the Firmware](#building-the-firmware)**
+9. **[Building the Firmware](#building-the-firmware)**  
    [Pinnacle 100/MG100](#pinnacle-100mg100-1)  
    [BL5340](#bl5340-1)  
 10. **[Development](#development)**

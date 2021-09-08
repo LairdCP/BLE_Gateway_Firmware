@@ -30,7 +30,7 @@
 
 The firmware in the AWS configuration gathers sensor data over BLE and sends the data to the cloud (AWS) via LTE-M (for Pinnacle 100 and MG100) or Ethernet (for BL5340).
 
-One sensor that can be used is the BL654 Sensor Board. This sensor ships with the Pinnacle 100 development kit (DVK) and measures temperature, humidity, and pressure - alternatively the BL5340 ESS demo application can be loaded to a second BL5340 which provides the same service, this is available in the sample_apps_common/ess_demo folder as [seen here](https://github.com/LairdCP/Sample_Apps_Common/tree/master/ess_demo) and a pre-built image can be [downloaded from here](https://github.com/LairdCP/BL5340_Firmware_Manifest/releases).
+One sensor that can be used is the BL654 Sensor Board. This sensor ships with the Pinnacle 100 development kit (DVK) and measures temperature, humidity, and pressure - alternatively the BL5340 ESS demo application can be loaded to a second BL5340 which provides the same service, this is available in the sample_apps_common/ess_demo folder as [seen here](https://github.com/LairdCP/Common_Sample_Apps/tree/master/ess_demo) and a pre-built image can be [downloaded from here](https://github.com/LairdCP/BL5340_Firmware_Manifest/releases).
 
 Another supported sensor is the BT510. It records temperature and movement. The BT510 can also be configured to detect a door opened/closed.
 

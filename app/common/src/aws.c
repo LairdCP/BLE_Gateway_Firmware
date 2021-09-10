@@ -787,7 +787,8 @@ static void client_init(struct mqtt_client *client)
 	/* MQTT transport configuration */
 	client->transport.type = MQTT_TRANSPORT_SECURE;
 	struct mqtt_sec_config *tls_config = &client->transport.tls.config;
-	tls_config->peer_verify = MBEDTLS_SSL_VERIFY_NONE;
+	tls_config->peer_verify =
+		attr_get_signed32(ATTR_ID_peerVerify, MBEDTLS_SSL_VERIFY_NONE);
 	tls_config->cipher_list = NULL;
 	tls_config->sec_tag_list = m_sec_tags;
 	tls_config->sec_tag_count = ARRAY_SIZE(m_sec_tags);

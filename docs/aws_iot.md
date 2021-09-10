@@ -149,6 +149,14 @@ The Pinnacle 100/MG100/BL5340 device can be provisioned to communicate with the 
 
    Setting commissioning to `1` (true) will trigger the device to connect to the AWS instance.
 
+#### TLS Peer Verification
+
+Peer verification isn't supported when using the self-signed certificates loaded by the mobile application. However, if using custom certs and if CoAP FOTA is not required, peer verification can be turned on from the command line. Peer verification is required to pass the AWS Device Advisor test suite. The setting change will not take effect until the next MQTT connect.
+
+```
+attr set peerVerify 2
+```
+
 ### Monitor AWS Messages
 
 With the AWS IoT console, you can watch for MQTT data sent by the device. Got to the left-hand menu in the console and click on test.

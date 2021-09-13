@@ -13,8 +13,19 @@ config COAP_FOTA
     depends on REBOOT
     depends on MODEM_HL7800
     depends on BLUEGRASS
+    depends on COAP
 
 if COAP_FOTA
+
+config COAP_FOTA_LOG_LEVEL
+	int "Task log level"
+	default 4
+	range 0 4
+
+config COAP_FOTA_JSON_PARSER_LOG_LEVEL
+	int "Log level for JSON parsing"
+	default 3
+	range 0 4
 
 config COAP_FOTA_DEFAULT_BRIDGE
     string "Default host name for retrieving firmware"
@@ -121,14 +132,6 @@ config COAP_FOTA_PSK
 
 endif
 
-config COAP_FOTA_DELETE_FILE_AFTER_UPDATE
-    bool "Delete file after update is complete"
-    default y
-    help
-        Keeping files makes it easy to switch between versions.
-        However, currently files can only be deleted using a terminal
-        or Bluetooth application (phone).
-
 config COAP_FOTA_ERROR_DELAY
     int "Seconds to wait before trying again after and error occurs."
     default 60
@@ -137,9 +140,29 @@ config COAP_FOTA_ERROR_DELAY
 
 config COAP_FOTA_MODEM_INSTALL_DELAY
     int "Seconds to wait to allow modem to install update"
+    depends on MCUMGR_CMD_IMG_MGMT
     default 600
     help
-        Used to prevent starting duplicate update cycle while the modem reboots by
-        keeping cloud state machine in FOTA state until modem has rebooted.
+        Used to prevent starting duplicate update cycle
+        while the modem reboots by keeping cloud state machine
+        in FOTA state until modem has rebooted.
+
+config COAP_FOTA_DELETE_FILE_AFTER_UPDATE
+    bool "Delete file after update is complete"
+    default y
+    help
+        Keeping files makes it easy to switch between versions.
+        However, currently files can only be deleted using a terminal
+        or Bluetooth application (phone).
+
+config COAP_FOTA_START_DELAY
+    int "Seconds to wait before starting state machine after connect"
+    default 30
+    help
+        First the shadow is read using get accepted.
+        Then the delta topic is subscribed to and FOTA
+        is allowed start.
+        This delay allows time for the delta topic (desired)
+        to be processed and the shadow to be updated.
 
 endif # COAP_FOTA

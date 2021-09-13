@@ -8,7 +8,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(coap_fota_task, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(coap_fota_task, CONFIG_COAP_FOTA_LOG_LEVEL);
 #define FWK_FNAME "coap_fota"
 
 /******************************************************************************/
@@ -20,7 +20,12 @@ LOG_MODULE_REGISTER(coap_fota_task, LOG_LEVEL_DBG);
 #include <dfu/mcuboot.h>
 #include <dfu/flash_img.h>
 #include <power/reboot.h>
+
+#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 #include <drivers/modem/hl7800.h>
+#endif
+
+#include "lcz_memfault.h"
 
 #if USE_PARTITION_MANAGER
 #include <pm_config.h>
@@ -53,7 +58,7 @@ LOG_MODULE_REGISTER(coap_fota_task, LOG_LEVEL_DBG);
 #endif
 
 #ifndef COAP_FOTA_TASK_STACK_DEPTH
-#define COAP_FOTA_TASK_STACK_DEPTH 3072
+#define COAP_FOTA_TASK_STACK_DEPTH 4096
 #endif
 
 #ifndef COAP_FOTA_TASK_QUEUE_DEPTH
@@ -96,35 +101,36 @@ typedef struct fota_context {
 typedef struct coap_fota_task {
 	FwkMsgTask_t msgTask;
 	bool fs_mounted;
+	bool network_connected;
 	bool aws_connected;
+	bool bluegrass_ready;
 	bool allow_start;
+	bool shadow_update;
+	uint32_t delay_timer;
 	fota_context_t app_context;
+#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 	fota_context_t modem_context;
+#endif
 } coap_fota_task_obj_t;
+
+K_MSGQ_DEFINE(coap_fota_task_queue, FWK_QUEUE_ENTRY_SIZE,
+	      COAP_FOTA_TASK_QUEUE_DEPTH, FWK_QUEUE_ALIGNMENT);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
 static coap_fota_task_obj_t cfto;
 
-K_THREAD_STACK_DEFINE(coap_fota_task_stack, COAP_FOTA_TASK_STACK_DEPTH);
-
-K_MSGQ_DEFINE(coap_fota_task_queue, FWK_QUEUE_ENTRY_SIZE,
-	      COAP_FOTA_TASK_QUEUE_DEPTH, FWK_QUEUE_ALIGNMENT);
+static K_THREAD_STACK_DEFINE(coap_fota_task_stack, COAP_FOTA_TASK_STACK_DEPTH);
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
 static void coap_fota_task_thread(void *pArg1, void *pArg2, void *pArg3);
 
-static DispatchResult_t coap_connection_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-						    FwkMsg_t *pMsg);
-
-static DispatchResult_t coap_start_ack_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-						   FwkMsg_t *pMsg);
-
-static DispatchResult_t coap_fota_tick_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-						   FwkMsg_t *pMsg);
+static FwkMsgHandler_t coap_connection_msg_handler;
+static FwkMsgHandler_t coap_start_ack_msg_handler;
+static FwkMsgHandler_t coap_fota_tick_msg_handler;
 
 static char *fota_state_get_string(fota_fsm_state_t state);
 static void fota_fsm(fota_context_t *pCtx);
@@ -132,7 +138,10 @@ static void fota_fsm(fota_context_t *pCtx);
 static bool hash_match(coap_fota_query_t *q, size_t size);
 static int initiate_update(fota_context_t *pCtx);
 static int initiate_app_update(coap_fota_query_t *q);
+#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 static int initiate_modem_update(coap_fota_query_t *q);
+#endif
+
 static int copy_app(struct flash_img_context *flash_ctx, const char *path,
 		    const char *name, size_t size);
 static bool transport_not_required(void);
@@ -146,8 +155,11 @@ static FwkMsgHandler_t *coap_fota_taskMsgDispatcher(FwkMsgCode_t MsgCode)
 	switch (MsgCode) {
 	case FMC_INVALID:                return Framework_UnknownMsgHandler;
 	case FMC_PERIODIC:               return coap_fota_tick_msg_handler;
+	case FMC_NETWORK_CONNECTED:      return coap_connection_msg_handler;
+	case FMC_NETWORK_DISCONNECTED:   return coap_connection_msg_handler;
 	case FMC_AWS_CONNECTED:          return coap_connection_msg_handler;
 	case FMC_AWS_DISCONNECTED:       return coap_connection_msg_handler;
+	case FMC_BLUEGRASS_READY:        return coap_connection_msg_handler;
 	case FMC_FOTA_START_ACK:         return coap_start_ack_msg_handler;
 	default:                         return NULL;
 	}
@@ -178,7 +190,9 @@ int coap_fota_task_initialize(void)
 	k_thread_name_set(cfto.msgTask.pTid, FWK_FNAME);
 
 	cfto.app_context.type = APP_IMAGE_TYPE;
+#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 	cfto.modem_context.type = MODEM_IMAGE_TYPE;
+#endif
 
 	return 0;
 }
@@ -188,6 +202,8 @@ int coap_fota_task_initialize(void)
 /******************************************************************************/
 static void coap_fota_task_thread(void *pArg1, void *pArg2, void *pArg3)
 {
+	ARG_UNUSED(pArg2);
+	ARG_UNUSED(pArg3);
 	coap_fota_task_obj_t *pObj = (coap_fota_task_obj_t *)pArg1;
 
 	if (fsu_lfs_mount() == 0) {
@@ -196,9 +212,15 @@ static void coap_fota_task_thread(void *pArg1, void *pArg2, void *pArg3)
 
 	coap_fota_init();
 	coap_fota_shadow_init(CONFIG_FSU_MOUNT_POINT, CONFIG_FSU_MOUNT_POINT);
+
 	/* Populate query because name is used in fsm print. */
 	coap_fota_populate_query(APP_IMAGE_TYPE, &pObj->app_context.query);
+
+#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 	coap_fota_populate_query(MODEM_IMAGE_TYPE, &pObj->modem_context.query);
+#endif
+
+	Framework_StartTimer(&pObj->msgTask);
 
 	while (true) {
 		Framework_MsgReceiver(&pObj->msgTask.rxer);
@@ -209,6 +231,7 @@ static DispatchResult_t coap_start_ack_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 						   FwkMsg_t *pMsg)
 {
 	coap_fota_task_obj_t *pObj = FWK_TASK_CONTAINER(coap_fota_task_obj_t);
+
 	pObj->allow_start = true;
 	return DISPATCH_OK;
 }
@@ -221,12 +244,33 @@ static DispatchResult_t coap_connection_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 						    FwkMsg_t *pMsg)
 {
 	coap_fota_task_obj_t *pObj = FWK_TASK_CONTAINER(coap_fota_task_obj_t);
-	if (pMsg->header.msgCode == FMC_AWS_CONNECTED) {
+
+	switch (pMsg->header.msgCode) {
+	case FMC_NETWORK_CONNECTED:
+		pObj->network_connected = true;
+		break;
+
+	case FMC_NETWORK_DISCONNECTED:
+		pObj->network_connected = false;
+		break;
+
+	case FMC_BLUEGRASS_READY:
 		pObj->aws_connected = true;
-		Framework_StartTimer(&pObj->msgTask);
-	} else {
+		pObj->bluegrass_ready = true;
+		coap_fota_enable_shadow_generation();
+		break;
+
+	case FMC_AWS_CONNECTED:
+		pObj->aws_connected = true;
+		break;
+
+	case FMC_AWS_DISCONNECTED:
 		pObj->aws_connected = false;
+		pObj->bluegrass_ready = false;
+		coap_fota_disable_shadow_generation();
+		break;
 	}
+
 	return DISPATCH_OK;
 }
 
@@ -236,13 +280,30 @@ static DispatchResult_t coap_fota_tick_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	UNUSED_PARAMETER(pMsg);
 	coap_fota_task_obj_t *pObj = FWK_TASK_CONTAINER(coap_fota_task_obj_t);
 
-	if (pObj->aws_connected) {
-		coap_fota_shadow_update_handler();
+	if (pObj->bluegrass_ready) {
+		pObj->shadow_update = coap_fota_shadow_update_handler();
+	} else {
+		pObj->shadow_update = false;
+	}
+
+	/* Allow possible delta shadow changes to be processed before starting.
+	 * Allow FOTA shadow updates to be sent before disconnecting from AWS.
+	 */
+
+	if (pObj->network_connected && pObj->bluegrass_ready &&
+	    !pObj->shadow_update) {
+		if (pObj->delay_timer < CONFIG_COAP_FOTA_START_DELAY) {
+			pObj->delay_timer += 1;
+		}
+	} else {
+		pObj->delay_timer = 0;
 	}
 
 	if (pObj->fs_mounted) {
 		fota_fsm(&pObj->app_context);
+#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 		fota_fsm(&pObj->modem_context);
+#endif
 	}
 
 	Framework_StartTimer(&pObj->msgTask);
@@ -288,6 +349,7 @@ static void fota_fsm(fota_context_t *pCtx)
 	case FOTA_FSM_ERROR:
 		pCtx->delay = CONFIG_COAP_FOTA_ERROR_DELAY;
 		coap_fota_increment_error_count(pCtx->type);
+		LCZ_MEMFAULT_COLLECT_LOGS();
 		next_state = FOTA_FSM_END;
 		break;
 
@@ -302,7 +364,9 @@ static void fota_fsm(fota_context_t *pCtx)
 			next_state = FOTA_FSM_MODEM_WAIT;
 		} else {
 			LOG_WRN("Entering mcuboot");
-			k_sleep(K_SECONDS(1)); /* Allow last print to occur. */
+			LCZ_MEMFAULT_REBOOT_TRACK_FIRMWARE_UPDATE();
+			/* Allow last print to occur. */
+			k_sleep(K_MSEC(CONFIG_LOG_PROCESS_THREAD_SLEEP_MS));
 			sys_reboot(SYS_REBOOT_COLD);
 			next_state = FOTA_FSM_END; /* don't care */
 		}
@@ -345,10 +409,13 @@ static void fota_fsm(fota_context_t *pCtx)
 		break;
 
 	case FOTA_FSM_IDLE:
-		if (coap_fota_request(pCtx->type)) {
-			FRAMEWORK_MSG_CREATE_AND_SEND(
-				FWK_ID_RESERVED, FWK_ID_CLOUD, FMC_FOTA_START);
-			next_state = FOTA_FSM_START;
+		if (cfto.delay_timer >= CONFIG_COAP_FOTA_START_DELAY) {
+			if (coap_fota_request(pCtx->type)) {
+				FRAMEWORK_MSG_CREATE_AND_SEND(
+					FWK_ID_RESERVED, FWK_ID_CLOUD,
+					FMC_FOTA_START_REQ);
+				next_state = FOTA_FSM_START;
+			}
 		}
 		break;
 
@@ -497,12 +564,30 @@ static void fota_fsm(fota_context_t *pCtx)
 	pCtx->state = next_state;
 }
 
+static bool transport_not_required(void)
+{
+	if (cfto.app_context.using_transport) {
+		return false;
+#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
+	} else if (cfto.modem_context.using_transport) {
+		return false;
+#endif
+	}
+
+	return true;
+}
+
 static int initiate_update(fota_context_t *pCtx)
 {
 	int r = 0;
+
+#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 	if (pCtx->type == MODEM_IMAGE_TYPE) {
 		r = initiate_modem_update(&pCtx->query);
-	} else {
+	}
+#endif
+
+	if (pCtx->type == APP_IMAGE_TYPE) {
 		r = initiate_app_update(&pCtx->query);
 	}
 
@@ -606,13 +691,17 @@ static int initiate_app_update(coap_fota_query_t *q)
 	return r;
 }
 
+#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 static int initiate_modem_update(coap_fota_query_t *q)
 {
 	char abs_path[FSU_MAX_ABS_PATH_SIZE];
+
 	(void)fsu_build_full_name(abs_path, sizeof(abs_path), q->fs_path,
 				  q->filename);
+
 	return mdm_hl7800_update_fw(abs_path);
 }
+#endif
 
 static bool hash_match(coap_fota_query_t *q, size_t size)
 {
@@ -622,12 +711,4 @@ static bool hash_match(coap_fota_query_t *q, size_t size)
 			       FSU_HASH_SIZE) == 0);
 	}
 	return false;
-}
-
-static bool transport_not_required(void)
-{
-	return (cfto.app_context.using_transport ||
-		cfto.modem_context.using_transport) ?
-			     false :
-			     true;
 }

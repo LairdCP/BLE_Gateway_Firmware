@@ -2,13 +2,14 @@
  * @file coap_fota_json_parser.c
  * @brief Uses jsmn to parse JSON.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(coap_fota_json_parser, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(coap_fota_json_parser,
+		    CONFIG_COAP_FOTA_JSON_PARSER_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */

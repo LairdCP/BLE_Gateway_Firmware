@@ -3,7 +3,7 @@
  * @brief The shadow provides information to Bluegrass and allows
  * firmware versions to be selected.
  *
- * Copyright (c) 2020 Laird Connectivity
+ * Copyright (c) 2020-2021 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -73,8 +73,9 @@ void coap_fota_disable_shadow_generation(void);
  *
  * @note Assumes AWS messages can be sent at any time.
  *
+ * @retval true if there is an update in progress, false otherwise
  */
-void coap_fota_shadow_update_handler(void);
+bool coap_fota_shadow_update_handler(void);
 
 /**
  * @brief Set the version that is currently running.

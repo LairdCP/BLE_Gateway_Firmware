@@ -9,7 +9,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(coap_fota, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(coap_fota, CONFIG_COAP_FOTA_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -609,7 +609,8 @@ static int send_get_size(coap_fota_query_t *p)
 		r = packet_append_get_size_query(p);
 		BREAK_ON_ERROR(r);
 
-		coap_hexdump("Request", cf.request.data, cf.request.offset);
+		coap_hexdump("Request (size)", cf.request.data,
+			     cf.request.offset);
 
 		r = lcz_sock_send(&cf.sock_info, cf.request.data,
 				  cf.request.offset, 0);
@@ -635,7 +636,8 @@ static int send_get_hash(coap_fota_query_t *p)
 		r = packet_append_get_hash_query(p);
 		BREAK_ON_ERROR(r);
 
-		coap_hexdump("Request", cf.request.data, cf.request.offset);
+		coap_hexdump("Request (hash)", cf.request.data,
+			     cf.request.offset);
 
 		r = lcz_sock_send(&cf.sock_info, cf.request.data,
 				  cf.request.offset, 0);
@@ -712,7 +714,8 @@ static int send_get_firmware(coap_fota_query_t *p)
 			break;
 		}
 
-		coap_hexdump("Request", cf.request.data, cf.request.offset);
+		coap_hexdump("Request (firmware block)", cf.request.data,
+			     cf.request.offset);
 
 		r = lcz_sock_send(&cf.sock_info, cf.request.data,
 				  cf.request.offset, 0);

@@ -8,7 +8,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(coap_fota_shadow, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(coap_fota_shadow, CONFIG_COAP_FOTA_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -149,21 +149,21 @@ void coap_fota_disable_shadow_generation(void)
 	fota_shadow.enabled = false;
 }
 
-void coap_fota_shadow_update_handler(void)
+bool coap_fota_shadow_update_handler(void)
 {
-#ifdef CONFIG_BLUEGRASS
-	if (!awsConnected() || !fota_shadow.enabled) {
-		return;
+	bool update_in_progress = fota_shadow.json_update_request;
+
+	if (!fota_shadow.enabled) {
+		return false;
 	}
-#else
-	return;
-#endif
 
 	fota_shadow_handler();
 	fota_null_desired_image_handler(APP_IMAGE_TYPE);
 	fota_null_desired_image_handler(MODEM_IMAGE_TYPE);
 	fota_null_desired_host_handler();
 	fota_null_desired_blocksize_handler();
+
+	return update_in_progress;
 }
 
 const char *coap_fota_get_image_name(enum fota_image_type type)
@@ -192,10 +192,9 @@ void coap_fota_set_running_version(enum fota_image_type type, const char *p,
 			offset = strlen(MODEM_IMAGE_PREFIX);
 		}
 	}
-	/* This isn't set from the shadow */
-	fota_shadow.json_update_request =
-		set_shadow_str(pImg->running, sizeof(pImg->running),
-			       p + offset + 1, length - offset);
+	/* This isn't printed because it isn't set from the shadow */
+	set_shadow_str(pImg->running, sizeof(pImg->running), p + offset + 1,
+		       length - offset);
 }
 
 void coap_fota_set_desired_version(enum fota_image_type type, const char *p,
@@ -207,7 +206,6 @@ void coap_fota_set_desired_version(enum fota_image_type type, const char *p,
 	}
 
 	if (set_shadow_str(pImg->desired, sizeof(pImg->desired), p, length)) {
-		fota_shadow.json_update_request = true;
 		LOG_DBG("%s desired image: %s", log_strdup(pImg->name),
 			log_strdup(pImg->desired));
 	}
@@ -225,7 +223,6 @@ void coap_fota_set_desired_filename(enum fota_image_type type, const char *p,
 
 	if (set_shadow_str(pImg->desired_filename,
 			   sizeof(pImg->desired_filename), p, length)) {
-		fota_shadow.json_update_request = true;
 		LOG_DBG("%s desired filename: %s", log_strdup(pImg->name),
 			log_strdup(pImg->desired_filename));
 	}
@@ -246,7 +243,6 @@ void coap_fota_set_downloaded_filename(enum fota_image_type type, const char *p,
 	 */
 	if (set_shadow_str(pImg->downloaded_filename,
 			   sizeof(pImg->downloaded_filename), p, length)) {
-		fota_shadow.json_update_request = true;
 		LOG_DBG("%s downloaded filename: %s", log_strdup(pImg->name),
 			log_strdup(pImg->downloaded_filename));
 	}
@@ -310,7 +306,6 @@ void coap_fota_set_host(const char *p, size_t length)
 {
 	if (set_shadow_str(fota_shadow.bridge, sizeof(fota_shadow.bridge), p,
 			   length)) {
-		fota_shadow.json_update_request = true;
 		LOG_DBG("fota host name: %s", log_strdup(fota_shadow.bridge));
 	}
 	/* Don't set flag when reading shadow after a reset */
@@ -462,6 +457,7 @@ static bool set_shadow_str(char *dest, size_t dest_size, const char *src,
 		/* Strings from the jsmn parser aren't null terminated. */
 		memset(dest, 0, dest_size);
 		strncpy(dest, src, MIN(dest_size - 1, src_len));
+		fota_shadow.json_update_request = true;
 		updated = true;
 	}
 	k_mutex_unlock(&fota_shadow_mutex);
@@ -475,6 +471,7 @@ static bool set_shadow_uint32(uint32_t *dest, uint32_t value)
 	if (*dest != value) {
 		*dest = value;
 		fota_shadow.json_update_request = true;
+		updated = true;
 	}
 	k_mutex_unlock(&fota_shadow_mutex);
 	return updated;
@@ -506,6 +503,7 @@ static void fota_shadow_handler(void)
 			 product, fota_shadow.blocksize);
 
 #ifdef CONFIG_BLUEGRASS
+		LOG_DBG("Update FOTA shadow");
 		rc = awsSendData(msg, GATEWAY_TOPIC);
 #endif
 		if (rc < 0) {
@@ -560,11 +558,13 @@ static int fota_null_desired_handler(const char *name)
 		      SHADOW_FOTA_NULL_DESIRED_FMT_STR_CONVERSION_SIZE;
 	char *msg = k_calloc(size, sizeof(char));
 	if (msg == NULL) {
+		LOG_ERR("Allocation failure: FOTA null desired");
 		return -ENOMEM;
 	}
 	snprintf(msg, size, SHADOW_FOTA_NULL_DESIRED_FMT_STR, name);
 
 #ifdef CONFIG_BLUEGRASS
+	LOG_DBG("Set %s FOTA desired null", name);
 	rc = awsSendData(msg, GATEWAY_TOPIC);
 #endif
 

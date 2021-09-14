@@ -240,7 +240,7 @@ If the firmware was built with mcuboot, `west flash` will program merged.hex whi
 
 The firmware can only be built with mcuboot.
 
-Issue these commands **from the ble_gateway_firmware directory**.
+Issue these commands **from the BLE_Gateway_Firmware directory**.
 
 > **WARNING:** If using windows, checkout code to a path of 12 characters or less to avoid build issues related to path length limits.
 

@@ -16,7 +16,7 @@
 
 ## Introduction
 
-Cloud FOTA updates to the Pinnacle 100/MG100/BL5340 require, at a minimum, a webserver that can serve up a static webpage containing the \*.bin upgrade file (NOTE: Devices request this file using partial content HTTPS requests to the static webpage). The relevant code to include this functionality in your own project is located in the _<project_folder>/pinnacle_100_firmware/app/http_fota_ folder when you clone the [Pinnacle 100 Firmware Manifest](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest) or in the _<project_folder>/ble_gateway_firmware/app/http_fota_ folder when you clone the [BL5340 Manifest](https://github.com/LairdCP/BL5340_Firmware_Manifest).
+Cloud FOTA updates to the Pinnacle 100/MG100/BL5340 require, at a minimum, a webserver that can serve up a static webpage containing the \*.bin upgrade file (NOTE: Devices request this file using partial content HTTPS requests to the static webpage). The relevant code to include this functionality in your own project is located in the _<project_folder>/pinnacle_100_firmware/app/http_fota_ folder when you clone the [Pinnacle 100 Firmware Manifest](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest) or in the _<project_folder>/BLE_Gateway_Firmware/app/http_fota_ folder when you clone the [BL5340 Manifest](https://github.com/LairdCP/BL5340_Firmware_Manifest).
 
 The following discusses how to perform the upgrade two ways, using an Amazon Web Services (AWS) S3 Bucket and using an NGINX webserver running on an AWS EC2 instance.
 
@@ -38,7 +38,7 @@ DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE(=64) "Maximum hostname length (stack)"
      - 480-00070 for MG100 Gateway
    - Official releases available [here for the BL5340](https://github.com/LairdCP/BL5340_Firmware_Manifest/releases)
      - 480-00115 for the BL5340 development kit
-   - Custom FW builds use **_app_update.bin_** which is located in the build directory `<project_folder>/pinnacle_100_firmware/build/<project>/zephyr/app_update.bin` (for Pinnacle 100/MG100) or `<project_folder>/ble_gateway_firmware/build/<project>/zephyr/app_update.bin` (for BL5340)
+   - Custom FW builds use **_app_update.bin_** which is located in the build directory `<project_folder>/pinnacle_100_firmware/build/<project>/zephyr/app_update.bin` (for Pinnacle 100/MG100) or `<project_folder>/BLE_Gateway_Firmware/build/<project>/zephyr/app_update.bin` (for BL5340)
 3. HTTP or HTTPS endpoint serving a static webpage containing the \*.bin upgrade file, e.g. `http://pinnacle100.com/<bin_filename>.bin`  
    **WARNING:** To use HTTPS, the file must be served from an AWS S3 bucket. There is no support for using a custom HTTPS server at this time.
 4. Ability to publish an MQTT message to the Pinnacle 100 or MG100, this could be:

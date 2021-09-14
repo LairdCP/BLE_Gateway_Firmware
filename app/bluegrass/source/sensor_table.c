@@ -31,7 +31,7 @@ LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 #include "sensor_table.h"
 #include "attr.h"
 
-#ifdef CONFIG_BOARD_MG100
+#ifdef CONFIG_SD_CARD_LOG
 #include "sdcard_log.h"
 #endif
 

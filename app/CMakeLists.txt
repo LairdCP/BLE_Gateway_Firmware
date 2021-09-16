@@ -1,5 +1,17 @@
 cmake_minimum_required(VERSION 3.13.1)
 
+# Add configuration for building with mcuboot
+# because it cannot be done with relative paths in VS code on Windows
+if((BOARD STREQUAL mg100) OR (BOARD STREQUAL pinnacle_100_dvk))
+set(mcuboot_DTC_OVERLAY_FILE
+    ${CMAKE_SOURCE_DIR}/boards/pinnacle_100.overlay
+)
+
+set(mcuboot_CONF_FILE
+    ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/pinnacle_100.conf
+)
+endif()
+
 # Prepend the additional boards directory but still allow the original Zephyr
 # boards directory to be used with lower priority
 list(PREPEND BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../)

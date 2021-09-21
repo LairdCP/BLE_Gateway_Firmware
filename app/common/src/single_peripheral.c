@@ -57,6 +57,10 @@ static void sp_disconnected(struct bt_conn *conn, uint8_t reason);
 static void sp_connected(struct bt_conn *conn, uint8_t err);
 static void sp_le_param_updated(struct bt_conn *conn, uint16_t interval,
 				uint16_t latency, uint16_t timeout);
+static void sp_le_phy_updated(struct bt_conn *conn,
+			      struct bt_conn_le_phy_info *param);
+static void sp_le_data_length_update(struct bt_conn *conn,
+				     struct bt_conn_le_data_len_info *info);
 static void sp_security_changed(struct bt_conn *conn, bt_security_t level,
 				enum bt_security_err err);
 static void stop_adv_timer_callback(struct k_timer *timer_id);
@@ -143,6 +147,9 @@ static int single_peripheral_initialize(const struct device *device)
 		sp.conn_callbacks.connected = sp_connected;
 		sp.conn_callbacks.disconnected = sp_disconnected;
 		sp.conn_callbacks.le_param_updated = sp_le_param_updated;
+		sp.conn_callbacks.le_phy_updated = sp_le_phy_updated;
+		sp.conn_callbacks.le_data_len_updated =
+			sp_le_data_length_update;
 		sp.conn_callbacks.security_changed = sp_security_changed;
 		bt_conn_cb_register(&sp.conn_callbacks);
 		k_timer_init(&sp.timer, stop_adv_timer_callback, NULL);
@@ -229,6 +236,46 @@ static void sp_le_param_updated(struct bt_conn *conn, uint16_t interval,
 	LOG_DBG("Connection Parameters: "
 		"Interval %d ms, Latency %d s, Timeout %d ms",
 		interval * 100 / 125, latency, timeout * 10);
+}
+
+static const char *phy2str(uint8_t phy)
+{
+	switch (phy) {
+	case 0:
+		return "No packets";
+	case BT_GAP_LE_PHY_1M:
+		return "LE 1M";
+	case BT_GAP_LE_PHY_2M:
+		return "LE 2M";
+	case BT_GAP_LE_PHY_CODED:
+		return "LE Coded";
+	default:
+		return "Unknown";
+	}
+}
+
+static void sp_le_phy_updated(struct bt_conn *conn,
+			      struct bt_conn_le_phy_info *param)
+{
+	if (!lbt_peripheral_role(conn)) {
+		return;
+	}
+
+	LOG_DBG("PHY update: TX %s, RX %s", phy2str(param->tx_phy),
+		phy2str(param->rx_phy));
+}
+
+static void sp_le_data_length_update(struct bt_conn *conn,
+				     struct bt_conn_le_data_len_info *info)
+{
+	if (!lbt_peripheral_role(conn)) {
+		return;
+	}
+
+	LOG_DBG("data len update: TX len: %d time: %d,"
+		" RX len: %d time: %d",
+		info->tx_max_len, info->tx_max_time, info->rx_max_len,
+		info->rx_max_time);
 }
 
 static void sp_security_changed(struct bt_conn *conn, bt_security_t level,

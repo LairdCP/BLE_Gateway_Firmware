@@ -170,14 +170,14 @@ int lwm2mGetServerAddr(void)
 	if (ret == 0) {
 		ret = lwm2m_setup(
 #ifdef CONFIG_MODEM_HL7800
-			  attr_get_quasi_static(ATTR_ID_lteSerialNumber),
+			attr_get_quasi_static(ATTR_ID_lteSerialNumber),
 #else
-			  /* For non-Pinnacle 100 devices which do not contain
-			   * modems, use the gateway ID as the serial number
-			   */
-			  attr_get_quasi_static(ATTR_ID_gatewayId),
+			/* For non-Pinnacle 100 devices which do not contain
+			 * modems, use the gateway ID as the serial number
+			 */
+			attr_get_quasi_static(ATTR_ID_gatewayId),
 #endif
-			  attr_get_quasi_static(ATTR_ID_gatewayId));
+			attr_get_quasi_static(ATTR_ID_gatewayId));
 
 		if (ret < 0) {
 			LOG_ERR("Cannot setup LWM2M fields (%d)", ret);
@@ -199,7 +199,8 @@ bool lwm2mConnected(void)
 int lwm2mConnect(void)
 {
 	if (!lwm2m_connection_started) {
-		uint32_t flags = IS_ENABLED(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP) ?
+		uint32_t flags =
+			IS_ENABLED(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP) ?
 				      LWM2M_RD_CLIENT_FLAG_BOOTSTRAP :
 				      0;
 
@@ -211,11 +212,12 @@ int lwm2mConnect(void)
 		/* client.sec_obj_inst is 0 as a starting point */
 		char endpoint_name[CONFIG_LWM2M_CLIENT_ENDPOINT_MAX_SIZE];
 		memset(endpoint_name, 0, sizeof(endpoint_name));
-		snprintk(endpoint_name, CONFIG_LWM2M_CLIENT_ENDPOINT_MAX_SIZE, "%s_%s",
-			 dis_get_model_number(),
-			 (char *)attr_get_quasi_static(ATTR_ID_gatewayId));
+		snprintk(endpoint_name, CONFIG_LWM2M_CLIENT_ENDPOINT_MAX_SIZE,
+			 "%s",
+			 (char *)attr_get_quasi_static(ATTR_ID_lwm2mClientId));
 		LOG_DBG("Endpoint name: %s", log_strdup(endpoint_name));
-		lwm2m_rd_client_start(&client, endpoint_name, flags, rd_client_event);
+		lwm2m_rd_client_start(&client, endpoint_name, flags,
+				      rd_client_event);
 		lwm2m_connection_started = true;
 	}
 

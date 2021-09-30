@@ -1,0 +1,24 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+config LCZ_MOTION_TEMPERATURE
+    bool "Enable reading temperature from accelerometer"
+    depends on (BOARD_MG100 || BOARD_BL5340_DVK_CPUAPP)
+    depends on LIS2DH_MEASURE_TEMPERATURE
+
+if LCZ_MOTION_TEMPERATURE
+
+config LCZ_MOTION_TEMPERATURE_LOG_LEVEL
+    int "Temperature from accelerometer driver log level"
+    range 0 4
+    default 3
+
+config LCZ_MOTION_TEMPERATURE_SAMPLE_RATE_SECONDS
+    int "Temperature sample rate"
+    default 30
+
+config LCZ_MOTION_TEMPERATURE_INIT_PRIORITY
+    int "Application init priority"
+    default 99
+
+endif

@@ -103,6 +103,12 @@ target_sources(app PRIVATE
 )
 endif()
 
+if(CONFIG_LCZ_MOTION_TEMPERATURE)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/common/src/lcz_motion_temperature.c
+)
+endif()
+
 if(CONFIG_LWM2M)
 include_directories(${CMAKE_SOURCE_DIR}/lwm2m/include)
 target_sources(app PRIVATE

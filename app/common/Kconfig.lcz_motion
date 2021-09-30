@@ -1,0 +1,12 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+config LCZ_MOTION
+    bool "Enable motion driver"
+    depends on (BOARD_MG100 || BOARD_BL5340_DVK_CPUAPP)
+
+config LCZ_MOTION_LOG_LEVEL
+    int "Motion driver log level"
+    depends on LCZ_MOTION
+    range 0 4
+    default 3

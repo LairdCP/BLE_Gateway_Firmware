@@ -20,6 +20,7 @@ LOG_MODULE_REGISTER(lc_battery, CONFIG_LAIRD_CONNECT_BATTERY_LOG_LEVEL);
 #include "lairdconnect_battery.h"
 #include "attr.h"
 #include "laird_power.h"
+
 #ifdef CONFIG_LAIRD_CONNECT_BATTERY_LOGGING
 #include "sdcard_log.h"
 #endif
@@ -47,6 +48,7 @@ LOG_MODULE_REGISTER(lc_battery, CONFIG_LAIRD_CONNECT_BATTERY_LOG_LEVEL);
 
 #define BATTERY_VOLT_OFFSET 150
 #define BASE_TEMP 20
+#define MINIMUM_TEMPERATURE -40
 
 #define BATTERY_NUM_READINGS 50
 
@@ -70,8 +72,6 @@ LOG_MODULE_REGISTER(lc_battery, CONFIG_LAIRD_CONNECT_BATTERY_LOG_LEVEL);
 #define PWR_PIN_PWR_NOT_PRESENT 1
 /* clang-format on */
 
-#define INVALID_TEMPERATURE -127
-
 #define MAX_LOG_STR_SIZE 30
 
 /******************************************************************************/
@@ -93,9 +93,8 @@ static const struct device *batteryPwrStateDev;
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static int ReadTempSensor(void);
-static enum battery_status CalculateRemainingCapacity(int16_t Voltage);
-static int16_t DetermineTempOffset(int32_t Temperature);
+static enum battery_status CalculateRemainingCapacity(int16_t voltage);
+static int16_t DetermineTempOffset(int32_t temperature);
 static void ChgStateHandler(struct k_work *Item);
 static void BatteryGpioInit(void);
 #ifdef CONFIG_LAIRD_CONNECT_BATTERY_LOGGING
@@ -196,7 +195,7 @@ struct battery_data *batteryGetStatus()
 	return (&batteryStatus);
 }
 
-uint8_t BatteryGetChgState()
+uint8_t BatteryGetChgState(void)
 {
 	int pinState = 0;
 	uint8_t pwrState = 0;
@@ -220,7 +219,7 @@ uint8_t BatteryGetChgState()
 	return (pwrState);
 }
 
-void BatteryInit()
+void BatteryInit(void)
 {
 	BatteryGpioInit();
 
@@ -232,14 +231,14 @@ void BatteryInit()
 	return;
 }
 
-uint16_t BatteryCalculateRunningAvg(uint16_t Voltage)
+uint16_t BatteryCalculateRunningAvg(uint16_t voltage)
 {
 	uint32_t total = 0;
 	uint16_t ret = 0;
 	uint8_t idx = 0;
 
 	/* store the latest voltage reading */
-	previousVoltageReadings[lastVoltageReadingIdx++] = Voltage;
+	previousVoltageReadings[lastVoltageReadingIdx++] = voltage;
 
 	/* Mod operation to insure index is between 0 and BATTERY_NUM_READINGS */
 	lastVoltageReadingIdx %= BATTERY_NUM_READINGS;
@@ -262,78 +261,48 @@ uint16_t BatteryCalculateRunningAvg(uint16_t Voltage)
 	return (ret);
 }
 
-static int ReadTempSensor(void)
-{
-	int status = 0;
-	int temp = INVALID_TEMPERATURE;
-	struct sensor_value val;
-	const struct device *sensor =
-		device_get_binding(DT_LABEL(DT_INST(0, st_lis2dh)));
-
-	status = sensor_sample_fetch_chan(sensor, SENSOR_CHAN_AMBIENT_TEMP);
-
-	if (status >= 0) {
-		status = sensor_channel_get(sensor, SENSOR_CHAN_AMBIENT_TEMP,
-					    &val);
-	}
-
-	if ((status < 0) || (val.val1 == INVALID_TEMPERATURE)) {
-		LOG_WRN("Failed to retrieve temperature");
-	} else {
-		temp = val.val1;
-	}
-
-	return (temp);
-}
-
 enum battery_status BatteryCalculateRemainingCapacity(uint16_t Volts)
 {
-	int32_t Temperature = 0;
-	int16_t Voltage = 0;
+	int32_t temperature = 0;
+	int16_t voltage = 0;
 
-	/* get the ambient temperature from the LIS3DHTR sensor */
-	Temperature = ReadTempSensor();
-
-	/* if the temperature can't be read, then just use the
+	/* If the temperature can't be read, then just use the
 	 * BASE_TEMP value as a safe default.
 	 */
-	if (Temperature <= INVALID_TEMPERATURE) {
-		Temperature = BASE_TEMP;
-	}
+	temperature = attr_get_signed32(ATTR_ID_batteryTemperature, BASE_TEMP);
 
 #ifdef CONFIG_LAIRD_CONNECT_BATTERY_LOGGING
-	BatteryLogData(Volts, Temperature);
+	BatteryLogData(Volts, temperature);
 #endif
 
 	/* adjust the voltage based on the ambient temperature */
-	Voltage = Volts - DetermineTempOffset(Temperature);
+	voltage = Volts - DetermineTempOffset(temperature);
 
-	Voltage = BatteryCalculateRunningAvg(Voltage);
+	voltage = BatteryCalculateRunningAvg(voltage);
 
 	/* Generate warning for low battery if below
 	 * the alarm threshold and not externally powered.
 	 */
 	if (BatteryGetChgState() & BATTERY_EXT_POWER_STATE) {
 		batteryAlarmState = BATTERY_ALARM_INACTIVE;
-	} else if (Voltage <= GetBatteryAlarmThreshold()) {
+	} else if (voltage <= GetBatteryAlarmThreshold()) {
 		batteryAlarmState = BATTERY_ALARM_ACTIVE;
 	} else {
 		batteryAlarmState = BATTERY_ALARM_INACTIVE;
 	}
 
 	/* convert the raw voltage to segment value */
-	batteryCapacity = CalculateRemainingCapacity(Voltage);
+	batteryCapacity = CalculateRemainingCapacity(voltage);
 
 	/* reported to cloud */
-	batteryStatus.batteryVoltage = Voltage;
+	batteryStatus.batteryVoltage = voltage;
 	batteryStatus.batteryCapacity = batteryCapacity;
-	batteryStatus.ambientTemperature = Temperature;
+	batteryStatus.ambientTemperature = temperature;
 
 	/* reported to BLE/shell */
 	attr_set_uint32(ATTR_ID_batteryAlarm, batteryAlarmState);
-	attr_set_uint32(ATTR_ID_batteryVoltageMv, Voltage);
+	attr_set_uint32(ATTR_ID_batteryVoltageMv, voltage);
 	attr_set_uint32(ATTR_ID_batteryCapacity, batteryCapacity);
-	attr_set_signed32(ATTR_ID_batteryTemperature, Temperature);
 
 	return (batteryCapacity);
 }
@@ -356,7 +325,7 @@ static void BatteryStateChanged(const struct device *Dev,
 	k_work_submit(&chgStateWork);
 }
 
-static void BatteryGpioInit()
+static void BatteryGpioInit(void)
 {
 	/* configure the charging state gpio  */
 	k_work_init(&chgStateWork, ChgStateHandler);
@@ -378,20 +347,22 @@ static void BatteryGpioInit()
 	gpio_add_callback(batteryPwrStateDev, &batteryPwrStateCb);
 }
 
-static int16_t DetermineTempOffset(int32_t Temperature)
+static int16_t DetermineTempOffset(int32_t temperature)
 {
 	/* Floats are used because offset is fractional.
 	 * Offset is in millivolts.
 	 */
 	const float OFFSET_PER_DEGREE =
 		(float)BATTERY_VOLT_OFFSET / (float)BASE_TEMP;
-	float tempOffset;
-	float voltageOffset;
+	float offset;
 
-	tempOffset = (float)BASE_TEMP - (float)Temperature;
-	voltageOffset = OFFSET_PER_DEGREE * tempOffset;
-
-	return ((int16_t)voltageOffset);
+	/* If the temperature isn't valid, don't generate offset */
+	if (temperature >= MINIMUM_TEMPERATURE) {
+		offset = (float)BASE_TEMP - (float)temperature;
+		return ((int16_t)(OFFSET_PER_DEGREE * offset));
+	} else {
+		return 0;
+	}
 }
 
 static void ChgStateHandler(struct k_work *Item)
@@ -400,20 +371,20 @@ static void ChgStateHandler(struct k_work *Item)
 	return;
 }
 
-static enum battery_status CalculateRemainingCapacity(int16_t Voltage)
+static enum battery_status CalculateRemainingCapacity(int16_t voltage)
 {
 	enum battery_status battStat;
 	int thresh3 = GetBatteryThreshold3();
 	int thresh2 = GetBatteryThreshold2();
 	int thresh1 = GetBatteryThreshold1();
 
-	if (Voltage > thresh3) {
+	if (voltage > thresh3) {
 		battStat = BATTERY_STATUS_4;
-	} else if ((Voltage <= thresh3) && (Voltage > thresh2)) {
+	} else if ((voltage <= thresh3) && (voltage > thresh2)) {
 		battStat = BATTERY_STATUS_3;
-	} else if ((Voltage <= thresh2) && (Voltage > thresh1)) {
+	} else if ((voltage <= thresh2) && (voltage > thresh1)) {
 		battStat = BATTERY_STATUS_2;
-	} else if (Voltage <= thresh1) {
+	} else if (voltage <= thresh1) {
 		battStat = BATTERY_STATUS_1;
 	} else {
 		battStat = BATTERY_STATUS_0;

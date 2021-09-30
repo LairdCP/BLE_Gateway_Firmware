@@ -24,6 +24,7 @@ LOG_MODULE_REGISTER(sensor_task, CONFIG_SENSOR_TASK_LOG_LEVEL);
 #include "lcz_bracket.h"
 #include "lcz_bluetooth.h"
 #include "lcz_bt_scan.h"
+#include "lcz_sensor_adv_match.h"
 #include "vsp_definitions.h"
 #include "lcz_qrtc.h"
 #include "sensor_cmd.h"
@@ -907,7 +908,7 @@ static void SensorTaskAdvHandler(const bt_addr_le_t *addr, int8_t rssi,
 	 * process ads in Sensor Task context.
 	 * This prevents the BLE RX task from being blocked.
 	 */
-	if (SensorTable_MatchBt510(ad)) {
+	if (lcz_sensor_adv_match(ad, true, true) != RESERVED_AD_PROTOCOL_ID) {
 		if (atomic_get(&st.adsOutstanding) >
 		    SENSOR_TASK_MAX_OUTSTANDING_ADS) {
 			atomic_inc(&st.adsDropped);

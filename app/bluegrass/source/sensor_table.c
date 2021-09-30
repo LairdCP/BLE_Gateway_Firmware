@@ -26,6 +26,7 @@ LOG_MODULE_REGISTER(sensor_table, CONFIG_SENSOR_TABLE_LOG_LEVEL);
 #include "sensor_cmd.h"
 #include "lcz_sensor_adv_format.h"
 #include "lcz_sensor_event.h"
+#include "lcz_sensor_adv_match.h"
 #include "sensor_log.h"
 #include "bt510_flags.h"
 #include "sensor_table.h"
@@ -145,10 +146,6 @@ static void ClearEntry(SensorEntry_t *pEntry);
 static void FreeCmdBuffers(SensorEntry_t *pEntry);
 static void FreeEntryBuffers(SensorEntry_t *pEntry);
 
-static bool FindBt510Advertisement(AdHandle_t *pHandle);
-static bool FindBt510ScanResponse(AdHandle_t *pHandle);
-static bool FindBt510CodedAdvertisement(AdHandle_t *pHandle);
-
 static size_t AddByScanResponse(const bt_addr_le_t *pAddr,
 				AdHandle_t *pNameHandle, LczSensorRsp_t *pRsp,
 				int8_t Rssi);
@@ -206,25 +203,6 @@ void SensorTable_Initialize(void)
 		CONFIG_SENSOR_QUERY_CMD_MAX_SIZE - 1);
 }
 
-bool SensorTable_MatchBt510(struct net_buf_simple *ad)
-{
-	AdHandle_t manHandle = AdFind_Type(
-		ad->data, ad->len, BT_DATA_MANUFACTURER_DATA, BT_DATA_INVALID);
-	if (manHandle.pPayload == NULL) {
-		return false;
-	}
-
-	if (FindBt510ScanResponse(&manHandle)) {
-		return true;
-	}
-
-	if (FindBt510Advertisement(&manHandle)) {
-		return true;
-	}
-
-	return FindBt510CodedAdvertisement(&manHandle);
-}
-
 /* If a new event has occurred then generate a message to send sensor event
  * data to AWS.
  */
@@ -248,7 +226,7 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 	/* Take name from scan response and use it to populate table.
 	 * If device is already in table, then check if any fields need to be updated.
 	 */
-	if (FindBt510ScanResponse(&manHandle)) {
+	if (lcz_sensor_adv_match_rsp(&manHandle)) {
 		if (nameHandle.pPayload != NULL) {
 			LczSensorRspWithHeader_t *pRspPacket =
 				(LczSensorRspWithHeader_t *)manHandle.pPayload;
@@ -260,7 +238,7 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 		 */
 	}
 
-	if (FindBt510Advertisement(&manHandle)) {
+	if (lcz_sensor_adv_match_1m(&manHandle)) {
 		size_t tableIndex = FindTableIndex(pAddr);
 		if (tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
 			FRAMEWORK_DEBUG_ASSERT(
@@ -279,7 +257,7 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 	}
 
 	/* The coded PHY ad (superset) is processed using the 1M PHY pieces. */
-	if (FindBt510CodedAdvertisement(&manHandle)) {
+	if (lcz_sensor_adv_match_coded(&manHandle)) {
 		coded = true;
 		LczSensorAdCoded_t *pCoded =
 			(LczSensorAdCoded_t *)manHandle.pPayload;
@@ -739,49 +717,6 @@ static void AdEventHandler(LczSensorAdEvent_t *p, int8_t Rssi, uint32_t Index)
 		/* The cloud uses the RX epoch (in the table) for filtering. */
 		GatewayShadowMaker(false);
 	}
-}
-
-/* The BT510 advertisement can be recognized by the manufacturer
- * specific data type with LAIRD as the company ID.
- * It is further qualified by having a length of 27 and matching protocol ID.
- */
-static bool FindBt510Advertisement(AdHandle_t *pHandle)
-{
-	if (pHandle->pPayload != NULL) {
-		if ((pHandle->size == LCZ_SENSOR_MSD_AD_PAYLOAD_LENGTH)) {
-			if (memcmp(pHandle->pPayload, BTXXX_AD_HEADER,
-				   sizeof(BTXXX_AD_HEADER)) == 0) {
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-static bool FindBt510ScanResponse(AdHandle_t *pHandle)
-{
-	if (pHandle->pPayload != NULL) {
-		if ((pHandle->size == LCZ_SENSOR_MSD_RSP_PAYLOAD_LENGTH)) {
-			if (memcmp(pHandle->pPayload, BTXXX_RSP_HEADER,
-				   sizeof(BTXXX_RSP_HEADER)) == 0) {
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-static bool FindBt510CodedAdvertisement(AdHandle_t *pHandle)
-{
-	if (pHandle->pPayload != NULL) {
-		if ((pHandle->size == LCZ_SENSOR_MSD_CODED_PAYLOAD_LENGTH)) {
-			if (memcmp(pHandle->pPayload, BTXXX_CODED_HEADER,
-				   sizeof(BTXXX_CODED_HEADER)) == 0) {
-				return true;
-			}
-		}
-	}
-	return false;
 }
 
 static size_t AddByScanResponse(const bt_addr_le_t *pAddr,

@@ -26,7 +26,7 @@ extern "C" {
 /**
  * @brief Initialize the LWM2M device.
  */
-void lwm2m_client_init(void);
+int lwm2m_client_init(void);
 
 /**
  * @brief Set the temperature, pressure, and humidity in the
@@ -43,13 +43,6 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
  * @retval 0 on success, negative errno otherwise.
  */
 int lwm2m_generate_psk(void);
-
-/**
- * @brief Resolves server hostname to IP address
- *
- * @retval 0 on success, negative errno otherwise.
- */
-int lwm2mGetServerAddr(void);
 
 /**
  * @brief Check if connected to the LwM2M server

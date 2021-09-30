@@ -121,7 +121,7 @@ void gateway_fsm_init(void)
 #error "Unknown board/network configuration, add to gateway_fsm_init()"
 #endif
 
-	gsm.resolve_server = lwm2mGetServerAddr;
+	gsm.resolve_server = unused_function;
 	gsm.cloud_connect = lwm2mConnect;
 	gsm.cloud_disconnect = unused_function;
 	gsm.cloud_is_connected = lwm2mConnected;

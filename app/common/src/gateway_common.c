@@ -256,7 +256,12 @@ void gateway_fsm_network_init_complete_callback(void)
 void gateway_fsm_network_connected_callback(void)
 {
 #ifdef CONFIG_LWM2M
-	lwm2m_client_init();
+	int rc;
+
+	rc = lwm2m_client_init();
+	if (rc != 0) {
+		LOG_ERR("LwM2M init [%d]", rc);
+	}
 #endif
 
 	LCZ_MEMFAULT_POST_DATA();

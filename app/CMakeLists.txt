@@ -109,10 +109,16 @@ target_sources(app PRIVATE
 )
 endif()
 
-if(CONFIG_LWM2M)
+if(CONFIG_LCZ_LWM2M)
 include_directories(${CMAKE_SOURCE_DIR}/lwm2m/include)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/lwm2m/source/lcz_lwm2m_client.c
+)
+endif()
+
+if(CONFIG_LCZ_LWM2M_SENSOR)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/lwm2m/source/lcz_lwm2m_sensor.c
 )
 endif()
 

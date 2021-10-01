@@ -191,20 +191,15 @@ config APP_DEVICE_CERT_TAG
     int "mbedTLS tag for device cert and private key"
     default 2
 
-menuconfig LC_LWM2M
+menuconfig LCZ_LWM2M
     bool "Laird Connectivity LWM2M Demo Options"
     depends on LWM2M
-    depends on LCZ_DNS
     depends on LCZ_QRTC
     depends on LCZ_SOFTWARE_RESET
     depends on !MODEM_HL7800 || MODEM_HL7800_BOOT_NORMAL
     depends on ATTR
 
-if LC_LWM2M
-
-config LWM2M_CLIENT_ENDPOINT_MAX_SIZE
-    int "Maximum size of the client endpoint name"
-    default 64
+if LCZ_LWM2M
 
 config LWM2M_PSK_TAG
     int "Tag used by TLS for referencing PSK"
@@ -213,7 +208,21 @@ config LWM2M_PSK_TAG
     help
         Must be unique in the system.
 
-endif # LC_LWM2M
+config LCZ_LWM2M_LOG_LEVEL
+    int "LwM2M Client log Level"
+    range 0 4
+    default 3
+
+config LCZ_LWM2M_SENSOR
+    bool "Enable module that processes BT510/BT6xx advertisements"
+
+config LCZ_LWM2M_SENSOR_LOG_LEVEL
+    int "LwM2M sensor module log level"
+    depends on LCZ_LWM2M_SENSOR
+    range 0 4
+    default 3
+
+endif # LCZ_LWM2M
 
 config JSMN_NUMBER_OF_TOKENS
     int "The number of tokens for jsmn"

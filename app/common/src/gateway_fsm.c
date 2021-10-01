@@ -122,9 +122,9 @@ void gateway_fsm_init(void)
 #endif
 
 	gsm.resolve_server = unused_function;
-	gsm.cloud_connect = lwm2mConnect;
+	gsm.cloud_connect = lwm2m_connect;
 	gsm.cloud_disconnect = unused_function;
-	gsm.cloud_is_connected = lwm2mConnected;
+	gsm.cloud_is_connected = lwm2m_connected;
 	gsm.cert_load = unused_function;
 	gsm.cert_unload = unused_function;
 #else

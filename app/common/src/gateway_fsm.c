@@ -25,10 +25,10 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 #endif
 #include "lcz_certs.h"
 #include "attr.h"
-#ifdef CONFIG_BLUEGRASS
+#if defined(CONFIG_BLUEGRASS)
 #include "bluegrass.h"
 #endif
-#ifdef CONFIG_LWM2M
+#if defined(CONFIG_LWM2M)
 #include "lcz_lwm2m_client.h"
 #endif
 #include "gateway_fsm.h"
@@ -123,7 +123,7 @@ void gateway_fsm_init(void)
 
 	gsm.resolve_server = unused_function;
 	gsm.cloud_connect = lwm2m_connect;
-	gsm.cloud_disconnect = unused_function;
+	gsm.cloud_disconnect = lwm2m_disconnect;
 	gsm.cloud_is_connected = lwm2m_connected;
 	gsm.cert_load = unused_function;
 	gsm.cert_unload = unused_function;
@@ -186,6 +186,12 @@ void gateway_fsm(void)
 		break;
 
 	case GATEWAY_STATE_NETWORK_DISCONNECTED:
+#if defined(CONFIG_LWM2M)
+		/* LwM2M is a connectionless protocol,
+		 * we need to explicitly disconnect here
+		 */
+		gsm.cloud_disconnect();
+#endif
 		gateway_fsm_network_disconnected_callback();
 		gateway_fsm_cloud_disconnected_callback();
 		set_state(GATEWAY_STATE_CLOUD_WAIT_FOR_DISCONNECT);
@@ -438,7 +444,7 @@ static void decommission_handler(void)
 	gsm.decommission_request = false;
 	gsm.server_resolved = false;
 	gsm.cert_unload();
-#ifdef CONFIG_BLUEGRASS
+#if defined(CONFIG_BLUEGRASS)
 	/* The decomissioning process on the mobile app deletes the shadow */
 	bluegrass_init_shadow_request();
 #endif
@@ -447,7 +453,7 @@ static void decommission_handler(void)
 
 static uint32_t get_modem_init_delay(void)
 {
-#ifdef CONFIG_MODEM_HL7800_BOOT_DELAY
+#if defined(CONFIG_MODEM_HL7800_BOOT_DELAY)
 	return attr_get_uint32(ATTR_ID_joinDelay, 0);
 #else
 	return 0;
@@ -456,7 +462,7 @@ static uint32_t get_modem_init_delay(void)
 
 static uint32_t get_join_network_delay(void)
 {
-#ifdef CONFIG_MODEM_HL7800_BOOT_IN_AIRPLANE_MODE
+#if defined(CONFIG_MODEM_HL7800_BOOT_IN_AIRPLANE_MODE)
 	return attr_get_uint32(ATTR_ID_joinDelay, 0);
 #else
 	return 0;
@@ -465,7 +471,7 @@ static uint32_t get_join_network_delay(void)
 
 static uint32_t get_join_cloud_delay(void)
 {
-#ifdef CONFIG_MODEM_HL7800_BOOT_NORMAL
+#if defined(CONFIG_MODEM_HL7800_BOOT_NORMAL)
 	return attr_get_uint32(ATTR_ID_joinDelay, 0);
 #else
 	return 0;

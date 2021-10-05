@@ -86,7 +86,11 @@ static size_t lwm2m_str_size(const char *s);
 /******************************************************************************/
 int lwm2m_client_init(void)
 {
-	return lwm2m_setup(attr_get_quasi_static(ATTR_ID_gatewayId));
+	if (!lw.setup_complete) {
+		return lwm2m_setup(attr_get_quasi_static(ATTR_ID_gatewayId));
+	} else {
+		return 0;
+	}
 }
 
 int lwm2m_set_sensor_data(uint16_t type, uint16_t instance, float value)
@@ -291,6 +295,15 @@ int lwm2m_connect(void)
 	return 0;
 }
 
+int lwm2m_disconnect(void)
+{
+	lwm2m_rd_client_stop(&lw.client, rd_client_event, false);
+	lw.connection_started = false;
+	lw.connected = false;
+
+	return 0;
+}
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
@@ -347,7 +360,7 @@ static int lwm2m_setup(const char *id)
 	snprintk(server_url, server_url_len, "coap%s//%s",
 		 IS_ENABLED(CONFIG_LWM2M_DTLS_SUPPORT) ? "s:" : ":",
 		 (char *)attr_get_quasi_static(ATTR_ID_lwm2mPeerUrl));
-	LOG_WRN("Server URL: %s", log_strdup(server_url));
+	LOG_INF("Server URL: %s", log_strdup(server_url));
 
 	/* Security Mode */
 	lwm2m_engine_set_u8("0/0/2",
@@ -450,6 +463,7 @@ static void rd_client_event(struct lwm2m_ctx *client,
 
 	case LWM2M_RD_CLIENT_EVENT_DEREGISTER_FAILURE:
 		LOG_DBG("Deregister failure!");
+		lwm2m_disconnect();
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_DISCONNECT:

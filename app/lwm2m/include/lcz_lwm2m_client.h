@@ -139,6 +139,13 @@ bool lwm2m_connected(void);
  */
 int lwm2m_connect(void);
 
+/**
+ * @brief Disconnects from the LwM2M server
+ *
+ * @retval 0 on success, negative errno otherwise.
+ */
+int lwm2m_disconnect(void);
+
 #ifdef __cplusplus
 }
 #endif

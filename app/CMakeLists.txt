@@ -122,6 +122,12 @@ target_sources(app PRIVATE
 )
 endif()
 
+if(CONFIG_LCZ_LWM2M_FW_UPDATE)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/lwm2m/source/lcz_lwm2m_fw_update.c
+)
+endif()
+
 if(CONFIG_BLUEGRASS)
 include_directories(${CMAKE_SOURCE_DIR}/bluegrass/include)
 target_sources(app PRIVATE

@@ -30,6 +30,7 @@ LOG_MODULE_REGISTER(lwm2m_client, CONFIG_LCZ_LWM2M_LOG_LEVEL);
 #include "lcz_software_reset.h"
 #include "attr.h"
 #include "lcz_lwm2m_client.h"
+#include "lcz_lwm2m_fw_update.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -84,6 +85,11 @@ static size_t lwm2m_str_size(const char *s);
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
+void client_acknowledge(void)
+{
+	lwm2m_acknowledge(&lw.client);
+}
+
 int lwm2m_client_init(void)
 {
 	if (!lw.setup_complete) {
@@ -412,6 +418,10 @@ static int lwm2m_setup(const char *id)
 
 #ifdef CONFIG_LCZ_LWM2M_SENSOR
 	lcz_lwm2m_sensor_init();
+#endif
+
+#if defined(CONFIG_LCZ_LWM2M_FW_UPDATE)
+	lcz_lwm2m_fw_update_init();
 #endif
 
 	lw.setup_complete = true;

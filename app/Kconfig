@@ -222,6 +222,27 @@ config LCZ_LWM2M_SENSOR_LOG_LEVEL
     range 0 4
     default 3
 
+config LCZ_LWM2M_FW_UPDATE
+    bool "Enable LwM2M firmware updates that work with mcuboot"
+    select DFU_TARGET
+    select IMG_ERASE_PROGRESSIVELY
+    depends on LWM2M_FIRMWARE_UPDATE_OBJ_SUPPORT
+
+if LCZ_LWM2M_FW_UPDATE
+
+config LCZ_LWM2M_FW_UPDATE_LOG_LEVEL
+    int "LwM2M firmware update log level"
+    range 0 4
+    default 3
+
+config LCZ_LWM2M_FW_UPDATE_MCUBOOT_FLASH_BUF_SIZE
+	int "Size of buffer used for flash write operations during MCUboot updates"
+	default 512
+	help
+	  Buffer size must be aligned to the minimal flash write block size.
+
+endif # LCZ_LWM2M_FW_UPDATE
+
 endif # LCZ_LWM2M
 
 config JSMN_NUMBER_OF_TOKENS

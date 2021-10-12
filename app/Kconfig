@@ -191,70 +191,6 @@ config APP_DEVICE_CERT_TAG
     int "mbedTLS tag for device cert and private key"
     default 2
 
-menuconfig LCZ_LWM2M
-    bool "Laird Connectivity LWM2M Demo Options"
-    depends on LWM2M
-    depends on LCZ_QRTC
-    depends on LCZ_SOFTWARE_RESET
-    depends on !MODEM_HL7800 || MODEM_HL7800_BOOT_NORMAL
-    depends on ATTR
-
-if LCZ_LWM2M
-
-config LWM2M_PSK_TAG
-    int "Tag used by TLS for referencing PSK"
-    depends on LWM2M_DTLS_SUPPORT
-    default 3
-    help
-        Must be unique in the system.
-
-config LCZ_LWM2M_LOG_LEVEL
-    int "LwM2M Client log Level"
-    range 0 4
-    default 3
-
-config LCZ_LWM2M_SENSOR
-    bool "Enable module that processes BT510/BT6xx advertisements"
-
-config LCZ_LWM2M_SENSOR_LOG_LEVEL
-    int "LwM2M sensor module log level"
-    depends on LCZ_LWM2M_SENSOR
-    range 0 4
-    default 3
-
-config LCZ_LWM2M_FW_UPDATE
-    bool "Enable LwM2M firmware updates that work with mcuboot"
-    select DFU_TARGET
-    select IMG_ERASE_PROGRESSIVELY
-    depends on LWM2M_FIRMWARE_UPDATE_OBJ_SUPPORT
-
-if LCZ_LWM2M_FW_UPDATE
-
-config LCZ_LWM2M_FW_UPDATE_LOG_LEVEL
-    int "LwM2M firmware update log level"
-    range 0 4
-    default 3
-
-config LCZ_LWM2M_FW_UPDATE_MCUBOOT_FLASH_BUF_SIZE
-	int "Size of buffer used for flash write operations during MCUboot updates"
-	default 512
-	help
-	  Buffer size must be aligned to the minimal flash write block size.
-
-endif # LCZ_LWM2M_FW_UPDATE
-
-config LCZ_LWM2M_CONN_MON
-    bool "Enable LwM2M connectivity monitoring object"
-    depends on LWM2M_CONN_MON_OBJ_SUPPORT
-
-config LCZ_LWM2M_CONN_MON_LEVEL
-    int "LwM2M sensor module log level"
-    depends on LCZ_LWM2M_CONN_MON
-    range 0 4
-    default 3
-
-endif # LCZ_LWM2M
-
 config JSMN_NUMBER_OF_TOKENS
     int "The number of tokens for jsmn"
     default 512
@@ -374,6 +310,7 @@ rsource "./coap/Kconfig"
 rsource "./contact_tracing/Kconfig"
 rsource "./http_fota/Kconfig"
 rsource "./bl654_sensor/Kconfig"
+rsource "./lwm2m/Kconfig"
 
 endif # USER_APPLICATION
 

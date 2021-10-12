@@ -100,15 +100,20 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
-#if defined(CONFIG_SCAN_FOR_BT510_CODED)
-static struct bt_le_scan_param scanParameters = BT_LE_SCAN_PARAM_INIT(
+#if defined(CONFIG_LCZ_LWM2M_SENSOR)
+static struct bt_le_scan_param scan_parameters = BT_LE_SCAN_PARAM_INIT(
 	BT_LE_SCAN_TYPE_ACTIVE,
 	BT_LE_SCAN_OPT_CODED | BT_LE_SCAN_OPT_FILTER_DUPLICATE,
-	BT_GAP_SCAN_160MS_INTERVAL, BT_GAP_SCAN_40MS_WINDOW);
+	CONFIG_LCZ_BT_SCAN_DEFAULT_INTERVAL, CONFIG_LCZ_BT_SCAN_DEFAULT_WINDOW);
+#elif defined(CONFIG_SCAN_FOR_BT510_CODED)
+static struct bt_le_scan_param scan_parameters = BT_LE_SCAN_PARAM_INIT(
+	BT_LE_SCAN_TYPE_ACTIVE,
+	BT_LE_SCAN_OPT_CODED | BT_LE_SCAN_OPT_FILTER_DUPLICATE,
+	CONFIG_LCZ_BT_SCAN_DEFAULT_INTERVAL, CONFIG_LCZ_BT_SCAN_DEFAULT_WINDOW);
 #elif defined(CONFIG_SCAN_FOR_BT510)
-static struct bt_le_scan_param scanParameters = BT_LE_SCAN_PARAM_INIT(
+static struct bt_le_scan_param scan_parameters = BT_LE_SCAN_PARAM_INIT(
 	BT_LE_SCAN_TYPE_ACTIVE, BT_LE_SCAN_OPT_FILTER_DUPLICATE,
-	BT_GAP_SCAN_160MS_INTERVAL, BT_GAP_SCAN_40MS_WINDOW);
+	CONFIG_LCZ_BT_SCAN_DEFAULT_INTERVAL, CONFIG_LCZ_BT_SCAN_DEFAULT_WINDOW);
 #endif
 
 /******************************************************************************/
@@ -159,8 +164,11 @@ int configure_app(void)
 	nv_deprecation_handler();
 #endif
 
-#ifdef CONFIG_SCAN_FOR_BT510
-	lcz_bt_scan_set_parameters(&scanParameters);
+#if defined(CONFIG_LCZ_LWM2M_SENSOR) ||                                        \
+	defined(CONFIG_SCAN_FOR_BT510_CODED) || defined(CONFIG_SCAN_FOR_BT510)
+	if (!lcz_bt_scan_set_parameters(&scan_parameters)) {
+		LOG_ERR("Unable to set scan parameters");
+	}
 #endif
 
 #ifdef CONFIG_BL654_SENSOR

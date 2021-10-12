@@ -118,6 +118,7 @@ endif()
 
 if(CONFIG_LCZ_LWM2M_SENSOR)
 target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/lwm2m/source/lcz_lwm2m_gateway.c
     ${CMAKE_SOURCE_DIR}/lwm2m/source/lcz_lwm2m_sensor.c
 )
 endif()

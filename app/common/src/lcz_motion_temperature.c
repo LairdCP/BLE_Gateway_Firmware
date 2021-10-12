@@ -95,7 +95,7 @@ static void lmt_read_sensor(void)
 		attr_set_signed32(ATTR_ID_batteryTemperature, t);
 
 #ifdef CONFIG_LWM2M
-		lwm2m_set_temperature((float)t);
+		lwm2m_set_board_temperature((float)t);
 #endif
 	}
 }

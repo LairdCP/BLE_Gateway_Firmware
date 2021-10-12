@@ -1,0 +1,90 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig LCZ_LWM2M
+    bool "Laird Connectivity LWM2M Demo Options"
+    depends on LWM2M
+    depends on LCZ_QRTC
+    depends on LCZ_SOFTWARE_RESET
+    depends on !MODEM_HL7800 || MODEM_HL7800_BOOT_NORMAL
+    depends on ATTR
+    depends on FILE_SYSTEM_UTILITIES
+
+if LCZ_LWM2M
+
+config LWM2M_PATH_MAX_SIZE
+    int
+    default 25
+    help
+        The max path is "/65535/65535/65535/65535"
+
+config LWM2M_PSK_TAG
+    int "Tag used by TLS for referencing PSK"
+    depends on LWM2M_DTLS_SUPPORT
+    default 3
+    help
+        Must be unique in the system.
+
+config LCZ_LWM2M_LOG_LEVEL
+    int "LwM2M Client log Level"
+    range 0 4
+    default 3
+
+menuconfig LCZ_LWM2M_SENSOR
+    bool "Enable module that processes BT510/BT6xx advertisements"
+
+if LCZ_LWM2M_SENSOR
+
+config LCZ_LWM2M_SENSOR_LOG_LEVEL
+    int "LwM2M sensor module log level"
+    depends on LCZ_LWM2M_SENSOR
+    range 0 4
+    default 3
+
+config LCZ_LWM2M_SENSOR_MAX
+    int "Maximum number of sensors in table"
+    default LWM2M_GATEWAY_MAX_INSTANCES
+
+config LCZ_LWM2M_SENSOR_ADD_PREFIX_TO_BDA
+    bool "Add Bluetooth device address to gateway prefix resource"
+
+config LCZ_LWM2M_SENSOR_ALLOW_BT510
+    bool "Enable processing of BT510 temperature advertisements"
+    help
+        Default is to process BT610 ads.
+
+endif # LCZ_LWM2M_SENSOR
+
+config LCZ_LWM2M_FW_UPDATE
+    bool "Enable LwM2M firmware updates that work with mcuboot"
+    select DFU_TARGET
+    select IMG_ERASE_PROGRESSIVELY
+    depends on LWM2M_FIRMWARE_UPDATE_OBJ_SUPPORT
+    depends on BOOTLOADER_MCUBOOT
+
+if LCZ_LWM2M_FW_UPDATE
+
+config LCZ_LWM2M_FW_UPDATE_LOG_LEVEL
+    int "LwM2M firmware update log level"
+    range 0 4
+    default 3
+
+config LCZ_LWM2M_FW_UPDATE_MCUBOOT_FLASH_BUF_SIZE
+	int "Flash write buffer size during MCUboot updates"
+	default 512
+	help
+	  Buffer size must be aligned to the minimal flash write block size.
+
+endif # LCZ_LWM2M_FW_UPDATE
+
+config LCZ_LWM2M_CONN_MON
+    bool "Enable LwM2M connectivity monitoring object"
+    depends on LWM2M_CONN_MON_OBJ_SUPPORT
+
+config LCZ_LWM2M_CONN_MON_LEVEL
+    int "LwM2M sensor module log level"
+    depends on LCZ_LWM2M_CONN_MON
+    range 0 4
+    default 3
+
+endif # LCZ_LWM2M

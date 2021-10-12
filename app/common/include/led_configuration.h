@@ -66,7 +66,9 @@ BUILD_ASSERT(CONFIG_LCZ_NUMBER_OF_LEDS > GREEN_LED2, "LED object too small");
 BUILD_ASSERT(CONFIG_LCZ_NUMBER_OF_LEDS > RED_LED, "LED object too small");
 #endif
 #elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) ||                               \
-	defined(CONFIG_BOARD_BL5340_DVK_CPUAPPNS)
+	defined(CONFIG_BOARD_BL5340_DVK_CPUAPP_NS) ||                          \
+	defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP) ||                           \
+	defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP_NS)
 /* BL5340 DVK */
 #define LED_NODE "tca9538"
 

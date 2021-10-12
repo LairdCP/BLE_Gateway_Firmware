@@ -425,7 +425,8 @@ static void configure_leds(void)
 		{ RED_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH },
 		{ GREEN_LED2, LED4_DEV, LED4, LED_ACTIVE_HIGH }
 	};
-#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || \
+      defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
 	struct lcz_led_configuration c[] = {
 		{ BLUE_LED1, LED1_DEV, LED1, LED_ACTIVE_LOW },
 		{ BLUE_LED2, LED2_DEV, LED2, LED_ACTIVE_LOW },
@@ -529,6 +530,8 @@ static void aws_set_default_client_id(void)
 	if (strlen(s) == 0) {
 #if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
 		s = "bl5340";
+#elif defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
+		s = "bl5340pa";
 #elif defined(CONFIG_BOARD_MG100)
 		s = "mg100";
 #else

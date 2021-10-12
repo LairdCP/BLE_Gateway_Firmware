@@ -316,7 +316,7 @@ config CERT_LOADER_LOG_LEVEL
 
 config SD_CARD_LOG
     bool "Enable logging to SD card"
-    depends on (BOARD_MG100 || BOARD_BL5340_DVK_CPUAPP)
+    depends on (BOARD_MG100 || BOARD_BL5340_DVK_CPUAPP || BOARD_BL5340PA_DVK_CPUAPP)
     default y
 
 config CONTROL_TASK_LOG_LEVEL

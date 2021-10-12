@@ -67,7 +67,8 @@ static const char *mountPoint = "/SD:";
 static const char *batteryFilePath = "/SD:/mg100B.csv";
 static const char *sensorFilePath = "/SD:/mg100Ad.csv";
 static const char *bl654FilePath = "/SD:/mg100bl6.csv";
-#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || \
+      defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
 static const char *batteryFilePath = "/SD:/bl5340B.csv";
 static const char *sensorFilePath = "/SD:/bl5340Ad.csv";
 static const char *bl654FilePath = "/SD:/bl5340bl.csv";

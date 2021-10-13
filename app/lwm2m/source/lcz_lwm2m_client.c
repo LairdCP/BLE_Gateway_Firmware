@@ -31,6 +31,7 @@ LOG_MODULE_REGISTER(lwm2m_client, CONFIG_LCZ_LWM2M_LOG_LEVEL);
 #include "attr.h"
 #include "lcz_lwm2m_client.h"
 #include "lcz_lwm2m_fw_update.h"
+#include "lcz_lwm2m_conn_mon.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -422,6 +423,10 @@ static int lwm2m_setup(const char *id)
 
 #if defined(CONFIG_LCZ_LWM2M_FW_UPDATE)
 	lcz_lwm2m_fw_update_init();
+#endif
+
+#if defined(CONFIG_LWM2M_CONN_MON_OBJ_SUPPORT)
+	lcz_lwm2m_conn_mon_update_values();
 #endif
 
 	lw.setup_complete = true;

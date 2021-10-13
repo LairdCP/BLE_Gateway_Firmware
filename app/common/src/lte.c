@@ -54,6 +54,10 @@ LOG_MODULE_REGISTER(lte, CONFIG_LTE_LOG_LEVEL);
 
 #include "lte.h"
 
+#ifdef CONFIG_LCZ_LWM2M_CONN_MON
+#include "lcz_lwm2m_conn_mon.h"
+#endif
+
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
@@ -76,6 +80,15 @@ static const struct lcz_led_blink_pattern NETWORK_SEARCH_LED_PATTERN = {
 
 #ifdef CONFIG_LCZ_MEMFAULT
 #define BUILD_ID_SIZE 9
+#endif
+
+#if defined(CONFIG_LCZ_LWM2M_CONN_MON)
+#define UPDATE_CONN_MON_VALUES(a)                                              \
+	{                                                                      \
+		a = true;                                                      \
+	}
+#else
+#define UPDATE_CONN_MON_VALUES(...)
 #endif
 
 /******************************************************************************/
@@ -247,13 +260,37 @@ exit:
 bool lte_ready(void)
 {
 	bool ready = false;
+#ifdef CONFIG_DNS_RESOLVER
+#if defined(CONFIG_NET_IPV4)
 	struct sockaddr_in *dnsAddr;
+#elif defined(CONFIG_NET_IPV6)
+	struct sockaddr_in6 *dnsAddr;
+#endif
 
 	if (iface != NULL && cfg != NULL && &dns->servers[0] != NULL) {
+#if defined(CONFIG_NET_IPV4)
 		dnsAddr = net_sin(&dns->servers[0].dns_server);
 		ready = net_if_is_up(iface) && cfg->ip.ipv4 &&
 			!net_ipv4_is_addr_unspecified(&dnsAddr->sin_addr);
+#elif defined(CONFIG_NET_IPV6)
+		dnsAddr = net_sin6(&dns->servers[0].dns_server);
+		ready = net_if_is_up(iface) && cfg->ip.ipv6 &&
+			!net_ipv6_is_addr_unspecified(&dnsAddr->sin6_addr);
+#endif
 	}
+#else
+	if (iface != NULL && cfg != NULL) {
+#if defined(CONFIG_NET_IPV4)
+		ready = net_if_is_up(iface) && cfg->ip.ipv4 &&
+			!net_ipv4_is_addr_unspecified(
+				&cfg->ip.ipv4.unicast.address.in_addr);
+#elif defined(CONFIG_NET_IPV6)
+		ready = net_if_is_up(iface) && cfg->ip.ipv6 &&
+			!net_ipv6_is_addr_unspecified(
+				&cfg->ip.ipv6.unicast.address.in6_addr);
+#endif
+	}
+#endif /* CONFIG_DNS_RESOLVER */
 
 #ifdef CONFIG_BOARD_PINNACLE_100_DVK
 	if (ready) {
@@ -281,6 +318,36 @@ int attr_prepare_modemFunctionality(void)
 	return r;
 }
 
+int lte_get_ip_address(bool get_ipv6, char *ip_addr, int ip_addr_len)
+{
+	int rc = 0;
+
+	memset(ip_addr, 0, ip_addr_len);
+
+	if (iface == NULL || cfg == NULL || !net_if_is_up(iface)) {
+		rc = -EPERM;
+		goto done;
+	}
+#if defined(CONFIG_NET_IPV4)
+	if (!get_ipv6 && !net_ipv4_is_addr_unspecified(
+				 &cfg->ip.ipv4->unicast->address.in_addr)) {
+		net_addr_ntop(AF_INET, &cfg->ip.ipv4->unicast->address.in_addr,
+			      ip_addr, ip_addr_len);
+	}
+
+#elif defined(CONFIG_NET_IPV6)
+	if (get_ipv6 && !net_ipv6_is_addr_unspecified(
+				&cfg->ip.ipv6->unicast->address.in6_addr)) {
+		net_addr_ntop(AF_INET6,
+			      &cfg->ip.ipv6->unicast->address.in6_addr, ip_addr,
+			      ip_addr_len);
+	}
+#endif
+
+done:
+	return rc;
+}
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
@@ -293,6 +360,10 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 
 	LTE_LOG_DBG("LTE is ready!");
 	lcz_led_turn_on(NETWORK_LED);
+
+#if defined(CONFIG_LCZ_LWM2M_CONN_MON)
+	lcz_lwm2m_conn_mon_update_values();
+#endif
 }
 
 static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
@@ -326,6 +397,9 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 {
 	uint8_t code = ((struct mdm_hl7800_compound_event *)event_data)->code;
 	char *s = (char *)event_data;
+#if defined(CONFIG_LCZ_LWM2M_CONN_MON)
+	bool update_conn_mon_values = false;
+#endif
 
 	switch (event) {
 	case HL7800_EVENT_NETWORK_STATE_CHANGE:
@@ -377,16 +451,19 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 				MDM_HL7800_APN_USERNAME_MAX_STRLEN);
 		attr_set_string(ATTR_ID_apnPassword, lte_apn_config->password,
 				MDM_HL7800_APN_PASSWORD_MAX_STRLEN);
+		UPDATE_CONN_MON_VALUES(update_conn_mon_values)
 		break;
 
 	case HL7800_EVENT_RSSI:
 		attr_set_signed32(ATTR_ID_lteRsrp, *((int *)event_data));
 		MFLT_METRICS_SET_SIGNED(lte_rsrp, *((int *)event_data));
+		UPDATE_CONN_MON_VALUES(update_conn_mon_values)
 		break;
 
 	case HL7800_EVENT_SINR:
 		attr_set_signed32(ATTR_ID_lteSinr, *((int *)event_data));
 		MFLT_METRICS_SET_SIGNED(lte_sinr, *((int *)event_data));
+		UPDATE_CONN_MON_VALUES(update_conn_mon_values)
 		break;
 
 	case HL7800_EVENT_STARTUP_STATE_CHANGE:
@@ -412,6 +489,7 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 
 	case HL7800_EVENT_RAT:
 		attr_set_uint32(ATTR_ID_lteRat, *((uint8_t *)event_data));
+		UPDATE_CONN_MON_VALUES(update_conn_mon_values)
 		break;
 
 	case HL7800_EVENT_BANDS:
@@ -486,6 +564,11 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		LOG_ERR("Unknown modem event");
 		break;
 	}
+#if defined(CONFIG_LCZ_LWM2M_CONN_MON)
+	if (update_conn_mon_values) {
+		lcz_lwm2m_conn_mon_update_values();
+	}
+#endif
 }
 
 #ifdef CONFIG_MODEM_HL7800_GPS

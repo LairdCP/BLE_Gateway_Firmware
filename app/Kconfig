@@ -243,6 +243,16 @@ config LCZ_LWM2M_FW_UPDATE_MCUBOOT_FLASH_BUF_SIZE
 
 endif # LCZ_LWM2M_FW_UPDATE
 
+config LCZ_LWM2M_CONN_MON
+    bool "Enable LwM2M connectivity monitoring object"
+    depends on LWM2M_CONN_MON_OBJ_SUPPORT
+
+config LCZ_LWM2M_CONN_MON_LEVEL
+    int "LwM2M sensor module log level"
+    depends on LCZ_LWM2M_CONN_MON
+    range 0 4
+    default 3
+
 endif # LCZ_LWM2M
 
 config JSMN_NUMBER_OF_TOKENS

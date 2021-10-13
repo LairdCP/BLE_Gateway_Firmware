@@ -31,9 +31,19 @@ int lte_init(void);
 int lte_network_init(void);
 
 /**
-* @brief Accessor
+ * @brief Accessor
  */
 bool lte_ready(void);
+
+/**
+ * @brief Get the IP address of the LTE network interface
+ *
+ * @param get_ipv6 true to get the IPv6 address if available
+ * @param ip_addr point to buffer to hold the IP address string
+ * @param ip_addr_len length of the address string buffer
+ * @return int 0 on success
+ */
+int lte_get_ip_address(bool get_ipv6, char *ip_addr, int ip_addr_len);
 
 #ifdef __cplusplus
 }

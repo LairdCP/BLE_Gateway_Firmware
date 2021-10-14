@@ -32,13 +32,11 @@ static const struct bt_data AD[] = {
 	BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_DFU_SMP_SERVICE_VAL),
 };
 
-#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
 static const struct lcz_led_blink_pattern LED_ADVERTISING_PATTERN = {
 	.on_time = CONFIG_DEFAULT_LED_ON_TIME_FOR_1_SECOND_BLINK,
 	.off_time = CONFIG_DEFAULT_LED_OFF_TIME_FOR_1_SECOND_BLINK,
 	.repeat_count = REPEAT_INDEFINITELY
 };
-#endif
 
 #define ADV_DURATION CONFIG_SINGLE_PERIPHERAL_ADV_DURATION_SECONDS
 
@@ -200,10 +198,8 @@ static void sp_connected(struct bt_conn *conn, uint8_t err)
 		sp_start_security(conn);
 #endif
 
-#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
 		/* Turn LED on to indicate in a connection */
-		lcz_led_turn_on(BLUETOOTH_ADVERTISING_LED);
-#endif
+		lcz_led_turn_on(BLUETOOTH_PERIPHERAL_LED);
 	}
 }
 
@@ -320,14 +316,11 @@ static void start_stop_adv(struct k_work *work)
 
 				LOG_INF("Advertising start status: %d", err);
 
-				if (err >= 0) {
+				if (err == 0) {
 					sp.advertising = true;
 
-#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
-					/* Blink LED to indicate advertising */
-					lcz_led_blink(BLUETOOTH_ADVERTISING_LED,
+					lcz_led_blink(BLUETOOTH_PERIPHERAL_LED,
 						      &LED_ADVERTISING_PATTERN);
-#endif
 				}
 			}
 		} else {
@@ -346,12 +339,10 @@ static void start_stop_adv(struct k_work *work)
 		LOG_INF("Advertising stop status: %d", err);
 		sp.advertising = false;
 
-#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
-		if (err == 0) {
+		if (err == 0 && sp.conn_handle == NULL) {
 			/* Turn LED off to indicate not advertising */
-			lcz_led_turn_off(BLUETOOTH_ADVERTISING_LED);
+			lcz_led_turn_off(BLUETOOTH_PERIPHERAL_LED);
 		}
-#endif
 	}
 }
 

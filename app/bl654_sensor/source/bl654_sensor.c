@@ -40,11 +40,13 @@ LOG_MODULE_REGISTER(bl654_sensor, CONFIG_BL654_SENSOR_LOG_LEVEL);
 #define BL654_SENSOR_TIMEOUT 400 /* in 10ms units, 400 = 4s */
 #define DISCOVER_SERVICES_DELAY_SECONDS 1
 
+#ifdef HAS_SECOND_BLUETOOTH_LED
 static const struct lcz_led_blink_pattern LED_SENSOR_SEARCH_PATTERN = {
 	.on_time = CONFIG_DEFAULT_LED_ON_TIME_FOR_1_SECOND_BLINK,
 	.off_time = CONFIG_DEFAULT_LED_OFF_TIME_FOR_1_SECOND_BLINK,
 	.repeat_count = REPEAT_INDEFINITELY
 };
+#endif
 
 struct remote_ble_sensor {
 	/* State of app, see CENTRAL_STATE_XXX */
@@ -586,12 +588,16 @@ static void set_ble_state(enum central_state state)
 
 	switch (state) {
 	case CENTRAL_STATE_CONNECTED_AND_CONFIGURED:
+#ifdef HAS_SECOND_BLUETOOTH_LED
 		lcz_led_turn_on(BLUETOOTH_LED);
+#endif
 		lcz_bt_scan_resume(scan_id);
 		break;
 
 	case CENTRAL_STATE_FINDING_DEVICE:
+#ifdef HAS_SECOND_BLUETOOTH_LED
 		lcz_led_blink(BLUETOOTH_LED, &LED_SENSOR_SEARCH_PATTERN);
+#endif
 		attr_set_string(ATTR_ID_sensorBluetoothAddress, "", 0);
 		lcz_bt_scan_restart(scan_id);
 		break;

@@ -686,7 +686,7 @@ static int start_advertising(void)
 			err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad,
 					      ARRAY_SIZE(ad), NULL, 0);
 			lcz_led_blink(
-				BLUETOOTH_LED,
+				BLUETOOTH_PERIPHERAL_LED,
 				&CT_LED_SENSOR_SEARCH_CONNECTABLE_PATTERN);
 		} else {
 			err = bt_le_adv_start(
@@ -696,7 +696,7 @@ static int start_advertising(void)
 					BT_GAP_ADV_FAST_INT_MIN_2,
 					BT_GAP_ADV_FAST_INT_MAX_2, NULL),
 				ad, ARRAY_SIZE(ad), NULL, 0);
-			lcz_led_blink(BLUETOOTH_LED,
+			lcz_led_blink(BLUETOOTH_PERIPHERAL_LED,
 				      &CT_LED_SENSOR_SEARCH_PATTERN);
 		}
 	} else {
@@ -707,7 +707,7 @@ static int start_advertising(void)
 					      ARRAY_SIZE(contact_tracing_ad),
 					      NULL, 0);
 			lcz_led_blink(
-				BLUETOOTH_LED,
+				BLUETOOTH_PERIPHERAL_LED,
 				&CT_LED_SENSOR_SEARCH_CONNECTABLE_PATTERN);
 		} else {
 			err = bt_le_adv_start(
@@ -718,7 +718,7 @@ static int start_advertising(void)
 					BT_GAP_ADV_FAST_INT_MAX_2, NULL),
 				contact_tracing_ad,
 				ARRAY_SIZE(contact_tracing_ad), NULL, 0);
-			lcz_led_blink(BLUETOOTH_LED,
+			lcz_led_blink(BLUETOOTH_PERIPHERAL_LED,
 				      &CT_LED_SENSOR_SEARCH_PATTERN);
 		}
 
@@ -758,7 +758,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	change_advert_type(ADV_TYPE_NONCONN);
 	/* Revert to slow blink pattern
 	 * (should have been in LED_SENSOR_SEARCH_CONNECTABLE_PATTERN) */
-	lcz_led_blink(BLUETOOTH_LED, &CT_LED_SENSOR_SEARCH_PATTERN);
+	lcz_led_blink(BLUETOOTH_PERIPHERAL_LED, &CT_LED_SENSOR_SEARCH_PATTERN);
 
 	return;
 
@@ -2656,11 +2656,12 @@ static void set_ble_state(enum central_state state)
 
 	switch (state) {
 	case CENTRAL_STATE_CONNECTED_AND_CONFIGURED:
-		lcz_led_turn_on(BLUETOOTH_LED);
+		lcz_led_turn_on(BLUETOOTH_PERIPHERAL_LED);
 		break;
 
 	case CENTRAL_STATE_FINDING_DEVICE:
-		lcz_led_blink(BLUETOOTH_LED, &CT_LED_SENSOR_SEARCH_PATTERN);
+		lcz_led_blink(BLUETOOTH_PERIPHERAL_LED,
+			      &CT_LED_SENSOR_SEARCH_PATTERN);
 		attr_set_string(ATTR_ID_sensorBluetoothAddress, "", 0);
 		lcz_bt_scan_restart(ct.scan_id);
 		break;

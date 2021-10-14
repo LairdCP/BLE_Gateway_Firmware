@@ -294,7 +294,7 @@ _BT510 log_
 
 ### Pinnacle 100/MG100
 
-The Blue LED blinks once a second when the Pinnacle device is searching for a BL654 sensor. When it finds a sensor and successfully connects to it, the LED remains on.
+The Blue LED blinks once a second when the Pinnacle device is advertising. While it is connected, the LED remains on.
 
 The Green LED turns on when connected to AWS. When data is sent to AWS the LED turns off and then turns back on. When disconnected from AWS, the LED remains off.
 

@@ -158,7 +158,7 @@ In addition to the steps in the [Using the Demo](#using-the-demo) section, the P
 
 ### Pinnacle 100/MG100
 
-The Blue LED blinks once a second when the module is searching for a BL654 Sensor Board/ESS service device. When it finds a sensor and successfully connects to it, the LED remains on.
+The Blue LED blinks once a second when the Pinnacle device is advertising. While it is connected, the LED remains on.
 
 The Green LED can be controlled via the LwM2M server Light Control object (Pinnacle 100 only).
 

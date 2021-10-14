@@ -101,7 +101,6 @@ static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
 			 uint16_t res_inst_id, uint8_t *data, uint16_t data_len,
 			 bool last_block, size_t total_size);
 static int create_bl654_sensor_objects(void);
-static struct float32_value make_float_value(float v);
 static size_t lwm2m_str_size(const char *s);
 static int bl654_sensor_set_error_handler(int status, char *obj_inst_str);
 
@@ -125,7 +124,6 @@ int lwm2m_client_init(void)
 int lwm2m_create_sensor_obj(struct lwm2m_sensor_obj_cfg *cfg)
 {
 	int r = -EAGAIN;
-	struct float32_value float_value;
 	char path[CONFIG_LWM2M_PATH_MAX_SIZE];
 
 	if (lw.setup_complete) {
@@ -143,13 +141,11 @@ int lwm2m_create_sensor_obj(struct lwm2m_sensor_obj_cfg *cfg)
 			/* 5603 and 5604 are the range of values supported by sensor. */
 			snprintk(path, sizeof(path), "%u/%u/5603", cfg->type,
 				 cfg->instance);
-			float_value = make_float_value(cfg->min);
-			lwm2m_engine_set_float32(path, &float_value);
+			lwm2m_engine_set_float(path, &cfg->min);
 
 			snprintk(path, sizeof(path), "%u/%u/5604", cfg->type,
 				 cfg->instance);
-			float_value = make_float_value(cfg->max);
-			lwm2m_engine_set_float32(path, &float_value);
+			lwm2m_engine_set_float(path, &cfg->max);
 		}
 	}
 
@@ -160,7 +156,7 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 				float pressure)
 {
 	int result = 0;
-	struct float32_value float_value;
+	double d;
 
 	/* Don't keep trying to create objects after a failure */
 	if (lw.cs.bl654_sensor == CREATE_ALLOW) {
@@ -176,20 +172,18 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 	}
 
 #ifdef CONFIG_LWM2M_IPSO_TEMP_SENSOR
-	float_value = make_float_value(temperature);
-	result = lwm2m_engine_set_float32(BL654_SENSOR_TEMPERATURE_PATH,
-					  &float_value);
+	d = (double)temperature;
+	result = lwm2m_engine_set_float(BL654_SENSOR_TEMPERATURE_PATH, &d);
 	if (result < 0) {
 		return bl654_sensor_set_error_handler(
 			result, BL654_SENSOR_TEMPERATURE_PATH);
 	}
 #endif
 
-	/* Temperature is used to test generic sensor */
 #ifdef CONFIG_LWM2M_IPSO_GENERIC_SENSOR
-	float_value = make_float_value(temperature);
-	result = lwm2m_engine_set_float32(BL654_SENSOR_GENERIC_PATH,
-					  &float_value);
+	/* Temperature is used to test generic sensor */
+	d = (double)temperature;
+	result = lwm2m_engine_set_float(BL654_SENSOR_GENERIC_PATH, &d);
 	if (result < 0) {
 		return bl654_sensor_set_error_handler(
 			result, BL654_SENSOR_GENERIC_PATH);
@@ -197,9 +191,8 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 #endif
 
 #ifdef CONFIG_LWM2M_IPSO_HUMIDITY_SENSOR
-	float_value = make_float_value(humidity);
-	result = lwm2m_engine_set_float32(BL654_SENSOR_HUMIDITY_PATH,
-					  &float_value);
+	d = (double)humidity;
+	result = lwm2m_engine_set_float(BL654_SENSOR_HUMIDITY_PATH, &d);
 	if (result < 0) {
 		return bl654_sensor_set_error_handler(
 			result, BL654_SENSOR_HUMIDITY_PATH);
@@ -207,9 +200,8 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 #endif
 
 #ifdef CONFIG_LWM2M_IPSO_PRESSURE_SENSOR
-	float_value = make_float_value(pressure);
-	result = lwm2m_engine_set_float32(BL654_SENSOR_PRESSURE_PATH,
-					  &float_value);
+	d = (double)pressure;
+	result = lwm2m_engine_set_float(BL654_SENSOR_PRESSURE_PATH, &d);
 	if (result < 0) {
 		return bl654_sensor_set_error_handler(
 			result, BL654_SENSOR_PRESSURE_PATH);
@@ -225,7 +217,7 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 int lwm2m_set_board_temperature(float temperature)
 {
 	int result = 0;
-	struct float32_value float_value;
+	double d;
 	struct lwm2m_sensor_obj_cfg cfg = {
 		.instance = LWM2M_INSTANCE_BOARD,
 		.type = IPSO_OBJECT_TEMP_SENSOR_ID,
@@ -249,12 +241,12 @@ int lwm2m_set_board_temperature(float temperature)
 	}
 
 	if (result == 0) {
-		float_value = make_float_value(temperature);
-		result = lwm2m_engine_set_float32("3303/0/5700", &float_value);
+		d = (double)temperature;
+		result = lwm2m_engine_set_float("3303/0/5700", &d);
 	}
 
 	if (result == -ENOENT) {
-		/* The object can be deleted from the client */
+		/* The object can be deleted from the cloud */
 		lw.cs.board_temperature = CREATE_ALLOW;
 		LOG_WRN("Board temperature obj appears to have been deleted");
 	} else if (result < 0) {
@@ -337,66 +329,66 @@ int lwm2m_disconnect(void)
 	return 0;
 }
 
-ssize_t lwm2m_load(uint16_t type, uint16_t instance, uint16_t resource,
-		   uint16_t data_len)
+int lwm2m_load(uint16_t type, uint16_t instance, uint16_t resource,
+	       uint16_t data_len)
 {
-	ssize_t status = -EPERM;
+	int r = -EPERM;
 	char path[CONFIG_LWM2M_PATH_MAX_SIZE];
 	char fname[LWM2M_CFG_FILE_NAME_MAX_SIZE];
-	char data[sizeof(float64_value_t)];
+	char data[CONFIG_LCZ_LWM2M_MAX_LOAD_SIZE];
 
-	if (data == NULL || data_len == 0) {
-		return status;
+	if (data_len == 0) {
+		return -EINVAL;
 	}
 
 	if (data_len > sizeof(data)) {
 		LOG_ERR("Unsupported size");
-		return status;
+		return -ENOMEM;
 	}
 
 	/* Use path as file name.
-	 * For example, "3435.62812.1" is for a filling sensor
+	 * For example, "3435.62812.1" is for filling sensor
 	 * instance 62812 and resource container height.
 	 */
 	snprintk(path, sizeof(path), "%u/%u/%u", type, instance, resource);
 	snprintk(fname, sizeof(fname), CONFIG_FSU_MOUNT_POINT "/%u.%u.%u", type,
 		 instance, resource);
-	status = fsu_read_abs(fname, data, data_len);
-	if (status < 0) {
+	r = (int)fsu_read_abs(fname, data, data_len);
+	if (r < 0) {
 		LOG_ERR("Unable to load %s", log_strdup(fname));
-		return status;
+		return r;
 	}
 
-	status = lwm2m_engine_set_opaque(path, data, data_len);
-	if (status < 0) {
+	r = lwm2m_engine_set_opaque(path, data, data_len);
+	if (r < 0) {
 		LOG_ERR("Unable to set %s", path);
-		return status;
+		return r;
 	}
 
-	return (int)status;
+	return r;
 }
 
-ssize_t lwm2m_save(uint16_t type, uint16_t instance, uint16_t resource,
-		   uint8_t *data, uint16_t data_len)
+int lwm2m_save(uint16_t type, uint16_t instance, uint16_t resource,
+	       uint8_t *data, uint16_t data_len)
 {
 	char fname[LWM2M_CFG_FILE_NAME_MAX_SIZE];
-	ssize_t status = -EPERM;
+	int r = -EPERM;
 
-	if (data == NULL || data_len == 0) {
-		return status;
-	}
-
-	if (fsu_lfs_mount() == 0) {
+	if (data == NULL) {
+		r = -EIO;
+	} else if (data_len == 0) {
+		r = -EINVAL;
+	} else if (fsu_lfs_mount() == 0) {
 		snprintk(fname, sizeof(fname),
 			 CONFIG_FSU_MOUNT_POINT "/%u.%u.%u", type, instance,
 			 resource);
 
-		status = fsu_write_abs(fname, data, data_len);
+		r = (int)fsu_write_abs(fname, data, data_len);
 	}
 
-	LOG_INF("Config save for %s", log_strdup(fname));
+	LOG_INF("Config save for %s status: %d", log_strdup(fname), r);
 
-	return (int)status;
+	return r;
 }
 
 int lwm2m_delete_resource_inst(uint16_t type, uint16_t instance,
@@ -688,16 +680,6 @@ static int create_bl654_sensor_objects(void)
 #endif
 
 	return r;
-}
-
-static struct float32_value make_float_value(float v)
-{
-	struct float32_value f;
-
-	f.val1 = (int32_t)v;
-	f.val2 = (int32_t)(LWM2M_FLOAT32_DEC_MAX * (v - f.val1));
-
-	return f;
 }
 
 static size_t lwm2m_str_size(const char *s)

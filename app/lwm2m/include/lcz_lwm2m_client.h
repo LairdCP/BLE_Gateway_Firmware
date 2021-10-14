@@ -49,8 +49,8 @@ struct lwm2m_sensor_obj_cfg {
 	uint16_t instance;
 	bool skip_secondary; /* units, min, and max only valid for some sensors */
 	char *units;
-	float min;
-	float max;
+	double min;
+	double max;
 };
 
 /* /lfs/65535.65535.65535.65535.bin */

@@ -109,8 +109,10 @@ static void obj_not_found_handler(int status, uint8_t idx, uint8_t offset);
 
 static void name_handler(const bt_addr_le_t *addr, struct net_buf_simple *ad);
 
-static struct float32_value make_float_value(float v);
 static int lwm2m_set_sensor_data(uint16_t type, uint16_t instance, float value);
+static int set_sensor_data(uint16_t type, uint16_t instance, float value);
+static int set_filling_sensor_data(uint16_t type, uint16_t instance,
+				   float value);
 
 static void configure_filling_sensor(uint16_t instance);
 
@@ -501,27 +503,68 @@ static int create_gateway_obj(uint8_t idx, int8_t rssi)
 	return r;
 }
 
-static struct float32_value make_float_value(float v)
-{
-	struct float32_value f;
-
-	f.val1 = (int32_t)v;
-	f.val2 = (int32_t)(LWM2M_FLOAT32_DEC_MAX * (v - f.val1));
-
-	return f;
-}
-
 static int lwm2m_set_sensor_data(uint16_t type, uint16_t instance, float value)
 {
+	switch (type) {
+	case IPSO_OBJECT_FILLING_LEVEL_SENSOR_ID:
+		return set_filling_sensor_data(type, instance, value);
+	default:
+		return set_sensor_data(type, instance, value);
+	}
+}
+
+static int set_sensor_data(uint16_t type, uint16_t instance, float value)
+{
 	char path[CONFIG_LWM2M_PATH_MAX_SIZE];
-	struct float32_value float_value = make_float_value(value);
-	uint16_t resource = (type == IPSO_OBJECT_FILLING_LEVEL_SENSOR_ID) ?
-					  ACTUAL_FILL_LEVEL_FILLING_SENSOR_RID :
-					  SENSOR_VALUE_RID;
+	uint16_t resource = SENSOR_VALUE_RID;
+	/* LwM2M uses doubles */
+	double d = (double)value;
 
 	snprintk(path, sizeof(path), "%u/%u/%u", type, instance, resource);
 
-	return lwm2m_engine_set_float32(path, &float_value);
+	return lwm2m_engine_set_float(path, &d);
+}
+
+static int set_filling_sensor_data(uint16_t type, uint16_t instance,
+				   float value)
+{
+	char path[CONFIG_LWM2M_PATH_MAX_SIZE];
+	double fill_percent;
+	uint16_t resource;
+	uint32_t distance = (uint32_t)value;
+	uint32_t height = 0;
+	uint32_t level;
+
+	/* Read the height so that the fill level can be calculated */
+	resource = CONTAINER_HEIGHT_FILLING_SENSOR_RID;
+	snprintk(path, sizeof(path), "%u/%u/%u", type, instance, resource);
+
+	if (lwm2m_engine_get_u32(path, &height) != 0) {
+		LOG_ERR("Unable to read height");
+		return -ENOENT;
+	}
+
+	/* Don't allow a negative level (height of substance) to be reported */
+	if (distance >= height) {
+		level = 0;
+	} else {
+		level = height - distance;
+	}
+	fill_percent = (double)(((float)level / (float)height) * 100.0);
+
+	/* The suggested sensor has a minimum range of 50 cm */
+	LOG_DBG("height: %u level: %u measured distance: %u percent: %d",
+		height, level, distance, (uint32_t)fill_percent);
+
+	/* Write optional resource (don't care if it fails) */
+	resource = ACTUAL_FILL_LEVEL_FILLING_SENSOR_RID;
+	snprintk(path, sizeof(path), "%u/%u/%u", type, instance, resource);
+	lwm2m_engine_set_u32(path, level);
+
+	/* Writing this resource will cause full/empty to be re-evaluated */
+	resource = ACTUAL_FILL_PERCENTAGE_FILLING_SENSOR_RID;
+	snprintk(path, sizeof(path), "%u/%u/%u", type, instance, resource);
+	return lwm2m_engine_set_float(path, &fill_percent);
 }
 
 /*
@@ -536,10 +579,9 @@ static void configure_filling_sensor(uint16_t instance)
 		   sizeof(uint32_t));
 	lwm2m_load(OBJ_ID, instance,
 		   HIGH_THRESHOLD_PERCENTAGE_FILLING_SENSOR_RID,
-		   sizeof(float64_value_t));
+		   sizeof(double));
 	lwm2m_load(OBJ_ID, instance,
-		   LOW_THRESHOLD_PERCENTAGE_FILLING_SENSOR_RID,
-		   sizeof(float64_value_t));
+		   LOW_THRESHOLD_PERCENTAGE_FILLING_SENSOR_RID, sizeof(double));
 
 	/* Callback is used to save config to nv */
 	register_post_write_callback(OBJ_ID, instance,

@@ -30,6 +30,10 @@ config LCZ_LWM2M_LOG_LEVEL
     range 0 4
     default 3
 
+config LCZ_LWM2M_MAX_LOAD_SIZE
+    int "Maximum size of resource config/data stored in nv"
+    default 8
+
 menuconfig LCZ_LWM2M_SENSOR
     bool "Enable module that processes BT510/BT6xx advertisements"
 

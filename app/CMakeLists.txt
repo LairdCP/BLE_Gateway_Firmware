@@ -10,7 +10,20 @@ set(mcuboot_DTC_OVERLAY_FILE
 set(mcuboot_CONF_FILE
     ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/pinnacle_100.conf
 )
+elseif((BOARD STREQUAL bl5340_dvk_cpuapp) OR (BOARD STREQUAL bl5340pa_dvk_cpuapp))
+set(mcuboot_CONF_FILE
+    ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/bl5340.conf
+)
+
+set(OVERLAY_CONFIG
+    ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf
+)
 endif()
+
+# Use static partition layout for board
+set(PM_STATIC_YML_FILE
+    ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/pm_static.${BOARD}.yml
+)
 
 # Prepend the additional boards directory but still allow the original Zephyr
 # boards directory to be used with lower priority
@@ -53,9 +66,9 @@ target_sources_ifdef(CONFIG_LCZ_SNTP_SHELL app PRIVATE
 
 if(CONFIG_DISPLAY)
 include_directories(${CMAKE_SOURCE_DIR}/display/include)
-target_sources_ifdef(CONFIG_DISPLAY app PRIVATE
-    ${CMAKE_SOURCE_DIR}/display/src/bl5340_module.c
+target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/display/src/lcd.c
+    ${CMAKE_SOURCE_DIR}/display/src/bl5340_module.c
 )
 endif()
 

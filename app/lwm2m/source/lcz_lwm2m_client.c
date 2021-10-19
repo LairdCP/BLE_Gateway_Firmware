@@ -544,6 +544,7 @@ static void rd_client_event(struct lwm2m_ctx *client,
 	case LWM2M_RD_CLIENT_EVENT_BOOTSTRAP_REG_FAILURE:
 		LOG_DBG("Bootstrap registration failure!");
 		lw.connected = false;
+		lwm2m_disconnect();
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_BOOTSTRAP_REG_COMPLETE:
@@ -559,6 +560,7 @@ static void rd_client_event(struct lwm2m_ctx *client,
 	case LWM2M_RD_CLIENT_EVENT_REGISTRATION_FAILURE:
 		LOG_DBG("Registration failure!");
 		lw.connected = false;
+		lwm2m_disconnect();
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REGISTRATION_COMPLETE:

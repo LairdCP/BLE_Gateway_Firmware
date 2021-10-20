@@ -12,6 +12,8 @@
   },
   "tasks": [
     {
+      // This command requires that the project was already built.
+      // It will re-compile changes, but won't work if there are CMake or Kconfig changes.
       "label": "build",
       "type": "shell",
       "dependsOn": ["increment build version"],
@@ -254,10 +256,12 @@
     {
       "label": "build bl5340 dvk with mcuboot",
       "type": "shell",
-      "dependsOn": ["increment build version"],
-      "command": "${config:setup_static_partitions_bl5340_unix} && west build -b bl5340_dvk_cpuapp -d ${workspaceRoot}/build/bl5340_dvk_cpuapp/aws ${workspaceRoot}/app",
+      "dependsOn": [
+        "increment build version"
+      ],
+      "command": "west build -b bl5340_dvk_cpuapp -d ${workspaceRoot}/build/bl5340_dvk_cpuapp/aws ${workspaceRoot}/app",
       "windows": {
-        "command": "${config:setup_static_partitions_bl5340_windows} && west build -b bl5340_dvk_cpuapp -d ${workspaceRoot}\\build\\bl5340_dvk_cpuapp\\aws ${workspaceRoot}\\app"
+        "command": "west build -b bl5340_dvk_cpuapp -d ${workspaceRoot}\\build\\bl5340_dvk_cpuapp\\aws ${workspaceRoot}\\app"
       },
       "problemMatcher": {
         "base": "$gcc",

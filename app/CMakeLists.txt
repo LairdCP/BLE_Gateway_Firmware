@@ -18,12 +18,12 @@ set(mcuboot_CONF_FILE
 list(APPEND OVERLAY_CONFIG
     ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf
 )
-endif()
 
 # Use static partition layout for board
 set(PM_STATIC_YML_FILE
     ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/pm_static.${BOARD}.yml
 )
+endif()
 
 # Prepend the additional boards directory but still allow the original Zephyr
 # boards directory to be used with lower priority

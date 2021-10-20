@@ -5,8 +5,9 @@ menuconfig CONTACT_TRACING
     bool "Config Contact Tracing"
     depends on BLUEGRASS
     depends on MCUMGR
-    depends on MCUMGR_CMD_FS_MGMT
     depends on MCUMGR_SMP_BT
+    depends on !MCUMGR_CMD_FS_MGMT
+    depends on LCZ_MCUMGR_CMD_FS_MGMT
     depends on !LWM2M
     depends on !SCAN_FOR_BT510
     depends on !BL654_SENSOR
@@ -14,6 +15,7 @@ menuconfig CONTACT_TRACING
     depends on SHELL_BACKEND_DUMMY || SHELL_BACKEND_SERIAL
     select CRYPTO
     select CRYPTO_TINYCRYPT_SHIM
+    select LCZ_MCUMGR_CMD_FS_MGMT_INTERCEPT
 
 if CONTACT_TRACING
 

@@ -1,5 +1,5 @@
 /**
- * @file ct_fs_intercept.c
+ * @file lcz_fs_mgmt_intercept.c
  * @brief
  *
  * Copyright (c) 2020-2021 Laird Connectivity
@@ -20,13 +20,14 @@ LOG_MODULE_REGISTER(ct_fs_intercept, CONFIG_CT_FS_INTERCEPT_LOG_LEVEL);
 #include <stdlib.h>
 
 #include "mgmt/mgmt.h"
-#include "fs_mgmt/fs_mgmt_config.h"
+#include "lcz_fs_mgmt/fs_mgmt_config.h"
+#include "lcz_fs_mgmt/fs_mgmt_impl.h"
 
 #include "attr.h"
 #include "file_system_utilities.h"
 #include "ct_ble.h"
 
-#include "ct_fs_intercept.h"
+#include "lcz_fs_mgmt_intercept.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -81,6 +82,35 @@ static const smp_to_nv_map_t SMP_TO_NV_MAP[] = {
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
+int fs_mgmt_impl_app_intercept(char *file_name, fs_mgmt_ctxt_t *fs_mgmt_ctxt,
+			       unsigned long long len, unsigned long long off,
+			       uint8_t *file_data, size_t data_len)
+{
+	int rc;
+
+	if (strncmp(file_name, CT_FS_INTERCEPT_NV_PATH,
+		    strlen(CT_FS_INTERCEPT_NV_PATH)) == 0) {
+		fs_mgmt_ctxt->off = off;
+		fs_mgmt_ctxt->data_len = data_len;
+		fs_mgmt_ctxt->file_data = file_data;
+
+		if (off == 0) {
+			fs_mgmt_ctxt->len = len;
+			fs_mgmt_ctxt->uploading = true;
+		}
+
+		rc = ct_fs_intercept_nv(file_name, fs_mgmt_ctxt);
+	} else if (strncmp(file_name, CT_FS_INTERCEPT_TEST_PUB_PATH,
+			   strlen(CT_FS_INTERCEPT_TEST_PUB_PATH)) == 0) {
+		rc = ct_fs_intercept_test_publish();
+	} else {
+		/* Write the data chunk to the file. */
+		rc = fs_mgmt_impl_write(file_name, off, file_data, data_len);
+	}
+
+	return rc;
+}
+
 int ct_fs_intercept_nv(char *path, fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 {
 	int i;

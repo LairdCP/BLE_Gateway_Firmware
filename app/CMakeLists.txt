@@ -79,7 +79,7 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/contact_tracing/src/ct_app.c
     ${CMAKE_SOURCE_DIR}/contact_tracing/src/rpc_params.c
     ${CMAKE_SOURCE_DIR}/contact_tracing/src/dfu_smp_c.c
-    ${CMAKE_SOURCE_DIR}/contact_tracing/src/ct_fs_intercept.c
+    ${CMAKE_SOURCE_DIR}/contact_tracing/src/lcz_fs_mgmt_intercept.c
 )
 endif()
 

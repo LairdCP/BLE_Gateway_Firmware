@@ -1,5 +1,5 @@
 /**
- * @file ct_fs_intercept.h
+ * @file lcz_fs_mgmt_intercept.h
  * @brief Intercept functions called during SMP file system command processing.
  *
  * Copyright (c) 2021 Laird Connectivity

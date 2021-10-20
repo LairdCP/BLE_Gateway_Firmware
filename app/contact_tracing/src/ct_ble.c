@@ -36,8 +36,8 @@ LOG_MODULE_REGISTER(ct_ble, CONFIG_CT_BLE_LOG_LEVEL);
 #include <tinycbor/cbor_buf_writer.h>
 #include "cborattr/cborattr.h"
 #include "mgmt/mgmt.h"
-#include "fs_mgmt/fs_mgmt_config.h"
-#include "fs_mgmt/fs_mgmt.h"
+#include "lcz_fs_mgmt/fs_mgmt_config.h"
+#include "lcz_fs_mgmt/fs_mgmt.h"
 
 #include <crypto/cipher.h>
 

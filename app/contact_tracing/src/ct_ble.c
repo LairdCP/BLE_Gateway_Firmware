@@ -912,7 +912,7 @@ static void ct_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 		err = k_work_reschedule(
 			&ct_adv_watchdog,
 			K_SECONDS(CONFIG_CT_ADV_WATCHDOG_SECONDS));
-		if (err) {
+		if (err < 0) {
 			LOG_ERR("Unable to start adv watchdog");
 		}
 	}

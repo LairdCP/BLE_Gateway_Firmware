@@ -15,7 +15,7 @@ set(mcuboot_CONF_FILE
     ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/bl5340.conf
 )
 
-set(OVERLAY_CONFIG
+list(APPEND OVERLAY_CONFIG
     ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf
 )
 endif()

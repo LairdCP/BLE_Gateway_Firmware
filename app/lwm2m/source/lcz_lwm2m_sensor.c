@@ -32,6 +32,8 @@ LOG_MODULE_REGISTER(lwm2m_sensor, CONFIG_LCZ_LWM2M_SENSOR_LOG_LEVEL);
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
 #define LWM2M_INSTANCES_PER_SENSOR_MAX 4
+#define MAX_INSTANCES                                                          \
+	(CONFIG_LCZ_LWM2M_SENSOR_MAX * LWM2M_INSTANCES_PER_SENSOR_MAX)
 
 /* clang-format off */
 #define LWM2M_BT610_TEMPERATURE_UNITS "C"
@@ -80,9 +82,18 @@ static struct {
 
 static struct lwm2m_sensor_table *const lst = ls.table;
 
-/* Each BT610 can have multiple sensors */
-static ATOMIC_DEFINE(ls_sensor_created, (CONFIG_LCZ_LWM2M_SENSOR_MAX *
-					 LWM2M_INSTANCES_PER_SENSOR_MAX));
+/* Each BT610 can have multiple sensors.
+ * Identical sensors must have different instances.
+ * Different sensors connected to the same BT610 can have the same instance.
+ *
+ * The BT610 can only have 1 ultrasonic sensor.
+ * For simplicity, this generates some bits that won't be used.
+ * This also preserves the Bluetooth address to instance conversion.
+ */
+static ATOMIC_DEFINE(temperature_created, MAX_INSTANCES);
+static ATOMIC_DEFINE(current_created, MAX_INSTANCES);
+static ATOMIC_DEFINE(pressure_created, MAX_INSTANCES);
+static ATOMIC_DEFINE(ultrasonic_created, MAX_INSTANCES);
 
 static ATOMIC_DEFINE(ls_gateway_created, CONFIG_LCZ_LWM2M_SENSOR_MAX);
 
@@ -100,12 +111,14 @@ static int get_index(const bt_addr_t *addr, bool allow_gen);
 static int generate_new_base(const bt_addr_t *addr, size_t idx);
 static bool valid_base(uint16_t instance);
 
-static int create_sensor_obj(struct lwm2m_sensor_obj_cfg *cfg, uint8_t idx,
+static int create_sensor_obj(atomic_t *created,
+			     struct lwm2m_sensor_obj_cfg *cfg, uint8_t idx,
 			     uint8_t offset);
 
 static int create_gateway_obj(uint8_t idx, int8_t rssi);
 
-static void obj_not_found_handler(int status, uint8_t idx, uint8_t offset);
+static void obj_not_found_handler(int status, atomic_t *created, uint8_t idx,
+				  uint8_t offset);
 
 static void name_handler(const bt_addr_le_t *addr, struct net_buf_simple *ad);
 
@@ -272,10 +285,12 @@ static void ad_process(LczSensorAdEvent_t *p, uint8_t idx, int8_t rssi)
 	int r = 0;
 	uint8_t offset = 0;
 	float f = p->data.f;
+	atomic_t *created = NULL;
 	struct lwm2m_sensor_obj_cfg cfg;
 
 	switch (p->recordType) {
 	case SENSOR_EVENT_TEMPERATURE:
+		created = temperature_created;
 		f = ((float)((int16_t)p->data.u16)) / 100.0;
 		CONFIGURATOR(IPSO_OBJECT_TEMP_SENSOR_ID, lst[idx].base,
 			     LWM2M_TEMPERATURE_UNITS, LWM2M_TEMPERATURE_MIN,
@@ -285,6 +300,7 @@ static void ad_process(LczSensorAdEvent_t *p, uint8_t idx, int8_t rssi)
 	case SENSOR_EVENT_TEMPERATURE_2:
 	case SENSOR_EVENT_TEMPERATURE_3:
 	case SENSOR_EVENT_TEMPERATURE_4:
+		created = temperature_created;
 		offset = (p->recordType - SENSOR_EVENT_TEMPERATURE_1);
 		CONFIGURATOR(IPSO_OBJECT_TEMP_SENSOR_ID, lst[idx].base + offset,
 			     LWM2M_BT610_TEMPERATURE_UNITS,
@@ -295,6 +311,7 @@ static void ad_process(LczSensorAdEvent_t *p, uint8_t idx, int8_t rssi)
 	case SENSOR_EVENT_CURRENT_2:
 	case SENSOR_EVENT_CURRENT_3:
 	case SENSOR_EVENT_CURRENT_4:
+		created = current_created;
 		offset = (p->recordType - SENSOR_EVENT_CURRENT_1);
 		CONFIGURATOR(IPSO_OBJECT_CURRENT_SENSOR_ID,
 			     lst[idx].base + offset, LWM2M_BT610_CURRENT_UNITS,
@@ -303,6 +320,7 @@ static void ad_process(LczSensorAdEvent_t *p, uint8_t idx, int8_t rssi)
 		break;
 	case SENSOR_EVENT_PRESSURE_1:
 	case SENSOR_EVENT_PRESSURE_2:
+		created = pressure_created;
 		offset = (p->recordType - SENSOR_EVENT_PRESSURE_1);
 		CONFIGURATOR(IPSO_OBJECT_PRESSURE_ID, (lst[idx].base + offset),
 			     LWM2M_BT610_PRESSURE_UNITS,
@@ -310,6 +328,7 @@ static void ad_process(LczSensorAdEvent_t *p, uint8_t idx, int8_t rssi)
 			     false);
 		break;
 	case SENSOR_EVENT_ULTRASONIC_1:
+		created = ultrasonic_created;
 		/* Convert from mm (reported) to cm (filling sensor) */
 		f /= 10.0;
 		/* Units/min/max not used because filling sensor object has
@@ -327,11 +346,11 @@ static void ad_process(LczSensorAdEvent_t *p, uint8_t idx, int8_t rssi)
 
 	/* Update the sensor data */
 	if (r == 0) {
-		r = create_sensor_obj(&cfg, idx, offset);
+		r = create_sensor_obj(created, &cfg, idx, offset);
 
 		if (r == 0) {
 			r = lwm2m_set_sensor_data(cfg.type, cfg.instance, f);
-			obj_not_found_handler(r, idx, offset);
+			obj_not_found_handler(r, created, idx, offset);
 		}
 
 		if (r < 0) {
@@ -358,26 +377,32 @@ static void ad_process(LczSensorAdEvent_t *p, uint8_t idx, int8_t rssi)
  * The number of instances of each type of sensor object
  * is limited at compile time.
  */
-static int create_sensor_obj(struct lwm2m_sensor_obj_cfg *cfg, uint8_t idx,
+static int create_sensor_obj(atomic_t *created,
+			     struct lwm2m_sensor_obj_cfg *cfg, uint8_t idx,
 			     uint8_t offset)
 {
 	uint32_t index_with_offset =
 		(idx * LWM2M_INSTANCES_PER_SENSOR_MAX) + offset;
 	int r = 0;
 
-	if (atomic_test_bit(ls_sensor_created, index_with_offset)) {
-		return r;
+	if (created == NULL) {
+		LOG_ERR("Invalid atomic created array");
+		return -EIO;
+	}
+
+	if (atomic_test_bit(created, index_with_offset)) {
+		return 0;
 	}
 
 	r = lwm2m_create_sensor_obj(cfg);
 	if (r == 0) {
-		atomic_set_bit(ls_sensor_created, index_with_offset);
+		atomic_set_bit(created, index_with_offset);
 		if (cfg->type == IPSO_OBJECT_FILLING_LEVEL_SENSOR_ID) {
 			configure_filling_sensor(cfg->instance);
 		}
 	} else if (r == -EEXIST) {
 		r = 0;
-		atomic_set_bit(ls_sensor_created, index_with_offset);
+		atomic_set_bit(created, index_with_offset);
 		LOG_WRN("object already exists");
 	} else if (r == -ENOMEM) {
 		ls.not_enough_instances = true;
@@ -386,7 +411,8 @@ static int create_sensor_obj(struct lwm2m_sensor_obj_cfg *cfg, uint8_t idx,
 	return r;
 }
 
-static void obj_not_found_handler(int status, uint8_t idx, uint8_t offset)
+static void obj_not_found_handler(int status, atomic_t *created, uint8_t idx,
+				  uint8_t offset)
 {
 	uint32_t index_with_offset =
 		(idx * LWM2M_INSTANCES_PER_SENSOR_MAX) + offset;
@@ -394,7 +420,9 @@ static void obj_not_found_handler(int status, uint8_t idx, uint8_t offset)
 	if (status == -ENOENT) {
 		/* Objects can be deleted from cloud */
 		LOG_WRN("object not found after creation");
-		atomic_clear_bit(ls_sensor_created, index_with_offset);
+		if (created != NULL) {
+			atomic_clear_bit(created, index_with_offset);
+		}
 	}
 }
 

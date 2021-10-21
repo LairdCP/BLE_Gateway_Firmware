@@ -20,6 +20,8 @@ LOG_MODULE_REGISTER(lwm2m_conn_mon, CONFIG_LCZ_LWM2M_CONN_MON_LEVEL);
 #include "attr.h"
 #if defined(CONFIG_MODEM_HL7800)
 #include "lte.h"
+#else
+#include "ethernet_network.h"
 #endif
 
 /******************************************************************************/
@@ -42,7 +44,9 @@ static uint8_t network_bearers[1] = { ETHERNET_BEARER };
 
 static bool init = true;
 static char ipv4_addr[NET_IPV4_ADDR_LEN];
+#if defined(CONFIG_MODEM_HL7800)
 static char ipv6_addr[NET_IPV6_ADDR_LEN];
+#endif
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -51,8 +55,10 @@ static char ipv6_addr[NET_IPV6_ADDR_LEN];
 int lcz_lwm2m_conn_mon_update_values(void)
 {
 	int rc = 0;
-	char *temp;
 	char path[sizeof("12345/12345/12345/12345")];
+#if defined(CONFIG_MODEM_HL7800)
+	char *temp;
+#endif
 
 #if defined(CONFIG_MODEM_HL7800)
 	switch (*(uint8_t *)attr_get_quasi_static(ATTR_ID_lteRat)) {
@@ -83,12 +89,12 @@ int lcz_lwm2m_conn_mon_update_values(void)
 		}
 
 		lwm2m_engine_create_res_inst("4/0/4/0");
+#if defined(CONFIG_MODEM_HL7800)
 		lte_get_ip_address(true, ipv6_addr, sizeof(ipv6_addr));
 		if (strlen(ipv6_addr) > 0) {
 			lwm2m_engine_create_res_inst("4/0/4/1");
 		}
 
-#if defined(CONFIG_MODEM_HL7800)
 		lwm2m_engine_create_res_inst("4/0/7/0");
 #endif
 		/* delete unused resources created by zephyr */
@@ -97,6 +103,7 @@ int lcz_lwm2m_conn_mon_update_values(void)
 		lwm2m_engine_delete_res_inst("4/0/10/0");
 	}
 
+#if defined(CONFIG_MODEM_HL7800)
 	lwm2m_engine_set_s8("4/0/2",
 			    *(int8_t *)attr_get_quasi_static(ATTR_ID_lteRsrp));
 
@@ -104,7 +111,6 @@ int lcz_lwm2m_conn_mon_update_values(void)
 			    *(int8_t *)attr_get_quasi_static(ATTR_ID_lteSinr));
 
 	/* interface IP address */
-#if defined(CONFIG_MODEM_HL7800)
 	lte_get_ip_address(false, ipv4_addr, sizeof(ipv4_addr));
 	lwm2m_engine_set_res_data("4/0/4/0", ipv4_addr, sizeof(ipv4_addr),
 				  LWM2M_RES_DATA_FLAG_RO);
@@ -115,8 +121,9 @@ int lcz_lwm2m_conn_mon_update_values(void)
 					  LWM2M_RES_DATA_FLAG_RO);
 	}
 #elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
-#warning Implement fetching IP address for BL5340
-	lwm2m_engine_set_res_data("4/0/4/0", "0.0.0.0", sizeof("0.0.0.0"),
+	/* interface IP address */
+	ethernet_get_ip_address(ipv4_addr, sizeof(ipv4_addr));
+	lwm2m_engine_set_res_data("4/0/4/0", ipv4_addr, sizeof(ipv4_addr),
 				  LWM2M_RES_DATA_FLAG_RO);
 #else
 #error Fill in IP address
@@ -127,7 +134,7 @@ int lcz_lwm2m_conn_mon_update_values(void)
 	temp = (char *)attr_get_quasi_static(ATTR_ID_apn);
 	lwm2m_engine_set_res_data("4/0/7/0", temp, strlen(temp),
 				  LWM2M_RES_DATA_FLAG_RO);
-#endif
 done:
+#endif
 	return rc;
 }

@@ -33,6 +33,17 @@ const char *get_app_type(void)
 #endif
 }
 
+const char *get_app_type_short(void)
+{
+#if defined CONFIG_LWM2M
+	return "LwM2M";
+#elif defined CONFIG_CONTACT_TRACING
+	return "CT";
+#else
+	return "AWS";
+#endif
+}
+
 void main(void)
 {
 	printk("\n" CONFIG_BOARD " - %s v%s (%s)\n", get_app_type(),

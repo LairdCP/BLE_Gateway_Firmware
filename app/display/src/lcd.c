@@ -29,7 +29,12 @@ LOG_MODULE_REGISTER(lcd);
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
+#ifdef CONFIG_BOARD_BL5340PA_DVK_CPUAPP
+LV_IMG_DECLARE(module_image_int);
+LV_IMG_DECLARE(module_image_ext);
+#else
 LV_IMG_DECLARE(module_image);
+#endif
 static char display_string_buffer[INFO_TEXT_STRING_MAX_SIZE];
 static lv_obj_t *ui_container_main;
 static lv_obj_t *ui_image_module;
@@ -56,7 +61,12 @@ void lcd_display_init(void)
 		lv_cont_set_layout(ui_container_main, LV_LAYOUT_ROW_MID);
 
 		ui_image_module = lv_img_create(ui_container_main, NULL);
+#ifdef CONFIG_BOARD_BL5340PA_DVK_CPUAPP
+		lv_img_set_src(ui_image_module, &module_image_int);
+		lv_img_set_src(ui_image_module, &module_image_ext);
+#else
 		lv_img_set_src(ui_image_module, &module_image);
+#endif
 		lv_obj_align(ui_image_module, NULL, LV_ALIGN_CENTER, 0, 0);
 
 		ui_text_info = lv_label_create(ui_container_main, NULL);
@@ -70,7 +80,7 @@ void lcd_display_init(void)
 
 void lcd_display_update_details(void)
 {
-	extern const char *get_app_type(void);
+	extern const char *get_app_type_short(void);
 	const struct device *display_dev;
 
 	display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
@@ -84,7 +94,11 @@ void lcd_display_update_details(void)
 		 * name and passkey used to pair with the module
 		 */
 		sprintf(display_string_buffer, "Laird Connectivity\n"
+#ifdef CONFIG_BOARD_BL5340PA_DVK_CPUAPP
+					       "BL5340PA Bluetooth 5.2\n"
+#else
 					       "BL5340 Bluetooth 5.2\n"
+#endif
 					       "Development Kit\n\n"
 					       "BLE Gateway Firmware\n"
 					       "Version %s (%s)\n\n"
@@ -98,7 +112,7 @@ void lcd_display_update_details(void)
 					       "Passkey:\n  %06u"
 #endif
 					       , APP_VERSION_STRING,
-					       get_app_type(),
+					       get_app_type_short(),
 					       (char *)attr_get_quasi_static(ATTR_ID_name)
 #ifdef CONFIG_MCUMGR_SMP_BT_AUTHEN
 					       , attr_get_uint32(ATTR_ID_passkey, 0)

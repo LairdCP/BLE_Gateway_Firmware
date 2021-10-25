@@ -68,7 +68,15 @@ if(CONFIG_DISPLAY)
 include_directories(${CMAKE_SOURCE_DIR}/display/include)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/display/src/lcd.c
+)
+
+# BL5340 has 1 image, BL5340PA has 2 images
+target_sources_ifdef(CONFIG_BOARD_BL5340_DVK_CPUAPP app PRIVATE
     ${CMAKE_SOURCE_DIR}/display/src/bl5340_module.c
+)
+target_sources_ifdef(CONFIG_BOARD_BL5340PA_DVK_CPUAPP app PRIVATE
+    ${CMAKE_SOURCE_DIR}/display/src/bl5340pa_module_ext.c
+    ${CMAKE_SOURCE_DIR}/display/src/bl5340pa_module_int.c
 )
 endif()
 

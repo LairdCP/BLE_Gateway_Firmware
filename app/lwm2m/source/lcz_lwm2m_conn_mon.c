@@ -36,7 +36,8 @@ LOG_MODULE_REGISTER(lwm2m_conn_mon, CONFIG_LCZ_LWM2M_CONN_MON_LEVEL);
 /******************************************************************************/
 #if defined(CONFIG_MODEM_HL7800)
 static uint8_t network_bearers[2] = { LTE_FDD_BEARER, NB_IOT_BEARER };
-#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || \
+      defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
 static uint8_t network_bearers[1] = { ETHERNET_BEARER };
 #else
 #error "Need to define network bearers"
@@ -73,7 +74,8 @@ int lcz_lwm2m_conn_mon_update_values(void)
 		rc = -EIO;
 		goto done;
 	}
-#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || \
+      defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
 	lwm2m_engine_set_u8("4/0/0", ETHERNET_BEARER);
 #endif
 
@@ -120,7 +122,8 @@ int lcz_lwm2m_conn_mon_update_values(void)
 					  sizeof(ipv6_addr),
 					  LWM2M_RES_DATA_FLAG_RO);
 	}
-#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || \
+      defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
 	/* interface IP address */
 	ethernet_get_ip_address(ipv4_addr, sizeof(ipv4_addr));
 	lwm2m_engine_set_res_data("4/0/4/0", ipv4_addr, sizeof(ipv4_addr),

@@ -25,6 +25,7 @@ config SENSOR_TASK
 config SCAN_FOR_BT510
     bool "Parse Bluetooth advertisements for BT510 Sensor"
     select SENSOR_TASK
+    select BLE_VSP_DEFINITIONS
 
 config SCAN_FOR_BT510_CODED
     bool "Scan for coded PHY and 1M advertisements from BT510"

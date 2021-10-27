@@ -215,10 +215,9 @@ int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
 #if defined(CONFIG_BOARD_MG100) && defined(CONFIG_LWM2M_IPSO_TEMP_SENSOR) &&   \
 	defined(CONFIG_LCZ_MOTION_TEMPERATURE)
 
-int lwm2m_set_board_temperature(float temperature)
+int lwm2m_set_board_temperature(double *temperature)
 {
 	int result = 0;
-	double d;
 	struct lwm2m_sensor_obj_cfg cfg = {
 		.instance = LWM2M_INSTANCE_BOARD,
 		.type = IPSO_OBJECT_TEMP_SENSOR_ID,
@@ -242,8 +241,7 @@ int lwm2m_set_board_temperature(float temperature)
 	}
 
 	if (result == 0) {
-		d = (double)temperature;
-		result = lwm2m_engine_set_float("3303/0/5700", &d);
+		result = lwm2m_engine_set_float("3303/0/5700", temperature);
 	}
 
 	if (result == -ENOENT) {

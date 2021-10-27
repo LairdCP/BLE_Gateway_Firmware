@@ -74,28 +74,30 @@ static void lmt_work_handler(struct k_work *work)
 static void lmt_read_sensor(void)
 {
 	int status = 0;
-	int32_t t;
+	double t;
 	struct sensor_value val;
 
-	status = sensor_sample_fetch_chan(lmt_sensor, SENSOR_CHAN_AMBIENT_TEMP);
+	status = sensor_sample_fetch_chan(lmt_sensor, SENSOR_CHAN_DIE_TEMP);
 
 	if (status == 0) {
-		status = sensor_channel_get(lmt_sensor,
-					    SENSOR_CHAN_AMBIENT_TEMP, &val);
+		status = sensor_channel_get(lmt_sensor, SENSOR_CHAN_DIE_TEMP,
+					    &val);
 	}
 
 	if (status == 0) {
 		/* Apply board/chip specific offset to result of LIS3DH */
-		t = attr_get_signed32(ATTR_ID_temperatureOffset, 0) + val.val1;
+		t = (double)attr_get_signed32(ATTR_ID_temperatureOffset, 0) +
+		    sensor_value_to_double(&val);
 
 		/* The temperature is used to condition the
 		 * battery voltage measurement.
-		 * It is actually the board temperature.
+		 * It is the die temperature of the accelerometer,
+		 * but can be considered the board temperature.
 		 */
-		attr_set_signed32(ATTR_ID_batteryTemperature, t);
+		attr_set_signed32(ATTR_ID_batteryTemperature, (int32_t)t);
 
 #ifdef CONFIG_LWM2M
-		lwm2m_set_board_temperature((float)t);
+		lwm2m_set_board_temperature(&t);
 #endif
 	}
 }

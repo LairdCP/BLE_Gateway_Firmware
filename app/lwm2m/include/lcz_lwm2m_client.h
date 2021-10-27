@@ -89,7 +89,7 @@ int lwm2m_create_sensor_obj(struct lwm2m_sensor_obj_cfg *cfg);
  * @param temperature
  * @return int zero on success, otherwise negative error code
  */
-int lwm2m_set_board_temperature(float temperature);
+int lwm2m_set_board_temperature(double *temperature);
 
 /**
  * @brief Generate new PSK

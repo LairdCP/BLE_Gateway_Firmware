@@ -103,6 +103,7 @@ static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
 static int create_bl654_sensor_objects(void);
 static size_t lwm2m_str_size(const char *s);
 static int bl654_sensor_set_error_handler(int status, char *obj_inst_str);
+static bool enable_bootstrap(void);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -301,9 +302,7 @@ int lwm2m_connect(void)
 	uint32_t flags;
 
 	if (!lw.connection_started) {
-		flags = IS_ENABLED(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP) ?
-				      LWM2M_RD_CLIENT_FLAG_BOOTSTRAP :
-				      0;
+		flags = enable_bootstrap() ? LWM2M_RD_CLIENT_FLAG_BOOTSTRAP : 0;
 
 		(void)memset(&lw.client, 0, sizeof(lw.client));
 #if defined(CONFIG_LWM2M_DTLS_SUPPORT)
@@ -471,19 +470,19 @@ static int lwm2m_setup(const char *id)
 				attr_get_size(ATTR_ID_lwm2mPsk));
 #endif /* CONFIG_LWM2M_DTLS_SUPPORT */
 
-#if defined(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP)
-	/* Mark 1st instance of security object as a bootstrap server */
-	lwm2m_engine_set_u8("0/0/1", 1);
+	if (enable_bootstrap()) {
+		/* Mark 1st instance of security object as a bootstrap server */
+		lwm2m_engine_set_u8("0/0/1", 1);
 
-	/* Create 2nd instance of security object needed for bootstrap */
-	lwm2m_engine_create_obj_inst("0/1");
-#else
-	/* Match Security object instance with a Server object instance with
-	 * Short Server ID.
-	 */
-	lwm2m_engine_set_u16("0/0/10", 101);
-	lwm2m_engine_set_u16("1/0/0", 101);
-#endif
+		/* Create 2nd instance of security object needed for bootstrap */
+		lwm2m_engine_create_obj_inst("0/1");
+	} else {
+		/* Match Security object instance with a Server object instance with
+	 	 * Short Server ID.
+	 	 */
+		lwm2m_engine_set_u16("0/0/10", 101);
+		lwm2m_engine_set_u16("1/0/0", 101);
+	}
 
 	/* setup SERVER object */
 
@@ -699,4 +698,14 @@ static int bl654_sensor_set_error_handler(int status, char *obj_inst_str)
 	}
 
 	return status;
+}
+
+static bool enable_bootstrap(void)
+{
+	if (IS_ENABLED(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP) &&
+	    attr_get_uint32(ATTR_ID_lwm2mEnableBootstrap, false)) {
+		return true;
+	} else {
+		return false;
+	}
 }

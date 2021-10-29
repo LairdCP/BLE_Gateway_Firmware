@@ -33,7 +33,7 @@ typedef struct fota_shadow_image {
 	char desired[CONFIG_FSU_MAX_VERSION_SIZE];
 	char host[CONFIG_DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE];
 	char file[CONFIG_DOWNLOAD_CLIENT_MAX_FILENAME_SIZE];
-	char downloaded_filename[CONFIG_FSU_MAX_FILE_NAME_SIZE];
+	char fs_name[CONFIG_FSU_MAX_FILE_NAME_SIZE];
 	char hash[FSU_HASH_SIZE * 2 + 1];
 	uint32_t start;
 	uint32_t switchover;
@@ -71,7 +71,7 @@ typedef struct fota_shadow {
 	"\"" SHADOW_FOTA_DESIRED_STR "\":\"%s\","                              \
 	"\"" SHADOW_FOTA_DOWNLOAD_HOST_STR "\":\"%s\","                        \
 	"\"" SHADOW_FOTA_DOWNLOAD_FILE_STR "\":\"%s\","                        \
-	"\"" SHADOW_FOTA_DOWNLOADED_FILENAME_STR "\":\"%s\","                  \
+	"\"" SHADOW_FOTA_FS_NAME_STR "\":\"%s\","                              \
 	"\"" SHADOW_FOTA_HASH_STR "\":\"%s\","                                 \
 	"\"" SHADOW_FOTA_START_STR "\":%u,"                                    \
 	"\"" SHADOW_FOTA_SWITCHOVER_STR "\":%u,"                               \
@@ -132,10 +132,9 @@ static bool set_shadow_uint32(uint32_t *dest, uint32_t value);
 /******************************************************************************/
 void http_fota_shadow_init(void)
 {
-	strcpy(fota_shadow.app.running, APP_VERSION_STRING);
-
 	fota_shadow.app.name = SHADOW_FOTA_APP_STR;
-
+	strcpy(fota_shadow.app.running, APP_VERSION_STRING);
+	strcpy(fota_shadow.app.fs_name, "app.bin");
 	fota_shadow.json_update_request = true;
 }
 
@@ -144,6 +143,13 @@ void http_fota_modem_shadow_init(const char *modem_fs_path)
 {
 	fota_shadow.modem.name = SHADOW_FOTA_MODEM_STR;
 	fota_shadow.modem.fs_path = modem_fs_path;
+	/* Provide a default name in case the parser fails.
+	 * The file system name is used internally and can't be blank.
+	 * It is also reported in the shadow to indicate that a file
+	 * has been downloaded when the download time and install time
+	 * are different.
+	 */
+	strcpy(fota_shadow.modem.fs_name, "modem.bin");
 }
 #endif
 
@@ -259,6 +265,8 @@ const char *http_fota_get_download_host(enum fota_image_type type)
 void http_fota_set_download_file(enum fota_image_type type, const char *p,
 				 size_t length)
 {
+	char *name = NULL;
+	char *next_name = NULL;
 	fota_shadow_image_t *pImg = get_image_ptr(type);
 	if (pImg == NULL) {
 		return;
@@ -267,6 +275,18 @@ void http_fota_set_download_file(enum fota_image_type type, const char *p,
 	if (set_shadow_str(pImg->file, sizeof(pImg->file), p, length)) {
 		LOG_DBG("%s file name: %s", log_strdup(pImg->name),
 			log_strdup(pImg->file));
+
+		/* Create name used to write the local file system (remove path) */
+		name = pImg->file;
+		do {
+			next_name = strstr(name, "/");
+			if (next_name != NULL) {
+				name = next_name + 1;
+			}
+		} while (next_name != NULL);
+		if (strlen(name) > 0) {
+			http_fota_set_fs_name(type, name, strlen(name));
+		}
 	}
 	/* Don't set flag when reading shadow after a reset */
 	pImg->null_desired = fota_shadow.enabled;
@@ -286,32 +306,28 @@ const char *http_fota_get_download_file(enum fota_image_type type)
 	}
 }
 
-void http_fota_set_downloaded_filename(enum fota_image_type type, const char *p,
-				       size_t length)
+void http_fota_set_fs_name(enum fota_image_type type, const char *p,
+			   size_t length)
 {
 	fota_shadow_image_t *pImg = get_image_ptr(type);
 	if (pImg == NULL) {
 		return;
 	}
 
-	/* This value could be updated when the shadow is read, but in this
-	 * application it will only be updated by the fota state machine.
-	 */
-	if (set_shadow_str(pImg->downloaded_filename,
-			   sizeof(pImg->downloaded_filename), p, length)) {
+	if (set_shadow_str(pImg->fs_name, sizeof(pImg->fs_name), p, length)) {
 		LOG_DBG("%s downloaded filename: %s", log_strdup(pImg->name),
-			log_strdup(pImg->downloaded_filename));
+			log_strdup(pImg->fs_name));
 	}
 }
 
-const char *http_fota_get_downloaded_filename(enum fota_image_type type)
+const char *http_fota_get_fs_name(enum fota_image_type type)
 {
 	switch (type) {
 	case APP_IMAGE_TYPE:
-		return fota_shadow.app.downloaded_filename;
+		return fota_shadow.app.fs_name;
 #ifdef CONFIG_MODEM_HL7800
 	case MODEM_IMAGE_TYPE:
-		return fota_shadow.modem.downloaded_filename;
+		return fota_shadow.modem.fs_name;
 #endif
 	default:
 		return "?name?";
@@ -557,16 +573,15 @@ static void fota_shadow_handler(void)
 		snprintf(msg, size, SHADOW_FOTA_FMT_STR,
 			 fota_shadow.app.running, fota_shadow.app.desired,
 			 fota_shadow.app.host, fota_shadow.app.file,
-			 fota_shadow.app.downloaded_filename,
-			 fota_shadow.app.hash, fota_shadow.app.start,
-			 fota_shadow.app.switchover, fota_shadow.app.error_count
+			 fota_shadow.app.fs_name, fota_shadow.app.hash,
+			 fota_shadow.app.start, fota_shadow.app.switchover,
+			 fota_shadow.app.error_count
 #ifdef CONFIG_MODEM_HL7800
 			 ,
 			 fota_shadow.modem.running, fota_shadow.modem.desired,
 			 fota_shadow.modem.host, fota_shadow.modem.file,
-			 fota_shadow.modem.downloaded_filename,
-			 fota_shadow.modem.hash, fota_shadow.modem.start,
-			 fota_shadow.modem.switchover,
+			 fota_shadow.modem.fs_name, fota_shadow.modem.hash,
+			 fota_shadow.modem.start, fota_shadow.modem.switchover,
 			 fota_shadow.modem.error_count
 #endif
 		);

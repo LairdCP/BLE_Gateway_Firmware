@@ -372,7 +372,7 @@ static void fota_fsm(fota_context_t *pCtx)
 			pCtx->delay -= 1;
 			next_state = FOTA_FSM_MODEM_WAIT;
 		} else {
-			LOG_WRN("Rebooting for modem update to be completed.");
+			LOG_WRN("Rebooting to complete modem update");
 			LCZ_MEMFAULT_REBOOT_TRACK_FIRMWARE_UPDATE();
 			/* Allow last print to occur. */
 			k_sleep(K_MSEC(CONFIG_LOG_PROCESS_THREAD_SLEEP_MS));
@@ -421,8 +421,7 @@ static void fota_fsm(fota_context_t *pCtx)
 			tctx.allow_start = false;
 			pCtx->using_transport = true;
 			pCtx->file_path =
-				(char *)http_fota_get_downloaded_filename(
-					pCtx->type);
+				(char *)http_fota_get_fs_name(pCtx->type);
 			pCtx->download_error = false;
 			next_state = FOTA_FSM_START_DOWNLOAD;
 		}
@@ -524,9 +523,7 @@ static int initiate_update(fota_context_t *pCtx)
 		r = hl7800_initiate_modem_update(pCtx);
 #ifdef CONFIG_HTTP_FOTA_DELETE_FILE_AFTER_UPDATE
 		if (r == 0) {
-			if (fsu_delete_files("/lfs", pCtx->file_path) < 0) {
-				LOG_ERR("Unable to delete");
-			}
+			fsu_delete("/lfs", pCtx->file_path);
 		}
 #endif
 	}

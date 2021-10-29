@@ -483,7 +483,7 @@ static void fota_fsm(fota_context_t *pCtx)
 
 	case FOTA_FSM_DELETE_EXISTING_FILE:
 		pCtx->query.offset = 0;
-		r = fsu_delete_files(pCtx->query.fs_path, pCtx->query.filename);
+		r = fsu_delete(pCtx->query.fs_path, pCtx->query.filename);
 		if (r < 0) {
 			next_state = FOTA_FSM_ERROR;
 		} else {
@@ -593,10 +593,7 @@ static int initiate_update(fota_context_t *pCtx)
 
 #ifdef CONFIG_COAP_FOTA_DELETE_FILE_AFTER_UPDATE
 	if (r == 0) {
-		if (fsu_delete_files(pCtx->query.fs_path,
-				     pCtx->query.filename) < 0) {
-			LOG_ERR("Unable to delete");
-		}
+		fsu_delete(pCtx->query.fs_path, pCtx->query.filename);
 	}
 #endif
 

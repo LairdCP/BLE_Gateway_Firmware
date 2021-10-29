@@ -432,6 +432,12 @@ static void disconnected_handler(void)
 
 static void fota_handler(void)
 {
+	/* While the modem is updating (network down),
+	 * this state will be repeatedly cycled through.
+	 * This is currently unavoidable because the network
+	 * may drop for other reasons and the state machine can't
+	 * remain in this state.
+	 */
 	if (!gsm.network_is_connected()) {
 		set_state(GATEWAY_STATE_NETWORK_DISCONNECTED);
 	} else if (!gateway_fsm_fota_request()) {

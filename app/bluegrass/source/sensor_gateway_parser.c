@@ -224,7 +224,6 @@ void SensorGatewayParser(const char *pTopic, const char *pJson)
 #endif
 
 #ifdef CONFIG_BOARD_MG100
-		/* Bug 19411 - Test this */
 		MiniGatewayParser(pTopic);
 #endif
 

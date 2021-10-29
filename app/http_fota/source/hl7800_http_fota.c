@@ -105,8 +105,7 @@ int hl7800_download_start(fota_context_t *pCtx, const char *host,
 
 	/* if we are starting from a 0 offset, ensure we are starting fresh */
 	if (hl7800_file_offset == 0) {
-		if (fsu_delete_files(CONFIG_FOTA_FS_MOUNT, pCtx->file_path) <
-		    0) {
+		if (fsu_delete(CONFIG_FOTA_FS_MOUNT, pCtx->file_path) < 0) {
 			LOG_INF("HL7800 Firmware Update File Doesn't Exist");
 		}
 	}
@@ -167,9 +166,7 @@ int hl7800_initiate_modem_update(fota_context_t *pCtx)
 
 	/* regardless of the update status, we must delete the file to start over */
 	hl7800_file_offset = 0;
-	if (fsu_delete_files(CONFIG_FOTA_FS_MOUNT, pCtx->file_path) < 0) {
-		LOG_INF("Unable to delete");
-	}
+	fsu_delete(CONFIG_FOTA_FS_MOUNT, pCtx->file_path);
 
 	return err;
 }
@@ -201,7 +198,7 @@ hl7800_download_client_callback(const struct download_client_evt *event)
 		}
 		err = fsu_append(
 			CONFIG_FSU_MOUNT_POINT,
-			http_fota_get_downloaded_filename(MODEM_IMAGE_TYPE),
+			http_fota_get_fs_name(MODEM_IMAGE_TYPE),
 			(void *)event->fragment.buf, event->fragment.len);
 		if (err < 0) {
 			LOG_ERR("fs write error %d", err);
@@ -272,17 +269,17 @@ static void hl7800_fota_send_evt(enum fota_download_evt_id id)
 
 static void hl7800_fota_send_error_evt(enum fota_download_error_cause cause)
 {
-	/* if we are ending in a download error, we must delete the file to start over */
+	/* If we are ending in a download error,
+	 * we must delete the file to start over
+	 */
 	hl7800_file_offset = 0;
-	if (fsu_delete_files(
-		    CONFIG_FOTA_FS_MOUNT,
-		    http_fota_get_downloaded_filename(MODEM_IMAGE_TYPE)) < 0) {
-		LOG_INF("Unable to delete");
-	}
+	fsu_delete(CONFIG_FOTA_FS_MOUNT,
+		   http_fota_get_fs_name(MODEM_IMAGE_TYPE));
 	const struct fota_download_evt evt = { .id = FOTA_DOWNLOAD_EVT_ERROR,
 					       .cause = cause };
 	hl7800_fota_callback(&evt);
 }
+
 #ifdef CONFIG_FOTA_DOWNLOAD_PROGRESS_EVT
 static void hl7800_fota_send_progress(int progress)
 {

@@ -33,7 +33,7 @@ enum fota_image_type { APP_IMAGE_TYPE = 0, MODEM_IMAGE_TYPE };
 #define SHADOW_FOTA_DESIRED_STR              "desired"
 #define SHADOW_FOTA_DOWNLOAD_HOST_STR        "downloadHost"
 #define SHADOW_FOTA_DOWNLOAD_FILE_STR        "downloadFile"
-#define SHADOW_FOTA_DOWNLOADED_FILENAME_STR  "downloadedFilename"
+#define SHADOW_FOTA_FS_NAME_STR              "downloadedFilename"
 #define SHADOW_FOTA_HASH_STR                 "hash"
 #define SHADOW_FOTA_START_STR                "start"
 #define SHADOW_FOTA_SWITCHOVER_STR           "switchover"
@@ -119,17 +119,17 @@ void http_fota_set_download_file(enum fota_image_type type, const char *p,
 const char *http_fota_get_download_file(enum fota_image_type type);
 
 /**
- * @brief Set image filename that was downloaded.
+ * @brief Set file system name
  */
-void http_fota_set_downloaded_filename(enum fota_image_type type, const char *p,
-				       size_t length);
+void http_fota_set_fs_name(enum fota_image_type type, const char *p,
+			   size_t length);
 
 /**
  * @brief Accessor function.
  *
- * @retval desired filename
+ * @retval file system name
  */
-const char *http_fota_get_downloaded_filename(enum fota_image_type type);
+const char *http_fota_get_fs_name(enum fota_image_type type);
 
 /**
  * @brief Set the time that the image should start being downloaded at.

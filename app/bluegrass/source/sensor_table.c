@@ -193,6 +193,9 @@ static uint32_t GetFlag(uint16_t Value, uint32_t Mask, uint8_t Position);
 
 static void PublishToGetAccepted(SensorEntry_t *pEntry);
 
+static bool AcceptBt510Rsp(uint8_t productId);
+static bool AcceptBt510Ad(uint8_t recordType);
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -224,14 +227,19 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 	AdHandle_t nameHandle = AdFind_Name(pAd->data, pAd->len);
 	size_t tableIndex = CONFIG_SENSOR_TABLE_SIZE;
 	/* Take name from scan response and use it to populate table.
-	 * If device is already in table, then check if any fields need to be updated.
+	 * If device is already in table,
+	 * then check if any fields need to be updated.
 	 */
 	if (lcz_sensor_adv_match_rsp(&manHandle)) {
 		if (nameHandle.pPayload != NULL) {
 			LczSensorRspWithHeader_t *pRspPacket =
 				(LczSensorRspWithHeader_t *)manHandle.pPayload;
-			tableIndex = AddByScanResponse(pAddr, &nameHandle,
-						       &pRspPacket->rsp, rssi);
+			if (AcceptBt510Rsp(pRspPacket->rsp.productId)) {
+				tableIndex =
+					AddByScanResponse(pAddr, &nameHandle,
+							  &pRspPacket->rsp,
+							  rssi);
+			}
 		}
 		/* If scan response data was received then there won't be event data,
 		 * but a connect request may still need to be issued
@@ -252,7 +260,9 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 		if (tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
 			LczSensorAdEvent_t *pAd =
 				(LczSensorAdEvent_t *)manHandle.pPayload;
-			AdEventHandler(pAd, rssi, tableIndex);
+			if (AcceptBt510Ad(pAd->recordType)) {
+				AdEventHandler(pAd, rssi, tableIndex);
+			}
 		}
 	}
 
@@ -262,11 +272,15 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 		LczSensorAdCoded_t *pCoded =
 			(LczSensorAdCoded_t *)manHandle.pPayload;
 		if (nameHandle.pPayload != NULL) {
-			tableIndex = AddByScanResponse(pAddr, &nameHandle,
-						       &pCoded->rsp, rssi);
+			if (AcceptBt510Ad(pCoded->ad.recordType) &&
+			    AcceptBt510Rsp(pCoded->rsp.productId)) {
+				tableIndex = AddByScanResponse(
+					pAddr, &nameHandle, &pCoded->rsp, rssi);
 
-			if (tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
-				AdEventHandler(&pCoded->ad, rssi, tableIndex);
+				if (tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
+					AdEventHandler(&pCoded->ad, rssi,
+						       tableIndex);
+				}
 			}
 		}
 	}
@@ -1439,4 +1453,28 @@ static void PublishToGetAccepted(SensorEntry_t *pEntry)
 	strcpy(pMsg->buffer, GET_ACCEPTED_MSG);
 	pMsg->length = strlen(pMsg->buffer);
 	FRAMEWORK_MSG_SEND(pMsg);
+}
+
+/*
+ * Filter out BT610s because they can't be configured
+ * and the current shadow format doesn't support them.
+ */
+
+static bool AcceptBt510Rsp(uint8_t productId)
+{
+	if (productId == BT510_PRODUCT_ID) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+static bool AcceptBt510Ad(uint8_t recordType)
+{
+	if (recordType < SENSOR_EVENT_TEMPERATURE_1 ||
+	    recordType >= SENSOR_EVENT_MOVEMENT_END) {
+		return true;
+	} else {
+		return false;
+	}
 }

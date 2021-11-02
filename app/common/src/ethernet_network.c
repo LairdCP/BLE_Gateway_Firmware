@@ -206,11 +206,31 @@ int ethernet_get_ip_address(char *ip_addr, int ip_addr_len)
 
 	if (iface == NULL || cfg == NULL) {
 		rc = -EIO;
-	} else if (!net_if_is_up(iface) || !net_ipv4_is_addr_unspecified(
+	} else if (!net_if_is_up(iface) || net_ipv4_is_addr_unspecified(
 			&cfg->ip.ipv4->unicast->address.in_addr)) {
 		rc = -ENETDOWN;
 	} else {
 		net_addr_ntop(AF_INET, &cfg->ip.ipv4->unicast->address.in_addr,
+			      ip_addr, ip_addr_len);
+		rc = 0;
+	}
+
+	return rc;
+}
+
+int ethernet_get_gateway_ip_address(char *ip_addr, int ip_addr_len)
+{
+	int rc = -ENETUNREACH;
+
+	memset(ip_addr, 0, ip_addr_len);
+
+	if (iface == NULL || cfg == NULL) {
+		rc = -EIO;
+	} else if (!net_if_is_up(iface) || net_ipv4_is_addr_unspecified(
+			&cfg->ip.ipv4->gw)) {
+		rc = -ENETDOWN;
+	} else {
+		net_addr_ntop(AF_INET, &cfg->ip.ipv4->gw,
 			      ip_addr, ip_addr_len);
 		rc = 0;
 	}

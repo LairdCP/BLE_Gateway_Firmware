@@ -53,11 +53,20 @@ bool sntp_update_time(void);
 /**
  * @brief Get the IP address of the ethernet network interface
  *
- * @param ip_addr point to buffer to hold the IP address string
+ * @param ip_addr pointer to buffer to hold the IP address string
  * @param ip_addr_len length of the address string buffer
  * @retval 0 on success, error code if failed
  */
 int ethernet_get_ip_address(char *ip_addr, int ip_addr_len);
+
+/**
+ * @brief Get the gateway's IP address of the ethernet network interface
+ *
+ * @param ip_addr pointer to buffer to hold the gateway IP address string
+ * @param ip_addr_len length of the address string buffer
+ * @retval 0 on success, error code if failed
+ */
+int ethernet_get_gateway_ip_address(char *ip_addr, int ip_addr_len);
 
 /**
  * @brief Callback from ethernet driver that can be implemented in application.

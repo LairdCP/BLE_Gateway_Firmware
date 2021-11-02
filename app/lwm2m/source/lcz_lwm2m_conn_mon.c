@@ -39,6 +39,7 @@ static uint8_t network_bearers[2] = { LTE_FDD_BEARER, NB_IOT_BEARER };
 #elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || \
       defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
 static uint8_t network_bearers[1] = { ETHERNET_BEARER };
+static char ipv4_gw_addr[NET_IPV4_ADDR_LEN];
 #else
 #error "Need to define network bearers"
 #endif
@@ -52,7 +53,6 @@ static char ipv6_addr[NET_IPV6_ADDR_LEN];
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-
 int lcz_lwm2m_conn_mon_update_values(void)
 {
 	int rc = 0;
@@ -91,6 +91,12 @@ int lcz_lwm2m_conn_mon_update_values(void)
 		}
 
 		lwm2m_engine_create_res_inst("4/0/4/0");
+
+#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || \
+    defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
+		lwm2m_engine_create_res_inst("4/0/5/0");
+#endif
+
 #if defined(CONFIG_MODEM_HL7800)
 		lte_get_ip_address(true, ipv6_addr, sizeof(ipv6_addr));
 		if (strlen(ipv6_addr) > 0) {
@@ -124,9 +130,12 @@ int lcz_lwm2m_conn_mon_update_values(void)
 	}
 #elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || \
       defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
-	/* interface IP address */
+	/* Get interface and gateway IP address */
 	ethernet_get_ip_address(ipv4_addr, sizeof(ipv4_addr));
+	ethernet_get_gateway_ip_address(ipv4_gw_addr, sizeof(ipv4_gw_addr));
 	lwm2m_engine_set_res_data("4/0/4/0", ipv4_addr, sizeof(ipv4_addr),
+				  LWM2M_RES_DATA_FLAG_RO);
+	lwm2m_engine_set_res_data("4/0/5/0", ipv4_gw_addr, sizeof(ipv4_gw_addr),
 				  LWM2M_RES_DATA_FLAG_RO);
 #else
 #error Fill in IP address

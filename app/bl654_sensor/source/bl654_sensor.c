@@ -18,6 +18,7 @@ LOG_MODULE_REGISTER(bl654_sensor, CONFIG_BL654_SENSOR_LOG_LEVEL);
 #include <stddef.h>
 #include <bluetooth/gatt.h>
 #include <bluetooth/bluetooth.h>
+#include <sys/byteorder.h>
 
 #include "FrameworkIncludes.h"
 #include "laird_utility_macros.h"
@@ -116,6 +117,8 @@ static void discover_failed_handler(struct bt_conn *conn, int err);
 
 static void sensor_aggregator(uint8_t sensor, int32_t reading);
 
+static bool process_device(struct bt_data *data, void *user_data);
+
 static void bl654_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 				     uint8_t type, struct net_buf_simple *ad);
 
@@ -179,12 +182,59 @@ int bl654_sensor_disconnect(void)
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
+static bool process_device(struct bt_data *data, void *user_data)
+{
+	bt_addr_le_t *addr = user_data;
+	char bt_addr[BT_ADDR_LE_STR_LEN];
+	uint16_t uuid;
+	uint8_t i;
+	int err;
+
+	/* Check 16-bit UUIDs for ESS UUID */
+	if ((data->type == BT_DATA_UUID16_SOME || data->type ==
+	     BT_DATA_UUID16_ALL) && (data->data_len % sizeof(uint16_t) == 0)) {
+		i = 0;
+		while (i < data->data_len) {
+			memcpy(&uuid, &data->data[i], sizeof(uuid));
+			i += sizeof(uuid);
+
+			if (sys_le16_to_cpu(uuid) != BT_UUID_ESS_VAL) {
+				/* This isn't the ESS UUID */
+				continue;
+			}
+
+			/* ESS UUID found! Can't connect while scanning */
+			lcz_bt_scan_stop(scan_id);
+
+			/* Connect to device */
+			bt_addr_le_to_str(addr, bt_addr, sizeof(bt_addr));
+			err = bt_conn_le_create(addr, BT_CONN_LE_CREATE_CONN,
+						BT_LE_CONN_PARAM(
+						BL654_SENSOR_MIN_CONN_INTERVAL,
+						BL654_SENSOR_MAX_CONN_INTERVAL,
+						BL654_SENSOR_LATENCY,
+						BL654_SENSOR_TIMEOUT),
+						&sensor_conn);
+
+			if (err == 0) {
+				LOG_INF("Attempting to connect to ESS device %s",
+					log_strdup(bt_addr));
+			} else {
+				LOG_ERR("Failed to connect to ESS device %s err [%d]",
+				log_strdup(bt_addr), err);
+				set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
+			}
+
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static void bl654_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 				     uint8_t type, struct net_buf_simple *ad)
 {
-	int err;
-	char bt_addr[BT_ADDR_LE_STR_LEN];
-
 	/* Leave this function if already connected */
 	if (sensor_conn) {
 		return;
@@ -196,33 +246,8 @@ static void bl654_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 		return;
 	}
 
-	/* Check if this is the device we are looking for */
-	if (!AdFind_MatchName(ad->data, ad->len, CONFIG_BL654_SENSOR_NAME,
-			      strlen(CONFIG_BL654_SENSOR_NAME))) {
-		return;
-	}
-	LOG_INF("Found BL654 Sensor");
-
-	/* Can't connect while scanning */
-	lcz_bt_scan_stop(scan_id);
-
-	/* Connect to device */
-	bt_addr_le_to_str(addr, bt_addr, sizeof(bt_addr));
-	err = bt_conn_le_create(addr, BT_CONN_LE_CREATE_CONN,
-				BT_LE_CONN_PARAM(BL654_SENSOR_MIN_CONN_INTERVAL,
-						 BL654_SENSOR_MAX_CONN_INTERVAL,
-						 BL654_SENSOR_LATENCY,
-						 BL654_SENSOR_TIMEOUT),
-				&sensor_conn);
-
-	if (err == 0) {
-		LOG_INF("Attempting to connect to remote BLE device %s",
-			log_strdup(bt_addr));
-	} else {
-		LOG_ERR("Failed to connect to remote BLE device %s err [%d]",
-			log_strdup(bt_addr), err);
-		set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
-	}
+	/* Process device services */
+	bt_data_parse(ad, process_device, (void *)addr);
 }
 
 static void discover_services_work_callback(struct k_work *work)

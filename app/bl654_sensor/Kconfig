@@ -16,11 +16,4 @@ config BL654_SENSOR_SEND_TO_AWS_RATE_SECONDS
     default 60
     range 30 3600
 
-config BL654_SENSOR_NAME
-    string "The advertised name of the sensor (that is scanned for)"
-    default "BL654 BME280 Sensor"
-    help
-        Any sensor with the ESS service should work
-        (temperature, humidity, and pressure).
-
 endif # BL654_SENSOR

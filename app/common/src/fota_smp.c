@@ -17,8 +17,8 @@ LOG_MODULE_REGISTER(fota_smp, CONFIG_LOG_LEVEL_FOTA_SMP);
 #include <drivers/modem/hl7800.h>
 #endif
 
-#ifdef CONFIG_BL654_SENSOR
-#include "bl654_sensor.h"
+#ifdef CONFIG_ESS_SENSOR
+#include "ess_sensor.h"
 #endif
 
 #include "file_system_utilities.h"
@@ -109,8 +109,8 @@ void fota_smp_cmd_handler(void)
 		ble_prepared = true;
 		lcz_bt_scan_stop(scan_user_id);
 
-#ifdef CONFIG_BL654_SENSOR
-		r = bl654_sensor_disconnect();
+#ifdef CONFIG_ESS_SENSOR
+		r = ess_sensor_disconnect();
 #endif
 		fota_set_status(r == 0 ? FOTA_STATUS_SUCCESS :
 					       FOTA_STATUS_ERROR);

@@ -50,8 +50,8 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 #include "laird_connectivity_nfc.h"
 #endif
 
-#ifdef CONFIG_BL654_SENSOR
-#include "bl654_sensor.h"
+#ifdef CONFIG_ESS_SENSOR
+#include "ess_sensor.h"
 #endif
 
 #ifdef CONFIG_BLUEGRASS
@@ -171,8 +171,8 @@ int configure_app(void)
 	}
 #endif
 
-#ifdef CONFIG_BL654_SENSOR
-	bl654_sensor_initialize();
+#ifdef CONFIG_ESS_SENSOR
+	ess_sensor_initialize();
 #endif
 
 #ifdef CONFIG_BLUEGRASS

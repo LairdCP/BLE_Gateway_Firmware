@@ -45,12 +45,12 @@ typedef struct AdvMsg {
 } AdvMsg_t;
 CHECK_FWK_MSG_SIZE(AdvMsg_t);
 
-typedef struct BL654SensorMsg {
+typedef struct ESSSensorMsg {
 	FwkMsgHeader_t header;
 	float temperatureC; /* xx.xxC format */
 	float humidityPercent; /* xx.xx% format */
 	float pressurePa; /* x.xPa format */
-} BL654SensorMsg_t;
+} ESSSensorMsg_t;
 
 #ifdef __cplusplus
 }

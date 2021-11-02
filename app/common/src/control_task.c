@@ -529,12 +529,12 @@ static DispatchResult_t lwm2m_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	ARG_UNUSED(pMsgRxer);
 
 	switch (pMsg->header.msgCode) {
-	case FMC_BL654_SENSOR_EVENT: {
-		BL654SensorMsg_t *pBmeMsg = (BL654SensorMsg_t *)pMsg;
-		if (lwm2m_set_bl654_sensor_data(pBmeMsg->temperatureC,
-						pBmeMsg->humidityPercent,
-						pBmeMsg->pressurePa) != 0) {
-			LOG_ERR("Error setting BL654 Sensor Data in LWM2M server");
+	case FMC_ESS_SENSOR_EVENT: {
+		ESSSensorMsg_t *pBmeMsg = (ESSSensorMsg_t *)pMsg;
+		if (lwm2m_set_ess_sensor_data(pBmeMsg->temperatureC,
+					      pBmeMsg->humidityPercent,
+					      pBmeMsg->pressurePa) != 0) {
+			LOG_ERR("Error setting ESS Sensor Data in LWM2M server");
 		}
 	} break;
 

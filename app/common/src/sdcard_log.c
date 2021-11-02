@@ -66,12 +66,12 @@ static const char *mountPoint = "/SD:";
 #if defined(CONFIG_BOARD_MG100)
 static const char *batteryFilePath = "/SD:/mg100B.csv";
 static const char *sensorFilePath = "/SD:/mg100Ad.csv";
-static const char *bl654FilePath = "/SD:/mg100bl6.csv";
+static const char *essFilePath = "/SD:/mg100ess.csv";
 #elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || \
       defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
 static const char *batteryFilePath = "/SD:/bl5340B.csv";
 static const char *sensorFilePath = "/SD:/bl5340Ad.csv";
-static const char *bl654FilePath = "/SD:/bl5340bl.csv";
+static const char *essFilePath = "/SD:/bl5340es.csv";
 #endif
 
 static bool sdCardPresent = false;
@@ -80,7 +80,7 @@ static int batteryLogSeekOffset = 0;
 static int batteryLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 static bool batteryLogFileOpened = false;
 static int sensorLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
-static int bl654LogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
+static int essLogMaxLength = SDCARD_LOG_DEFAULT_MAX_LENGTH * B_PER_MB;
 
 #ifdef CONFIG_SCAN_FOR_BT510
 static struct fs_file_t sensorLogFileZfp;
@@ -88,10 +88,10 @@ static int sensorLogSeekOffset = 0;
 static bool sensorLogFileOpened = false;
 #endif
 
-#ifdef CONFIG_BL654_SENSOR
-static struct fs_file_t bl654LogFileZfp;
-static int bl654LogSeekOffset = 0;
-static bool bl654LogFileOpened = false;
+#ifdef CONFIG_ESS_SENSOR
+static struct fs_file_t essLogFileZfp;
+static int essLogSeekOffset = 0;
+static bool essLogFileOpened = false;
 #endif
 
 #ifdef CONFIG_CONTACT_TRACING
@@ -109,7 +109,7 @@ int sdCardLogUpdateMaxSize(int Value)
 {
 	int ValueB = Value * B_PER_MB;
 	sensorLogMaxLength = ValueB;
-	bl654LogMaxLength = ValueB;
+	essLogMaxLength = ValueB;
 	batteryLogMaxLength = ValueB;
 	LOG_INF("Max log file size = %d MB", Value);
 
@@ -152,7 +152,7 @@ int sdCardLogGetSize(void)
 	int Ret = -1;
 
 	if (sdCardPresent == true) {
-		Status = fs_stat(bl654FilePath, &fileStat);
+		Status = fs_stat(essFilePath, &fileStat);
 		if (Status == 0) {
 			LogSize += fileStat.size;
 		}
@@ -244,8 +244,8 @@ int sdCardLogInit(void)
 #ifdef CONFIG_SCAN_FOR_BT510
 			fs_file_t_init(&sensorLogFileZfp);
 #endif
-#ifdef CONFIG_BL654_SENSOR
-			fs_file_t_init(&bl654LogFileZfp);
+#ifdef CONFIG_ESS_SENSOR
+			fs_file_t_init(&essLogFileZfp);
 #endif
 #ifdef CONFIG_CONTACT_TRACING
 			fs_file_t_init(&sdLogZfp);
@@ -258,8 +258,8 @@ int sdCardLogInit(void)
 	return ret;
 }
 
-#ifdef CONFIG_BL654_SENSOR
-int sdCardLogBL654Data(BL654SensorMsg_t *msg)
+#ifdef CONFIG_ESS_SENSOR
+int sdCardLogESSData(ESSSensorMsg_t *msg)
 {
 	int ret = -ENODEV;
 	int totalLength = 0;
@@ -271,26 +271,26 @@ int sdCardLogBL654Data(BL654SensorMsg_t *msg)
 		*	be sure to append to the end rather than overwrite from
 		*	the beginning.
 		*/
-		if (bl654LogFileOpened == false) {
-			ret = fs_stat(bl654FilePath, &fileStat);
+		if (essLogFileOpened == false) {
+			ret = fs_stat(essFilePath, &fileStat);
 			if (ret == 0) {
-				bl654LogSeekOffset = fileStat.size;
-				bl654LogFileOpened = true;
+				essLogSeekOffset = fileStat.size;
+				essLogFileOpened = true;
 			}
 		}
 
 		/* open and close the file every time to help ensure integrity
 		*	of the file system if power were to be lost in between writes.
 		*/
-		ret = fs_open(&bl654LogFileZfp, bl654FilePath,
+		ret = fs_open(&essLogFileZfp, essFilePath,
 			      FS_O_RDWR | FS_O_CREATE);
 		if (ret >= 0) {
 			totalLength = EVENT_MAX_STR_LEN + EVENT_FMT_CHAR_LEN;
 			logData = k_malloc(totalLength);
 			if (logData > 0) {
 				/* find the end of the file */
-				ret = fs_seek(&bl654LogFileZfp,
-					      bl654LogSeekOffset, 0);
+				ret = fs_seek(&essLogFileZfp,
+					      essLogSeekOffset, 0);
 
 				/* only try to write if the seek succeeded. */
 				if (ret >= 0) {
@@ -306,18 +306,18 @@ int sdCardLogBL654Data(BL654SensorMsg_t *msg)
 						 (uint32_t)(msg->pressurePa *
 							    10));
 
-					ret = fs_write(&bl654LogFileZfp,
+					ret = fs_write(&essLogFileZfp,
 						       logData,
 						       strlen(logData));
 
 					/* only update the offset if the write succeeded. */
 					if (ret >= 0) {
-						bl654LogSeekOffset +=
+						essLogSeekOffset +=
 							strlen(logData);
 						/* treat this as a circular buffer to limit log file growth */
-						if (bl654LogSeekOffset >
-						    bl654LogMaxLength) {
-							bl654LogSeekOffset = 0;
+						if (essLogSeekOffset >
+						    essLogMaxLength) {
+							essLogSeekOffset = 0;
 						}
 					}
 				}
@@ -325,7 +325,7 @@ int sdCardLogBL654Data(BL654SensorMsg_t *msg)
 				logData = 0;
 			}
 			/* close the file (this also flushes data to the physical media) */
-			ret = fs_close(&bl654LogFileZfp);
+			ret = fs_close(&essLogFileZfp);
 		}
 	}
 

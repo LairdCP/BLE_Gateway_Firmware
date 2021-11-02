@@ -100,7 +100,7 @@ config USE_SINGLE_AWS_TOPIC
         Laird Connectivity Cloud demo.
         When using a single topic [BT510] temperature data is sent to
         the gateway's topic vs. the individual sensor topic.
-        BL654 sensor data is always sent to the gateway topic.
+        BL654 (ESS) sensor data is always sent to the gateway topic.
 
 config AWS_CLEAR_SHADOW_ON_STARTUP
     bool "Null shadow state on first connection"
@@ -310,7 +310,7 @@ rsource "./common/Kconfig.lcz_motion_temperature"
 rsource "./coap/Kconfig"
 rsource "./contact_tracing/Kconfig"
 rsource "./http_fota/Kconfig"
-rsource "./bl654_sensor/Kconfig"
+rsource "./ess_sensor/Kconfig"
 rsource "./lwm2m/Kconfig"
 
 endif # USER_APPLICATION

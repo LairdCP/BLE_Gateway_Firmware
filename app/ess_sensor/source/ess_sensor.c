@@ -1,6 +1,7 @@
 /**
- * @file bl654_sensor.c
- * @brief Connects to BL654 Sensor and configures ESS service for notification.
+ * @file ess_sensor.c
+ * @brief Connects to ESS (BL654 Sensor) and configures ESS service for
+ * notifications.
  *
  * Copyright (c) 2020-2021 Laird Connectivity
  *
@@ -9,7 +10,7 @@
 
 #include <logging/log.h>
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(bl654_sensor, CONFIG_BL654_SENSOR_LOG_LEVEL);
+LOG_MODULE_REGISTER(ess_sensor, CONFIG_ESS_SENSOR_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -35,10 +36,10 @@ LOG_MODULE_REGISTER(bl654_sensor, CONFIG_BL654_SENSOR_LOG_LEVEL);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
-#define BL654_SENSOR_MIN_CONN_INTERVAL 80 /* in 1.25ms units, 80 = 100ms */
-#define BL654_SENSOR_MAX_CONN_INTERVAL 160 /* in 1.25ms units, 160 = 200ms */
-#define BL654_SENSOR_LATENCY 2
-#define BL654_SENSOR_TIMEOUT 400 /* in 10ms units, 400 = 4s */
+#define ESS_SENSOR_MIN_CONN_INTERVAL 80 /* in 1.25ms units, 80 = 100ms */
+#define ESS_SENSOR_MAX_CONN_INTERVAL 160 /* in 1.25ms units, 160 = 200ms */
+#define ESS_SENSOR_LATENCY 2
+#define ESS_SENSOR_TIMEOUT 400 /* in 10ms units, 400 = 4s */
 #define DISCOVER_SERVICES_DELAY_SECONDS 1
 
 #ifdef HAS_SECOND_BLUETOOTH_LED
@@ -119,8 +120,8 @@ static void sensor_aggregator(uint8_t sensor, int32_t reading);
 
 static bool process_device(struct bt_data *data, void *user_data);
 
-static void bl654_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
-				     uint8_t type, struct net_buf_simple *ad);
+static void ess_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
+				   uint8_t type, struct net_buf_simple *ad);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -156,19 +157,19 @@ static struct bt_uuid_16 last_searched_uuid;
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-void bl654_sensor_initialize(void)
+void ess_sensor_initialize(void)
 {
 	k_work_init_delayable(&discover_services_work,
 			      discover_services_work_callback);
 
 	bt_conn_cb_register(&conn_callbacks);
 
-	lcz_bt_scan_register(&scan_id, bl654_sensor_adv_handler);
+	lcz_bt_scan_register(&scan_id, ess_sensor_adv_handler);
 
 	set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
 }
 
-int bl654_sensor_disconnect(void)
+int ess_sensor_disconnect(void)
 {
 	int r = 0;
 
@@ -179,6 +180,7 @@ int bl654_sensor_disconnect(void)
 
 	return r;
 }
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
@@ -210,10 +212,10 @@ static bool process_device(struct bt_data *data, void *user_data)
 			bt_addr_le_to_str(addr, bt_addr, sizeof(bt_addr));
 			err = bt_conn_le_create(addr, BT_CONN_LE_CREATE_CONN,
 						BT_LE_CONN_PARAM(
-						BL654_SENSOR_MIN_CONN_INTERVAL,
-						BL654_SENSOR_MAX_CONN_INTERVAL,
-						BL654_SENSOR_LATENCY,
-						BL654_SENSOR_TIMEOUT),
+						ESS_SENSOR_MIN_CONN_INTERVAL,
+						ESS_SENSOR_MAX_CONN_INTERVAL,
+						ESS_SENSOR_LATENCY,
+						ESS_SENSOR_TIMEOUT),
 						&sensor_conn);
 
 			if (err == 0) {
@@ -232,8 +234,8 @@ static bool process_device(struct bt_data *data, void *user_data)
 	return true;
 }
 
-static void bl654_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
-				     uint8_t type, struct net_buf_simple *ad)
+static void ess_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
+				   uint8_t type, struct net_buf_simple *ad)
 {
 	/* Leave this function if already connected */
 	if (sensor_conn) {
@@ -568,10 +570,11 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	attr_set_string(ATTR_ID_sensorBluetoothAddress, addr, strlen(addr));
 
 	/* Wait some time before discovering services.
-	* After a connection the BL654 Sensor disables
-	* characteristic notifications.
-	* We dont want that to interfere with use enabling
-	* notifications when we discover characteristics */
+	 * After a connection the BL654 Sensor disables
+	 * characteristic notifications.
+	 * We dont want that to interfere with use enabling
+	 * notifications when we discover characteristics
+	 */
 	k_work_schedule(&discover_services_work,
 			K_SECONDS(DISCOVER_SERVICES_DELAY_SECONDS));
 
@@ -638,7 +641,7 @@ static void sensor_aggregator(uint8_t sensor, int32_t reading)
 	static int64_t bmeEventTime = 0;
 	/* On init, send first data immediately. */
 	static int64_t delta =
-		(CONFIG_BL654_SENSOR_SEND_TO_AWS_RATE_SECONDS * MSEC_PER_SEC);
+		(CONFIG_ESS_SENSOR_SEND_TO_AWS_RATE_SECONDS * MSEC_PER_SEC);
 
 	if (sensor == SENSOR_TYPE_TEMPERATURE) {
 		/* Divide by 100 to get xx.xxC format */
@@ -656,24 +659,24 @@ static void sensor_aggregator(uint8_t sensor, int32_t reading)
 
 	delta += k_uptime_delta(&bmeEventTime);
 	if (delta <
-	    (CONFIG_BL654_SENSOR_SEND_TO_AWS_RATE_SECONDS * MSEC_PER_SEC)) {
+	    (CONFIG_ESS_SENSOR_SEND_TO_AWS_RATE_SECONDS * MSEC_PER_SEC)) {
 		return;
 	}
 
 	if (updated_temperature && updated_humidity && updated_pressure) {
-		BL654SensorMsg_t *pMsg =
-			BP_TRY_TO_TAKE(sizeof(BL654SensorMsg_t));
+		ESSSensorMsg_t *pMsg =
+			BP_TRY_TO_TAKE(sizeof(ESSSensorMsg_t));
 		if (pMsg == NULL) {
 			return;
 		}
-		pMsg->header.msgCode = FMC_BL654_SENSOR_EVENT;
+		pMsg->header.msgCode = FMC_ESS_SENSOR_EVENT;
 		pMsg->header.rxId = FWK_ID_CLOUD;
 		pMsg->temperatureC = temperature;
 		pMsg->humidityPercent = humidity;
 		pMsg->pressurePa = pressure;
 
 #ifdef CONFIG_SD_CARD_LOG
-		sdCardLogBL654Data(pMsg);
+		sdCardLogESSData(pMsg);
 #endif
 
 		FRAMEWORK_MSG_SEND(pMsg);

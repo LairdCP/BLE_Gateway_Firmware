@@ -1,0 +1,19 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig ESS_SENSOR
+    bool "ESS (BL654 sensor board) support"
+
+if ESS_SENSOR
+
+config ESS_SENSOR_LOG_LEVEL
+    int "Log level for ESS module"
+    range 0 4
+    default 3
+
+config ESS_SENSOR_SEND_TO_AWS_RATE_SECONDS
+    int "The period at which to send ESS device data to AWS"
+    default 60
+    range 30 3600
+
+endif # ESS_SENSOR

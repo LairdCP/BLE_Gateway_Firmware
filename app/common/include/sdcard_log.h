@@ -15,7 +15,7 @@
 #include <zephyr/types.h>
 #include <stddef.h>
 
-#if defined(CONFIG_SCAN_FOR_BT510) || defined(CONFIG_BL654_SENSOR)
+#if defined(CONFIG_SCAN_FOR_BT510) || defined(CONFIG_ESS_SENSOR)
 #include "FrameworkIncludes.h"
 #include "lcz_sensor_adv_format.h"
 #endif
@@ -86,7 +86,7 @@ int sdCardLogBatteryData(void *data, int length);
 int sdCardLogAdEvent(LczSensorAdEvent_t *event);
 #endif
 
-#ifdef CONFIG_BL654_SENSOR
+#ifdef CONFIG_ESS_SENSOR
 /**
  * @brief this function writes data to the log. It will append data to
  *    the end of the file until the log limit is reached. when
@@ -100,7 +100,7 @@ int sdCardLogAdEvent(LczSensorAdEvent_t *event);
  *
  * @retval int - Write status - Values < 0 are errors, 0 = success.
  */
-int sdCardLogBL654Data(BL654SensorMsg_t *msg);
+int sdCardLogESSData(ESSSensorMsg_t *msg);
 #endif
 /**
  * @brief this function is called by the gateway JSON parser to set

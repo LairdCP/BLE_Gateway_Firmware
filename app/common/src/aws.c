@@ -421,8 +421,8 @@ done:
 	return rc;
 }
 
-/* BL654 Sensor with BME280 */
-int awsPublishBl654SensorData(float temperature, float humidity, float pressure)
+/* BL654 Sensor with BME280 or other ESS device */
+int awsPublishESSSensorData(float temperature, float humidity, float pressure)
 {
 	char msg[strlen(SHADOW_REPORTED_START) + strlen(SHADOW_TEMPERATURE) +
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_HUMIDITY) +

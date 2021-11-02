@@ -176,9 +176,9 @@ target_sources(app PRIVATE
 )
 endif()
 
-if(CONFIG_BL654_SENSOR)
-include_directories(${CMAKE_SOURCE_DIR}/bl654_sensor/include)
-target_sources(app PRIVATE ${CMAKE_SOURCE_DIR}/bl654_sensor/source/bl654_sensor.c)
+if(CONFIG_ESS_SENSOR)
+include_directories(${CMAKE_SOURCE_DIR}/ess_sensor/include)
+target_sources(app PRIVATE ${CMAKE_SOURCE_DIR}/ess_sensor/source/ess_sensor.c)
 endif()
 
 if (CONFIG_COAP_FOTA)

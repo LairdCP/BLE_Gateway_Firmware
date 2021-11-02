@@ -27,7 +27,7 @@ extern "C" {
  * @brief FOTA control point handler
  *
  * In preparation of BLE FOTA:
- * 1. close BL654 sensor connection
+ * 1. close ESS/BL654 sensor connection
  * 2. stop scanning
  * 3. Any in progress BT510 connection will be short and future
  * connections won't occur because of 2.

@@ -46,7 +46,7 @@ int awsDisconnect(void);
 int awsSendData(char *data, uint8_t *topic);
 int awsSendBinData(char *data, uint32_t len, uint8_t *topic);
 int awsPublishShadowPersistentData(void);
-int awsPublishBl654SensorData(float temperature, float humidity,
+int awsPublishESSSensorData(float temperature, float humidity,
 			      float pressure);
 int awsPublishHeartbeat(void);
 int awsSubscribe(uint8_t *topic, uint8_t subscribe);

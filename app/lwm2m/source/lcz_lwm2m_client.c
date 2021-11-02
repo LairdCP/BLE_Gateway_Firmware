@@ -51,23 +51,23 @@ LOG_MODULE_REGISTER(lwm2m_client, CONFIG_LCZ_LWM2M_LOG_LEVEL);
 
 enum create_state { CREATE_ALLOW = 0, CREATE_OK = 1, CREATE_FAIL = 2 };
 
-#define BL654_SENSOR_TEMPERATURE_PATH                                          \
+#define ESS_SENSOR_TEMPERATURE_PATH                                            \
 	STRINGIFY(IPSO_OBJECT_TEMP_SENSOR_ID)                                  \
-	"/" STRINGIFY(LWM2M_INSTANCE_BL654_SENSOR) "/" STRINGIFY(              \
+	"/" STRINGIFY(LWM2M_INSTANCE_ESS_SENSOR) "/" STRINGIFY(                \
 		SENSOR_VALUE_RID)
 
-#define BL654_SENSOR_GENERIC_PATH                                              \
+#define ESS_SENSOR_GENERIC_PATH                                                \
 	STRINGIFY(IPSO_OBJECT_TEMP_SENSOR_ID)                                  \
 	"/" STRINGIFY(LWM2M_INSTANCE_TEST) "/" STRINGIFY(SENSOR_VALUE_RID)
 
-#define BL654_SENSOR_HUMIDITY_PATH                                             \
+#define ESS_SENSOR_HUMIDITY_PATH                                               \
 	STRINGIFY(IPSO_OBJECT_HUMIDITY_SENSOR_ID)                              \
-	"/" STRINGIFY(LWM2M_INSTANCE_BL654_SENSOR) "/" STRINGIFY(              \
+	"/" STRINGIFY(LWM2M_INSTANCE_ESS_SENSOR) "/" STRINGIFY(                \
 		SENSOR_VALUE_RID)
 
-#define BL654_SENSOR_PRESSURE_PATH                                             \
+#define ESS_SENSOR_PRESSURE_PATH                                               \
 	STRINGIFY(IPSO_OBJECT_PRESSURE_ID)                                     \
-	"/" STRINGIFY(LWM2M_INSTANCE_BL654_SENSOR) "/" STRINGIFY(              \
+	"/" STRINGIFY(LWM2M_INSTANCE_ESS_SENSOR) "/" STRINGIFY(                \
 		SENSOR_VALUE_RID)
 
 /******************************************************************************/
@@ -82,7 +82,7 @@ static struct {
 	bool connected;
 	bool setup_complete;
 	struct {
-		enum create_state bl654_sensor;
+		enum create_state ess_sensor;
 		enum create_state board_temperature;
 	} cs;
 } lw;
@@ -100,9 +100,9 @@ static void rd_client_event(struct lwm2m_ctx *client,
 static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
 			 uint16_t res_inst_id, uint8_t *data, uint16_t data_len,
 			 bool last_block, size_t total_size);
-static int create_bl654_sensor_objects(void);
+static int create_ess_sensor_objects(void);
 static size_t lwm2m_str_size(const char *s);
-static int bl654_sensor_set_error_handler(int status, char *obj_inst_str);
+static int ess_sensor_set_error_handler(int status, char *obj_inst_str);
 static bool enable_bootstrap(void);
 
 /******************************************************************************/
@@ -153,59 +153,59 @@ int lwm2m_create_sensor_obj(struct lwm2m_sensor_obj_cfg *cfg)
 	return r;
 }
 
-int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
+int lwm2m_set_ess_sensor_data(float temperature, float humidity,
 				float pressure)
 {
 	int result = 0;
 	double d;
 
 	/* Don't keep trying to create objects after a failure */
-	if (lw.cs.bl654_sensor == CREATE_ALLOW) {
-		if (create_bl654_sensor_objects() == 0) {
-			lw.cs.bl654_sensor = CREATE_OK;
+	if (lw.cs.ess_sensor == CREATE_ALLOW) {
+		if (create_ess_sensor_objects() == 0) {
+			lw.cs.ess_sensor = CREATE_OK;
 		} else if (result != -EAGAIN) {
-			lw.cs.bl654_sensor = CREATE_FAIL;
+			lw.cs.ess_sensor = CREATE_FAIL;
 		}
 	}
 
-	if (lw.cs.bl654_sensor != CREATE_OK) {
+	if (lw.cs.ess_sensor != CREATE_OK) {
 		return -EPERM;
 	}
 
 #ifdef CONFIG_LWM2M_IPSO_TEMP_SENSOR
 	d = (double)temperature;
-	result = lwm2m_engine_set_float(BL654_SENSOR_TEMPERATURE_PATH, &d);
+	result = lwm2m_engine_set_float(ESS_SENSOR_TEMPERATURE_PATH, &d);
 	if (result < 0) {
-		return bl654_sensor_set_error_handler(
-			result, BL654_SENSOR_TEMPERATURE_PATH);
+		return ess_sensor_set_error_handler(
+			result, ESS_SENSOR_TEMPERATURE_PATH);
 	}
 #endif
 
 #ifdef CONFIG_LWM2M_IPSO_GENERIC_SENSOR
 	/* Temperature is used to test generic sensor */
 	d = (double)temperature;
-	result = lwm2m_engine_set_float(BL654_SENSOR_GENERIC_PATH, &d);
+	result = lwm2m_engine_set_float(ESS_SENSOR_GENERIC_PATH, &d);
 	if (result < 0) {
-		return bl654_sensor_set_error_handler(
-			result, BL654_SENSOR_GENERIC_PATH);
+		return ess_sensor_set_error_handler(
+			result, ESS_SENSOR_GENERIC_PATH);
 	}
 #endif
 
 #ifdef CONFIG_LWM2M_IPSO_HUMIDITY_SENSOR
 	d = (double)humidity;
-	result = lwm2m_engine_set_float(BL654_SENSOR_HUMIDITY_PATH, &d);
+	result = lwm2m_engine_set_float(ESS_SENSOR_HUMIDITY_PATH, &d);
 	if (result < 0) {
-		return bl654_sensor_set_error_handler(
-			result, BL654_SENSOR_HUMIDITY_PATH);
+		return ess_sensor_set_error_handler(
+			result, ESS_SENSOR_HUMIDITY_PATH);
 	}
 #endif
 
 #ifdef CONFIG_LWM2M_IPSO_PRESSURE_SENSOR
 	d = (double)pressure;
-	result = lwm2m_engine_set_float(BL654_SENSOR_PRESSURE_PATH, &d);
+	result = lwm2m_engine_set_float(ESS_SENSOR_PRESSURE_PATH, &d);
 	if (result < 0) {
-		return bl654_sensor_set_error_handler(
-			result, BL654_SENSOR_PRESSURE_PATH);
+		return ess_sensor_set_error_handler(
+			result, ESS_SENSOR_PRESSURE_PATH);
 	}
 #endif
 
@@ -615,7 +615,7 @@ static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
 	return 0;
 }
 
-static int create_bl654_sensor_objects(void)
+static int create_ess_sensor_objects(void)
 {
 	/* The BL654 Sensor contains a BME 280. */
 	int r;
@@ -623,7 +623,7 @@ static int create_bl654_sensor_objects(void)
 
 #ifdef CONFIG_LWM2M_IPSO_TEMP_SENSOR
 	cfg.type = IPSO_OBJECT_TEMP_SENSOR_ID;
-	cfg.instance = LWM2M_INSTANCE_BL654_SENSOR;
+	cfg.instance = LWM2M_INSTANCE_ESS_SENSOR;
 	cfg.skip_secondary = false;
 	cfg.units = LWM2M_TEMPERATURE_UNITS;
 	cfg.min = LWM2M_TEMPERATURE_MIN;
@@ -638,7 +638,7 @@ static int create_bl654_sensor_objects(void)
 #ifdef CONFIG_LWM2M_IPSO_GENERIC_SENSOR
 	/* temperature used for test */
 	cfg.type = IPSO_OBJECT_TEMP_SENSOR_ID;
-	cfg.instance = LWM2M_INSTANCE_BL654_SENSOR;
+	cfg.instance = LWM2M_INSTANCE_ESS_SENSOR;
 	cfg.skip_secondary = false;
 	cfg.units = LWM2M_TEMPERATURE_UNITS;
 	cfg.min = LWM2M_TEMPERATURE_MIN;
@@ -652,7 +652,7 @@ static int create_bl654_sensor_objects(void)
 
 #ifdef CONFIG_LWM2M_IPSO_HUMIDITY_SENSOR
 	cfg.type = IPSO_OBJECT_HUMIDITY_SENSOR_ID;
-	cfg.instance = LWM2M_INSTANCE_BL654_SENSOR;
+	cfg.instance = LWM2M_INSTANCE_ESS_SENSOR;
 	cfg.skip_secondary = false;
 	cfg.units = LWM2M_HUMIDITY_UNITS;
 	cfg.min = LWM2M_HUMIDITY_MIN;
@@ -666,7 +666,7 @@ static int create_bl654_sensor_objects(void)
 
 #ifdef CONFIG_LWM2M_IPSO_PRESSURE_SENSOR
 	cfg.type = IPSO_OBJECT_PRESSURE_ID;
-	cfg.instance = LWM2M_INSTANCE_BL654_SENSOR;
+	cfg.instance = LWM2M_INSTANCE_ESS_SENSOR;
 	cfg.skip_secondary = false;
 	cfg.units = LWM2M_PRESSURE_UNITS;
 	cfg.min = LWM2M_PRESSURE_MIN;
@@ -686,10 +686,10 @@ static size_t lwm2m_str_size(const char *s)
 	return strlen(s) + 1;
 }
 
-static int bl654_sensor_set_error_handler(int status, char *obj_inst_str)
+static int ess_sensor_set_error_handler(int status, char *obj_inst_str)
 {
 	if (status == -ENOENT) {
-		LOG_DBG("Object deletion by client not supported for BL654 Sensor: %s",
+		LOG_DBG("Object deletion by client not supported for ESS Sensor: %s",
 			obj_inst_str);
 	} else {
 		LOG_ERR("Unable to set %s: %d", obj_inst_str, status);

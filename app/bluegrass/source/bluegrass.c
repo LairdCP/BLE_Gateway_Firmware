@@ -60,7 +60,7 @@ static FwkMsgHandler_t sensor_publish_msg_handler;
 static FwkMsgHandler_t gateway_publish_msg_handler;
 static FwkMsgHandler_t subscription_msg_handler;
 static FwkMsgHandler_t get_accepted_msg_handler;
-static FwkMsgHandler_t bl654_sensor_msg_handler;
+static FwkMsgHandler_t ess_sensor_msg_handler;
 static FwkMsgHandler_t heartbeat_msg_handler;
 
 /******************************************************************************/
@@ -133,7 +133,7 @@ DispatchResult_t bluegrass_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	case FMC_GATEWAY_OUT:               return gateway_publish_msg_handler(pMsgRxer, pMsg);
 	case FMC_SUBSCRIBE:                 return subscription_msg_handler(pMsgRxer, pMsg);
 	case FMC_AWS_GET_ACCEPTED_RECEIVED: return get_accepted_msg_handler(pMsgRxer, pMsg);
-	case FMC_BL654_SENSOR_EVENT:        return bl654_sensor_msg_handler(pMsgRxer, pMsg);
+	case FMC_ESS_SENSOR_EVENT:          return ess_sensor_msg_handler(pMsgRxer, pMsg);
 	case FMC_AWS_HEARTBEAT:             return heartbeat_msg_handler(pMsgRxer, pMsg);
 	default:                            return DISPATCH_OK;
 	}
@@ -269,15 +269,15 @@ static DispatchResult_t get_accepted_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	return DISPATCH_OK;
 }
 
-static DispatchResult_t bl654_sensor_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+static DispatchResult_t ess_sensor_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 						 FwkMsg_t *pMsg)
 {
 	ARG_UNUSED(pMsgRxer);
-	BL654SensorMsg_t *pBmeMsg = (BL654SensorMsg_t *)pMsg;
+	ESSSensorMsg_t *pBmeMsg = (ESSSensorMsg_t *)pMsg;
 
-	awsPublishBl654SensorData(pBmeMsg->temperatureC,
-				  pBmeMsg->humidityPercent,
-				  pBmeMsg->pressurePa);
+	awsPublishESSSensorData(pBmeMsg->temperatureC,
+				pBmeMsg->humidityPercent,
+				pBmeMsg->pressurePa);
 
 	return DISPATCH_OK;
 }

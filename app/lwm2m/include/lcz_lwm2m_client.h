@@ -25,7 +25,7 @@ extern "C" {
 /******************************************************************************/
 /* clang-format off */
 #define	LWM2M_INSTANCE_BOARD        0
-#define	LWM2M_INSTANCE_BL654_SENSOR 1
+#define	LWM2M_INSTANCE_ESS_SENSOR   1
 #define	LWM2M_INSTANCE_TEST         2
 #define	LWM2M_INSTANCE_SENSOR_START 4
 /* clang-format on */
@@ -72,8 +72,8 @@ int lwm2m_client_init(void);
  *
  * @retval 0 on success, negative errno otherwise.
  */
-int lwm2m_set_bl654_sensor_data(float temperature, float humidity,
-				float pressure);
+int lwm2m_set_ess_sensor_data(float temperature, float humidity,
+			      float pressure);
 
 /**
  * @brief Create sensor object.  Object type must be enabled in Zephyr.

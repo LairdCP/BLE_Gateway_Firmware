@@ -17,7 +17,7 @@ config BL654_SENSOR_SEND_TO_AWS_RATE_SECONDS
     range 30 3600
 
 config BL654_SENSOR_NAME
-    string "The advertised name of the BL654 sensor (that is scanned for)"
+    string "The advertised name of the sensor (that is scanned for)"
     default "BL654 BME280 Sensor"
     help
         Any sensor with the ESS service should work

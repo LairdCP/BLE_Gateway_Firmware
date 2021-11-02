@@ -63,20 +63,20 @@ config CT_APP_TICK_RATE_SECONDS
     int "Tick rate for Contact Tracing app module"
     default 1
     help
-        Controls watchdog, AWS CT log publisher, and SD Log publisher.
+      Controls watchdog, AWS CT log publisher, and SD Log publisher.
 
 config CT_APP_SD_CARD_LOG_PUBLISH_RATE_SECONDS
     int "Publish rate for SD Card log"
     default 5
 
 config CT_ADV_WATCHDOG_SECONDS
-    int "Maximum amount of time that is allowed for not receiving adverts before reset"
+    int "Max time that is allowed for not receiving adverts before reset"
     default 3600
     help
-        Disabled when 0
+      Disabled when 0
 
 config CT_ADV_LOG_FILTER_CNT
-    int "After this many advertisements are seen a debug message will be printed"
+    int "After this many adverts a debug message will be printed"
     depends on CT_BLE_LOG_LEVEL >= 3
     default 1000
 
@@ -87,21 +87,22 @@ config CT_CONN_INACTIVITY_TICK_RATE_SECONDS
         Disabled when 0
 
 config CT_CONN_INACTIVITY_WATCHDOG_TIMEOUT
-    int "Number of seconds of inactivity required to disconnect CT sensor"
+    int "Seconds of inactivity required to disconnect CT sensor"
     default 120
 
 config CT_CONNECTABLE_ADV_DURATION_SECONDS
     int "Duration to advertise as connectable when button is pressed"
     default 30
     help
-        Disabled when 0 (always advertise as connectable)
+      Disabled when 0 (always advertise as connectable)
 
 config CT_AD_RATE_MS
     int "Contact tracing advertisement rate"
     range 100 10000
     default 1000
     help
-        Default is to update advert every second to keep epoch time up to date
+      Default is to update advert every second to keep epoch time
+      up to date
 
 config CT_FS_INTERCEPT_LOG_LEVEL
     int "Contact Tracing File System Intercept module log level"
@@ -113,10 +114,7 @@ config CT_AWS_BUF_SIZE
     default 2048
 
 config CT_LOG_DOWNLOAD_BUFFER_SIZE
-    int "Size of the buffer used to hold logs downloaded from Contact Tracing sensors"
+    int "Buffer size for logs downloaded from Contact Tracing sensors"
     default 1152
-
-#define LOG_DOWNLOAD_BUFFER_SIZE 1152
-
 
 endif # CONTACT_TRACING

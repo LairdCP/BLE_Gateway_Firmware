@@ -11,7 +11,8 @@ config BLE_INIT_PRIORITY
     int "SYS_INIT priority (Application Level) of BLE Enable"
     default 20
     help
-        This should be initialized early so that other modules can call Bluetooth functions.
+        This should be initialized early so that other modules can call
+        Bluetooth functions.
 
 config BLE_LOG_LEVEL
     int "Log level for BLE module"
@@ -19,7 +20,7 @@ config BLE_LOG_LEVEL
     default 3
 
 config BLE_NUMBER_OF_DIGITS_TO_USE_IN_DEV_NAME
-    int "The number of digits of that are used in ble device name and advertisement"
+    int "The number of digits in ble device name and advertisement"
     default 7
 
 endif # BLE

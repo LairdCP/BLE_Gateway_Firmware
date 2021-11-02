@@ -31,7 +31,8 @@ config SINGLE_PERIPHERAL_ADV_DURATION_SECONDS
     int "Seconds to advertise, 0 is indefinite"
     default 30
     help
-        This value is also used to restart advertising after a disconnect.
+        This value is also used to restart advertising after a
+        disconnect.
 
 config SINGLE_PERIPHERAL_PAIR
     bool "Enable security callbacks and security timeout"

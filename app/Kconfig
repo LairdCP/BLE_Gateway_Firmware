@@ -98,8 +98,8 @@ config USE_SINGLE_AWS_TOPIC
     help
         PSM mode doesn't easily support receiving information from the
         Laird Connectivity Cloud demo.
-        When using a single topic [BT510] temperature data is sent to the
-        gateway's topic vs. the individual sensor topic.
+        When using a single topic [BT510] temperature data is sent to
+        the gateway's topic vs. the individual sensor topic.
         BL654 sensor data is always sent to the gateway topic.
 
 config AWS_CLEAR_SHADOW_ON_STARTUP
@@ -142,7 +142,7 @@ config SENSOR_LOG_MAX_SIZE
         Limited by MQTT or modem.
 
 config SENSOR_SUBSCRIPTION_DELAY_SECONDS
-    int "Delay after greenlist before subscription to the delta/get topics."
+    int "Delay after greenlist before subscription to delta/get topics."
     default 10
     range 6 60
     help

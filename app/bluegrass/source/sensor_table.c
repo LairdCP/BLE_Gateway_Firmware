@@ -193,8 +193,7 @@ static uint32_t GetFlag(uint16_t Value, uint32_t Mask, uint8_t Position);
 
 static void PublishToGetAccepted(SensorEntry_t *pEntry);
 
-static bool AcceptBt510Rsp(uint8_t productId);
-static bool AcceptBt510Ad(uint8_t recordType);
+static bool IsBt510(uint8_t productId);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -234,7 +233,7 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 		if (nameHandle.pPayload != NULL) {
 			LczSensorRspWithHeader_t *pRspPacket =
 				(LczSensorRspWithHeader_t *)manHandle.pPayload;
-			if (AcceptBt510Rsp(pRspPacket->rsp.productId)) {
+			if (IsBt510(pRspPacket->rsp.productId)) {
 				tableIndex =
 					AddByScanResponse(pAddr, &nameHandle,
 							  &pRspPacket->rsp,
@@ -252,17 +251,15 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 			FRAMEWORK_DEBUG_ASSERT(
 				memcmp(sensorTable[tableIndex].ad.addr.val,
 				       pAddr->a.val, sizeof(bt_addr_t)) == 0);
-		} else {
-			/* Try to populate table with sensor (without name and scan rsp) */
-			tableIndex = AddByAddress(&pAddr->a);
 		}
+		/* Filtering out the BT610 requires using the product ID.
+		 * Sensors cannot be added to the table using the advertisement.
+		 */
 
 		if (tableIndex < CONFIG_SENSOR_TABLE_SIZE) {
 			LczSensorAdEvent_t *pAd =
 				(LczSensorAdEvent_t *)manHandle.pPayload;
-			if (AcceptBt510Ad(pAd->recordType)) {
-				AdEventHandler(pAd, rssi, tableIndex);
-			}
+			AdEventHandler(pAd, rssi, tableIndex);
 		}
 	}
 
@@ -272,8 +269,7 @@ void SensorTable_AdvertisementHandler(const bt_addr_le_t *pAddr, int8_t rssi,
 		LczSensorAdCoded_t *pCoded =
 			(LczSensorAdCoded_t *)manHandle.pPayload;
 		if (nameHandle.pPayload != NULL) {
-			if (AcceptBt510Ad(pCoded->ad.recordType) &&
-			    AcceptBt510Rsp(pCoded->rsp.productId)) {
+			if (IsBt510(pCoded->rsp.productId)) {
 				tableIndex = AddByScanResponse(
 					pAddr, &nameHandle, &pCoded->rsp, rssi);
 
@@ -1459,20 +1455,9 @@ static void PublishToGetAccepted(SensorEntry_t *pEntry)
  * Filter out BT610s because they can't be configured
  * and the current shadow format doesn't support them.
  */
-
-static bool AcceptBt510Rsp(uint8_t productId)
+static bool IsBt510(uint8_t productId)
 {
 	if (productId == BT510_PRODUCT_ID) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-static bool AcceptBt510Ad(uint8_t recordType)
-{
-	if (recordType < SENSOR_EVENT_TEMPERATURE_1 ||
-	    recordType >= SENSOR_EVENT_MOVEMENT_END) {
 		return true;
 	} else {
 		return false;

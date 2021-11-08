@@ -263,6 +263,13 @@ void gateway_fsm_network_init_complete_callback(void)
 
 void gateway_fsm_network_connected_callback(void)
 {
+#ifdef CONFIG_MODEM_HL7800
+	if (*(uint8_t *)attr_get_quasi_static(ATTR_ID_lteRat) == LTE_RAT_CAT_M1)
+#endif
+	{
+		LCZ_MEMFAULT_POST_DATA();
+	}
+
 #ifdef CONFIG_LWM2M
 	int rc;
 
@@ -271,8 +278,6 @@ void gateway_fsm_network_connected_callback(void)
 		LOG_ERR("LwM2M init [%d]", rc);
 	}
 #endif
-
-	LCZ_MEMFAULT_POST_DATA();
 
 	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED,
 					   FMC_NETWORK_CONNECTED);
@@ -433,8 +438,8 @@ static void configure_leds(void)
 		{ RED_LED, LED3_DEV, LED3, LED_ACTIVE_HIGH },
 		{ GREEN_LED2, LED4_DEV, LED4, LED_ACTIVE_HIGH }
 	};
-#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) || \
-      defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
+#elif defined(CONFIG_BOARD_BL5340_DVK_CPUAPP) ||                               \
+	defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
 	struct lcz_led_configuration c[] = {
 		{ BLUE_LED1, LED1_DEV, LED1, LED_ACTIVE_LOW },
 		{ BLUE_LED2, LED2_DEV, LED2, LED_ACTIVE_LOW },

@@ -72,7 +72,8 @@ static struct {
 	bool initialized;
 	int scan_user_id;
 	uint32_t ads;
-	uint32_t sensor_ads;
+	uint32_t legacy_ads;
+	uint32_t coded_ads;
 	uint32_t accepted_ads;
 	uint8_t sensor_count;
 	struct lwm2m_sensor_table table[CONFIG_LCZ_LWM2M_SENSOR_MAX];
@@ -161,12 +162,12 @@ static void ad_handler(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
 	ls.ads += 1;
 
 	if (lcz_sensor_adv_match_1m(&handle)) {
-		ls.sensor_ads += 1;
+		ls.legacy_ads += 1;
 		ad_filter((LczSensorAdEvent_t *)handle.pPayload, rssi);
 	}
 
 	if (lcz_sensor_adv_match_coded(&handle)) {
-		ls.sensor_ads += 1;
+		ls.coded_ads += 1;
 		/* The coded phy contains the TLVs of the 1M ad and scan response */
 		LczSensorAdCoded_t *coded =
 			(LczSensorAdCoded_t *)handle.pPayload;

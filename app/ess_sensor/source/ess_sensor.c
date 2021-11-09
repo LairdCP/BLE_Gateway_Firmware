@@ -272,6 +272,11 @@ static bool process_device(struct bt_data *data, void *user_data)
 static void ess_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 				   uint8_t type, struct net_buf_simple *ad)
 {
+	/* If the ad is processed by multiple users, then it must be cloned
+	 * because bt_data_parse modifies then net buf.
+	 */
+	struct net_buf_simple clone;
+
 	/* Leave this function if already connected */
 	if (sensor_conn) {
 		return;
@@ -285,7 +290,8 @@ static void ess_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 	}
 
 	/* Process device services */
-	bt_data_parse(ad, process_device, (void *)addr);
+	net_buf_simple_clone(ad, &clone);
+	bt_data_parse(&clone, process_device, (void *)addr);
 }
 
 static void discover_services_work_callback(struct k_work *work)

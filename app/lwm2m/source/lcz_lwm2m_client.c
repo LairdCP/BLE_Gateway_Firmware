@@ -161,7 +161,8 @@ int lwm2m_set_ess_sensor_data(float temperature, float humidity,
 
 	/* Don't keep trying to create objects after a failure */
 	if (lw.cs.ess_sensor == CREATE_ALLOW) {
-		if (create_ess_sensor_objects() == 0) {
+		result = create_ess_sensor_objects();
+		if (result == 0) {
 			lw.cs.ess_sensor = CREATE_OK;
 		} else if (result != -EAGAIN) {
 			lw.cs.ess_sensor = CREATE_FAIL;
@@ -617,7 +618,7 @@ static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
 static int create_ess_sensor_objects(void)
 {
 	/* The BL654 Sensor contains a BME 280. */
-	int r;
+	int r = -EPERM;
 	struct lwm2m_sensor_obj_cfg cfg;
 
 #ifdef CONFIG_LWM2M_IPSO_TEMP_SENSOR

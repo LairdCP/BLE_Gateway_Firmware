@@ -118,6 +118,10 @@ static void discover_failed_handler(struct bt_conn *conn, int err);
 
 static void sensor_aggregator(uint8_t sensor, int32_t reading);
 
+static bool process_device_uuid(struct bt_data *data);
+
+static bool process_device_name(struct bt_data *data);
+
 static bool process_device(struct bt_data *data, void *user_data);
 
 static void ess_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
@@ -184,51 +188,82 @@ int ess_sensor_disconnect(void)
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
+static bool process_device_uuid(struct bt_data *data)
+{
+	uint16_t uuid;
+	uint8_t i = 0;
+
+	while (i < data->data_len) {
+		memcpy(&uuid, &data->data[i], sizeof(uuid));
+		i += sizeof(uuid);
+
+		if (sys_le16_to_cpu(uuid) == BT_UUID_ESS_VAL) {
+			/* This is the ESS UUID we wanted */
+			return true;
+		}
+	}
+
+	/* ESS UUID not found */
+	return false;
+}
+
+static bool process_device_name(struct bt_data *data)
+{
+	if (data->data_len == (sizeof(
+		CONFIG_ESS_SENSOR_LEGACY_BL654_SENSOR_NAME) - 1)) {
+		/* Size matches, compare name */
+		if (memcmp(data->data, CONFIG_ESS_SENSOR_LEGACY_BL654_SENSOR_NAME,
+		    (sizeof(
+			CONFIG_ESS_SENSOR_LEGACY_BL654_SENSOR_NAME) - 1)) == 0) {
+			/* Name matches, we have found our target device */
+			return true;
+		}
+	}
+	return false;
+}
+
 static bool process_device(struct bt_data *data, void *user_data)
 {
 	bt_addr_le_t *addr = user_data;
 	char bt_addr[BT_ADDR_LE_STR_LEN];
-	uint16_t uuid;
-	uint8_t i;
 	int err;
+	bool ess_device = false;
 
-	/* Check 16-bit UUIDs for ESS UUID */
+	/* Check 16-bit UUIDs for ESS UUID and device name for legacy BL654
+	 * sensor board
+	 */
 	if ((data->type == BT_DATA_UUID16_SOME || data->type ==
 	     BT_DATA_UUID16_ALL) && (data->data_len % sizeof(uint16_t) == 0)) {
-		i = 0;
-		while (i < data->data_len) {
-			memcpy(&uuid, &data->data[i], sizeof(uuid));
-			i += sizeof(uuid);
+		ess_device = process_device_uuid(data);
+	} else if ((data->type == BT_DATA_NAME_SHORTENED || data->type ==
+		    BT_DATA_NAME_COMPLETE) && data->data_len > 1) {
+		ess_device = process_device_name(data);
+	}
 
-			if (sys_le16_to_cpu(uuid) != BT_UUID_ESS_VAL) {
-				/* This isn't the ESS UUID */
-				continue;
-			}
+	if (ess_device == true) {
+		/* ESS UUID found! Can't connect while scanning */
+		lcz_bt_scan_stop(scan_id);
 
-			/* ESS UUID found! Can't connect while scanning */
-			lcz_bt_scan_stop(scan_id);
+		/* Connect to device */
+		bt_addr_le_to_str(addr, bt_addr, sizeof(bt_addr));
+		err = bt_conn_le_create(addr, BT_CONN_LE_CREATE_CONN,
+					BT_LE_CONN_PARAM(
+					ESS_SENSOR_MIN_CONN_INTERVAL,
+					ESS_SENSOR_MAX_CONN_INTERVAL,
+					ESS_SENSOR_LATENCY,
+					ESS_SENSOR_TIMEOUT),
+					&sensor_conn);
 
-			/* Connect to device */
-			bt_addr_le_to_str(addr, bt_addr, sizeof(bt_addr));
-			err = bt_conn_le_create(addr, BT_CONN_LE_CREATE_CONN,
-						BT_LE_CONN_PARAM(
-						ESS_SENSOR_MIN_CONN_INTERVAL,
-						ESS_SENSOR_MAX_CONN_INTERVAL,
-						ESS_SENSOR_LATENCY,
-						ESS_SENSOR_TIMEOUT),
-						&sensor_conn);
-
-			if (err == 0) {
-				LOG_INF("Attempting to connect to ESS device %s",
-					log_strdup(bt_addr));
-			} else {
-				LOG_ERR("Failed to connect to ESS device %s err [%d]",
-				log_strdup(bt_addr), err);
-				set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
-			}
-
-			return false;
+		if (err == 0) {
+			LOG_INF("Attempting to connect to ESS device %s",
+				log_strdup(bt_addr));
+		} else {
+			LOG_ERR("Failed to connect to ESS device %s err [%d]",
+			log_strdup(bt_addr), err);
+			set_ble_state(CENTRAL_STATE_FINDING_DEVICE);
 		}
+
+		return false;
 	}
 
 	return true;
@@ -244,7 +279,8 @@ static void ess_sensor_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 
 	/* We're only interested in connectable events */
 	if (type != BT_GAP_ADV_TYPE_ADV_IND &&
-	    type != BT_GAP_ADV_TYPE_ADV_DIRECT_IND) {
+	    type != BT_GAP_ADV_TYPE_ADV_DIRECT_IND &&
+	    type != BT_GAP_ADV_TYPE_SCAN_RSP) {
 		return;
 	}
 

@@ -10,7 +10,7 @@ menuconfig CONTACT_TRACING
     depends on LCZ_MCUMGR_CMD_FS_MGMT
     depends on !LWM2M
     depends on !SCAN_FOR_BT510
-    depends on !BL654_SENSOR
+    depends on !ESS_SENSOR
     depends on !SINGLE_PERIPHERAL
     depends on SHELL_BACKEND_DUMMY || SHELL_BACKEND_SERIAL
     select CRYPTO

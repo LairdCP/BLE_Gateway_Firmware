@@ -507,7 +507,6 @@ static int lwm2m_setup(const char *id)
 	lwm2m_engine_register_post_write_callback("3311/0/5850", led_on_off_cb);
 	/* Delete unused optional resources */
 	lwm2m_engine_delete_res_inst("3311/0/5851/0");
-	lwm2m_engine_delete_res_inst("3311/0/5852/0");
 	lwm2m_engine_delete_res_inst("3311/0/5805/0");
 	lwm2m_engine_delete_res_inst("3311/0/5820/0");
 	lwm2m_engine_delete_res_inst("3311/0/5706/0");

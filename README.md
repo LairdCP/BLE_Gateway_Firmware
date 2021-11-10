@@ -1,4 +1,4 @@
-[![Laird Connectivity](docs/images/LairdConnnectivityLogo_Horizontal_RGB.png)](https://www.lairdconnect.com/)
+[![Laird Connectivity](https://lairdcp.github.io/assets/images/site/logo-rgb-sm.png)](https://www.lairdconnect.com/)
 
 > **WARNING:** This is a Zephyr-based repository, **DO NOT** `git clone` this repo. To clone and build the project properly, please see the instructions in the [Pinnacle 100 Firmware Manifest](https://github.com/LairdCP/Pinnacle-100-Firmware-Manifest) repository for Pinnacle 100/MG100 or [BL5340 Firmware Manifest](https://github.com/LairdCP/BL5340_Firmware_Manifest) repository for BL5340.
 

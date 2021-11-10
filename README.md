@@ -6,4 +6,4 @@
 
 # BLE Gateway Firmware
 
-Documentation for the BLE Gateway Firmware is [HERE!](https://lairdcp.github.io/guides/)
+Documentation for the BLE Gateway Firmware is [HERE!](https://lairdcp.github.io/guides/ble-gateway-firmware/1.0/Introduction.html)

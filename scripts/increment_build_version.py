@@ -36,11 +36,16 @@ def increment_build_version(argv):
     """
     logger = logging.getLogger('increment_build_version')
 
-    if (len(argv)-1) != 1:
-        logger.error("File name required")
+    if (len(argv)-1) == 0:
+        logger.error("source version file name required")
         return
     else:
         file_name = argv[1]
+
+    if (len(argv)-1) == 2:
+        output_name = argv[2]
+    else:
+        output_name = "version.txt"
 
     major = -1
     minor = -1
@@ -82,7 +87,7 @@ def increment_build_version(argv):
 
     # A '+' is used as a delimiter between version and build_id by memfault.
     # It isn't added here because version is also used for mcuboot version.
-    with open("version.txt", 'w') as fout:
+    with open(output_name, 'w') as fout:
         fout.write("version=" + str(major) + "." +
                    str(minor) + "." + str(build))
 

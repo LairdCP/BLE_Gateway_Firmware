@@ -16,12 +16,15 @@ LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 #include <kernel.h>
 
 #include "aws.h"
-#include "sensor_task.h"
-#include "sensor_table.h"
 #include "lte.h"
 #include "lcz_memfault.h"
 #include "led_configuration.h"
 #include "attr.h"
+
+#ifdef CONFIG_SENSOR_TASK
+#include "sensor_task.h"
+#include "sensor_table.h"
+#endif
 
 #ifdef CONFIG_CONTACT_TRACING
 #include "ct_ble.h"
@@ -243,6 +246,7 @@ static DispatchResult_t gateway_publish_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 static DispatchResult_t subscription_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 						 FwkMsg_t *pMsg)
 {
+#ifdef CONFIG_SENSOR_TASK
 	ARG_UNUSED(pMsgRxer);
 	SubscribeMsg_t *pSubMsg = (SubscribeMsg_t *)pMsg;
 	int r;
@@ -253,6 +257,11 @@ static DispatchResult_t subscription_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	FRAMEWORK_MSG_REPLY(pSubMsg, FMC_SUBSCRIBE_ACK);
 
 	return DISPATCH_DO_NOT_FREE;
+#else
+	ARG_UNUSED(pMsgRxer);
+	ARG_UNUSED(pMsg);
+	return DISPATCH_OK;
+#endif
 }
 
 static DispatchResult_t get_accepted_msg_handler(FwkMsgReceiver_t *pMsgRxer,
@@ -270,13 +279,12 @@ static DispatchResult_t get_accepted_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 }
 
 static DispatchResult_t ess_sensor_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-						 FwkMsg_t *pMsg)
+					       FwkMsg_t *pMsg)
 {
 	ARG_UNUSED(pMsgRxer);
 	ESSSensorMsg_t *pBmeMsg = (ESSSensorMsg_t *)pMsg;
 
-	awsPublishESSSensorData(pBmeMsg->temperatureC,
-				pBmeMsg->humidityPercent,
+	awsPublishESSSensorData(pBmeMsg->temperatureC, pBmeMsg->humidityPercent,
 				pBmeMsg->pressurePa);
 
 	return DISPATCH_OK;

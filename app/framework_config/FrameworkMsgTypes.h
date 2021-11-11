@@ -23,6 +23,14 @@ extern "C" {
 /******************************************************************************/
 /* Project Specific Message Types                                             */
 /******************************************************************************/
+#ifndef CONFIG_AWS_TOPIC_MAX_SIZE
+#define CONFIG_AWS_TOPIC_MAX_SIZE 64
+#endif
+
+#ifndef CONFIG_SENSOR_MAX_AD_SIZE
+#define CONFIG_SENSOR_MAX_AD_SIZE 31
+#endif
+
 typedef struct JsonMsg {
 	FwkMsgHeader_t header;
 	size_t size; /** number of bytes */

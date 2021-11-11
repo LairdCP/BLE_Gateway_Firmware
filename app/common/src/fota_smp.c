@@ -21,9 +21,12 @@ LOG_MODULE_REGISTER(fota_smp, CONFIG_LOG_LEVEL_FOTA_SMP);
 #include "ess_sensor.h"
 #endif
 
+#ifdef CONFIG_LCZ_BT_SCAN
+#include "lcz_bt_scan.h"
+#endif
+
 #include "file_system_utilities.h"
 #include "attr.h"
-#include "lcz_bt_scan.h"
 #include "gateway_fsm.h"
 
 #include "fota_smp.h"
@@ -43,7 +46,9 @@ static bool modem_fota_busy;
 
 static bool fota_smp_initialized;
 
+#ifdef CONFIG_LCZ_BT_SCAN
 static int scan_user_id = -1;
+#endif
 
 static struct k_work_delayable prepare_timeout;
 static bool ble_prepared;
@@ -61,8 +66,10 @@ static void fota_set_size(ssize_t size);
 static void fota_modem_start(void);
 #endif
 
+#ifdef CONFIG_LCZ_BT_SCAN
 static void unused_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 			       uint8_t type, struct net_buf_simple *ad);
+#endif
 
 static void prepare_timeout_handler(struct k_work *work);
 
@@ -75,9 +82,11 @@ void fota_smp_cmd_handler(void)
 	uint8_t command = fota_get_cmd();
 
 	if (!fota_smp_initialized) {
+#ifdef CONFIG_LCZ_BT_SCAN
 		if (!lcz_bt_scan_register(&scan_user_id, unused_adv_handler)) {
 			LOG_ERR("Unable to register scan user for FOTA SMP module");
 		}
+#endif
 
 		k_work_init_delayable(&prepare_timeout,
 				      prepare_timeout_handler);
@@ -107,7 +116,9 @@ void fota_smp_cmd_handler(void)
 
 	case FOTA_CONTROL_POINT_BLE_PREPARE:
 		ble_prepared = true;
+#ifdef CONFIG_LCZ_BT_SCAN
 		lcz_bt_scan_stop(scan_user_id);
+#endif
 
 #ifdef CONFIG_ESS_SENSOR
 		r = ess_sensor_disconnect();
@@ -123,7 +134,9 @@ void fota_smp_cmd_handler(void)
 
 	case FOTA_CONTROL_POINT_BLE_ABORT:
 		ble_prepared = false;
+#ifdef CONFIG_LCZ_BT_SCAN
 		lcz_bt_scan_resume(scan_user_id);
+#endif
 		fota_set_status(FOTA_STATUS_SUCCESS);
 		k_work_cancel_delayable(&prepare_timeout);
 		break;
@@ -260,6 +273,7 @@ static uint8_t fota_get_cmd(void)
 			       FOTA_CONTROL_POINT_NOP);
 }
 
+#ifdef CONFIG_LCZ_BT_SCAN
 /* Ads aren't processed by this task, but scanning can be stopped before FOTA. */
 static void unused_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 			       uint8_t type, struct net_buf_simple *ad)
@@ -271,6 +285,7 @@ static void unused_adv_handler(const bt_addr_le_t *addr, int8_t rssi,
 
 	return;
 }
+#endif
 
 static void prepare_timeout_handler(struct k_work *work)
 {

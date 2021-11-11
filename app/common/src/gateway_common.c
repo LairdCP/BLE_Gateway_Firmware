@@ -33,6 +33,7 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 #include "file_system_utilities.h"
 #include "gateway_fsm.h"
 #include "lcz_qrtc.h"
+#include "lcz_nrf_reset_reason.h"
 
 #ifdef CONFIG_LCZ_POWER
 #include "laird_power.h"
@@ -130,7 +131,7 @@ static void reboot_handler(void);
 static void configure_sd_card(void);
 static void advertise_on_startup(void);
 
-#ifndef CONFIG_CONTACT_TRACING
+#ifdef CONFIG_SINGLE_PERIPHERAL
 static int adv_on_button_isr(void);
 #endif
 
@@ -184,7 +185,9 @@ int configure_app(void)
 	bluegrass_initialize();
 #endif
 
+#ifdef CONFIG_LCZ_BLE_DIS
 	dis_initialize(APP_VERSION_STRING);
+#endif
 
 #ifdef CONFIG_FOTA_SERVICE
 	fota_init();
@@ -253,7 +256,9 @@ int configure_app(void)
 void gateway_fsm_network_init_complete_callback(void)
 {
 #ifdef CONFIG_MODEM_HL7800
+#ifdef CONFIG_BT
 	ble_update_name(attr_get_quasi_static(ATTR_ID_gatewayId));
+#endif
 #endif
 
 #ifdef CONFIG_CONTACT_TRACING
@@ -454,17 +459,19 @@ static void configure_leds(void)
 
 static void configure_button(void)
 {
-#ifdef CONFIG_CONTACT_TRACING
-	static const button_config_t BUTTON_CONFIG[] = {
-		{ 50, 0, ct_adv_on_button_isr }
-	};
-#else
+#if defined(CONFIG_SINGLE_PERIPHERAL)
 	static const button_config_t BUTTON_CONFIG[] = {
 		{ 50, 0, adv_on_button_isr }
 	};
+#elif defined(CONFIG_CONTACT_TRACING)
+	static const button_config_t BUTTON_CONFIG[] = {
+		{ 50, 0, ct_adv_on_button_isr }
+	};
 #endif
 
+#if defined(CONFIG_SINGLE_PERIPHERAL) || defined(CONFIG_CONTACT_TRACING)
 	button_initialize(BUTTON_CONFIG, ARRAY_SIZE(BUTTON_CONFIG), NULL);
+#endif
 }
 
 static void reset_reason_cleared_by_memfault_handler(void)
@@ -476,9 +483,8 @@ static void reset_reason_cleared_by_memfault_handler(void)
 
 static void reset_reason_not_cleared_by_memfault_handler(void)
 {
-	uint32_t reset_reason = lbt_get_and_clear_nrf52_reset_reason_register();
-	const char *reset_str =
-		lbt_get_nrf52_reset_reason_string_from_register(reset_reason);
+	uint32_t reset_reason = lcz_nrf_reset_reason_get_and_clear_register();
+	const char *reset_str = lcz_nrf_reset_reason_get_string(reset_reason);
 
 	attr_set_string(ATTR_ID_resetReason, reset_str, strlen(reset_str));
 
@@ -496,7 +502,7 @@ static void reset_reason_handler(void)
 	}
 }
 
-#ifndef CONFIG_CONTACT_TRACING
+#ifdef CONFIG_SINGLE_PERIPHERAL
 static int adv_on_button_isr(void)
 {
 	single_peripheral_start_advertising();
@@ -511,9 +517,9 @@ static int adv_on_button_isr(void)
  */
 static void advertise_on_startup(void)
 {
-#ifdef CONFIG_CONTACT_TRACING
+#if defined CONFIG_CONTACT_TRACING
 	ct_adv_on_button_isr();
-#else
+#elif defined CONFIG_SINGLE_PERIPHERAL
 	adv_on_button_isr();
 #endif
 }

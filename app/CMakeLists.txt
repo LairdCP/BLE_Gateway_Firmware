@@ -40,12 +40,15 @@ target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/main.c
     ${CMAKE_SOURCE_DIR}/common/src/jsmn_json.c
     ${CMAKE_SOURCE_DIR}/common/src/button.c
-    ${CMAKE_SOURCE_DIR}/common/src/ble.c
     ${CMAKE_SOURCE_DIR}/common/src/lcz_certs.c
     ${CMAKE_SOURCE_DIR}/common/src/gateway_common.c
     ${CMAKE_SOURCE_DIR}/common/src/control_task.c
     ${CMAKE_SOURCE_DIR}/common/src/gateway_fsm.c
     ${CMAKE_SOURCE_DIR}/common/src/fota_smp.c
+)
+
+target_sources_ifdef(CONFIG_BT app PRIVATE
+    ${CMAKE_SOURCE_DIR}/common/src/ble.c
 )
 
 target_sources_ifdef(CONFIG_MODEM_HL7800 app PRIVATE

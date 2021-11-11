@@ -25,6 +25,8 @@ LOG_MODULE_REGISTER(sensor_gateway_parser,
 #include <stdbool.h>
 
 #include "aws.h"
+#include "shadow_builder.h"
+#include "FrameworkIncludes.h"
 
 #ifdef CONFIG_BOARD_MG100
 #include "lairdconnect_battery.h"
@@ -41,16 +43,18 @@ LOG_MODULE_REGISTER(sensor_gateway_parser,
 #include "jsmn.h"
 #include "jsmn_json.h"
 
+#ifdef CONFIG_SENSOR_TASK
 #include "sensor_cmd.h"
 #include "sensor_table.h"
-#include "shadow_builder.h"
+#endif
+
 #ifdef CONFIG_COAP_FOTA
 #include "coap_fota_shadow.h"
 #endif
+
 #ifdef CONFIG_HTTP_FOTA
 #include "http_fota_shadow.h"
 #endif
-#include "FrameworkIncludes.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */

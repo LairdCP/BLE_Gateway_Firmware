@@ -103,7 +103,7 @@
     {
       "label": "build contact tracing",
       "type": "shell",
-      "dependsOn": ["apply contact tracing patches", "increment build version"],
+      "dependsOn": ["increment build version"],
       "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix}\" '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"Contact_Tracing\"'",
       "windows": {
         "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows}\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"Contact_Tracing\\\""
@@ -160,7 +160,7 @@
     {
       "label": "build contact tracing with mcuboot",
       "type": "shell",
-      "dependsOn": ["apply contact tracing patches", "increment build version"],
+      "dependsOn": ["increment build version"],
       "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix} ${config:app_mcuboot_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"Contact_Tracing\"'",
       "windows": {
         "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows} ${config:app_mcuboot_config_windows}\" -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"Contact_Tracing\\\""
@@ -224,15 +224,6 @@
       "label": "mcumgr upload file",
       "type": "shell",
       "command": "sudo mcumgr -t 5 -r 2 ${input:mcumgr_cnx} fs upload ${input:src_file_path} /lfs/${input:dst_file_name}",
-      "problemMatcher": []
-    },
-    {
-      "label": "apply contact tracing patches",
-      "type": "shell",
-      "command": "cp -R ./app/contact_tracing_patch/* ./",
-      "windows": {
-        "command": "Xcopy /E /I /Y .\\app\\contact_tracing_patch ..\\"
-      },
       "problemMatcher": []
     },
     {

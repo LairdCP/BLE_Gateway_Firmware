@@ -35,6 +35,7 @@ LOG_MODULE_REGISTER(ethernet_network, CONFIG_ETHERNET_LOG_LEVEL);
 #include "led_configuration.h"
 #include "attr.h"
 #include "gateway_common.h"
+#include "lcz_memfault.h"
 
 #ifdef CONFIG_BLUEGRASS
 #include "bluegrass.h"
@@ -44,6 +45,15 @@ LOG_MODULE_REGISTER(ethernet_network, CONFIG_ETHERNET_LOG_LEVEL);
 #include "lcz_qrtc.h"
 #include "sntp_qrtc.h"
 #endif
+
+#ifdef CONFIG_LCZ_MEMFAULT
+#define BUILD_ID_SIZE 9
+#endif
+
+/******************************************************************************/
+/* External Function Declarations                                             */
+/******************************************************************************/
+extern int memfault_ncs_device_id_set(const char *device_id, size_t len);
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -102,12 +112,19 @@ static struct mgmt_events iface_events[] = {
 	{ 0 } /* The for loop below requires this extra location. */
 };
 
+#ifdef CONFIG_LCZ_MEMFAULT
+static char build_id[BUILD_ID_SIZE];
+#endif
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
 int ethernet_network_init(void)
 {
 	int rc = ETHERNET_INIT_ERROR_NONE;
+#ifdef CONFIG_LCZ_MEMFAULT
+        char *device_id;
+#endif
 
 	if (!initialised) {
 		initialised = true;
@@ -164,6 +181,15 @@ int ethernet_network_init(void)
 		ETHERNET_LOG_DBG("Starting DHCP for network");
 		net_dhcpv4_start(iface);
 	}
+
+#ifdef CONFIG_LCZ_MEMFAULT
+        /* Provide ID after it is known. */
+        device_id = attr_get_quasi_static(ATTR_ID_gatewayId);
+        memfault_ncs_device_id_set(device_id, strlen(device_id));
+
+        memfault_build_id_get_string(build_id, sizeof(build_id));
+        attr_set_string(ATTR_ID_buildId, build_id, strlen(build_id));
+#endif
 
 exit:
 	attr_set_signed32(ATTR_ID_ethernetInitError, rc);

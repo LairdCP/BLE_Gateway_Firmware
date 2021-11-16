@@ -25,6 +25,12 @@ set(PM_STATIC_YML_FILE
 )
 endif()
 
+if(DEFINED CONFIG_LCZ_MEMFAULT OR DEFINED CONFIG_MEMFAULT_NCS_PROJECT_KEY)
+list(APPEND OVERLAY_CONFIG
+    ${CMAKE_SOURCE_DIR}/overlay_memfault.conf
+)
+endif()
+
 # Prepend the additional boards directory but still allow the original Zephyr
 # boards directory to be used with lower priority
 list(PREPEND BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../)

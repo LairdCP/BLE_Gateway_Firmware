@@ -108,9 +108,6 @@ target_sources_ifdef(CONFIG_SINGLE_PERIPHERAL app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/single_peripheral.c
 )
 
-target_sources_ifdef(CONFIG_WDT app PRIVATE
-    ${CMAKE_SOURCE_DIR}/common/src/wdt.c)
-
 include_directories(${CMAKE_SOURCE_DIR}/common/include)
 include_directories(${CMAKE_SOURCE_DIR}/framework_config)
 include_directories(${CMAKE_SOURCE_DIR}/../../modules/jsmn)

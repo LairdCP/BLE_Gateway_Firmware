@@ -133,10 +133,10 @@ static void on_button_release_isr(int64_t time)
 	LOG_DBG("delta: %i ms", (int32_t)time);
 
 	for (i = 0; i < button_config_count; i++) {
-		if (min_hold_met(time, button_config->min_hold) &&
-		    max_hold_met(time, button_config->max_hold)) {
-			if (button_config->callback != NULL) {
-				button_config->callback();
+		if (min_hold_met(time, button_config[i].min_hold) &&
+		    max_hold_met(time, button_config[i].max_hold)) {
+			if (button_config[i].callback != NULL) {
+				button_config[i].callback();
 			}
 			break;
 		}

@@ -280,7 +280,7 @@ static void set_state(enum gateway_state next_state)
 {
 	if (next_state != gsm.state) {
 		gsm.state = next_state;
-		attr_set_uint32(ATTR_ID_gatewayState, gsm.state);
+		attr_set_uint32(ATTR_ID_gateway_state, gsm.state);
 	}
 }
 
@@ -352,7 +352,7 @@ static void wait_for_commission_handler(void)
 	} else if (gsm.cert_load() == 0) {
 		set_state(GATEWAY_STATE_RESOLVE_SERVER);
 	} else {
-		attr_set_uint32(ATTR_ID_commissioningBusy, false);
+		attr_set_uint32(ATTR_ID_commissioning_busy, false);
 	}
 }
 
@@ -387,7 +387,7 @@ static void wait_before_cloud_connect_handler(void)
 			gsm.timer = CLOUD_CONNECT_TIMEOUT;
 		} else {
 			set_state(GATEWAY_STATE_CLOUD_ERROR);
-			attr_set_uint32(ATTR_ID_commissioningBusy, false);
+			attr_set_uint32(ATTR_ID_commissioning_busy, false);
 		}
 	}
 }
@@ -396,11 +396,11 @@ static void cloud_connecting_handler(void)
 {
 	if (gsm.cloud_is_connected()) {
 		set_state(GATEWAY_STATE_CLOUD_CONNECTED);
-		attr_set_uint32(ATTR_ID_commissioningBusy, false);
+		attr_set_uint32(ATTR_ID_commissioning_busy, false);
 		gateway_fsm_cloud_connected_callback();
 	} else if (timer_expired()) {
 		set_state(GATEWAY_STATE_CLOUD_ERROR);
-		attr_set_uint32(ATTR_ID_commissioningBusy, false);
+		attr_set_uint32(ATTR_ID_commissioning_busy, false);
 	}
 }
 
@@ -460,7 +460,7 @@ static void decommission_handler(void)
 static uint32_t get_modem_init_delay(void)
 {
 #if defined(CONFIG_MODEM_HL7800_BOOT_DELAY)
-	return attr_get_uint32(ATTR_ID_joinDelay, 0);
+	return attr_get_uint32(ATTR_ID_join_delay, 0);
 #else
 	return 0;
 #endif
@@ -469,7 +469,7 @@ static uint32_t get_modem_init_delay(void)
 static uint32_t get_join_network_delay(void)
 {
 #if defined(CONFIG_MODEM_HL7800_BOOT_IN_AIRPLANE_MODE)
-	return attr_get_uint32(ATTR_ID_joinDelay, 0);
+	return attr_get_uint32(ATTR_ID_join_delay, 0);
 #else
 	return 0;
 #endif
@@ -478,7 +478,7 @@ static uint32_t get_join_network_delay(void)
 static uint32_t get_join_cloud_delay(void)
 {
 #if defined(CONFIG_MODEM_HL7800_BOOT_NORMAL)
-	return attr_get_uint32(ATTR_ID_joinDelay, 0);
+	return attr_get_uint32(ATTR_ID_join_delay, 0);
 #else
 	return 0;
 #endif
@@ -488,8 +488,8 @@ static uint32_t get_reconnect_cloud_delay(void)
 {
 	uint32_t delay = 0;
 
-	if (attr_get_uint32(ATTR_ID_delayCloudReconnect, 0)) {
-		delay = attr_get_uint32(ATTR_ID_joinDelay, 0);
+	if (attr_get_uint32(ATTR_ID_delay_cloud_reconnect, 0)) {
+		delay = attr_get_uint32(ATTR_ID_join_delay, 0);
 	}
 
 	return delay;

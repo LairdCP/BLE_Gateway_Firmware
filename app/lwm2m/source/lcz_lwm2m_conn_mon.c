@@ -62,7 +62,7 @@ int lcz_lwm2m_conn_mon_update_values(void)
 #endif
 
 #if defined(CONFIG_MODEM_HL7800)
-	switch (*(uint8_t *)attr_get_quasi_static(ATTR_ID_lteRat)) {
+	switch (*(uint8_t *)attr_get_quasi_static(ATTR_ID_lte_rat)) {
 	case LTE_RAT_CAT_M1:
 		lwm2m_engine_set_u8("4/0/0", LTE_FDD_BEARER);
 		break;
@@ -113,10 +113,10 @@ int lcz_lwm2m_conn_mon_update_values(void)
 
 #if defined(CONFIG_MODEM_HL7800)
 	lwm2m_engine_set_s8("4/0/2",
-			    *(int8_t *)attr_get_quasi_static(ATTR_ID_lteRsrp));
+			    *(int8_t *)attr_get_quasi_static(ATTR_ID_lte_rsrp));
 
 	lwm2m_engine_set_s8("4/0/3",
-			    *(int8_t *)attr_get_quasi_static(ATTR_ID_lteSinr));
+			    *(int8_t *)attr_get_quasi_static(ATTR_ID_lte_sinr));
 
 	/* interface IP address */
 	lte_get_ip_address(false, ipv4_addr, sizeof(ipv4_addr));

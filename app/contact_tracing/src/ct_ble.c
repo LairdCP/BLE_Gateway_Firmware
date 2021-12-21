@@ -363,7 +363,7 @@ void ct_ble_initialize(void)
 			      disable_connectable_adv_work_handler);
 
 	ct_mfg_data.networkId =
-		attr_get_uint32(ATTR_ID_networkId, CT_DEFAULT_NETWORK_ID);
+		attr_get_uint32(ATTR_ID_network_id, CT_DEFAULT_NETWORK_ID);
 
 	crypto_dev = device_get_binding(CONFIG_CRYPTO_TINYCRYPT_SHIM_DRV_NAME);
 	if (crypto_dev != NULL) {
@@ -464,16 +464,16 @@ int ct_adv_on_button_isr(void)
 
 void ct_ble_topic_builder(void)
 {
-	char *id = (char *)attr_get_quasi_static(ATTR_ID_gatewayId);
+	char *id = (char *)attr_get_quasi_static(ATTR_ID_gateway_id);
 
 	snprintf(ct.up_topic, sizeof(ct.up_topic), "%s%s%s",
-		 (char *)attr_get_quasi_static(ATTR_ID_topicPrefix), id,
+		 (char *)attr_get_quasi_static(ATTR_ID_topic_prefix), id,
 		 AWS_TOPIC_UP_SUFFIX);
 
 	LOG_DBG("Pub Topic: %s", log_strdup(ct.up_topic));
 
 	snprintf(ct.log_topic, sizeof(ct.log_topic), "%s%s%s",
-		 (char *)attr_get_quasi_static(ATTR_ID_topicPrefix), id,
+		 (char *)attr_get_quasi_static(ATTR_ID_topic_prefix), id,
 		 AWS_TOPIC_LOG_SUFFIX);
 }
 
@@ -532,7 +532,7 @@ int ct_ble_publish_dummy_data_to_aws(void)
 	pub_hdr.fw_version[3] = APP_VERSION_PATCH >> 8;
 	pub_hdr.battery_level = 0;
 	pub_hdr.network_id =
-		attr_get_uint32(ATTR_ID_networkId, CT_DEFAULT_NETWORK_ID);
+		attr_get_uint32(ATTR_ID_network_id, CT_DEFAULT_NETWORK_ID);
 
 	memcpy(buf, &pub_hdr, sizeof(struct ct_publish_header_t));
 	memcpy(&buf[sizeof(struct ct_publish_header_t)], dummyEntry,
@@ -807,7 +807,7 @@ static void sensor_connected(struct bt_conn *conn, uint8_t err)
 	}
 
 	LOG_INF("Connected sensor: %s", log_strdup(addr));
-	attr_set_string(ATTR_ID_sensorBluetoothAddress, addr, strlen(addr));
+	attr_set_string(ATTR_ID_sensor_bluetooth_address, addr, strlen(addr));
 
 	remote.encrypt_req = false;
 	remote.log_ble_xfer_active = true;
@@ -1370,7 +1370,7 @@ static void smp_challenge_req_proc_handler(struct bt_gatt_dfu_smp_c *dfu_smp_c)
 				log_buffer, dfu_smp_c->downloaded_bytes,
 				challenge_rsp, sizeof(challenge_rsp),
 				(uint8_t *)attr_get_quasi_static(
-					ATTR_ID_ctAesKey),
+					ATTR_ID_ct_aes_key),
 				ATTR_CT_AES_KEY_SIZE);
 		}
 	}
@@ -1662,7 +1662,7 @@ static void smp_file_download_rsp_proc(struct bt_gatt_dfu_smp_c *dfu_smp_c)
 			/* max output len must be "input len - 16" */
 			uint32_t decrypted_length = decrypt_cbc(file_data, data_len, dec_file_data,
 							       data_len - AES_CBC_IV_SIZE,
-								   (uint8_t *)attr_get_quasi_static(ATTR_ID_ctAesKey),
+								   (uint8_t *)attr_get_quasi_static(ATTR_ID_ct_aes_key),
 								   ATTR_CT_AES_KEY_SIZE);
 			data_len = decrypted_length;
 
@@ -2651,7 +2651,7 @@ static void set_ble_state(enum central_state state)
 {
 	if (remote.app_state != state) {
 		remote.app_state = state;
-		attr_set_uint32(ATTR_ID_centralState, state);
+		attr_set_uint32(ATTR_ID_central_state, state);
 	}
 
 	switch (state) {
@@ -2662,7 +2662,7 @@ static void set_ble_state(enum central_state state)
 	case CENTRAL_STATE_FINDING_DEVICE:
 		lcz_led_blink(BLUETOOTH_PERIPHERAL_LED,
 			      &CT_LED_SENSOR_SEARCH_PATTERN);
-		attr_set_string(ATTR_ID_sensorBluetoothAddress, "", 0);
+		attr_set_string(ATTR_ID_sensor_bluetooth_address, "", 0);
 		lcz_bt_scan_restart(ct.scan_id);
 		break;
 
@@ -2738,7 +2738,7 @@ static void update_advert_timer_handler(struct k_timer *dummy)
 static void update_advert(struct k_work *work)
 {
 	if (attr_get_uint32(ATTR_ID_commissioned, 0)) {
-		ct_mfg_data.networkId = attr_get_uint32(ATTR_ID_networkId,
+		ct_mfg_data.networkId = attr_get_uint32(ATTR_ID_network_id,
 							CT_DEFAULT_NETWORK_ID);
 
 		if (lcz_qrtc_epoch_was_set()) {
@@ -2767,7 +2767,7 @@ static void change_advert_type(enum adv_type adv_type)
 
 static bool is_encryption_enabled(void)
 {
-	uint8_t *key = (uint8_t *)attr_get_quasi_static(ATTR_ID_ctAesKey);
+	uint8_t *key = (uint8_t *)attr_get_quasi_static(ATTR_ID_ct_aes_key);
 	int i;
 
 	for (i = 0; i < ATTR_CT_AES_KEY_SIZE; i++) {

@@ -113,7 +113,7 @@ int sdCardLogUpdateMaxSize(int Value)
 	batteryLogMaxLength = ValueB;
 	LOG_INF("Max log file size = %d MB", Value);
 
-	return attr_set_uint32(ATTR_ID_sdLogMaxSize, Value);
+	return attr_set_uint32(ATTR_ID_sd_log_max_size, Value);
 }
 
 int sdCardLogGetMaxSize(void)
@@ -186,7 +186,7 @@ int sdCardLogInit(void)
 #endif
 
 	/* initialize the log size based on the stored log size */
-	ret = attr_copy_uint32(&LogLength, ATTR_ID_sdLogMaxSize);
+	ret = attr_copy_uint32(&LogLength, ATTR_ID_sd_log_max_size);
 
 	/* if nothing valid is present just set it to a default value */
 	if ((ret < 0) || (LogLength < SDCARD_LOG_DEFAULT_MAX_LENGTH)) {

@@ -176,41 +176,41 @@ int lte_init(void)
 	if (rc < 0) {
 		rc = LTE_INIT_ERROR_MODEM;
 		LOG_ERR("Unable to configure modem");
-		attr_set_signed32(ATTR_ID_lteInitError, rc);
+		attr_set_signed32(ATTR_ID_lte_init_error, rc);
 		return rc;
 	}
 #endif
 
 	str = mdm_hl7800_get_imei();
-	attr_set_string(ATTR_ID_gatewayId, str, strlen(str));
+	attr_set_string(ATTR_ID_gateway_id, str, strlen(str));
 	str = mdm_hl7800_get_fw_version();
 	MFLT_METRICS_SET_UNSIGNED(lte_ver, lte_version_to_int(str));
-	attr_set_string(ATTR_ID_lteVersion, str, strlen(str));
+	attr_set_string(ATTR_ID_lte_version, str, strlen(str));
 	str = mdm_hl7800_get_iccid();
 	attr_set_string(ATTR_ID_iccid, str, strlen(str));
 	str = mdm_hl7800_get_sn();
-	attr_set_string(ATTR_ID_lteSerialNumber, str, strlen(str));
+	attr_set_string(ATTR_ID_lte_serial_number, str, strlen(str));
 	str = mdm_hl7800_get_imsi();
 	attr_set_string(ATTR_ID_imsi, str, strlen(str));
 
 	operator_index = mdm_hl7800_get_operator_index();
 	if (operator_index >= 0) {
-		attr_set_uint32(ATTR_ID_lteOperatorIndex, operator_index);
+		attr_set_uint32(ATTR_ID_lte_operator_index, operator_index);
 	}
 
 	mdm_hl7800_generate_status_events();
 
-	attr_prepare_modemFunctionality();
+	attr_prepare_modem_functionality();
 
-	attr_set_signed32(ATTR_ID_lteInitError, rc);
+	attr_set_signed32(ATTR_ID_lte_init_error, rc);
 
 #ifdef CONFIG_LCZ_MEMFAULT
 	/* Provide ID after it is known. */
-	device_id = attr_get_quasi_static(ATTR_ID_gatewayId);
+	device_id = attr_get_quasi_static(ATTR_ID_gateway_id);
 	memfault_ncs_device_id_set(device_id, strlen(device_id));
 
 	memfault_build_id_get_string(build_id, sizeof(build_id));
-	attr_set_string(ATTR_ID_buildId, build_id, strlen(build_id));
+	attr_set_string(ATTR_ID_build_id, build_id, strlen(build_id));
 #endif
 
 	return rc;
@@ -229,7 +229,7 @@ int lte_network_init(void)
 	}
 #endif
 
-	attr_prepare_modemFunctionality();
+	attr_prepare_modem_functionality();
 
 	iface = net_if_get_default();
 	if (!iface) {
@@ -253,7 +253,7 @@ int lte_network_init(void)
 	}
 
 exit:
-	attr_set_signed32(ATTR_ID_lteInitError, rc);
+	attr_set_signed32(ATTR_ID_lte_init_error, rc);
 	return rc;
 }
 
@@ -310,11 +310,11 @@ void lcz_qrtc_sync_handler(void)
 	}
 }
 
-int attr_prepare_modemFunctionality(void)
+int attr_prepare_modem_functionality(void)
 {
 	int r = mdm_hl7800_get_functionality();
 
-	attr_set_signed32(ATTR_ID_modemFunctionality, r);
+	attr_set_signed32(ATTR_ID_modem_functionality, r);
 	return r;
 }
 
@@ -403,7 +403,7 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 
 	switch (event) {
 	case HL7800_EVENT_NETWORK_STATE_CHANGE:
-		attr_set_uint32(ATTR_ID_lteNetworkState, code);
+		attr_set_uint32(ATTR_ID_lte_network_state, code);
 
 		switch (code) {
 		case HL7800_HOME_NETWORK:
@@ -447,27 +447,27 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		lte_apn_config = (struct mdm_hl7800_apn *)event_data;
 		attr_set_string(ATTR_ID_apn, lte_apn_config->value,
 				MDM_HL7800_APN_MAX_STRLEN);
-		attr_set_string(ATTR_ID_apnUsername, lte_apn_config->username,
+		attr_set_string(ATTR_ID_apn_username, lte_apn_config->username,
 				MDM_HL7800_APN_USERNAME_MAX_STRLEN);
-		attr_set_string(ATTR_ID_apnPassword, lte_apn_config->password,
+		attr_set_string(ATTR_ID_apn_password, lte_apn_config->password,
 				MDM_HL7800_APN_PASSWORD_MAX_STRLEN);
 		UPDATE_CONN_MON_VALUES(update_conn_mon_values)
 		break;
 
 	case HL7800_EVENT_RSSI:
-		attr_set_signed32(ATTR_ID_lteRsrp, *((int *)event_data));
+		attr_set_signed32(ATTR_ID_lte_rsrp, *((int *)event_data));
 		MFLT_METRICS_SET_SIGNED(lte_rsrp, *((int *)event_data));
 		UPDATE_CONN_MON_VALUES(update_conn_mon_values)
 		break;
 
 	case HL7800_EVENT_SINR:
-		attr_set_signed32(ATTR_ID_lteSinr, *((int *)event_data));
+		attr_set_signed32(ATTR_ID_lte_sinr, *((int *)event_data));
 		MFLT_METRICS_SET_SIGNED(lte_sinr, *((int *)event_data));
 		UPDATE_CONN_MON_VALUES(update_conn_mon_values)
 		break;
 
 	case HL7800_EVENT_STARTUP_STATE_CHANGE:
-		attr_set_uint32(ATTR_ID_lteStartupState, code);
+		attr_set_uint32(ATTR_ID_lte_startup_state, code);
 		switch (code) {
 		case HL7800_STARTUP_STATE_READY:
 		case HL7800_STARTUP_STATE_WAITING_FOR_ACCESS_CODE:
@@ -484,11 +484,11 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_SLEEP_STATE_CHANGE:
-		attr_set_uint32(ATTR_ID_lteSleepState, code);
+		attr_set_uint32(ATTR_ID_lte_sleep_state, code);
 		break;
 
 	case HL7800_EVENT_RAT:
-		attr_set_uint32(ATTR_ID_lteRat, *((uint8_t *)event_data));
+		attr_set_uint32(ATTR_ID_lte_rat, *((uint8_t *)event_data));
 		UPDATE_CONN_MON_VALUES(update_conn_mon_values)
 		break;
 
@@ -497,7 +497,7 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_ACTIVE_BANDS:
-		attr_set_string(ATTR_ID_activeBands, s, strlen(s));
+		attr_set_string(ATTR_ID_active_bands, s, strlen(s));
 		break;
 
 	case HL7800_EVENT_FOTA_STATE:
@@ -512,7 +512,7 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 
 	case HL7800_EVENT_REVISION:
 		MFLT_METRICS_SET_UNSIGNED(lte_ver, lte_version_to_int(s));
-		attr_set_string(ATTR_ID_lteVersion, s, strlen(s));
+		attr_set_string(ATTR_ID_lte_version, s, strlen(s));
 #ifdef CONFIG_BLUEGRASS
 		/* Update shadow because modem version has changed. */
 		bluegrass_init_shadow_request();
@@ -537,7 +537,7 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_GPS_POSITION_STATUS:
-		attr_set_signed32(ATTR_ID_gpsStatus,
+		attr_set_signed32(ATTR_ID_gps_status,
 				  (int32_t) * ((int8_t *)event_data));
 		break;
 #endif
@@ -579,34 +579,34 @@ static void gps_str_handler(void *event_data)
 
 	switch (code) {
 	case HL7800_GPS_STR_LATITUDE:
-		attr_set_string(ATTR_ID_gpsLatitude, str, strlen(str));
+		attr_set_string(ATTR_ID_gps_latitude, str, strlen(str));
 		break;
 	case HL7800_GPS_STR_LONGITUDE:
-		attr_set_string(ATTR_ID_gpsLongitude, str, strlen(str));
+		attr_set_string(ATTR_ID_gps_longitude, str, strlen(str));
 		break;
 	case HL7800_GPS_STR_GPS_TIME:
-		attr_set_string(ATTR_ID_gpsTime, str, strlen(str));
+		attr_set_string(ATTR_ID_gps_time, str, strlen(str));
 		break;
 	case HL7800_GPS_STR_FIX_TYPE:
-		attr_set_string(ATTR_ID_gpsFixType, str, strlen(str));
+		attr_set_string(ATTR_ID_gps_fix_type, str, strlen(str));
 		break;
 	case HL7800_GPS_STR_HEPE:
-		attr_set_string(ATTR_ID_gpsHepe, str, strlen(str));
+		attr_set_string(ATTR_ID_gps_hepe, str, strlen(str));
 		break;
 	case HL7800_GPS_STR_ALTITUDE:
-		attr_set_string(ATTR_ID_gpsAltitude, str, strlen(str));
+		attr_set_string(ATTR_ID_gps_altitude, str, strlen(str));
 		break;
 	case HL7800_GPS_STR_ALT_UNC:
-		attr_set_string(ATTR_ID_gpsAltUnc, str, strlen(str));
+		attr_set_string(ATTR_ID_gps_alt_unc, str, strlen(str));
 		break;
 	case HL7800_GPS_STR_DIRECTION:
-		attr_set_string(ATTR_ID_gpsHeading, str, strlen(str));
+		attr_set_string(ATTR_ID_gps_heading, str, strlen(str));
 		break;
 	case HL7800_GPS_STR_HOR_SPEED:
-		attr_set_string(ATTR_ID_gpsHorSpeed, str, strlen(str));
+		attr_set_string(ATTR_ID_gps_hor_speed, str, strlen(str));
 		break;
 	case HL7800_GPS_STR_VER_SPEED:
-		attr_set_string(ATTR_ID_gpsVerSpeed, str, strlen(str));
+		attr_set_string(ATTR_ID_gps_ver_speed, str, strlen(str));
 		break;
 	}
 }
@@ -618,11 +618,11 @@ static void polte_registration_handler(void *event_data)
 	struct mdm_hl7800_polte_registration_event_data *p = event_data;
 
 	if (p != NULL) {
-		attr_set_signed32(ATTR_ID_polteStatus, p->status);
+		attr_set_signed32(ATTR_ID_polte_status, p->status);
 		if (p->status == 0) {
-			attr_set_string(ATTR_ID_polteUser, p->user,
+			attr_set_string(ATTR_ID_polte_user, p->user,
 					strlen(p->user));
-			attr_set_string(ATTR_ID_poltePassword, p->password,
+			attr_set_string(ATTR_ID_polte_password, p->password,
 					strlen(p->password));
 		}
 	}
@@ -633,9 +633,9 @@ static void polte_locate_status_handler(void *event_data)
 	int status = *(int *)event_data;
 
 	if (status != 0) {
-		attr_set_signed32(ATTR_ID_polteStatus, status);
+		attr_set_signed32(ATTR_ID_polte_status, status);
 	} else {
-		attr_set_signed32(ATTR_ID_polteStatus,
+		attr_set_signed32(ATTR_ID_polte_status,
 				  POLTE_STATUS_LOCATE_IN_PROGRESS);
 	}
 }
@@ -645,14 +645,14 @@ static void polte_handler(void *event_data)
 	struct mdm_hl7800_polte_location_data *p = event_data;
 
 	if (p != NULL) {
-		attr_set_signed32(ATTR_ID_polteStatus, p->status);
+		attr_set_signed32(ATTR_ID_polte_status, p->status);
 		if (p->status == 0) {
-			attr_set_string(ATTR_ID_polteLatitude, p->latitude,
+			attr_set_string(ATTR_ID_polte_latitude, p->latitude,
 					strlen(p->latitude));
-			attr_set_string(ATTR_ID_polteLongitude, p->longitude,
+			attr_set_string(ATTR_ID_polte_longitude, p->longitude,
 					strlen(p->longitude));
-			attr_set_uint32(ATTR_ID_polteTimestamp, p->timestamp);
-			attr_set_string(ATTR_ID_polteConfidence,
+			attr_set_uint32(ATTR_ID_polte_timestamp, p->timestamp);
+			attr_set_string(ATTR_ID_polte_confidence,
 					p->confidence_in_meters,
 					strlen(p->confidence_in_meters));
 		}

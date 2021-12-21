@@ -106,72 +106,72 @@ static void BatteryLogData(int16_t voltage, int32_t temp);
 /******************************************************************************/
 int UpdateBatteryThreshold0(int Value)
 {
-	return attr_set_uint32(ATTR_ID_battery0, Value);
+	return attr_set_uint32(ATTR_ID_battery_0, Value);
 }
 
 int UpdateBatteryThreshold1(int Value)
 {
-	return attr_set_uint32(ATTR_ID_battery1, Value);
+	return attr_set_uint32(ATTR_ID_battery_1, Value);
 }
 
 int UpdateBatteryThreshold2(int Value)
 {
-	return attr_set_uint32(ATTR_ID_battery2, Value);
+	return attr_set_uint32(ATTR_ID_battery_2, Value);
 }
 
 int UpdateBatteryThreshold3(int Value)
 {
-	return attr_set_uint32(ATTR_ID_battery3, Value);
+	return attr_set_uint32(ATTR_ID_battery_3, Value);
 }
 
 int UpdateBatteryThreshold4(int Value)
 {
-	return attr_set_uint32(ATTR_ID_battery4, Value);
+	return attr_set_uint32(ATTR_ID_battery_4, Value);
 }
 
 int UpdateBatteryLowThreshold(int Value)
 {
-	return attr_set_uint32(ATTR_ID_batteryLowThreshold, Value);
+	return attr_set_uint32(ATTR_ID_battery_low_threshold, Value);
 }
 
 int UpdateBatteryBadThreshold(int Value)
 {
-	return attr_set_uint32(ATTR_ID_batteryAlarmThreshold, Value);
+	return attr_set_uint32(ATTR_ID_battery_alarm_threshold, Value);
 }
 
 int GetBatteryThreshold0(void)
 {
-	return attr_get_uint32(ATTR_ID_battery0, BATTERY_THRESH_0);
+	return attr_get_uint32(ATTR_ID_battery_0, BATTERY_THRESH_0);
 }
 
 int GetBatteryThreshold1(void)
 {
-	return attr_get_uint32(ATTR_ID_battery1, BATTERY_THRESH_1);
+	return attr_get_uint32(ATTR_ID_battery_1, BATTERY_THRESH_1);
 }
 
 int GetBatteryThreshold2(void)
 {
-	return attr_get_uint32(ATTR_ID_battery2, BATTERY_THRESH_2);
+	return attr_get_uint32(ATTR_ID_battery_2, BATTERY_THRESH_2);
 }
 
 int GetBatteryThreshold3(void)
 {
-	return attr_get_uint32(ATTR_ID_battery3, BATTERY_THRESH_3);
+	return attr_get_uint32(ATTR_ID_battery_3, BATTERY_THRESH_3);
 }
 
 int GetBatteryThreshold4(void)
 {
-	return attr_get_uint32(ATTR_ID_battery4, BATTERY_THRESH_4);
+	return attr_get_uint32(ATTR_ID_battery_4, BATTERY_THRESH_4);
 }
 
 int GetBatteryLowThreshold(void)
 {
-	return attr_get_uint32(ATTR_ID_batteryLowThreshold, BATTERY_THRESH_LOW);
+	return attr_get_uint32(ATTR_ID_battery_low_threshold, BATTERY_THRESH_LOW);
 }
 
 int GetBatteryBadThreshold(void)
 {
-	return attr_get_uint32(ATTR_ID_batteryAlarmThreshold,
+	return attr_get_uint32(ATTR_ID_battery_alarm_threshold,
 			       BATTERY_THRESH_ALARM);
 }
 
@@ -214,7 +214,7 @@ uint8_t BatteryGetChgState(void)
 		pwrState |= BATTERY_NOT_CHARGING_STATE;
 	}
 
-	attr_set_uint32(ATTR_ID_batteryChargingState, pwrState);
+	attr_set_uint32(ATTR_ID_battery_charging_state, pwrState);
 
 	return (pwrState);
 }
@@ -269,7 +269,7 @@ enum battery_status BatteryCalculateRemainingCapacity(uint16_t Volts)
 	/* If the temperature can't be read, then just use the
 	 * BASE_TEMP value as a safe default.
 	 */
-	temperature = attr_get_signed32(ATTR_ID_batteryTemperature, BASE_TEMP);
+	temperature = attr_get_signed32(ATTR_ID_battery_temperature, BASE_TEMP);
 
 #ifdef CONFIG_LAIRD_CONNECT_BATTERY_LOGGING
 	BatteryLogData(Volts, temperature);
@@ -300,9 +300,9 @@ enum battery_status BatteryCalculateRemainingCapacity(uint16_t Volts)
 	batteryStatus.ambientTemperature = temperature;
 
 	/* reported to BLE/shell */
-	attr_set_uint32(ATTR_ID_batteryAlarm, batteryAlarmState);
-	attr_set_uint32(ATTR_ID_batteryVoltageMv, voltage);
-	attr_set_uint32(ATTR_ID_batteryCapacity, batteryCapacity);
+	attr_set_uint32(ATTR_ID_battery_alarm, batteryAlarmState);
+	attr_set_uint32(ATTR_ID_power_voltage_mv, voltage);
+	attr_set_uint32(ATTR_ID_battery_capacity, batteryCapacity);
 
 	return (batteryCapacity);
 }

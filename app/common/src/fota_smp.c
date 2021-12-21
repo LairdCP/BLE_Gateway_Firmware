@@ -128,7 +128,7 @@ void fota_smp_cmd_handler(void)
 
 		k_work_reschedule(
 			&prepare_timeout,
-			K_SECONDS(attr_get_uint32(ATTR_ID_blePrepareTimeout,
+			K_SECONDS(attr_get_uint32(ATTR_ID_ble_prepare_timeout,
 						  DEFAULT_PREPARE_TIMEOUT)));
 		break;
 
@@ -174,7 +174,7 @@ void fota_smp_state_handler(uint8_t state)
 			modem_fota_busy = false;
 			if (IS_ENABLED(CONFIG_FOTA_SMP_DELETE_ON_COMPLETE)) {
 				fsu_delete_abs(attr_get_quasi_static(
-					ATTR_ID_fotaFileName));
+					ATTR_ID_fota_file_name));
 			}
 			break;
 		case HL7800_FOTA_FILE_ERROR:
@@ -191,7 +191,7 @@ void fota_smp_state_handler(uint8_t state)
 
 	if (restore_log_level) {
 		mdm_hl7800_log_filter_set(attr_get_uint32(
-			ATTR_ID_modemDesiredLogLevel, LOG_LEVEL_DBG));
+			ATTR_ID_modem_desired_log_level, LOG_LEVEL_DBG));
 	}
 }
 
@@ -203,7 +203,7 @@ bool fota_smp_modem_busy(void)
 
 void fota_smp_set_count(uint32_t count)
 {
-	attr_set_uint32(ATTR_ID_fotaCount, count);
+	attr_set_uint32(ATTR_ID_fota_count, count);
 }
 
 bool fota_smp_ble_prepared(void)
@@ -218,7 +218,7 @@ bool fota_smp_ble_prepared(void)
 static void fota_modem_start(void)
 {
 	int status = FOTA_STATUS_SUCCESS;
-	char *abs_path = attr_get_quasi_static(ATTR_ID_fotaFileName);
+	char *abs_path = attr_get_quasi_static(ATTR_ID_fota_file_name);
 	ssize_t size = fsu_get_file_size_abs(abs_path);
 
 	fota_smp_set_count(0);
@@ -253,23 +253,23 @@ static void fota_modem_start(void)
 
 static void fota_set_size(ssize_t size)
 {
-	attr_set_uint32(ATTR_ID_fotaSize, size);
+	attr_set_uint32(ATTR_ID_fota_size, size);
 }
 #endif
 
 static void fota_set_status(uint8_t status)
 {
-	attr_set_uint32(ATTR_ID_fotaStatus, status);
+	attr_set_uint32(ATTR_ID_fota_status, status);
 }
 
 static uint8_t fota_get_status(void)
 {
-	return attr_get_uint32(ATTR_ID_fotaStatus, FOTA_STATUS_BUSY);
+	return attr_get_uint32(ATTR_ID_fota_status, FOTA_STATUS_BUSY);
 }
 
 static uint8_t fota_get_cmd(void)
 {
-	return attr_get_uint32(ATTR_ID_fotaControlPoint,
+	return attr_get_uint32(ATTR_ID_fota_control_point,
 			       FOTA_CONTROL_POINT_NOP);
 }
 
@@ -293,7 +293,7 @@ static void prepare_timeout_handler(struct k_work *work)
 
 	LOG_WRN("BLE Prepare timeout");
 	if (ble_prepared) {
-		attr_set_uint32(ATTR_ID_fotaControlPoint,
+		attr_set_uint32(ATTR_ID_fota_control_point,
 				FOTA_CONTROL_POINT_BLE_ABORT);
 	}
 }

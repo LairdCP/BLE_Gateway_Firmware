@@ -81,7 +81,7 @@ static int ble_addr_init(void)
 	bt_addr_le_t addr;
 	char addr_str[BT_ADDR_LE_STR_LEN] = { 0 };
 	char bd_addr[BT_ADDR_LE_STR_LEN];
-	size_t size = attr_get_size(ATTR_ID_bluetoothAddress);
+	size_t size = attr_get_size(ATTR_ID_bluetooth_address);
 
 	bt_id_get(&addr, &count);
 	if (count < 1) {
@@ -106,10 +106,10 @@ static int ble_addr_init(void)
 		}
 	}
 	bd_addr[j] = 0;
-	attr_set_string(ATTR_ID_bluetoothAddress, bd_addr, size - 1);
+	attr_set_string(ATTR_ID_bluetooth_address, bd_addr, size - 1);
 
 #ifndef CONFIG_MODEM_HL7800
-	attr_set_string(ATTR_ID_gatewayId, bd_addr, size - 1);
+	attr_set_string(ATTR_ID_gateway_id, bd_addr, size - 1);
 #endif
 
 	/* Use the Bluetooth address to make the name unique

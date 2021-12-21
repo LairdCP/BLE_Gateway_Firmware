@@ -166,8 +166,8 @@ int ethernet_network_init(void)
 	}
 
 	/* Set ethernet MAC address and IPv4 operating type */
-	attr_set_byte_array(ATTR_ID_ethernetMAC, net_if_get_link_addr(iface)->addr, net_if_get_link_addr(iface)->len);
-	attr_set_uint32(ATTR_ID_ethernetType, (uint32_t)ETHERNET_TYPE_IPV4);
+	attr_set_byte_array(ATTR_ID_ethernet_mac, net_if_get_link_addr(iface)->addr, net_if_get_link_addr(iface)->len);
+	attr_set_uint32(ATTR_ID_ethernet_type, (uint32_t)ETHERNET_TYPE_IPV4);
 
 	/* Perform initial cable connected or disconnected check */
 	if (net_if_is_up(iface)) {
@@ -176,7 +176,7 @@ int ethernet_network_init(void)
 		iface_down_evt_handler(NULL, NET_EVENT_IF_DOWN, iface);
 	}
 
-	if (attr_get_uint32(ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_DHCP) {
+	if (attr_get_uint32(ATTR_ID_ethernet_mode, (uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_DHCP) {
 		/* Start DHCP */
 		ETHERNET_LOG_DBG("Starting DHCP for network");
 		net_dhcpv4_start(iface);
@@ -184,15 +184,15 @@ int ethernet_network_init(void)
 
 #ifdef CONFIG_LCZ_MEMFAULT
         /* Provide ID after it is known. */
-        device_id = attr_get_quasi_static(ATTR_ID_gatewayId);
+        device_id = attr_get_quasi_static(ATTR_ID_gateway_id);
         memfault_ncs_device_id_set(device_id, strlen(device_id));
 
         memfault_build_id_get_string(build_id, sizeof(build_id));
-        attr_set_string(ATTR_ID_buildId, build_id, strlen(build_id));
+        attr_set_string(ATTR_ID_build_id, build_id, strlen(build_id));
 #endif
 
 exit:
-	attr_set_signed32(ATTR_ID_ethernetInitError, rc);
+	attr_set_signed32(ATTR_ID_ethernet_init_error, rc);
 	return rc;
 }
 
@@ -205,8 +205,8 @@ bool ethernet_network_ready(void)
 
 		return net_if_is_up(iface) && cfg->ip.ipv4 &&
 #if defined(CONFIG_NET_DHCPV4)
-		       (attr_get_uint32(ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_STATIC ||
-		       (attr_get_uint32(ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_DHCP &&
+		       (attr_get_uint32(ATTR_ID_ethernet_mode, (uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_STATIC ||
+		       (attr_get_uint32(ATTR_ID_ethernet_mode, (uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_DHCP &&
 		       iface->config.dhcpv4.state == NET_DHCPV4_BOUND)) &&
 #endif
 		       !net_ipv4_is_addr_unspecified(&dnsAddr->sin_addr);
@@ -316,33 +316,33 @@ static void set_ip_config(struct net_if *iface)
 		if (api->get_config != NULL) {
 			/* Query link speed and duplex from ethernet driver */
 			if (api->get_config(dev, ETHERNET_CONFIG_TYPE_LINK, &config) == 0) {
-				attr_set_uint32(ATTR_ID_ethernetSpeed, (uint32_t)(config.l.link_100bt ? ETHERNET_SPEED_100MBPS : (config.l.link_10bt ? ETHERNET_SPEED_10MBPS : ETHERNET_SPEED_UNKNOWN)));
+				attr_set_uint32(ATTR_ID_ethernet_speed, (uint32_t)(config.l.link_100bt ? ETHERNET_SPEED_100MBPS : (config.l.link_10bt ? ETHERNET_SPEED_10MBPS : ETHERNET_SPEED_UNKNOWN)));
 			}
 
 			if (api->get_config(dev, ETHERNET_CONFIG_TYPE_DUPLEX, &config) == 0) {
-				attr_set_uint32(ATTR_ID_ethernetDuplex, (uint32_t)(config.full_duplex ? ETHERNET_DUPLEX_FULL : ETHERNET_DUPLEX_HALF));
+				attr_set_uint32(ATTR_ID_ethernet_duplex, (uint32_t)(config.full_duplex ? ETHERNET_DUPLEX_FULL : ETHERNET_DUPLEX_HALF));
 			}
 		}
 
-		attr_set_string(ATTR_ID_ethernetIPAddress,
+		attr_set_string(ATTR_ID_ethernet_ip_address,
 				net_sprint_ipv4_addr(&unicast->address.in_addr),
 				strlen(net_sprint_ipv4_addr(&unicast->address.in_addr)));
-		attr_set_uint32(ATTR_ID_ethernetNetmaskLength,
+		attr_set_uint32(ATTR_ID_ethernet_netmask_length,
 				(uint32_t)netmaskLength);
-		attr_set_string(ATTR_ID_ethernetGateway,
+		attr_set_string(ATTR_ID_ethernet_gateway,
 				net_sprint_ipv4_addr(&ipv4->gw),
 				strlen(net_sprint_ipv4_addr(&ipv4->gw)));
-		attr_set_string(ATTR_ID_ethernetDNS, ethDNS, strlen(ethDNS));
+		attr_set_string(ATTR_ID_ethernet_dns, ethDNS, strlen(ethDNS));
 	} else {
 		/* No IP currently set, use empty values */
-		attr_set_string(ATTR_ID_ethernetIPAddress,
+		attr_set_string(ATTR_ID_ethernet_ip_address,
 				ETHERNET_NETWORK_UNSET_IP,
 				(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
-		attr_set_uint32(ATTR_ID_ethernetNetmaskLength, 0);
-		attr_set_string(ATTR_ID_ethernetGateway,
+		attr_set_uint32(ATTR_ID_ethernet_netmask_length, 0);
+		attr_set_string(ATTR_ID_ethernet_gateway,
 				ETHERNET_NETWORK_UNSET_IP,
 				(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
-		attr_set_string(ATTR_ID_ethernetDNS, ETHERNET_NETWORK_UNSET_IP,
+		attr_set_string(ATTR_ID_ethernet_dns, ETHERNET_NETWORK_UNSET_IP,
 				(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
 	}
 
@@ -354,13 +354,13 @@ static void set_ip_config(struct net_if *iface)
 #if defined(CONFIG_NET_DHCPV4)
 static void set_ip_dhcp_config(struct net_if *iface)
 {
-	attr_set_uint32(ATTR_ID_ethernetDHCPLeaseTime,
+	attr_set_uint32(ATTR_ID_ethernet_dhcp_lease_time,
 			(uint32_t)iface->config.dhcpv4.lease_time);
-	attr_set_uint32(ATTR_ID_ethernetDHCPRenewTime,
+	attr_set_uint32(ATTR_ID_ethernet_dhcp_renew_time,
 			(uint32_t)iface->config.dhcpv4.renewal_time);
-	attr_set_uint32(ATTR_ID_ethernetDHCPState,
+	attr_set_uint32(ATTR_ID_ethernet_dhcp_state,
 			(uint32_t)iface->config.dhcpv4.state);
-	attr_set_uint32(ATTR_ID_ethernetDHCPAttempts,
+	attr_set_uint32(ATTR_ID_ethernet_dhcp_attempts,
 			(uint32_t)iface->config.dhcpv4.attempts);
 }
 #endif
@@ -381,7 +381,7 @@ static void iface_dns_added_evt_handler(struct net_mgmt_event_callback *cb,
 	set_ip_config(iface);
 
 #if defined(CONFIG_SNTP)
-	if (attr_get_uint32(ATTR_ID_ethernetMode,
+	if (attr_get_uint32(ATTR_ID_ethernet_mode,
 		(uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_STATIC) {
 		/* Static IP, safe to query SNTP server for time */
 		sntp_qrtc_start_delay();
@@ -391,22 +391,22 @@ static void iface_dns_added_evt_handler(struct net_mgmt_event_callback *cb,
 
 static void reset_iface_details(void)
 {
-	attr_set_uint32(ATTR_ID_ethernetSpeed,
+	attr_set_uint32(ATTR_ID_ethernet_speed,
 			(uint32_t)ETHERNET_SPEED_UNKNOWN);
-	attr_set_uint32(ATTR_ID_ethernetDuplex,
+	attr_set_uint32(ATTR_ID_ethernet_duplex,
 			(uint32_t)ETHERNET_DUPLEX_UNKNOWN);
-	attr_set_string(ATTR_ID_ethernetIPAddress, ETHERNET_NETWORK_UNSET_IP,
+	attr_set_string(ATTR_ID_ethernet_ip_address, ETHERNET_NETWORK_UNSET_IP,
 			(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
-	attr_set_uint32(ATTR_ID_ethernetNetmaskLength, 0);
-	attr_set_string(ATTR_ID_ethernetGateway, ETHERNET_NETWORK_UNSET_IP,
+	attr_set_uint32(ATTR_ID_ethernet_netmask_length, 0);
+	attr_set_string(ATTR_ID_ethernet_gateway, ETHERNET_NETWORK_UNSET_IP,
 			(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
-	attr_set_string(ATTR_ID_ethernetDNS, ETHERNET_NETWORK_UNSET_IP,
+	attr_set_string(ATTR_ID_ethernet_dns, ETHERNET_NETWORK_UNSET_IP,
 			(sizeof(ETHERNET_NETWORK_UNSET_IP) - 1));
 #if defined(CONFIG_NET_DHCPV4)
-	attr_set_uint32(ATTR_ID_ethernetDHCPLeaseTime, 0);
-	attr_set_uint32(ATTR_ID_ethernetDHCPRenewTime, 0);
-	attr_set_uint32(ATTR_ID_ethernetDHCPState, 0);
-	attr_set_uint32(ATTR_ID_ethernetDHCPAttempts, 0);
+	attr_set_uint32(ATTR_ID_ethernet_dhcp_lease_time, 0);
+	attr_set_uint32(ATTR_ID_ethernet_dhcp_renew_time, 0);
+	attr_set_uint32(ATTR_ID_ethernet_dhcp_state, 0);
+	attr_set_uint32(ATTR_ID_ethernet_dhcp_attempts, 0);
 #endif
 }
 
@@ -418,12 +418,12 @@ static void iface_up_evt_handler(struct net_mgmt_event_callback *cb,
 	}
 
 	ETHERNET_LOG_DBG("Ethernet cable detected");
-	attr_set_uint32(ATTR_ID_ethernetCableDetected, (uint32_t)true);
+	attr_set_uint32(ATTR_ID_ethernet_cable_detected, (uint32_t)true);
 	ethernet_network_event(ETHERNET_EVT_CABLE_DETECTED);
 
 	if (networkSetup == false) {
 #if defined(CONFIG_NET_DHCPV4)
-		if (attr_get_uint32(ATTR_ID_ethernetMode,
+		if (attr_get_uint32(ATTR_ID_ethernet_mode,
 			(uint32_t)ETHERNET_MODE_STATIC) == ETHERNET_MODE_STATIC) {
 #endif
 			k_work_submit(&ethernet_work);
@@ -444,7 +444,7 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 	}
 
 	ETHERNET_LOG_DBG("Ethernet is down");
-	attr_set_uint32(ATTR_ID_ethernetCableDetected, (uint32_t)false);
+	attr_set_uint32(ATTR_ID_ethernet_cable_detected, (uint32_t)false);
 	lcz_led_turn_off(NETWORK_LED);
 	ethernet_network_event(ETHERNET_EVT_DISCONNECTED);
 	connected = false;
@@ -512,7 +512,7 @@ static void setup_static_ethernet_ip(struct k_work *item)
 	(void)memset(&dns, 0, sizeof(dns));
 
 	rc = net_addr_pton(AF_INET,
-			   attr_get_quasi_static(ATTR_ID_ethernetStaticDNS),
+			   attr_get_quasi_static(ATTR_ID_ethernet_static_dns),
 			   &dns.sin_addr.s4_addr);
 	if (rc) {
 		/* Invalid DNS */
@@ -521,7 +521,7 @@ static void setup_static_ethernet_ip(struct k_work *item)
 	}
 
 	rc = net_addr_pton(AF_INET, attr_get_quasi_static(
-					ATTR_ID_ethernetStaticIPAddress),
+					ATTR_ID_ethernet_static_ip_address),
 			   &ipAddress);
 	if (rc) {
 		/* Invalid IP address */
@@ -532,7 +532,7 @@ static void setup_static_ethernet_ip(struct k_work *item)
 	/* Convert subnet mask length to subnet mask value */
 	ipNetmask.s4_addr32[0] = 0;
 	i = 0;
-	rc = (int)attr_get_uint32(ATTR_ID_ethernetStaticNetmaskLength, 0);
+	rc = (int)attr_get_uint32(ATTR_ID_ethernet_static_netmask_length, 0);
 	while (rc > 0) {
 		ipNetmask.s4_addr32[0] = ipNetmask.s4_addr32[0] << 1;
 		ipNetmask.s4_addr32[0] |= 0b1;
@@ -540,7 +540,7 @@ static void setup_static_ethernet_ip(struct k_work *item)
 	}
 
 	rc = net_addr_pton(AF_INET, attr_get_quasi_static(
-					ATTR_ID_ethernetStaticGateway),
+					ATTR_ID_ethernet_static_gateway),
 			   &ipGateway);
 	if (rc) {
 		/* Invalid gateway */

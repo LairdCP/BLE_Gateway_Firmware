@@ -110,7 +110,7 @@ int lcz_motion_set_and_update_odr(int value)
 {
 	int status;
 
-	status = attr_set_uint32(ATTR_ID_motionOdr, value);
+	status = attr_set_uint32(ATTR_ID_motion_odr, value);
 	if (status == 0) {
 		status = lcz_motion_update_odr();
 	}
@@ -123,7 +123,7 @@ int lcz_motion_update_odr(void)
 	struct sensor_value sensor_value;
 
 	motion_status.odr =
-		attr_get_uint32(ATTR_ID_motionOdr, MOTION_DEFAULT_ODR);
+		attr_get_uint32(ATTR_ID_motion_odr, MOTION_DEFAULT_ODR);
 
 	/* NOTE: the zephyr sensor framework expects a frequency value rather
 	 * than ODR value directly
@@ -142,7 +142,7 @@ int lcz_motion_set_and_update_scale(int value)
 {
 	int status;
 
-	status = attr_set_uint32(ATTR_ID_motionScale, value);
+	status = attr_set_uint32(ATTR_ID_motion_scale, value);
 	if (status == 0) {
 		status = lcz_motion_update_scale();
 	}
@@ -155,7 +155,7 @@ int lcz_motion_update_scale(void)
 	struct sensor_value sensor_value;
 
 	motion_status.scale =
-		attr_get_uint32(ATTR_ID_motionScale, MOTION_DEFAULT_SCALE);
+		attr_get_uint32(ATTR_ID_motion_scale, MOTION_DEFAULT_SCALE);
 
 	sensor_g_to_ms2(motion_status.scale, &sensor_value);
 	status = sensor_attr_set(sensor, SENSOR_CHAN_ACCEL_XYZ,
@@ -169,7 +169,7 @@ int lcz_motion_set_and_update_threshold(int value)
 {
 	int status;
 
-	status = attr_set_uint32(ATTR_ID_motionThresh, value);
+	status = attr_set_uint32(ATTR_ID_motion_thresh, value);
 	if (status == 0) {
 		status = lcz_motion_update_threshold();
 	}
@@ -182,7 +182,7 @@ int lcz_motion_update_threshold(void)
 	struct sensor_value sensor_value;
 
 	motion_status.thr =
-		attr_get_uint32(ATTR_ID_motionThresh, MOTION_DEFAULT_THS);
+		attr_get_uint32(ATTR_ID_motion_thresh, MOTION_DEFAULT_THS);
 
 	sensor_value.val1 = motion_status.thr;
 	sensor_value.val2 = 0;
@@ -199,7 +199,7 @@ int lcz_motion_set_and_update_duration(int value)
 {
 	int status;
 
-	status = attr_set_uint32(ATTR_ID_motionDuration, value);
+	status = attr_set_uint32(ATTR_ID_motion_duration, value);
 	if (status == 0) {
 		status = lcz_motion_update_duration();
 	}
@@ -212,7 +212,7 @@ int lcz_motion_update_duration(void)
 	struct sensor_value sensor_value;
 
 	motion_status.dur =
-		attr_get_uint32(ATTR_ID_motionDuration, MOTION_DEFAULT_DUR);
+		attr_get_uint32(ATTR_ID_motion_duration, MOTION_DEFAULT_DUR);
 
 	sensor_value.val1 = motion_status.dur;
 	sensor_value.val2 = 0;

@@ -137,7 +137,7 @@ static void sntp_thread(void *unused1, void *unused2, void *unused3)
 
 		sntp_qrtc_event(SNTP_QRTC_UPDATING);
 
-		rc = sntp_simple(attr_get_quasi_static(ATTR_ID_sntpServer),
+		rc = sntp_simple(attr_get_quasi_static(ATTR_ID_sntp_server),
 				 CONFIG_SNTP_TIMEOUT_MILLISECONDS,
 				 &sntp_server_time);
 

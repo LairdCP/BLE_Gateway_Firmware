@@ -67,9 +67,9 @@ typedef struct control_task_obj {
 #define CONTROL_TASK_QUEUE_DEPTH 32
 
 #define MSG "These attributes must be consecutive."
-BUILD_ASSERT(ATTR_ID_joinDelay + 1 == ATTR_ID_joinMin, MSG);
-BUILD_ASSERT(ATTR_ID_joinMin + 1 == ATTR_ID_joinMax, MSG);
-BUILD_ASSERT(ATTR_ID_joinMax + 1 == ATTR_ID_joinInterval, MSG);
+BUILD_ASSERT(ATTR_ID_join_delay + 1 == ATTR_ID_join_min, MSG);
+BUILD_ASSERT(ATTR_ID_join_min + 1 == ATTR_ID_join_max, MSG);
+BUILD_ASSERT(ATTR_ID_join_max + 1 == ATTR_ID_join_interval, MSG);
 
 #if defined(CONFIG_COAP_FOTA) && defined(CONFIG_HTTP_FOTA)
 #error "Dual network FOTA not supported"
@@ -164,10 +164,10 @@ static void control_task_thread_internal(void *pArg1, void *pArg2, void *pArg3)
 {
 	control_task_obj_t *pObj = (control_task_obj_t *)pArg1;
 
-	random_join_handler(ATTR_ID_joinDelay);
+	random_join_handler(ATTR_ID_join_delay);
 
 #ifdef CONFIG_MODEM_HL7800
-	attr_prepare_modemBoot();
+	attr_prepare_modem_boot();
 	update_modem_log_level_handler();
 	update_gps_rate_handler();
 #endif
@@ -229,64 +229,64 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 			update_commission = true;
 			break;
 
-		case ATTR_ID_topicPrefix:
+		case ATTR_ID_topic_prefix:
 #ifdef CONFIG_CONTACT_TRACING
 			ct_ble_topic_builder();
 #endif
 			break;
 
-		case ATTR_ID_joinDelay:
+		case ATTR_ID_join_delay:
 			random_join_handler(pb->list[i]);
 			break;
 
 #ifdef CONFIG_MODEM_HL7800
-		case ATTR_ID_apnControlPoint:
+		case ATTR_ID_apn_control_point:
 			/* Flag prevents ordering issues when processing a file. */
 			update_apn = true;
 			break;
 
-		case ATTR_ID_modemDesiredLogLevel:
+		case ATTR_ID_modem_desired_log_level:
 			update_modem_log_level_handler();
 			break;
 
-		case ATTR_ID_lteRat:
+		case ATTR_ID_lte_rat:
 			update_rat = true;
 			break;
 
-		case ATTR_ID_gpsRate:
+		case ATTR_ID_gps_rate:
 			update_gps_rate_handler();
 			break;
 
-		case ATTR_ID_polteControlPoint:
+		case ATTR_ID_polte_control_point:
 			polte_cmd_handler();
 			break;
 
 #endif
 
-		case ATTR_ID_fotaControlPoint:
+		case ATTR_ID_fota_control_point:
 			fota_smp_cmd_handler();
 			break;
 
 #ifdef CONFIG_LCZ_MOTION
-		case ATTR_ID_motionOdr:
+		case ATTR_ID_motion_odr:
 			lcz_motion_update_odr();
 			break;
 
-		case ATTR_ID_motionThresh:
+		case ATTR_ID_motion_thresh:
 			lcz_motion_update_scale();
 			break;
 
-		case ATTR_ID_motionScale:
+		case ATTR_ID_motion_scale:
 			lcz_motion_update_threshold();
 			break;
 
-		case ATTR_ID_motionDuration:
+		case ATTR_ID_motion_duration:
 			lcz_motion_update_duration();
 			break;
 #endif
 
 #ifdef CONFIG_LWM2M
-		case ATTR_ID_generatePsk:
+		case ATTR_ID_generate_psk:
 			lwm2m_generate_psk();
 			break;
 #endif
@@ -338,9 +338,9 @@ static DispatchResult_t factory_reset_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	gateway_fsm_request_decommission();
 
 	/* clear certs (doesn't handle multiple sets of certs) */
-	fs_unlink((char *)attr_get_quasi_static(ATTR_ID_rootCaName));
-	fs_unlink((char *)attr_get_quasi_static(ATTR_ID_clientCertName));
-	fs_unlink((char *)attr_get_quasi_static(ATTR_ID_clientKeyName));
+	fs_unlink((char *)attr_get_quasi_static(ATTR_ID_root_ca_name));
+	fs_unlink((char *)attr_get_quasi_static(ATTR_ID_client_cert_name));
+	fs_unlink((char *)attr_get_quasi_static(ATTR_ID_client_key_name));
 
 	attr_factory_reset();
 
@@ -416,8 +416,8 @@ static DispatchResult_t default_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 
 static void commission_handler(void)
 {
-	attr_set_signed32(ATTR_ID_certStatus, CERT_STATUS_BUSY);
-	attr_set_uint32(ATTR_ID_commissioningBusy, true);
+	attr_set_signed32(ATTR_ID_cert_status, CERT_STATUS_BUSY);
+	attr_set_uint32(ATTR_ID_commissioning_busy, true);
 
 #ifdef CONFIG_SENSOR_TASK
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CONTROL_TASK, FWK_ID_SENSOR_TASK,
@@ -457,13 +457,13 @@ static void update_apn_handler(void)
 {
 	int32_t status = mdm_hl7800_update_apn(
 		(char *)attr_get_quasi_static(ATTR_ID_apn));
-	attr_set_signed32(ATTR_ID_apnStatus, status);
+	attr_set_signed32(ATTR_ID_apn_status, status);
 }
 
 static void update_modem_log_level_handler(void)
 {
 	uint32_t desired =
-		attr_get_uint32(ATTR_ID_modemDesiredLogLevel, LOG_LEVEL_DBG);
+		attr_get_uint32(ATTR_ID_modem_desired_log_level, LOG_LEVEL_DBG);
 	uint32_t new_level = mdm_hl7800_log_filter_set(desired);
 	LOG_INF("modem log level: desired: %u new_level: %u", desired,
 		new_level);
@@ -472,22 +472,22 @@ static void update_modem_log_level_handler(void)
 static void update_gps_rate_handler(void)
 {
 	if (IS_ENABLED(CONFIG_MODEM_HL7800_GPS)) {
-		attr_set_signed32(ATTR_ID_gpsStatus,
+		attr_set_signed32(ATTR_ID_gps_status,
 				  mdm_hl7800_set_gps_rate(
-					  attr_get_uint32(ATTR_ID_gpsRate, 0)));
+					  attr_get_uint32(ATTR_ID_gps_rate, 0)));
 	} else {
-		attr_set_signed32(ATTR_ID_gpsStatus, -EPERM);
+		attr_set_signed32(ATTR_ID_gps_status, -EPERM);
 		LOG_INF("GPS not enabled");
 	}
 }
 
 static void polte_cmd_handler(void)
 {
-	uint8_t cmd = attr_get_uint32(ATTR_ID_polteControlPoint, 0);
+	uint8_t cmd = attr_get_uint32(ATTR_ID_polte_control_point, 0);
 	int32_t status = -EPERM;
 
 	if (IS_ENABLED(CONFIG_MODEM_HL7800_POLTE)) {
-		attr_set_signed32(ATTR_ID_polteStatus, POLTE_STATUS_BUSY);
+		attr_set_signed32(ATTR_ID_polte_status, POLTE_STATUS_BUSY);
 
 		switch (cmd) {
 		case POLTE_CONTROL_POINT_REGISTER:
@@ -496,8 +496,8 @@ static void polte_cmd_handler(void)
 
 		case POLTE_CONTROL_POINT_ENABLE:
 			status = mdm_hl7800_polte_enable(
-				attr_get_quasi_static(ATTR_ID_polteUser),
-				attr_get_quasi_static(ATTR_ID_poltePassword));
+				attr_get_quasi_static(ATTR_ID_polte_user),
+				attr_get_quasi_static(ATTR_ID_polte_password));
 			break;
 
 		case POLTE_CONTROL_POINT_LOCATE:
@@ -510,7 +510,7 @@ static void polte_cmd_handler(void)
 	 * wait for second response from modem.
 	 */
 	if (status < 0 || cmd == POLTE_CONTROL_POINT_ENABLE) {
-		attr_set_signed32(ATTR_ID_polteStatus, status);
+		attr_set_signed32(ATTR_ID_polte_status, status);
 	}
 
 	LOG_DBG("PoLTE command status %d", status);
@@ -518,7 +518,7 @@ static void polte_cmd_handler(void)
 
 static void update_rat_handler(void)
 {
-	mdm_hl7800_update_rat(attr_get_uint32(ATTR_ID_lteRat, MDM_RAT_CAT_M1));
+	mdm_hl7800_update_rat(attr_get_uint32(ATTR_ID_lte_rat, MDM_RAT_CAT_M1));
 }
 #endif
 

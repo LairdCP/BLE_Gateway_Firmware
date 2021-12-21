@@ -89,7 +89,7 @@ static void log_restore_handler(struct k_work *work)
 	ARG_UNUSED(work);
 
 	mdm_hl7800_log_filter_set(
-		attr_get_uint32(ATTR_ID_modemDesiredLogLevel, LOG_LEVEL_DBG));
+		attr_get_uint32(ATTR_ID_modem_desired_log_level, LOG_LEVEL_DBG));
 }
 
 static int shell_hl_apn_cmd(const struct shell *shell, size_t argc, char **argv)

@@ -54,6 +54,7 @@ struct lwm2m_sensor_table {
 	uint8_t last_record_type;
 	uint16_t last_event_id;
 	uint16_t base; /* instance */
+	uint16_t product_id;
 	char name[SENSOR_NAME_MAX_SIZE];
 };
 
@@ -73,6 +74,7 @@ static struct {
 	int scan_user_id;
 	uint32_t ads;
 	uint32_t legacy_ads;
+	uint32_t rsp_ads;
 	uint32_t coded_ads;
 	uint32_t accepted_ads;
 	uint8_t sensor_count;
@@ -97,6 +99,7 @@ static ATOMIC_DEFINE(pressure_created, MAX_INSTANCES);
 static ATOMIC_DEFINE(ultrasonic_created, MAX_INSTANCES);
 
 static ATOMIC_DEFINE(ls_gateway_created, CONFIG_LCZ_LWM2M_SENSOR_MAX);
+static ATOMIC_DEFINE(product_id_valid, CONFIG_LCZ_LWM2M_SENSOR_MAX);
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -122,6 +125,7 @@ static void obj_not_found_handler(int status, atomic_t *created, uint8_t idx,
 				  uint8_t offset);
 
 static void name_handler(const bt_addr_le_t *addr, struct net_buf_simple *ad);
+static void rsp_handler(const bt_addr_le_t *addr, LczSensorRsp_t *p);
 
 static int lwm2m_set_sensor_data(uint16_t type, uint16_t instance, float value);
 static int set_sensor_data(uint16_t type, uint16_t instance, float value);
@@ -166,12 +170,20 @@ static void ad_handler(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
 		ad_filter((LczSensorAdEvent_t *)handle.pPayload, rssi);
 	}
 
+	if (lcz_sensor_adv_match_rsp(&handle)) {
+		ls.rsp_ads += 1;
+		rsp_handler(
+			addr,
+			&(((LczSensorRspWithHeader_t *)handle.pPayload)->rsp));
+	}
+
 	if (lcz_sensor_adv_match_coded(&handle)) {
 		ls.coded_ads += 1;
 		/* The coded phy contains the TLVs of the 1M ad and scan response */
 		LczSensorAdCoded_t *coded =
 			(LczSensorAdCoded_t *)handle.pPayload;
 		ad_filter(&coded->ad, rssi);
+		rsp_handler(addr, &coded->rsp);
 	}
 
 	name_handler(addr, ad);
@@ -214,6 +226,27 @@ static void name_handler(const bt_addr_le_t *addr, struct net_buf_simple *ad)
 		LOG_INF("Updating name in table: %s idx: %d inst: %d lwm2m status: %d",
 			log_strdup(name), i, lst[i].base, r);
 	}
+}
+
+/**
+ * @brief The scan response is used to determine the sensor type.
+ */
+static void rsp_handler(const bt_addr_le_t *addr, LczSensorRsp_t *p)
+{
+	if (p == NULL) {
+		return;
+	}
+
+	/* Only process responses for devices already in the table because
+	 * they have ad event types that can be processed.
+	 */
+	int i = get_index(&addr->a, false);
+	if (i < 0) {
+		return;
+	}
+
+	ls.table[i].product_id = p->productId;
+	atomic_set_bit(product_id_valid, i);
 }
 
 static void ad_filter(LczSensorAdEvent_t *p, int8_t rssi)

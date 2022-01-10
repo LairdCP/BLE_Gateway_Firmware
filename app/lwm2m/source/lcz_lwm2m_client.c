@@ -134,6 +134,8 @@ int lwm2m_create_sensor_obj(struct lwm2m_sensor_obj_cfg *cfg)
 			return r;
 		}
 
+		LWM2M_CLIENT_REREGISTER;
+
 		if (!cfg->skip_secondary) {
 			snprintk(path, sizeof(path), "%u/%u/5701", cfg->type,
 				 cfg->instance);
@@ -321,6 +323,15 @@ int lwm2m_connect(void)
 int lwm2m_disconnect(void)
 {
 	lwm2m_rd_client_stop(&lw.client, rd_client_event, false);
+	lw.connection_started = false;
+	lw.connected = false;
+
+	return 0;
+}
+
+int lwm2m_disconnect_and_deregister(void)
+{
+	lwm2m_rd_client_stop(&lw.client, rd_client_event, true);
 	lw.connection_started = false;
 	lw.connected = false;
 

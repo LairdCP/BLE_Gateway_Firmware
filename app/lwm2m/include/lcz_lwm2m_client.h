@@ -57,6 +57,20 @@ struct lwm2m_sensor_obj_cfg {
 #define LWM2M_CFG_FILE_NAME_MAX_SIZE                                           \
 	(sizeof(CONFIG_FSU_MOUNT_POINT) + CONFIG_LWM2M_PATH_MAX_SIZE + 1)
 
+/* Any time an object is added at runtime it is good to re-register
+ * instead of just doing a registration update. A re-registration will
+ * allow some servers to auto-observe the new objects that were added.
+ * Stopping the LwM2M client after it has bootstrapped and the re-starting
+ * will cause a re-registration instead of a full bootstrap.
+ */
+#define LWM2M_CLIENT_REREGISTER                                                \
+	{                                                                      \
+		if (lwm2m_connected()) {                                       \
+			LOG_INF("Disconnecting client for re-registration");   \
+			lwm2m_disconnect_and_deregister();                     \
+		}                                                              \
+	}
+
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
@@ -115,9 +129,16 @@ int lwm2m_connect(void);
 /**
  * @brief Disconnects from the LwM2M server
  *
- * @retval 0 on success, negative errno otherwise.
+ * @return int 0 on success, negative errno otherwise.
  */
 int lwm2m_disconnect(void);
+
+/**
+ * @brief Disconnects from the server and tries to deregister
+ *
+ * @return int 0 on success, negative errno otherwise.
+ */
+int lwm2m_disconnect_and_deregister(void);
 
 /**
  * @brief Load configuration/state from non-volatile memory.

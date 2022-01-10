@@ -39,6 +39,8 @@ int lcz_lwm2m_gateway_create(struct lwm2m_gateway_obj_cfg *cfg)
 			return r;
 		}
 
+		LWM2M_CLIENT_REREGISTER;
+
 		if (cfg->id != NULL) {
 			snprintk(
 				path, sizeof(path),

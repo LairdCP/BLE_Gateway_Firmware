@@ -156,6 +156,12 @@ target_sources(app PRIVATE
 )
 endif()
 
+if(CONFIG_LWM2M_UCIFI_BATTERY)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/lwm2m/source/lcz_lwm2m_battery.c
+)
+endif()
+
 if(CONFIG_BLUEGRASS)
 include_directories(${CMAKE_SOURCE_DIR}/bluegrass/include)
 target_sources(app PRIVATE

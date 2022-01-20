@@ -25,6 +25,10 @@ LOG_MODULE_REGISTER(lc_battery, CONFIG_LAIRD_CONNECT_BATTERY_LOG_LEVEL);
 #include "sdcard_log.h"
 #endif
 
+#ifdef CONFIG_LWM2M
+#include "lcz_lwm2m_client.h"
+#endif
+
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
@@ -265,6 +269,10 @@ enum battery_status BatteryCalculateRemainingCapacity(uint16_t Volts)
 {
 	int32_t temperature = 0;
 	int16_t voltage = 0;
+#ifdef CONFIG_LWM2M_UCIFI_BATTERY
+	double V;
+	int level;
+#endif
 
 	/* If the temperature can't be read, then just use the
 	 * BASE_TEMP value as a safe default.
@@ -298,6 +306,28 @@ enum battery_status BatteryCalculateRemainingCapacity(uint16_t Volts)
 	batteryStatus.batteryVoltage = voltage;
 	batteryStatus.batteryCapacity = batteryCapacity;
 	batteryStatus.ambientTemperature = temperature;
+
+#ifdef CONFIG_LWM2M_UCIFI_BATTERY
+	V = voltage / 1000.0;
+	switch (batteryCapacity) {
+	case BATTERY_STATUS_0:
+		level = BATTERY_LEVEL_0;
+		break;
+	case BATTERY_STATUS_1:
+		level = BATTERY_LEVEL_25;
+		break;
+	case BATTERY_STATUS_2:
+		level = BATTERY_LEVEL_50;
+		break;
+	case BATTERY_STATUS_3:
+		level = BATTERY_LEVEL_75;
+		break;
+	case BATTERY_STATUS_4:
+		level = BATTERY_LEVEL_100;
+		break;
+	}
+	lwm2m_set_board_battery(&V, level);
+#endif
 
 	/* reported to BLE/shell */
 	attr_set_uint32(ATTR_ID_batteryAlarm, batteryAlarmState);

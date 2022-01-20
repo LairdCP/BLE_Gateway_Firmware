@@ -37,6 +37,9 @@ LOG_MODULE_REGISTER(lwm2m_client, CONFIG_LCZ_LWM2M_LOG_LEVEL);
 #include "lcz_lwm2m_client.h"
 #include "lcz_lwm2m_fw_update.h"
 #include "lcz_lwm2m_conn_mon.h"
+#ifdef CONFIG_LWM2M_UCIFI_BATTERY
+#include "lcz_lwm2m_battery.h"
+#endif
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -84,6 +87,7 @@ static struct {
 	struct {
 		enum create_state ess_sensor;
 		enum create_state board_temperature;
+		enum create_state board_battery;
 	} cs;
 } lw;
 
@@ -254,6 +258,51 @@ int lwm2m_set_board_temperature(double *temperature)
 	} else if (result < 0) {
 		LOG_ERR("Unable to set board temperature %d", result);
 	}
+	return result;
+}
+#endif
+
+#if defined(CONFIG_BOARD_MG100) && defined(CONFIG_LWM2M_UCIFI_BATTERY)
+int lwm2m_set_board_battery(double *voltage, uint8_t level)
+{
+	int result = 0;
+	struct lwm2m_battery_obj_cfg cfg = {
+		.instance = LWM2M_INSTANCE_BOARD,
+		.level = 0,
+		.voltage = 0,
+	};
+
+	if (lw.cs.board_battery == CREATE_ALLOW) {
+		result = lcz_lwm2m_battery_create(&cfg);
+		if (result == 0) {
+			lw.cs.board_battery = CREATE_OK;
+		} else if (result != -EAGAIN) {
+			lw.cs.board_temperature = CREATE_FAIL;
+		}
+	}
+
+	if (lw.cs.board_battery != CREATE_OK) {
+		return -EPERM;
+	}
+
+	if (result == 0) {
+		result = lcz_lwm2m_battery_level_set(LWM2M_INSTANCE_BOARD,
+						     level);
+
+		if (result == -ENOENT) {
+			/* The object can be deleted from the cloud */
+			lw.cs.board_battery = CREATE_ALLOW;
+		}
+
+		result = lcz_lwm2m_battery_voltage_set(LWM2M_INSTANCE_BOARD,
+						       voltage);
+
+		if (result == -ENOENT) {
+			/* The object can be deleted from the cloud */
+			lw.cs.board_battery = CREATE_ALLOW;
+		}
+	}
+
 	return result;
 }
 #endif

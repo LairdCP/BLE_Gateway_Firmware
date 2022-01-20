@@ -49,6 +49,14 @@ enum battery_status {
 	BATTERY_STATUS_4,
 };
 
+enum battery_level {
+	BATTERY_LEVEL_0 = 0,
+	BATTERY_LEVEL_25 = 25,
+	BATTERY_LEVEL_50 = 50,
+	BATTERY_LEVEL_75 = 75,
+	BATTERY_LEVEL_100 = 100,
+};
+
 #define BATTERY_SUCCESS 0
 #define BATTERY_FAIL 1
 

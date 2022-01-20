@@ -106,6 +106,15 @@ int lwm2m_create_sensor_obj(struct lwm2m_sensor_obj_cfg *cfg);
 int lwm2m_set_board_temperature(double *temperature);
 
 /**
+ * @brief Set the board Battery level and voltage
+ *
+ * @param voltage voltage level in volts
+ * @param level level in percent 0 - 100
+ * @return int zero on success, otherwise negative error code
+ */
+int lwm2m_set_board_battery(double *voltage, uint8_t level);
+
+/**
  * @brief Generate new PSK
  *
  * @retval 0 on success, negative errno otherwise.

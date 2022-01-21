@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.13.1)
 
+# Add framework ID and msgcode files prior to zephyr package initialisation
+set(FWK_APP_ID_FILE_LIST ${CMAKE_SOURCE_DIR}/framework_config/FrameworkIds.h)
+set(FWK_APP_MSG_FILE_LIST ${CMAKE_SOURCE_DIR}/framework_config/FrameworkMsgCodes.h)
+
 # Add configuration for building with mcuboot
 # because it cannot be done with relative paths in VS code on Windows
 if((BOARD STREQUAL mg100) OR (BOARD STREQUAL pinnacle_100_dvk))

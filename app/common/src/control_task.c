@@ -137,7 +137,7 @@ static FwkMsgHandler_t *control_task_msg_dispatcher(FwkMsgCode_t MsgCode)
 /******************************************************************************/
 void control_task_initialize(void)
 {
-	cto.msgTask.rxer.id = FWK_ID_CONTROL_TASK;
+	cto.msgTask.rxer.id = FWK_ID_CLOUD;
 	cto.msgTask.rxer.rxBlockTicks = K_FOREVER;
 	cto.msgTask.rxer.pMsgDispatcher = control_task_msg_dispatcher;
 	cto.msgTask.timerDurationTicks = K_SECONDS(1);
@@ -297,6 +297,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 			break;
 #endif
 
+
 		default:
 			/* Don't care about this attribute. This is a broadcast. */
 			break;
@@ -345,7 +346,7 @@ static DispatchResult_t factory_reset_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	attr_factory_reset();
 
 	/* Resetting the system ensures read-only attributes have correct value. */
-	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CONTROL_TASK, FWK_ID_CONTROL_TASK,
+	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
 				      FMC_SOFTWARE_RESET);
 
 	return DISPATCH_OK;
@@ -370,7 +371,7 @@ static DispatchResult_t fota_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 
 	if (pMsg->header.msgCode == FMC_FOTA_START_REQ) {
 		pObj->fota_request = true;
-		FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_CONTROL_TASK,
+		FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_CLOUD,
 						   FMC_FOTA_START_ACK);
 	} else {
 		pObj->fota_request = false;
@@ -420,7 +421,7 @@ static void commission_handler(void)
 	attr_set_uint32(ATTR_ID_commissioning_busy, true);
 
 #ifdef CONFIG_SENSOR_TASK
-	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CONTROL_TASK, FWK_ID_SENSOR_TASK,
+	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_SENSOR_TASK,
 				      FMC_AWS_DECOMMISSION);
 #endif
 

@@ -385,7 +385,7 @@ int sentrius_mgmt_led_test(uint32_t duration)
 
 int sentrius_mgmt_factory_reset(void)
 {
-	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CONTROL_TASK, FWK_ID_CONTROL_TASK,
+	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
 				      FMC_FACTORY_RESET);
 
 	return 0;

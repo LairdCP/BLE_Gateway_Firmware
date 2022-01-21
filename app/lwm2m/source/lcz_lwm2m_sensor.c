@@ -27,6 +27,9 @@ LOG_MODULE_REGISTER(lwm2m_sensor, CONFIG_LCZ_LWM2M_SENSOR_LOG_LEVEL);
 #include "lcz_lwm2m_client.h"
 #include "lcz_lwm2m_gateway.h"
 #include "errno_str.h"
+#ifdef CONFIG_LWM2M_UCIFI_BATTERY
+#include "lcz_lwm2m_battery.h"
+#endif
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -100,6 +103,7 @@ static ATOMIC_DEFINE(ultrasonic_created, MAX_INSTANCES);
 
 static ATOMIC_DEFINE(ls_gateway_created, CONFIG_LCZ_LWM2M_SENSOR_MAX);
 static ATOMIC_DEFINE(product_id_valid, CONFIG_LCZ_LWM2M_SENSOR_MAX);
+static ATOMIC_DEFINE(battery_created, CONFIG_LCZ_LWM2M_SENSOR_MAX);
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -127,7 +131,15 @@ static void obj_not_found_handler(int status, atomic_t *created, uint8_t idx,
 static void name_handler(const bt_addr_le_t *addr, struct net_buf_simple *ad);
 static void rsp_handler(const bt_addr_le_t *addr, LczSensorRsp_t *p);
 
-static int lwm2m_set_sensor_data(uint16_t type, uint16_t instance, float value);
+#ifdef CONFIG_LWM2M_UCIFI_BATTERY
+static uint8_t get_bt610_battery_level(double voltage);
+static uint8_t get_bt510_battery_level(double voltage);
+static int create_battery_obj(uint8_t idx, uint8_t level, double voltage);
+static int lwm2m_set_battery_data(uint16_t instance, uint8_t level,
+				  double voltage);
+#endif
+static int lwm2m_set_sensor_data(uint16_t product_id, uint16_t type,
+				 uint16_t instance, float value);
 static int set_sensor_data(uint16_t type, uint16_t instance, float value);
 static int set_filling_sensor_data(uint16_t type, uint16_t instance,
 				   float value);
@@ -293,6 +305,8 @@ static bool ad_discard(LczSensorAdEvent_t *p)
 	case SENSOR_EVENT_TEMPERATURE:
 		return false;
 #endif
+	case SENSOR_EVENT_BATTERY_GOOD:
+	case SENSOR_EVENT_BATTERY_BAD:
 	case SENSOR_EVENT_TEMPERATURE_1:
 	case SENSOR_EVENT_TEMPERATURE_2:
 	case SENSOR_EVENT_TEMPERATURE_3:
@@ -323,6 +337,29 @@ static void ad_process(LczSensorAdEvent_t *p, uint8_t idx, int8_t rssi)
 	struct lwm2m_sensor_obj_cfg cfg;
 
 	switch (p->recordType) {
+#ifdef CONFIG_LWM2M_UCIFI_BATTERY
+	case SENSOR_EVENT_BATTERY_GOOD:
+	case SENSOR_EVENT_BATTERY_BAD:
+		if (atomic_test_bit(product_id_valid, idx)) {
+			switch (lst[idx].product_id) {
+			case BT510_PRODUCT_ID:
+				f = ((float)((uint32_t)p->data.u16)) / 1000.0;
+				break;
+			case BT6XX_PRODUCT_ID:
+				f = ((float)((uint32_t)p->data.s32)) / 1000.0;
+				break;
+			default:
+				r = -ENOTSUP;
+				break;
+			}
+			created = battery_created;
+			CONFIGURATOR(UCIFI_OBJECT_BATTERY_ID, lst[idx].base, "",
+				     0, 0, true);
+		} else {
+			r = -ENOTSUP;
+		}
+		break;
+#endif
 	case SENSOR_EVENT_TEMPERATURE:
 		created = temperature_created;
 		f = ((float)((int16_t)p->data.u16)) / 100.0;
@@ -383,7 +420,8 @@ static void ad_process(LczSensorAdEvent_t *p, uint8_t idx, int8_t rssi)
 		r = create_sensor_obj(created, &cfg, idx, offset);
 
 		if (r == 0) {
-			r = lwm2m_set_sensor_data(cfg.type, cfg.instance, f);
+			r = lwm2m_set_sensor_data(lst[idx].product_id, cfg.type,
+						  cfg.instance, f);
 			obj_not_found_handler(r, created, idx, offset);
 		}
 
@@ -428,7 +466,14 @@ static int create_sensor_obj(atomic_t *created,
 		return 0;
 	}
 
-	r = lwm2m_create_sensor_obj(cfg);
+#ifdef CONFIG_LWM2M_UCIFI_BATTERY
+	if (cfg->type == UCIFI_OBJECT_BATTERY_ID) {
+		r = create_battery_obj(idx, 0, 0);
+	} else
+#endif
+	{
+		r = lwm2m_create_sensor_obj(cfg);
+	}
 	if (r == 0) {
 		atomic_set_bit(created, index_with_offset);
 		if (cfg->type == IPSO_OBJECT_FILLING_LEVEL_SENSOR_ID) {
@@ -565,11 +610,120 @@ static int create_gateway_obj(uint8_t idx, int8_t rssi)
 	return r;
 }
 
-static int lwm2m_set_sensor_data(uint16_t type, uint16_t instance, float value)
+#ifdef CONFIG_LWM2M_UCIFI_BATTERY
+static uint8_t get_bt610_battery_level(double voltage)
 {
+	uint8_t level = 0;
+
+	if (voltage >= 3.376) {
+		level = 100;
+	} else if (3.351 <= voltage && voltage <= 3.375) {
+		level = 90;
+	} else if (3.326 <= voltage && voltage <= 3.350) {
+		level = 80;
+	} else if (3.301 <= voltage && voltage <= 3.325) {
+		level = 70;
+	} else if (3.251 <= voltage && voltage <= 3.300) {
+		level = 60;
+	} else if (3.201 <= voltage && voltage <= 3.250) {
+		level = 50;
+	} else if (3.151 <= voltage && voltage <= 3.200) {
+		level = 40;
+	} else if (3.101 <= voltage && voltage <= 3.150) {
+		level = 30;
+	} else if (3.001 <= voltage && voltage <= 3.100) {
+		level = 20;
+	} else if (2.501 <= voltage && voltage <= 3.000) {
+		level = 10;
+	} else if (voltage <= 2.500) {
+		level = 0;
+	}
+
+	return level;
+}
+
+static uint8_t get_bt510_battery_level(double voltage)
+{
+	uint8_t level = 0;
+
+	if (voltage >= 3.176) {
+		level = 100;
+	} else if (3.151 <= voltage && voltage <= 3.175) {
+		level = 90;
+	} else if (3.126 <= voltage && voltage <= 3.150) {
+		level = 80;
+	} else if (3.101 <= voltage && voltage <= 3.125) {
+		level = 70;
+	} else if (3.051 <= voltage && voltage <= 3.100) {
+		level = 60;
+	} else if (3.001 <= voltage && voltage <= 3.050) {
+		level = 50;
+	} else if (2.951 <= voltage && voltage <= 3.000) {
+		level = 40;
+	} else if (2.901 <= voltage && voltage <= 2.950) {
+		level = 30;
+	} else if (2.851 <= voltage && voltage <= 2.900) {
+		level = 20;
+	} else if (2.501 <= voltage && voltage <= 2.850) {
+		level = 10;
+	} else if (voltage <= 2.500) {
+		level = 0;
+	}
+
+	return level;
+}
+
+/* Create battery object if it doesn't exist */
+static int create_battery_obj(uint8_t idx, uint8_t level, double voltage)
+{
+	struct lwm2m_battery_obj_cfg cfg = {
+		.instance = lst[idx].base,
+		.level = level,
+		.voltage = voltage,
+	};
+
+	LOG_DBG("Create battery obj %d", cfg.instance);
+
+	return lcz_lwm2m_battery_create(&cfg);
+}
+
+static int lwm2m_set_battery_data(uint16_t instance, uint8_t level,
+				  double voltage)
+{
+	int r;
+
+	r = lcz_lwm2m_battery_level_set(instance, level);
+	if (r < 0) {
+		return r;
+	}
+	return lcz_lwm2m_battery_voltage_set(instance, &voltage);
+}
+#endif
+
+static int lwm2m_set_sensor_data(uint16_t product_id, uint16_t type,
+				 uint16_t instance, float value)
+{
+#ifdef CONFIG_LWM2M_UCIFI_BATTERY
+	uint8_t batt_level = 0;
+#endif
 	switch (type) {
 	case IPSO_OBJECT_FILLING_LEVEL_SENSOR_ID:
 		return set_filling_sensor_data(type, instance, value);
+#ifdef CONFIG_LWM2M_UCIFI_BATTERY
+	case UCIFI_OBJECT_BATTERY_ID:
+		switch (product_id) {
+		case BT510_PRODUCT_ID:
+			batt_level = get_bt510_battery_level((double)value);
+			break;
+		case BT6XX_PRODUCT_ID:
+			batt_level = get_bt610_battery_level((double)value);
+			break;
+		default:
+			return -ENOTSUP;
+		}
+		return lwm2m_set_battery_data(instance, batt_level,
+					      (double)value);
+#endif
 	default:
 		return set_sensor_data(type, instance, value);
 	}

@@ -358,7 +358,7 @@ static DispatchResult_t software_reset_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	ARG_UNUSED(pMsgRxer);
 	ARG_UNUSED(pMsg);
 
-	log_panic();
+	LOG_PANIC();
 	lcz_software_reset(0);
 	return DISPATCH_OK;
 }

@@ -36,7 +36,7 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 #include "lcz_nrf_reset_reason.h"
 
 #ifdef CONFIG_LCZ_POWER
-#include "laird_power.h"
+#include "lcz_power.h"
 #endif
 
 #ifdef CONFIG_BOARD_MG100

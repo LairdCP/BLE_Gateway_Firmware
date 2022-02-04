@@ -87,7 +87,6 @@ int hl7800_download_start(fota_context_t *pCtx, const char *host,
 
 	struct download_client_cfg config = {
 		.sec_tag = sec_tag,
-		.apn = apn,
 		.frag_size_override = fragment_size,
 		.set_tls_hostname = (sec_tag != -1),
 	};

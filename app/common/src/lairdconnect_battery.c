@@ -19,7 +19,7 @@ LOG_MODULE_REGISTER(lc_battery, CONFIG_LAIRD_CONNECT_BATTERY_LOG_LEVEL);
 
 #include "lairdconnect_battery.h"
 #include "attr.h"
-#include "laird_power.h"
+#include "lcz_power.h"
 
 #ifdef CONFIG_LAIRD_CONNECT_BATTERY_LOGGING
 #include "sdcard_log.h"

@@ -7,17 +7,21 @@ set(FWK_APP_MSG_FILE_LIST ${CMAKE_SOURCE_DIR}/framework_config/FrameworkMsgCodes
 # Add configuration for building with mcuboot
 # because it cannot be done with relative paths in VS code on Windows
 if((BOARD STREQUAL mg100) OR (BOARD STREQUAL pinnacle_100_dvk))
-set(mcuboot_DTC_OVERLAY_FILE
-    ${CMAKE_SOURCE_DIR}/boards/pinnacle_100.overlay
-)
-
 set(mcuboot_CONF_FILE
     ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/pinnacle_100.conf
 )
+
+if (CONFIG_LWM2M)
+list(APPEND OVERLAY_CONFIG
+    ${CMAKE_SOURCE_DIR}/overlay_lwm2m_pinnacle_100.conf
+)
+endif()
+
 elseif((BOARD STREQUAL bl5340_dvk_cpuapp) OR (BOARD STREQUAL bl5340pa_dvk_cpuapp))
 set(mcuboot_CONF_FILE
     ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/bl5340.conf
 )
+endif()
 
 list(APPEND OVERLAY_CONFIG
     ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf
@@ -27,7 +31,6 @@ list(APPEND OVERLAY_CONFIG
 set(PM_STATIC_YML_FILE
     ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/pm_static.${BOARD}.yml
 )
-endif()
 
 if(DEFINED CONFIG_LCZ_MEMFAULT OR DEFINED CONFIG_MEMFAULT_NCS_PROJECT_KEY)
 list(APPEND OVERLAY_CONFIG

@@ -1,18 +1,8 @@
 {
     "app_lwm2m_config_unix": "${workspaceRoot}/app/overlay_lwm2m_dtls.conf",
     "app_lwm2m_config_windows": "${workspaceRoot}\\app\\overlay_lwm2m_dtls.conf",
-    "app_lwm2m_pinnacle_100_config_unix": "${workspaceRoot}/app/overlay_lwm2m_pinnacle_100.conf",
-    "app_lwm2m_pinnacle_100_config_windows": "${workspaceRoot}\\app\\overlay_lwm2m_pinnacle_100.conf",
     "app_ct_config_unix": "${workspaceRoot}/app/contact_tracing/overlay_ct.conf",
     "app_ct_config_windows": "${workspaceRoot}\\app\\contact_tracing\\overlay_ct.conf",
-    "mcuboot_config_unix": "${workspaceRoot}/../modules/zephyr_lib/mcuboot_config/pinnacle_100.conf",
-    "mcuboot_config_windows": "${workspaceRoot}\\..\\modules\\zephyr_lib\\mcuboot_config\\pinnacle_100.conf",
-    "app_mcuboot_config_unix": "${workspaceRoot}/../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf",
-    "app_mcuboot_config_windows": "${workspaceRoot}\\..\\modules\\zephyr_lib\\mcumgr_wrapper\\config\\overlay-mcuboot.conf",
-    "setup_static_partitions_unix": "cp ${workspaceRoot}/../modules/zephyr_lib/mcuboot_config/pm_static.pinnacle_100_dvk.yml ${workspaceRoot}/app/pm_static.yml",
-    "setup_static_partitions_windows": "copy ${workspaceRoot}\\..\\modules\\zephyr_lib\\mcuboot_config\\pm_static.pinnacle_100_dvk.yml ${workspaceRoot}\\app\\pm_static.yml",
-    "clear_static_partitions_unix": "rm -f ${workspaceRoot}/app/pm_static.yml",
-    "clear_static_partitions_windows": "del ${workspaceRoot}\\app\\pm_static.yml",
     "laird_memfault_key": "lMq1riPv0YbLsfpCiUMfxClU1oLVVjH1",
     "C_Cpp.errorSquiggles": "Disabled",
     "cmake.configureOnOpen": false

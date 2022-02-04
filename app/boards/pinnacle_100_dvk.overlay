@@ -1,0 +1,13 @@
+
+/ {
+	chosen {
+		nordic,pm-ext-flash = &mx25r64;
+	};
+};
+
+/* remove QSPI partitions from device tree because nRF Connect SDK 
+ * partition manager will handle them.
+ */
+/delete-node/ &slot1_partition;
+/delete-node/ &scratch_partition;
+/delete-node/ &lfs_partition;

@@ -15,22 +15,29 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 /******************************************************************************/
 #include <zephyr.h>
 
-#include "laird_utility_macros.h"
+#if defined(CONFIG_BLUEGRASS)
 #include "aws.h"
+#endif
+
 #if defined(CONFIG_MODEM_HL7800)
 #include "lte.h"
 #endif
+
 #if defined(CONFIG_NET_L2_ETHERNET)
 #include "ethernet_network.h"
 #endif
-#include "lcz_certs.h"
-#include "attr.h"
+
 #if defined(CONFIG_BLUEGRASS)
 #include "bluegrass.h"
 #endif
+
 #if defined(CONFIG_LWM2M)
 #include "lcz_lwm2m_client.h"
 #endif
+
+#include "laird_utility_macros.h"
+#include "lcz_certs.h"
+#include "attr.h"
 #include "gateway_fsm.h"
 
 /******************************************************************************/

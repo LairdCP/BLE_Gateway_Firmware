@@ -3,6 +3,7 @@
 
 menuconfig SINGLE_PERIPHERAL
     bool "Enable single peripheral (one connection at a time) module"
+    depends on BT_PERIPHERAL
     help
         Handles advertising
         Prints connection information

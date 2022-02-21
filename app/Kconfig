@@ -24,6 +24,7 @@ config SENSOR_TASK
 
 config SCAN_FOR_BT510
     bool "Parse Bluetooth advertisements for BT510 Sensor"
+    depends on BT_OBSERVER
     select SENSOR_TASK
     select BLE_VSP_DEFINITIONS
 
@@ -31,6 +32,7 @@ config SCAN_FOR_BT510_CODED
     bool "Scan for coded PHY and 1M advertisements from BT510"
     default y if SCAN_FOR_BT510
     depends on BT_EXT_ADV
+    depends on BT_OBSERVER
 
 config CLOUD_QUEUE_SIZE
     int "The size of queue for sending messages to AWS or LWM2M client"
@@ -313,5 +315,3 @@ rsource "./ess_sensor/Kconfig"
 rsource "./lwm2m/Kconfig"
 
 endif # USER_APPLICATION
-
-source "Kconfig.zephyr"

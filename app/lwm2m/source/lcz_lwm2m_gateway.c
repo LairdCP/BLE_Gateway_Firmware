@@ -68,27 +68,9 @@ int lcz_lwm2m_gateway_create(struct lwm2m_gateway_obj_cfg *cfg)
 				cfg->instance);
 			lwm2m_engine_set_string(path, cfg->iot_device_objects);
 		}
-
-		snprintk(path, sizeof(path),
-			 STRINGIFY(LWM2M_OBJECT_GATEWAY_ID) "/%u/" STRINGIFY(
-				 LWM2M_GATEWAY_RSSI_RID),
-			 cfg->instance);
-		lwm2m_engine_set_s8(path, cfg->rssi);
 	}
 
 	return r;
-}
-
-int lcz_lwm2m_gateway_rssi_set(uint16_t instance, int8_t rssi)
-{
-	char path[CONFIG_LWM2M_PATH_MAX_SIZE];
-
-	snprintk(path, sizeof(path),
-		 STRINGIFY(LWM2M_OBJECT_GATEWAY_ID) "/%u/" STRINGIFY(
-			 LWM2M_GATEWAY_RSSI_RID),
-		 instance);
-
-	return lwm2m_engine_set_s8(path, rssi);
 }
 
 int lcz_lwm2m_gateway_id_set(uint16_t instance, char *id)

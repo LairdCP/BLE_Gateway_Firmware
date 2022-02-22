@@ -434,12 +434,8 @@ static void ad_process(LczSensorAdEvent_t *p, uint8_t idx, int8_t rssi)
 	if (r == 0) {
 		r = create_gateway_obj(idx, rssi);
 
-		if (r == 0) {
-			r = lcz_lwm2m_gateway_rssi_set(lst[idx].base, rssi);
-		}
-
 		if (r < 0) {
-			LOG_ERR("Unable to set LwM2M rssi: %d", r);
+			LOG_ERR("Unable to create gateway obj [%d]", r);
 		}
 	}
 }

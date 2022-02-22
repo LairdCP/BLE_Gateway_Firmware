@@ -52,7 +52,7 @@ static const struct device *sensor = NULL;
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
 static void motion_sensor_trig_handler(const struct device *dev,
-				       struct sensor_trigger *trigger);
+				       const struct sensor_trigger *trigger);
 
 static void motion_timer_callback(struct k_timer *timer_id);
 
@@ -261,7 +261,7 @@ static void motion_timer_callback(struct k_timer *timer_id)
 }
 
 static void motion_sensor_trig_handler(const struct device *dev,
-				       struct sensor_trigger *trigger)
+				       const struct sensor_trigger *trigger)
 {
 	ARG_UNUSED(dev);
 	ARG_UNUSED(trigger);

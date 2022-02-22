@@ -51,6 +51,8 @@ extern "C" {
 #define SHADOW_MG100_MAX_LOG_SIZE "\"maxLogSizeMB\":"
 #define SHADOW_MG100_SDCARD_FREE "\"sdCardFreeMB\":"
 #define SHADOW_MG100_CURR_LOG_SIZE "\"logSizeMB\":"
+#define SHADOW_FAUX_START "\"faux\":\""
+#define SHADOW_FAUX_END "\""
 
 #ifdef CONFIG_NET_L2_ETHERNET
 struct shadow_persistent_values_ethernet {

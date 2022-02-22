@@ -147,6 +147,12 @@ static struct {
 	uint32_t rx_payload_bytes;
 } aws_stats;
 
+
+#if CONFIG_SHADOW_FAUX_DATA_STR_SIZE != 0
+static char faux_char = 'a';
+static char faux_data_str[CONFIG_SHADOW_FAUX_DATA_STR_SIZE];
+#endif
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -503,6 +509,7 @@ int awsPublishHeartbeat(void)
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
 #elif defined(CONFIG_BOARD_PINNACLE_100_DVK)
+#if CONFIG_SHADOW_FAUX_DATA_STR_SIZE == 0
 int awsPublishHeartbeat(void)
 {
 	char msg[strlen(SHADOW_REPORTED_START) + strlen(SHADOW_RADIO_RSSI) +
@@ -516,6 +523,30 @@ int awsPublishHeartbeat(void)
 
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
+#else
+int awsPublishHeartbeat(void)
+{
+	char msg[strlen(SHADOW_REPORTED_START) + strlen(SHADOW_RADIO_RSSI) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_RADIO_SINR) +
+		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_FAUX_START) +
+		 strlen(SHADOW_FAUX_END) + CONFIG_SHADOW_FAUX_DATA_STR_SIZE +
+		 strlen(SHADOW_REPORTED_END)];
+
+	memset(faux_data_str, faux_char, sizeof(faux_data_str) - 1);
+	faux_char += 1;
+	if (faux_char > 'z') {
+		faux_char = 'a';
+	}
+
+	snprintf(msg, sizeof(msg), "%s%s%d,%s%d,%s%s%s%s",
+		 SHADOW_REPORTED_START, SHADOW_RADIO_RSSI,
+		 attr_get_signed32(ATTR_ID_lte_rsrp, 0), SHADOW_RADIO_SINR,
+		 attr_get_signed32(ATTR_ID_lte_sinr, 0), SHADOW_FAUX_START,
+		 faux_data_str, SHADOW_FAUX_END, SHADOW_REPORTED_END);
+
+	return awsSendData(msg, GATEWAY_TOPIC);
+}
+#endif /* CONFIG_SHADOW_FAUX_DATA_STR_SIZE */
 #else
 int awsPublishHeartbeat(void)
 {

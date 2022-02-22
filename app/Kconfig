@@ -301,6 +301,11 @@ config FOTA_SMP_DELETE_ON_COMPLETE
     bool "Delete file on completion of FOTA"
     default y
 
+config SHADOW_FAUX_DATA_STR_SIZE
+    int "Size of string sent as part of heartbeat"
+    range 0 3072
+    default 0
+
 rsource "./common/Kconfig.ble"
 rsource "./common/Kconfig.single_peripheral"
 rsource "./common/Kconfig.lairdconnect_battery"

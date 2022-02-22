@@ -432,13 +432,13 @@ static void fota_fsm(fota_context_t *pCtx)
 			r = fota_download_start(
 				http_fota_get_download_host(pCtx->type),
 				http_fota_get_download_file(pCtx->type),
-				TLS_SEC_TAG, NULL, 0);
+				TLS_SEC_TAG, 0, 0);
 #ifdef CONFIG_MODEM_HL7800
 		} else if (pCtx->type == MODEM_IMAGE_TYPE) {
 			r = hl7800_download_start(
 				pCtx, http_fota_get_download_host(pCtx->type),
 				http_fota_get_download_file(pCtx->type),
-				TLS_SEC_TAG, NULL, 0);
+				TLS_SEC_TAG, 0, 0);
 #endif
 		} else {
 			r = -EINVAL;

@@ -362,7 +362,7 @@ int lwm2m_connect(void)
 		lwm2m_rd_client_start(
 			&lw.client,
 			attr_get_quasi_static(ATTR_ID_lwm2m_client_id), flags,
-			rd_client_event);
+			rd_client_event, NULL);
 		lw.connection_started = true;
 	}
 

@@ -16,7 +16,7 @@ LOG_MODULE_REGISTER(http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
 /******************************************************************************/
 #include <zephyr.h>
 #include <net/tls_credentials.h>
-#include <power/reboot.h>
+#include <sys/reboot.h>
 #include <net/fota_download.h>
 
 #ifdef CONFIG_MODEM_HL7800

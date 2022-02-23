@@ -287,7 +287,7 @@ DispatchResult_t AdvertisementMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 	if (atomic_get(&pObj->adsOutstanding) == 0) {
 		if (atomic_get(&pObj->adsDropped) > 0) {
 			atomic_val_t dropped = atomic_clear(&pObj->adsDropped);
-			LOG_WRN("%u advertisements dropped", dropped);
+			LOG_WRN("%ld advertisements dropped", dropped);
 		}
 	}
 	return DISPATCH_OK;

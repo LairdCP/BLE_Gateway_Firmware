@@ -259,6 +259,38 @@ static int shell_gps_stop(const struct shell *shell, size_t argc, char **argv)
 }
 #endif
 
+static int shell_hl_signal_quality_cmd(const struct shell *shell, size_t argc,
+				       char **argv)
+{
+	int rc = 0;
+	int rsrp;
+	int sinr;
+
+	mdm_hl7800_get_signal_quality(&rsrp, &sinr);
+
+	shell_print(shell, "signal quality: RSRP: %d SINR: %d", rsrp, sinr);
+
+	return rc;
+}
+
+static int shell_hl_sleep_mode_cmd(const struct shell *shell, size_t argc,
+				   char **argv)
+{
+	int rc = 0;
+	int mode;
+
+	if ((argc == 2) && (argv[1] != NULL)) {
+		mode = (uint8_t)strtoul(argv[1], NULL, 0);
+		rc = mdm_hl7800_set_desired_sleep_level(mode);
+		shell_print(shell, "set sleep level (%u) status: %d", mode, rc);
+	} else {
+		rc = -EINVAL;
+		shell_error(shell, "Invalid parameter");
+	}
+
+	return rc;
+}
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -292,6 +324,15 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_CMD(gps_start, NULL, "Start GPS", shell_gps_start),
 	SHELL_CMD(gps_stop, NULL, "Stop GPS", shell_gps_stop),
 #endif
+	SHELL_CMD(signal, NULL, "Get signal quality",
+		  shell_hl_signal_quality_cmd),
+	SHELL_CMD(sleep, NULL,
+		  "Set sleep mode\n"
+		  "1 - HL7800_SLEEP_STATE_HIBERNATE\n"
+		  "2 - HL7800_SLEEP_STATE_AWAKE\n"
+		  "3 - HL7800_SLEEP_STATE_LITE_HIBERNATE\n"
+		  "4 - HL7800_SLEEP_STATE_SLEEP",
+		  shell_hl_sleep_mode_cmd),
 	SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 

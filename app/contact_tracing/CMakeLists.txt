@@ -1,7 +1,9 @@
 
 
 if(CONFIG_CONTACT_TRACING)
-target_include_directories(app PRIVATE
+# Target scope cannot be used because the lcz_fs_mgmt module
+# gets configuration from this location.
+zephyr_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
 

@@ -34,6 +34,7 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 #include "gateway_fsm.h"
 #include "lcz_qrtc.h"
 #include "lcz_nrf_reset_reason.h"
+#include "aws.h"
 
 #ifdef CONFIG_LCZ_POWER
 #include "lcz_power.h"
@@ -56,7 +57,6 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 #endif
 
 #ifdef CONFIG_BLUEGRASS
-#include "aws.h"
 #include "bluegrass.h"
 #endif
 
@@ -135,10 +135,6 @@ static void advertise_on_startup(void);
 static int adv_on_button_isr(void);
 #endif
 
-#ifdef CONFIG_BLUEGRASS
-static void aws_set_default_client_id(void);
-#endif
-
 #ifdef CONFIG_MODEM_HL7800
 static void fs_to_attr_string_handler(attr_index_t idx, const char *file_name);
 static void nv_deprecation_handler(void);
@@ -174,11 +170,6 @@ int configure_app(void)
 
 #ifdef CONFIG_ESS_SENSOR
 	ess_sensor_initialize();
-#endif
-
-#ifdef CONFIG_BLUEGRASS
-	aws_set_default_client_id();
-	awsInit();
 #endif
 
 #ifdef CONFIG_BLUEGRASS
@@ -538,27 +529,8 @@ static void configure_sd_card(void)
 #endif
 }
 
-#ifdef CONFIG_BLUEGRASS
-static void aws_set_default_client_id(void)
-{
-	char *s;
+#ifdef CONFIG_AWS
 
-	s = attr_get_quasi_static(ATTR_ID_client_id);
-
-	/* Doesn't handle the board changing. */
-	if (strlen(s) == 0) {
-#if defined(CONFIG_BOARD_BL5340_DVK_CPUAPP)
-		s = "bl5340";
-#elif defined(CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
-		s = "bl5340pa";
-#elif defined(CONFIG_BOARD_MG100)
-		s = "mg100";
-#else
-		s = "pinnacle100_oob";
-#endif
-		attr_set_string(ATTR_ID_client_id, s, strlen(s));
-	}
-}
 #endif
 
 #ifdef CONFIG_MODEM_HL7800

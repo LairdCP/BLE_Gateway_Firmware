@@ -1,13 +1,13 @@
 /**
- * @file aws_json.h
+ * @file bluegrass_json.h
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#ifndef __AWS_JSON_H__
-#define __AWS_JSON_H__
+#ifndef __BLUEGRASS_JSON_H__
+#define __BLUEGRASS_JSON_H__
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -170,4 +170,4 @@ static const struct json_obj_descr shadow_descr[] = {
 }
 #endif
 
-#endif /* __AWS_JSON_H__ */
+#endif /* __BLUEGRASS_JSON_H__ */

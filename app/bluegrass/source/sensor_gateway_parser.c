@@ -283,7 +283,7 @@ static void BuildAndSendLocalConfigNullResponse(void)
 	ShadowBuilder_Finalize(pMsg);
 
 	snprintk(pMsg->topic, CONFIG_AWS_TOPIC_MAX_SIZE, "%s",
-		 awsGetGatewayUpdateDeltaTopic());
+		 aws_get_gateway_update_delta_topic());
 
 	FRAMEWORK_MSG_SEND(pMsg);
 }
@@ -330,7 +330,7 @@ static void BuildAndSendLocalConfigResponse(void)
 	ShadowBuilder_Finalize(pMsg);
 
 	snprintk(pMsg->topic, CONFIG_AWS_TOPIC_MAX_SIZE, "%s",
-		 awsGetGatewayUpdateDeltaTopic());
+		 aws_get_gateway_update_delta_topic());
 
 	FRAMEWORK_MSG_SEND(pMsg);
 }

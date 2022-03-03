@@ -539,7 +539,7 @@ int ct_ble_publish_dummy_data_to_aws(void)
 	       sizeof(dummyEntry));
 	buf_len = sizeof(struct ct_publish_header_t) + sizeof(dummyEntry);
 
-	return awsSendBinData(buf, buf_len, ct.up_topic);
+	return aws_send_bin_data(buf, buf_len, ct.up_topic);
 }
 
 bool ct_ble_is_not_downloading_logs(void)
@@ -2926,13 +2926,13 @@ static void aws_work_handler(struct k_work *item)
 	ARG_UNUSED(item);
 
 	/* If not connected to AWS, set state to fail so entry is stashed. */
-	if (!awsConnected()) {
+	if (!aws_connected()) {
 		disconnect_sensor();
 		ct.aws_publish_state = AWS_PUBLISH_STATE_FAIL;
 	} else {
 #if defined(CONFIG_CT_AWS_PUBLISH_ENTRIES)
 		/* perform the AWS send in system context */
-		int rc = awsSendBinData(aws_work.buf, aws_work.buf_len,
+		int rc = aws_send_bin_data(aws_work.buf, aws_work.buf_len,
 					ct.up_topic);
 		if (rc != 0) {
 			disconnect_sensor();

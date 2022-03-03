@@ -15,6 +15,10 @@ target_sources(app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/fota_smp.c
     )
 
+target_sources_ifdef(CONFIG_AWS app PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/aws.c
+    )
+
 target_sources_ifdef(CONFIG_SINGLE_PERIPHERAL app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/single_peripheral.c
     )

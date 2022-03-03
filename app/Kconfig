@@ -46,54 +46,18 @@ config CLOUD_FIFO_CHECK_RATE_SECONDS
     int "The rate at which the cloud fifo is checked"
     default 1
 
-config AWS_TOPIC_MAX_SIZE
-    int "Maximum size for AWS topic strings"
-    default 64
-
-config MQTT_RX_BUFFER_SIZE
-    int "Size of buffer for MQTT rx path"
-    default 1024
-
-config MQTT_TX_BUFFER_SIZE
-    int "Size of buffer for MQTT tx path"
-    default 1536
-
 menuconfig BLUEGRASS
     bool "Laird Connectivity Bluegrass cloud"
     depends on MQTT_LIB
+    depends on AWS
     help
         Send sensor data to Bluegrass cloud platform
 
 if BLUEGRASS
 
-config AWS_DATA_SEND_LED_OFF_DURATION_MILLISECONDS
-    int "The amount of time to turn off the green LED when data is sent"
-    default 30
-    range 1 1000
-    help
-        Green LED is turned on when connected to AWS.
-        Green LED is flashed off when data is sent.
-        Implemented using sleep.
-        Subscription processing doesn't blink green LED.
-
-config AWS_HEARTBEAT_SECONDS
+config BLUEGRASS_HEARTBEAT_SECONDS
     int "Rate at which to send LTE info and battery status"
     default 120
-
-config AWS_PUBLISH_WATCHDOG_SECONDS
-    int "Watchdog timeout for successful AWS publish"
-    default 0 if AWS_HEARTBEAT_SECONDS = 0
-    default 3600
-    help
-        Disabled when 0
-        Not enabled until first successful publish
-        Timeout causes a reset
-
-config AWS_MAX_CONSECUTIVE_CONNECTION_FAILURES
-    int "Maximum consecutive connection failures before reset"
-    default 0
-    help
-        Disabled when 0
 
 config USE_SINGLE_AWS_TOPIC
     bool "Send all sensor data to gateway topic"
@@ -104,7 +68,7 @@ config USE_SINGLE_AWS_TOPIC
         the gateway's topic vs. the individual sensor topic.
         BL654 (ESS) sensor data is always sent to the gateway topic.
 
-config AWS_CLEAR_SHADOW_ON_STARTUP
+config BLUEGRASS_CLEAR_SHADOW_ON_STARTUP
     bool "Null shadow state on first connection"
 
 config JSON_BRACKET_BUFFER_SIZE
@@ -118,12 +82,6 @@ config SENSOR_TOPIC_FMT_STR_PREFIX
 	default "$aws/things/%s/shadow"
     help
         "%s will be replaced by the sensor BT address"
-
-config SHADOW_IN_MAX_SIZE
-    int "Maximum size of subscription/shadow that can be processed"
-    default 8192
-    help
-        The timestamps can make the shadow larger than 7K bytes.
 
 config SENSOR_TABLE_SIZE
     int "Number of sensors viewable on Bluegrass gateway page"
@@ -177,23 +135,6 @@ config BLUEGRASS_LOG_LEVEL
 
 endif # BLUEGRASS
 
-config JSON_LOG_PUBLISH
-    bool "Print data published to AWS"
-
-config JSON_LOG_TOPIC
-    bool "Print the topic that docs are published to or received from"
-
-config JSON_LOG_MQTT_RX_DATA
-    bool "Enable/Disable printing of received MQTT data."
-
-config APP_CA_CERT_TAG
-    int "mbedTLS tag for CA"
-    default 1
-
-config APP_DEVICE_CERT_TAG
-    int "mbedTLS tag for device cert and private key"
-    default 2
-
 config JSMN_NUMBER_OF_TOKENS
     int "The number of tokens for jsmn"
     default 512
@@ -227,11 +168,6 @@ config APP_ENDPOINT_FILE_NAME
 config APP_TOPIC_PREFIX_FILE_NAME
     string
     default "topic_prefix.txt"
-
-config AWS_LOG_LEVEL
-    int "AWS Log level"
-    range 0 4
-    default 3
 
 config LTE_LOG_LEVEL
     int "LTE Log level"
@@ -306,6 +242,7 @@ config SHADOW_FAUX_DATA_STR_SIZE
     range 0 3072
     default 0
 
+rsource "./common/Kconfig.aws"
 rsource "./common/Kconfig.ble"
 rsource "./common/Kconfig.single_peripheral"
 rsource "./common/Kconfig.lairdconnect_battery"

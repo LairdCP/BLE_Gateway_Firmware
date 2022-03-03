@@ -11,7 +11,6 @@ target_sources(app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/source/sensor_gateway_parser.c
     ${CMAKE_CURRENT_SOURCE_DIR}/source/shadow_builder.c
     ${CMAKE_CURRENT_SOURCE_DIR}/source/to_string.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/aws.c
     )
 endif()
 

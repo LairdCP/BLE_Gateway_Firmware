@@ -588,7 +588,7 @@ static void fota_shadow_handler(void)
 
 #ifdef CONFIG_BLUEGRASS
 		LOG_DBG("Update FOTA shadow");
-		rc = awsSendData(msg, GATEWAY_TOPIC);
+		rc = aws_send_data(msg, GATEWAY_TOPIC);
 #endif
 		if (rc < 0) {
 			LOG_ERR("Could not send FOTA state to AWS");
@@ -629,7 +629,7 @@ static int fota_null_desired_handler(const char *name)
 
 #ifdef CONFIG_BLUEGRASS
 	LOG_DBG("Set %s FOTA desired null", name);
-	rc = awsSendData(msg, GATEWAY_TOPIC);
+	rc = aws_send_data(msg, GATEWAY_TOPIC);
 #endif
 
 	if (rc < 0) {

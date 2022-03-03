@@ -106,7 +106,7 @@ static int publish_clear_command(void)
 	rpc_params_clear_method();
 
 	/* Publish a JSON message to clear the command from the device shadow. */
-	return awsSendData((char *)CLEAR_RPC_MSG, GATEWAY_TOPIC);
+	return aws_send_data((char *)CLEAR_RPC_MSG, GATEWAY_TOPIC);
 }
 
 static void ct_publisher(uint32_t now)
@@ -192,7 +192,7 @@ static void handle_sd_card_log_get(void)
 				strncat(sd_log_publish_buf, "\r<eof>",
 					sizeof(sd_log_publish_buf) - 1);
 			}
-			awsSendData(sd_log_publish_buf, ct_ble_get_log_topic());
+			aws_send_data(sd_log_publish_buf, ct_ble_get_log_topic());
 		} else {
 			/* abort if no bytes are ready, likely file not found
 			 * or other fs error */
@@ -260,7 +260,7 @@ static void process_log_dir_command(void)
 	if (0 == sdCardLogLsDirToString("/", sd_log_publish_buf,
 					SD_LOG_PUBLISH_MAX_CHUNK_LEN)) {
 		LOG_DBG("\t\tpublishing log dir to %s", log_strdup(topic));
-		awsSendData(sd_log_publish_buf, topic);
+		aws_send_data(sd_log_publish_buf, topic);
 	}
 #else
 	LOG_WRN("ignoring log_get command, SD card not present");

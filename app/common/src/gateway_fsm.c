@@ -15,7 +15,7 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 /******************************************************************************/
 #include <zephyr.h>
 
-#if defined(CONFIG_BLUEGRASS)
+#if defined(CONFIG_AWS)
 #include "aws.h"
 #endif
 
@@ -151,10 +151,10 @@ void gateway_fsm_init(void)
 #error "Unknown board/network configuration, add to gateway_fsm_init()"
 #endif
 
-	gsm.resolve_server = awsGetServerAddr;
-	gsm.cloud_connect = awsConnect;
-	gsm.cloud_disconnect = awsDisconnect;
-	gsm.cloud_is_connected = awsConnected;
+	gsm.resolve_server = aws_get_server_addr;
+	gsm.cloud_connect = aws_connect;
+	gsm.cloud_disconnect = aws_disconnect;
+	gsm.cloud_is_connected = aws_connected;
 	gsm.cert_load = lcz_certs_load;
 	gsm.cert_unload = lcz_certs_unload;
 #endif

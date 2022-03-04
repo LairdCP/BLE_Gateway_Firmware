@@ -203,11 +203,11 @@ static FwkMsgHandler_t *SensorTaskMsgDispatcher(FwkMsgCode_t MsgCode)
 	case FMC_RESPONSE:                 return ResponseHandler;
 	case FMC_SEND_RESET:               return SendResetHandler;
 	case FMC_PERIODIC:                 return PeriodicTimerMsgHandler;
-	case FMC_BLUEGRASS_READY:          return AwsConnectionMsgHandler;
-	case FMC_AWS_DISCONNECTED:         return AwsConnectionMsgHandler;
+	case FMC_CLOUD_READY:              return AwsConnectionMsgHandler;
+	case FMC_CLOUD_DISCONNECTED:       return AwsConnectionMsgHandler;
 	case FMC_SUBSCRIBE_ACK:            return SubscriptionAckMsgHandler;
 	case FMC_SENSOR_SHADOW_INIT:       return SensorShadowInitMsgHandler;
-	case FMC_AWS_DECOMMISSION:         return AwsDecommissionMsgHandler;
+	case FMC_DECOMMISSION:             return AwsDecommissionMsgHandler;
 	default:                           return NULL;
 	}
 	/* clang-format on */
@@ -426,7 +426,7 @@ static DispatchResult_t AwsConnectionMsgHandler(FwkMsgReceiver_t *pMsgRxer,
 						FwkMsg_t *pMsg)
 {
 	SensorTaskObj_t *pObj = FWK_TASK_CONTAINER(SensorTaskObj_t);
-	if (pMsg->header.msgCode == FMC_BLUEGRASS_READY) {
+	if (pMsg->header.msgCode == FMC_CLOUD_READY) {
 		pObj->bluegrassReady = true;
 		SensorTable_EnableGatewayShadowGeneration();
 		StartSensorTick(pObj);

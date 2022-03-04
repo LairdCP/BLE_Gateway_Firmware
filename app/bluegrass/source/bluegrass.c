@@ -20,10 +20,10 @@ LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 #include "bluegrass_json.h"
 #include "lte.h"
 #include "lcz_memfault.h"
-#include "led_configuration.h"
 #include "attr.h"
 #include "sensor_gateway_parser.h"
 #include "app_version.h"
+#include "cloud.h"
 
 #ifdef CONFIG_SENSOR_TASK
 #include "sensor_task.h"
@@ -58,10 +58,6 @@ LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-#ifndef CONFIG_USE_SINGLE_AWS_TOPIC
-#define CONFIG_USE_SINGLE_AWS_TOPIC 0
-#endif
-
 #define CONNECT_TO_SUBSCRIBE_DELAY 4
 
 #define CONVERSION_MAX_STR_LEN 10
@@ -77,7 +73,7 @@ BUILD_ASSERT((CONFIG_AWS_PUBLISH_WATCHDOG_SECONDS / 2) >
 /* Local Data Definitions                                                     */
 /******************************************************************************/
 static struct {
-	bool init_shadow;
+	bool init_request;
 	bool gateway_subscribed;
 	bool subscribed_to_get_accepted;
 	bool get_shadow_processed;
@@ -116,6 +112,9 @@ static FwkMsgHandler_t subscription_msg_handler;
 static FwkMsgHandler_t get_accepted_msg_handler;
 static FwkMsgHandler_t ess_sensor_msg_handler;
 static FwkMsgHandler_t heartbeat_msg_handler;
+static FwkMsgHandler_t connected_msg_handler;
+static FwkMsgHandler_t disconnected_msg_handler;
+static FwkMsgHandler_t bluegrass_subscription_handler;
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -130,21 +129,69 @@ void bluegrass_initialize(void)
 
 	set_default_client_id();
 
-	init_shadow();
+	cloud_init_shadow_request();
 }
 
-void bluegrass_init_shadow_request(void)
+bool bluegrass_ready_for_publish(void)
 {
-	bg.init_shadow = true;
+	return (aws_connected() && bg.get_shadow_processed &&
+		bg.gateway_subscribed);
 }
 
-void bluegrass_connected_callback(void)
+/******************************************************************************/
+/* Weak Overrides                                                             */
+/******************************************************************************/
+FwkMsgHandler_t *cloud_sub_task_msg_dispatcher(FwkMsgCode_t MsgCode)
 {
-	lcz_led_turn_on(CLOUD_LED);
+	/* clang-format off */
+	switch (MsgCode)
+	{
+	case FMC_PERIODIC:                  return bluegrass_subscription_handler;
+	case FMC_SENSOR_PUBLISH:            return sensor_publish_msg_handler;
+	case FMC_GATEWAY_OUT:               return gateway_publish_msg_handler;
+	case FMC_SUBSCRIBE:                 return subscription_msg_handler;
+	case FMC_GET_ACCEPTED_RECEIVED:     return get_accepted_msg_handler;
+	case FMC_ESS_SENSOR_EVENT:          return ess_sensor_msg_handler;
+	case FMC_CLOUD_HEARTBEAT:           return heartbeat_msg_handler;
+	case FMC_CLOUD_CONNECTED:           return connected_msg_handler;
+	case FMC_CLOUD_DISCONNECTED:        return disconnected_msg_handler;
+	default:                            return DISPATCH_OK;
+	}
+	/* clang-format on */
+}
+
+void cloud_init_shadow_request(void)
+{
+	bg.init_request = true;
+}
+
+void aws_subscription_handler_callback(const char *topic, const char *json)
+{
+	SensorGatewayParser(topic, json);
+}
+
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
+static void heartbeat_work_handler(struct k_work *work)
+{
+	ARG_UNUSED(work);
+
+	extern struct mqtt_client *aws_get_mqtt_client(void);
+	LCZ_MEMFAULT_PUBLISH_DATA(aws_get_mqtt_client());
+
+	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
+				      FMC_CLOUD_HEARTBEAT);
+}
+
+/* Start heartbeat. Init shadow if required. Send CT stashed data. */
+static DispatchResult_t connected_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+					      FwkMsg_t *pMsg)
+{
+	ARG_UNUSED(pMsgRxer);
+	ARG_UNUSED(pMsg);
 
 	k_work_schedule(&bg.heartbeat, K_NO_WAIT);
-
-	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED, FMC_AWS_CONNECTED);
 
 	init_shadow();
 
@@ -157,48 +204,29 @@ void bluegrass_connected_callback(void)
 	/* Try to send stashed entries immediately on re-connect */
 	ct_ble_check_stashed_log_entries();
 #endif
+
+	return DISPATCH_OK;
 }
 
-void bluegrass_disconnected_callback(void)
+static DispatchResult_t disconnected_msg_handler(FwkMsgReceiver_t *pMsgRxer,
+						 FwkMsg_t *pMsg)
 {
-	lcz_led_turn_off(CLOUD_LED);
+	ARG_UNUSED(pMsgRxer);
+	ARG_UNUSED(pMsg);
 
 	bg.gateway_subscribed = false;
 	bg.subscribed_to_get_accepted = false;
 	bg.get_shadow_processed = false;
 
-	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED,
-					   FMC_AWS_DISCONNECTED);
+	return DISPATCH_OK;
 }
 
-bool bluegrass_ready_for_publish(void)
-{
-	return (aws_connected() && bg.get_shadow_processed &&
-		bg.gateway_subscribed);
-}
-
-DispatchResult_t bluegrass_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-				       FwkMsg_t *pMsg)
-{
-	if (!aws_connected()) {
-		return DISPATCH_OK;
-	}
-
-	/* clang-format off */
-	switch (pMsg->header.msgCode)
-	{
-	case FMC_SENSOR_PUBLISH:            return sensor_publish_msg_handler(pMsgRxer, pMsg);
-	case FMC_GATEWAY_OUT:               return gateway_publish_msg_handler(pMsgRxer, pMsg);
-	case FMC_SUBSCRIBE:                 return subscription_msg_handler(pMsgRxer, pMsg);
-	case FMC_AWS_GET_ACCEPTED_RECEIVED: return get_accepted_msg_handler(pMsgRxer, pMsg);
-	case FMC_ESS_SENSOR_EVENT:          return ess_sensor_msg_handler(pMsgRxer, pMsg);
-	case FMC_AWS_HEARTBEAT:             return heartbeat_msg_handler(pMsgRxer, pMsg);
-	default:                            return DISPATCH_OK;
-	}
-	/* clang-format on */
-}
-
-int bluegrass_subscription_handler(void)
+/* Must be periodically called to process subscriptions.
+ * The gateway shadow must be processed on connection.
+ * The delta topic must be subscribed to.
+ */
+static DispatchResult_t
+bluegrass_subscription_handler(FwkMsgReceiver_t *pMsgRxer, FwkMsg_t *pMsg)
 {
 	int rc = 0;
 
@@ -207,7 +235,7 @@ int bluegrass_subscription_handler(void)
 		return rc;
 	}
 
-	if (CONFIG_USE_SINGLE_AWS_TOPIC) {
+	if (IS_ENABLED(CONFIG_USE_SINGLE_AWS_TOPIC)) {
 		return rc;
 	}
 
@@ -233,30 +261,11 @@ int bluegrass_subscription_handler(void)
 			bg.gateway_subscribed = true;
 
 			FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_CLOUD,
-							   FMC_BLUEGRASS_READY);
+							   FMC_CLOUD_READY);
 		}
 	}
 
 	return rc;
-}
-
-void aws_subscription_handler_callback(const char *topic, const char *json)
-{
-	SensorGatewayParser(topic, json);
-}
-
-/******************************************************************************/
-/* Local Function Definitions                                                 */
-/******************************************************************************/
-static void heartbeat_work_handler(struct k_work *work)
-{
-	ARG_UNUSED(work);
-
-	extern struct mqtt_client *aws_get_mqtt_client(void);
-	LCZ_MEMFAULT_PUBLISH_DATA(aws_get_mqtt_client());
-
-	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
-				      FMC_AWS_HEARTBEAT);
 }
 
 static void init_shadow(void)
@@ -264,7 +273,7 @@ static void init_shadow(void)
 	int r;
 
 	/* The shadow init is only sent once after the very first connect. */
-	if (bg.init_shadow) {
+	if (bg.init_request) {
 		aws_generate_gateway_topics(
 			attr_get_quasi_static(ATTR_ID_gateway_id));
 
@@ -273,7 +282,7 @@ static void init_shadow(void)
 		if (r != 0) {
 			LOG_ERR("Could not publish shadow (%d)", r);
 		} else {
-			bg.init_shadow = false;
+			bg.init_request = false;
 		}
 	}
 }
@@ -285,9 +294,10 @@ static DispatchResult_t sensor_publish_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	JsonMsg_t *pJsonMsg = (JsonMsg_t *)pMsg;
 
 	if (bluegrass_ready_for_publish()) {
-		aws_send_data(pJsonMsg->buffer, CONFIG_USE_SINGLE_AWS_TOPIC ?
-							    GATEWAY_TOPIC :
-							    pJsonMsg->topic);
+		aws_send_data(pJsonMsg->buffer,
+			      IS_ENABLED(CONFIG_USE_SINGLE_AWS_TOPIC) ?
+					    GATEWAY_TOPIC :
+					    pJsonMsg->topic);
 	}
 
 	return DISPATCH_OK;

@@ -36,10 +36,7 @@ LOG_MODULE_REGISTER(ethernet_network, CONFIG_ETHERNET_LOG_LEVEL);
 #include "attr.h"
 #include "gateway_common.h"
 #include "lcz_memfault.h"
-
-#ifdef CONFIG_BLUEGRASS
-#include "bluegrass.h"
-#endif
+#include "cloud.h"
 
 #ifdef CONFIG_SNTP
 #include "lcz_qrtc.h"
@@ -134,10 +131,8 @@ int ethernet_network_init(void)
 		setup_iface_events();
 		reset_iface_details();
 
-#ifdef CONFIG_BLUEGRASS
 		/* Generate Bluegrass topic IDs */
-		bluegrass_init_shadow_request();
-#endif
+		cloud_init_shadow_request();
 
 #if defined(CONFIG_SNTP)
 		sntp_qrtc_init();

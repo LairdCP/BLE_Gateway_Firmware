@@ -157,9 +157,9 @@ static FwkMsgHandler_t *coap_fota_taskMsgDispatcher(FwkMsgCode_t MsgCode)
 	case FMC_PERIODIC:               return coap_fota_tick_msg_handler;
 	case FMC_NETWORK_CONNECTED:      return coap_connection_msg_handler;
 	case FMC_NETWORK_DISCONNECTED:   return coap_connection_msg_handler;
-	case FMC_AWS_CONNECTED:          return coap_connection_msg_handler;
-	case FMC_AWS_DISCONNECTED:       return coap_connection_msg_handler;
-	case FMC_BLUEGRASS_READY:        return coap_connection_msg_handler;
+	case FMC_CLOUD_CONNECTED:        return coap_connection_msg_handler;
+	case FMC_CLOUD_DISCONNECTED:     return coap_connection_msg_handler;
+	case FMC_CLOUD_READY:            return coap_connection_msg_handler;
 	case FMC_FOTA_START_ACK:         return coap_start_ack_msg_handler;
 	default:                         return NULL;
 	}
@@ -254,17 +254,17 @@ static DispatchResult_t coap_connection_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 		pObj->network_connected = false;
 		break;
 
-	case FMC_BLUEGRASS_READY:
+	case FMC_CLOUD_READY:
 		pObj->aws_connected = true;
 		pObj->bluegrass_ready = true;
 		coap_fota_enable_shadow_generation();
 		break;
 
-	case FMC_AWS_CONNECTED:
+	case FMC_CLOUD_CONNECTED:
 		pObj->aws_connected = true;
 		break;
 
-	case FMC_AWS_DISCONNECTED:
+	case FMC_CLOUD_DISCONNECTED:
 		pObj->aws_connected = false;
 		pObj->bluegrass_ready = false;
 		coap_fota_disable_shadow_generation();

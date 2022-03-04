@@ -433,7 +433,7 @@ static void UnsubscribeToGetAcceptedHandler(void)
 	/* Once this has been processed (after reset) we can unsubscribe. */
 	if (getAcceptedTopic) {
 		FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
-					      FMC_AWS_GET_ACCEPTED_RECEIVED);
+					      FMC_GET_ACCEPTED_RECEIVED);
 	}
 }
 

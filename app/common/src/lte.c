@@ -33,10 +33,7 @@ LOG_MODULE_REGISTER(lte, CONFIG_LTE_LOG_LEVEL);
 #include "lcz_qrtc.h"
 #include "attr.h"
 #include "gateway_common.h"
-
-#ifdef CONFIG_BLUEGRASS
-#include "bluegrass.h"
-#endif
+#include "cloud.h"
 
 #ifdef CONFIG_COAP_FOTA
 #include "coap_fota_shadow.h"
@@ -513,10 +510,8 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 	case HL7800_EVENT_REVISION:
 		MFLT_METRICS_SET_UNSIGNED(lte_ver, lte_version_to_int(s));
 		attr_set_string(ATTR_ID_lte_version, s, strlen(s));
-#ifdef CONFIG_BLUEGRASS
 		/* Update shadow because modem version has changed. */
-		bluegrass_init_shadow_request();
-#endif
+		cloud_init_shadow_request();
 #ifdef CONFIG_COAP_FOTA
 		/* This is duplicated for backwards compatability. */
 		coap_fota_set_running_version(MODEM_IMAGE_TYPE,

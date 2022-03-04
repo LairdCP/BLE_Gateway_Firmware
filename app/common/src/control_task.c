@@ -30,10 +30,7 @@ LOG_MODULE_REGISTER(control, CONFIG_CONTROL_TASK_LOG_LEVEL);
 #include "gateway_common.h"
 #include "gateway_fsm.h"
 #include "rand_range.h"
-
-#ifdef CONFIG_BLUEGRASS
-#include "bluegrass.h"
-#endif
+#include "led_configuration.h"
 
 #ifdef CONFIG_CONTACT_TRACING
 #include "ct_ble.h"
@@ -51,6 +48,7 @@ LOG_MODULE_REGISTER(control, CONFIG_CONTROL_TASK_LOG_LEVEL);
 #include "lcd.h"
 #endif
 
+#include "cloud.h"
 #include "control_task.h"
 
 /******************************************************************************/
@@ -94,11 +92,7 @@ static FwkMsgHandler_t attr_broadcast_msg_handler;
 static FwkMsgHandler_t factory_reset_msg_handler;
 static FwkMsgHandler_t cloud_state_msg_handler;
 static FwkMsgHandler_t fota_msg_handler;
-static FwkMsgHandler_t default_msg_handler;
-
-#ifdef CONFIG_LWM2M
-static FwkMsgHandler_t lwm2m_msg_handler;
-#endif
+static FwkMsgHandler_t dispatch_to_sub_task;
 
 static void commission_handler(void);
 static void random_join_handler(attr_index_t idx);
@@ -127,9 +121,21 @@ static FwkMsgHandler_t *control_task_msg_dispatcher(FwkMsgCode_t MsgCode)
 	case FMC_CLOUD_DISCONNECTED:         return cloud_state_msg_handler;
 	case FMC_FOTA_START_REQ:             return fota_msg_handler;
 	case FMC_FOTA_DONE:                  return fota_msg_handler;
-	default:                             return default_msg_handler;
+	default:                             return cloud_sub_task_msg_dispatcher(MsgCode);
 	}
 	/* clang-format on */
+}
+
+__weak FwkMsgHandler_t *cloud_sub_task_msg_dispatcher(FwkMsgCode_t MsgCode)
+{
+	ARG_UNUSED(MsgCode);
+
+	return NULL;
+}
+
+__weak void cloud_init_shadow_request(void)
+{
+	return;
 }
 
 /******************************************************************************/
@@ -185,14 +191,9 @@ static void control_task_thread_internal(void *pArg1, void *pArg2, void *pArg3)
 static DispatchResult_t gateway_fsm_tick_handler(FwkMsgReceiver_t *pMsgRxer,
 						 FwkMsg_t *pMsg)
 {
-	ARG_UNUSED(pMsg);
 	control_task_obj_t *pObj = FWK_TASK_CONTAINER(control_task_obj_t);
 
 	gateway_fsm();
-
-#ifdef CONFIG_BLUEGRASS
-	bluegrass_subscription_handler();
-#endif
 
 #ifdef CONFIG_MODEM_HL7800_FW_UPDATE
 	if (!pObj->cloud_connected) {
@@ -201,7 +202,7 @@ static DispatchResult_t gateway_fsm_tick_handler(FwkMsgReceiver_t *pMsgRxer,
 #endif
 
 	Framework_StartTimer(&pObj->msgTask);
-	return DISPATCH_OK;
+	return dispatch_to_sub_task(pMsgRxer, pMsg);
 }
 
 static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
@@ -383,36 +384,31 @@ static DispatchResult_t fota_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 static DispatchResult_t cloud_state_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 						FwkMsg_t *pMsg)
 {
-	ARG_UNUSED(pMsgRxer);
-
-#ifdef CONFIG_BLUEGRASS
 	control_task_obj_t *pObj = FWK_TASK_CONTAINER(control_task_obj_t);
 
 	if (pMsg->header.msgCode == FMC_CLOUD_CONNECTED) {
-		bluegrass_connected_callback();
 		pObj->cloud_connected = true;
+		lcz_led_turn_on(CLOUD_LED);
 	} else {
-		bluegrass_disconnected_callback();
 		pObj->cloud_connected = false;
+		lcz_led_turn_off(CLOUD_LED);
 	}
-#endif
 
-	return DISPATCH_OK;
+	return dispatch_to_sub_task(pMsgRxer, pMsg);
 }
 
-static DispatchResult_t default_msg_handler(FwkMsgReceiver_t *pMsgRxer,
-					    FwkMsg_t *pMsg)
+/* Determine if sub task wants to process this message */
+static DispatchResult_t dispatch_to_sub_task(FwkMsgReceiver_t *pMsgRxer,
+						FwkMsg_t *pMsg)
 {
-#ifdef CONFIG_BLUEGRASS
-	gateway_fsm();
-	return bluegrass_msg_handler(pMsgRxer, pMsg);
-#elif defined(CONFIG_LWM2M)
-	return lwm2m_msg_handler(pMsgRxer, pMsg);
-#else
-	ARG_UNUSED(pMsgRxer);
-	ARG_UNUSED(pMsg);
-	return DISPATCH_OK;
-#endif
+	FwkMsgHandler_t *handler =
+		cloud_sub_task_msg_dispatcher(pMsg->header.msgCode);
+
+	if (handler) {
+		return handler(pMsgRxer, pMsg);
+	} else {
+		return DISPATCH_OK;
+	}
 }
 
 static void commission_handler(void)
@@ -422,7 +418,7 @@ static void commission_handler(void)
 
 #ifdef CONFIG_SENSOR_TASK
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_SENSOR_TASK,
-				      FMC_AWS_DECOMMISSION);
+				      FMC_DECOMMISSION);
 #endif
 
 	/* If the value is written, then always decommission so that the connection
@@ -528,22 +524,25 @@ static DispatchResult_t lwm2m_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 					  FwkMsg_t *pMsg)
 {
 	ARG_UNUSED(pMsgRxer);
+	ESSSensorMsg_t *pBmeMsg = (ESSSensorMsg_t *)pMsg;
 
-	switch (pMsg->header.msgCode) {
-	case FMC_ESS_SENSOR_EVENT: {
-		ESSSensorMsg_t *pBmeMsg = (ESSSensorMsg_t *)pMsg;
-		if (lwm2m_set_ess_sensor_data(pBmeMsg->temperatureC,
-					      pBmeMsg->humidityPercent,
-					      pBmeMsg->pressurePa) != 0) {
-			LOG_ERR("Error setting ESS Sensor Data in LWM2M server");
-		}
-	} break;
-
-	default:
-		break;
+	if (lwm2m_set_ess_sensor_data(pBmeMsg->temperatureC,
+				      pBmeMsg->humidityPercent,
+				      pBmeMsg->pressurePa) != 0) {
+		LOG_ERR("Error setting ESS Sensor Data in LWM2M server");
 	}
 
 	return DISPATCH_OK;
+}
+
+FwkMsgHandler_t *cloud_sub_task_msg_dispatcher(FwkMsgCode_t MsgCode)
+{
+	/* clang-format off */
+	switch (MsgCode) {
+	case FMC_ESS_SENSOR_EVENT:  return lwm2m_msg_handler;
+	default:                    return NULL;
+	}
+	/* clang-format on */
 }
 #endif
 

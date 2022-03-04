@@ -656,7 +656,7 @@ static void keep_alive_work_handler(struct k_work *work)
 
 static int send_data(bool binary, char *data, uint32_t len, uint8_t *topic)
 {
-	int rc = -EPERM;
+	int rc = -ENOTCONN;
 	uint32_t length;
 
 	if (!aws.connected) {

@@ -243,6 +243,7 @@ config SHADOW_FAUX_DATA_STR_SIZE
     default 0
 
 rsource "./common/Kconfig.aws"
+rsource "./common/Kconfig.shadow_parser"
 rsource "./common/Kconfig.ble"
 rsource "./common/Kconfig.single_peripheral"
 rsource "./common/Kconfig.lairdconnect_battery"

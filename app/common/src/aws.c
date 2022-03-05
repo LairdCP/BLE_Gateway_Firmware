@@ -28,6 +28,7 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #include "lcz_software_reset.h"
 #include "attr.h"
 #include "fota_smp.h"
+#include "shadow_parser.h"
 
 #include "aws.h"
 
@@ -445,7 +446,7 @@ static int subscription_handler(struct mqtt_client *const client,
 			log_json("MQTT Read data", rc, subscription_buffer);
 		}
 
-		aws_subscription_handler_callback(topic, subscription_buffer);
+		shadow_parser(topic, subscription_buffer);
 
 		if (qos == MQTT_QOS_1_AT_LEAST_ONCE) {
 			struct mqtt_puback_param param = { .message_id = id };
@@ -725,11 +726,6 @@ static void connection_failure_handler(int status)
 /* Override in application                                                    */
 /******************************************************************************/
 __weak void aws_disconnect_callback(void)
-{
-	return;
-}
-
-__weak void aws_subscription_handler_callback(const char *topic, const char *json)
 {
 	return;
 }

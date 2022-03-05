@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 menuconfig AWS
-     bool "Config AWS (MQTT) Module"
+    bool "Config AWS (MQTT) Module"
+    select SHADOW_PARSER
 
 if AWS
 

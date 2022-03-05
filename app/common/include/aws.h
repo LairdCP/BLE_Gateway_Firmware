@@ -133,15 +133,6 @@ bool aws_published(void);
  */
 void aws_disconnect_callback(void);
 
-/**
- * @brief Weak callback that should be overridden by application to
- * process shadow data
- *
- * @param topic string
- * @param json string
- */
-void aws_subscription_handler_callback(const char *topic, const char *json);
-
 #ifdef __cplusplus
 }
 #endif

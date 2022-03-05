@@ -1,0 +1,24 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig SHADOW_PARSER
+    bool "Enable Shadow Parser Module"
+    help
+        This depends on jsmn
+
+if SHADOW_PARSER
+
+config SHADOW_PARSER_GATEWAY_TOPIC_STR
+    string "String to search for to determine if topic is for gateway"
+    default "deviceId-"
+
+config SHADOW_PARSER_GET_ACCEPTED_STR
+    string "String to search for when determine if topic is get accepted"
+    default "/get/accepted"
+
+module=SHADOW_PARSER
+module-dep=LOG
+module-str=SHADOW_PARSER
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif # SHADOW_PARSER

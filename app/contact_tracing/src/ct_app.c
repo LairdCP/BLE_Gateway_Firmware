@@ -30,6 +30,8 @@ LOG_MODULE_REGISTER(ct_app, CONFIG_CT_APP_LOG_LEVEL);
 #include "aws.h"
 #include "bluegrass.h"
 #include "sdcard_log.h"
+#include "rpc_params.h"
+#include "shadow_parser.h"
 #include "ct_ble.h"
 #include "ct_app.h"
 
@@ -61,6 +63,8 @@ static log_get_state_t log_get_state;
 
 static struct k_work_delayable ct_app_work;
 
+static struct shadow_parser_agent rpc_agent;
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -73,6 +77,8 @@ static void aws_handle_command(char *cmd);
 static void process_log_get_cmd(void);
 static void process_log_dir_command(void);
 
+static void rpc_parser(const char *topic, struct topic_flags flags);
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -83,6 +89,9 @@ int ct_app_init(void)
 	k_work_init_delayable(&ct_app_work, ct_app_work_handler);
 	k_work_schedule(&ct_app_work,
 			K_SECONDS(CONFIG_CT_APP_TICK_RATE_SECONDS));
+
+	rpc_agent.parser = rpc_parser;
+	shadow_parser_register_agent(&rpc_agent);
 
 	return 0;
 }
@@ -265,4 +274,9 @@ static void process_log_dir_command(void)
 #else
 	LOG_WRN("ignoring log_get command, SD card not present");
 #endif
+}
+
+static void rpc_parser(const char *topic, struct topic_flags flags)
+{
+	rpc_params_gateway_parser(flags.get_accepted);
 }

@@ -49,7 +49,7 @@ typedef struct rpc_params_exec_s {
  * @brief Process $aws/things/deviceId-X/shadow/update/accepted contents to
  * find an RPC method being invoked.
  *
- * @note This is meant to be called from the Sensor Gateway Parser that
+ * @note This is meant to be called from the shadow parser that
  * has already called jsmn_start and determined topic is for the gateway.
  *
  * @note This function assumes that the AWS task acknowledges the publish so

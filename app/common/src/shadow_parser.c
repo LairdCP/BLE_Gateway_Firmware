@@ -31,17 +31,25 @@ void shadow_parser(const char *topic, const char *json)
 {
 	sys_snode_t *node;
 	struct shadow_parser_agent *agent;
+	struct topic_flags flags;
 
+	/* All modules with jsmn header files have access to the tokenization. */
 	jsmn_start(json);
 	if (!jsmn_valid()) {
 		LOG_ERR("Unable to parse subscription %d", jsmn_tokens_found());
 		return;
 	}
 
+	flags.get_accepted =
+		(strstr(topic, CONFIG_SHADOW_PARSER_GET_ACCEPTED_STR) != NULL);
+	flags.gateway =
+		(strstr(topic, CONFIG_SHADOW_PARSER_GATEWAY_TOPIC_STR) != NULL);
+
 	SYS_SLIST_FOR_EACH_NODE(&shadow_parser_list, node) {
     	agent = CONTAINER_OF(node, struct shadow_parser_agent, node);
 		if (agent->parser != NULL) {
-			agent->parser(topic, json);
+			jsmn_reset_index();
+			agent->parser(topic, flags);
 		}
 	}
 
@@ -53,12 +61,24 @@ void shadow_parser_register_agent(struct shadow_parser_agent *agent)
 	sys_slist_append(&shadow_parser_list, &agent->node);
 }
 
-bool shadow_parser_topic_is_get_accepted(const char *topic)
+int shadow_parser_find_state(void)
 {
-	return (strstr(topic, CONFIG_SHADOW_PARSER_GET_ACCEPTED_SUB_STR) != NULL);
+	jsmn_reset_index();
+
+	return jsmn_find_type("state", JSMN_OBJECT, NO_PARENT);
 }
 
-bool shadow_parser_topic_is_gateway(const char *topic)
+bool shadow_parser_find_uint(uint32_t *value, const char *key)
 {
-	return (strstr(topic, CONFIG_SHADOW_PARSER_GATEWAY_TOPIC_SUB_STR) != NULL);
+	jsmn_reset_index();
+
+	int location = jsmn_find_type(key, JSMN_PRIMITIVE, NO_PARENT);
+	if (location > 0) {
+		*value = jsmn_convert_uint(location);
+		return true;
+	} else {
+		*value = 0;
+		LOG_DBG("%s not found", log_strdup(key));
+		return false;
+	}
 }

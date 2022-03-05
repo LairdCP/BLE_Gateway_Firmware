@@ -24,6 +24,7 @@ LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 #include "sensor_gateway_parser.h"
 #include "app_version.h"
 #include "cloud.h"
+#include "shadow_parser.h"
 
 #ifdef CONFIG_SENSOR_TASK
 #include "sensor_task.h"
@@ -88,6 +89,8 @@ static char faux_char = 'a';
 static char faux_data_str[CONFIG_SHADOW_FAUX_DATA_STR_SIZE];
 #endif
 
+static struct shadow_parser_agent get_accepted_agent;
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -105,6 +108,8 @@ static char *net_sprint_ll_addr_lower(const uint8_t *ll);
 #endif
 
 static void set_default_client_id(void);
+
+static void get_accepted_parser(const char *topic, struct topic_flags flags);
 
 static FwkMsgHandler_t sensor_publish_msg_handler;
 static FwkMsgHandler_t gateway_publish_msg_handler;
@@ -128,6 +133,9 @@ void bluegrass_initialize(void)
 #endif
 
 	set_default_client_id();
+
+	get_accepted_agent.parser = get_accepted_parser;
+	shadow_parser_register_agent(&get_accepted_agent);
 
 	cloud_init_shadow_request();
 }
@@ -163,11 +171,6 @@ FwkMsgHandler_t *cloud_sub_task_msg_dispatcher(FwkMsgCode_t MsgCode)
 void cloud_init_shadow_request(void)
 {
 	bg.init_request = true;
-}
-
-void aws_subscription_handler_callback(const char *topic, const char *json)
-{
-	SensorGatewayParser(topic, json);
 }
 
 /******************************************************************************/
@@ -654,5 +657,13 @@ static void set_default_client_id(void)
 		s = "pinnacle100_oob";
 #endif
 		attr_set_string(ATTR_ID_client_id, s, strlen(s));
+	}
+}
+
+static void get_accepted_parser(const char *topic, struct topic_flags flags)
+{
+	if (flags.get_accepted && flags.gateway) {
+		FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
+					      FMC_GET_ACCEPTED_RECEIVED);
 	}
 }

@@ -169,11 +169,6 @@ config APP_TOPIC_PREFIX_FILE_NAME
     string
     default "topic_prefix.txt"
 
-config LTE_LOG_LEVEL
-    int "LTE Log level"
-    range 0 4
-    default 3
-
 config SENSOR_TASK_LOG_LEVEL
     int "Sensor Task Log level"
     range 0 4
@@ -247,6 +242,7 @@ rsource "./common/Kconfig.shadow_parser"
 rsource "./common/Kconfig.ble"
 rsource "./common/Kconfig.single_peripheral"
 rsource "./common/Kconfig.lairdconnect_battery"
+rsource "./common/Kconfig.lte"
 rsource "./common/Kconfig.button"
 rsource "./common/Kconfig.sntp"
 rsource "./common/Kconfig.lcz_motion"

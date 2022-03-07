@@ -1,0 +1,23 @@
+# Copyright (c) 2021 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig LTE
+    bool "Enable LTE module"
+    default y if MODEM_HL7800
+    help
+      An application layer driver for the HL7800.
+
+if LTE
+
+config LTE_UPDATE_QRTC_LAST_SET
+    bool "Update qrtc last set attribute when time received from modem"
+    help
+      If qrtc last set is savable,
+      then the file system will be written.
+
+module=LTE
+module-dep=LOG
+module-str=LTE
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif # LTE

@@ -35,7 +35,7 @@ target_sources_ifdef(CONFIG_BT app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ble.c
     )
 
-target_sources_ifdef(CONFIG_MODEM_HL7800 app PRIVATE
+target_sources_ifdef(CONFIG_LTE app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lte.c
     )
 

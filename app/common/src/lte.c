@@ -682,6 +682,9 @@ static void get_local_time_from_modem(struct k_work *item)
 	if (status == 0) {
 		epoch = lcz_qrtc_set_epoch_from_tm(&local_time, local_offset);
 		LOG_INF("Epoch set to %u", epoch);
+		if (IS_ENABLED(CONFIG_LTE_UPDATE_QRTC_LAST_SET)) {
+			attr_set_uint32(ATTR_ID_qrtc_last_set, epoch);
+		}
 	} else {
 		LOG_WRN("Get local time from modem failed! (%d)", status);
 	}

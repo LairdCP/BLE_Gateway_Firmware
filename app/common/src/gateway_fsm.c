@@ -15,8 +15,8 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 /******************************************************************************/
 #include <zephyr.h>
 
-#if defined(CONFIG_AWS)
-#include "aws.h"
+#if defined(CONFIG_LCZ_MQTT)
+#include "lcz_mqtt.h"
 #endif
 
 #if defined(CONFIG_MODEM_HL7800)
@@ -148,10 +148,10 @@ void gateway_fsm_init(void)
 #error "Unknown board/network configuration, add to gateway_fsm_init()"
 #endif
 
-	gsm.resolve_server = aws_get_server_addr;
-	gsm.cloud_connect = aws_connect;
-	gsm.cloud_disconnect = aws_disconnect;
-	gsm.cloud_is_connected = aws_connected;
+	gsm.resolve_server = lcz_mqtt_get_server_addr;
+	gsm.cloud_connect = lcz_mqtt_connect;
+	gsm.cloud_disconnect = lcz_mqtt_disconnect;
+	gsm.cloud_is_connected = lcz_mqtt_connected;
 	gsm.cert_load = lcz_certs_load;
 	gsm.cert_unload = lcz_certs_unload;
 #endif

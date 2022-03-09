@@ -1,0 +1,58 @@
+# Copyright (c) 2021-2022 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig LCZ_MQTT
+    bool "Config LCZ_MQTT Module"
+    select SHADOW_PARSER
+    select LCZ_CERTS
+
+if LCZ_MQTT
+
+config LCZ_MQTT_RX_BUFFER_SIZE
+    int "Size of buffer for MQTT rx path"
+    default 1024
+
+config LCZ_MQTT_TX_BUFFER_SIZE
+    int "Size of buffer for MQTT tx path"
+    default 1536
+
+config LCZ_MQTT_PUBLISH_WATCHDOG_SECONDS
+    int "Watchdog timeout for successful MQTT publish"
+    default 3600
+    help
+        Disabled when 0
+        Not enabled until first successful publish
+        Timeout causes a reset
+        Shouldn't be enabled if periodic data isn't sent.
+
+config LCZ_MQTT_CONNECT_TRIES
+    int "Number of times to try to connect to LCZ_MQTT before reporting a failure"
+    default 1
+
+config LCZ_MQTT_MAX_CONSECUTIVE_CONNECTION_FAILURES
+    int "Maximum consecutive connection failures before reset"
+    default 0
+    help
+        Disabled when 0
+
+config LCZ_MQTT_SHADOW_IN_MAX_SIZE
+    int "Maximum size of subscription/shadow that can be processed"
+    default 8192
+    help
+        The timestamps can make the shadow larger than 7K bytes.
+
+config LCZ_MQTT_LOG_MQTT_PUBLISH
+    bool "Print data published to LCZ_MQTT"
+
+config LCZ_MQTT_LOG_MQTT_TOPIC
+    bool "Print the topic that docs are published to or received from"
+
+config LCZ_MQTT_LOG_MQTT_RX_DATA
+    bool "Enable/Disable printing of received MQTT data."
+
+module=LCZ_MQTT
+module-dep=LOG
+module-str=LCZ_MQTT
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif # LCZ_MQTT

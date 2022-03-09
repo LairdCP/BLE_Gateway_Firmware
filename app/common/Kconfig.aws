@@ -3,56 +3,13 @@
 
 menuconfig AWS
     bool "Config AWS (MQTT) Module"
-    select SHADOW_PARSER
-    select LCZ_CERTS
+    select LCZ_MQTT
 
 if AWS
 
 config AWS_TOPIC_MAX_SIZE
-    int "Maximum size for AWS topic strings"
+    int "Maximum size for generated AWS topic strings"
     default 64
-
-config AWS_RX_BUFFER_SIZE
-    int "Size of buffer for MQTT rx path"
-    default 1024
-
-config AWS_TX_BUFFER_SIZE
-    int "Size of buffer for MQTT tx path"
-    default 1536
-
-config AWS_PUBLISH_WATCHDOG_SECONDS
-    int "Watchdog timeout for successful AWS publish"
-    default 3600
-    help
-        Disabled when 0
-        Not enabled until first successful publish
-        Timeout causes a reset
-        Shouldn't be enabled if periodic data isn't sent.
-
-config AWS_CONNECT_TRIES
-    int "Number of times to try to connect to AWS before reporting a failure"
-    default 1
-
-config AWS_MAX_CONSECUTIVE_CONNECTION_FAILURES
-    int "Maximum consecutive connection failures before reset"
-    default 0
-    help
-        Disabled when 0
-
-config AWS_SHADOW_IN_MAX_SIZE
-    int "Maximum size of subscription/shadow that can be processed"
-    default 8192
-    help
-        The timestamps can make the shadow larger than 7K bytes.
-
-config AWS_LOG_MQTT_PUBLISH
-    bool "Print data published to AWS"
-
-config AWS_LOG_MQTT_TOPIC
-    bool "Print the topic that docs are published to or received from"
-
-config AWS_LOG_MQTT_RX_DATA
-    bool "Enable/Disable printing of received MQTT data."
 
 module=AWS
 module-dep=LOG

@@ -1,25 +1,35 @@
 
 target_include_directories(app PRIVATE
-    ${CMAKE_SOURCE_DIR}/../modules/jsmn
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
 
 target_sources(app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/jsmn_json.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/button.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/lcz_certs.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gateway_common.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/control_task.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gateway_fsm.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/fota_smp.c
     )
 
+target_sources_ifdef(CONFIG_LCZ_CERTS app PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lcz_certs.c
+    )
+
+target_sources_ifdef(CONFIG_LCZ_MQTT app PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lcz_mqtt.c
+    )
+
 target_sources_ifdef(CONFIG_AWS app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/aws.c
     )
 
+target_include_directories_ifdef(CONFIG_SHADOW_PARSER app PRIVATE
+    ${CMAKE_SOURCE_DIR}/../modules/jsmn
+    )
+
 target_sources_ifdef(CONFIG_SHADOW_PARSER app PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/jsmn_json.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/shadow_parser.c
     )
 

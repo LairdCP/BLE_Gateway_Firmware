@@ -232,17 +232,7 @@ config SHADOW_FAUX_DATA_STR_SIZE
     range 0 3072
     default 0
 
-rsource "./common/Kconfig.aws"
-rsource "./common/Kconfig.shadow_parser"
-rsource "./common/Kconfig.ble"
-rsource "./common/Kconfig.single_peripheral"
-rsource "./common/Kconfig.lairdconnect_battery"
-rsource "./common/Kconfig.lcz_certs"
-rsource "./common/Kconfig.lte"
-rsource "./common/Kconfig.button"
-rsource "./common/Kconfig.sntp"
-rsource "./common/Kconfig.lcz_motion"
-rsource "./common/Kconfig.lcz_motion_temperature"
+rsource "./common/Kconfig"
 rsource "./coap/Kconfig"
 rsource "./contact_tracing/Kconfig"
 rsource "./http_fota/Kconfig"

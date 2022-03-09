@@ -9,11 +9,6 @@
 #ifndef __AWS_H__
 #define __AWS_H__
 
-/******************************************************************************/
-/* Includes                                                                   */
-/******************************************************************************/
-#include <net/mqtt.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,30 +21,6 @@ extern "C" {
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
-
-/**
- * @brief Resolve the server address using DNS
- *
- * @return int 0 on success, else negative errno
- */
-int aws_get_server_addr(void);
-
-/**
- * @brief Connect to AWS
- *
- * @note If CONFIG_AWS_MAX_CONSECUTIVE_CONNECTION_FAILURES is non-zero, then
- * consecutive connection failures will cause a reset.
- *
- * @return int 0 on success, else negative errno
- */
-int aws_connect(void);
-
-/**
- * @brief Disconnect from AWS
- *
- * @return int 0 on success, else negative errno
- */
-int aws_disconnect(void);
 
 /**
  * @brief Send MQTT data
@@ -115,23 +86,6 @@ void aws_generate_gateway_topics(const char *id);
  * @return char* topic string
  */
 char *aws_get_gateway_update_delta_topic(void);
-
-/**
- * @return true if AWS is connected
- * @return false otherwise
- */
-bool aws_connected(void);
-
-/**
- * @return true if at least one publish has been successful
- * @return false otherwise
- */
-bool aws_published(void);
-
-/**
- * @brief Weak callback that can be overridden by application
- */
-void aws_disconnect_callback(void);
 
 #ifdef __cplusplus
 }

@@ -189,11 +189,6 @@ config SENSOR_GATEWAY_PARSER_LOG_LEVEL
     range 0 4
     default 3
 
-config CERT_LOADER_LOG_LEVEL
-    int "Certificate loader log level"
-    range 0 4
-    default 3
-
 config SD_CARD_LOG
     bool "Enable logging to SD card"
     depends on (BOARD_MG100 || BOARD_BL5340_DVK_CPUAPP || BOARD_BL5340PA_DVK_CPUAPP)
@@ -242,6 +237,7 @@ rsource "./common/Kconfig.shadow_parser"
 rsource "./common/Kconfig.ble"
 rsource "./common/Kconfig.single_peripheral"
 rsource "./common/Kconfig.lairdconnect_battery"
+rsource "./common/Kconfig.lcz_certs"
 rsource "./common/Kconfig.lte"
 rsource "./common/Kconfig.button"
 rsource "./common/Kconfig.sntp"

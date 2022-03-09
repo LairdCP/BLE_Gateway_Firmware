@@ -4,6 +4,7 @@
 menuconfig AWS
     bool "Config AWS (MQTT) Module"
     select SHADOW_PARSER
+    select LCZ_CERTS
 
 if AWS
 
@@ -52,18 +53,6 @@ config AWS_LOG_MQTT_TOPIC
 
 config AWS_LOG_MQTT_RX_DATA
     bool "Enable/Disable printing of received MQTT data."
-
-config APP_CA_CERT_TAG
-    int "mbedTLS tag for CA"
-    default 1
-    help
-      Name is coupled to lcz_certs
-
-config APP_DEVICE_CERT_TAG
-    int "mbedTLS tag for device cert and private key"
-    default 2
-    help
-      Name is coupled to lcz_certs
 
 module=AWS
 module-dep=LOG

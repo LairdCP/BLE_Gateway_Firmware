@@ -1,0 +1,27 @@
+# Copyright (c) 2022 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig LCZ_CERTS
+    bool "Config Certificate Module"
+
+if LCZ_CERTS
+
+config LCZ_CERTS_CA_CERT_TAG
+    int "mbedTLS tag for CA"
+    default 1
+
+config LCZ_CERTS_DEVICE_CERT_TAG
+    int "mbedTLS tag for device cert and private key"
+    default 2
+    help
+      Set to 0 to disable
+
+config LCZ_CERTS_PSK
+    bool "Use private shared key instead of device cert"
+
+module=LCZ_CERTS
+module-dep=LOG
+module-str=LCZ_CERTS
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif # LCZ_CERTS

@@ -8,7 +8,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(certs, CONFIG_CERT_LOADER_LOG_LEVEL);
+LOG_MODULE_REGISTER(certs, CONFIG_LCZ_CERTS_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -23,13 +23,24 @@ LOG_MODULE_REGISTER(certs, CONFIG_CERT_LOADER_LOG_LEVEL);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
-static char *root_ca;
-static char *client;
-static char *key;
+#ifdef CONFIG_LCZ_CERTS_PSK
+#define DEVICE_CERT_TYPE TLS_CREDENTIAL_PSK_ID
+#define DEVICE_KEY_TYPE TLS_CREDENTIAL_PSK
+#else
+#define DEVICE_CERT_TYPE TLS_CREDENTIAL_SERVER_CERTIFICATE
+#define DEVICE_KEY_TYPE TLS_CREDENTIAL_PRIVATE_KEY
+#endif
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
+static char *root_ca;
+
+#if CONFIG_LCZ_CERTS_DEVICE_CERT_TAG != 0
+static char *client;
+static char *key;
+#endif
+
 static bool loaded;
 
 /******************************************************************************/
@@ -59,9 +70,9 @@ int lcz_certs_load(void)
 			break;
 		}
 
-		tls_credential_delete(CONFIG_APP_CA_CERT_TAG,
+		tls_credential_delete(CONFIG_LCZ_CERTS_CA_CERT_TAG,
 				      TLS_CREDENTIAL_CA_CERTIFICATE);
-		r = tls_credential_add(CONFIG_APP_CA_CERT_TAG,
+		r = tls_credential_add(CONFIG_LCZ_CERTS_CA_CERT_TAG,
 				       TLS_CREDENTIAL_CA_CERTIFICATE, root_ca,
 				       r);
 		if (r < 0) {
@@ -71,16 +82,17 @@ int lcz_certs_load(void)
 			break;
 		}
 
+#if CONFIG_LCZ_CERTS_DEVICE_CERT_TAG != 0
 		r = load_cert_file(ATTR_ID_client_cert_name, &client,
 				   "Client Cert");
 		if (r < 0) {
 			break;
 		}
 
-		tls_credential_delete(CONFIG_APP_DEVICE_CERT_TAG,
-				      TLS_CREDENTIAL_SERVER_CERTIFICATE);
-		r = tls_credential_add(CONFIG_APP_DEVICE_CERT_TAG,
-				       TLS_CREDENTIAL_SERVER_CERTIFICATE,
+		tls_credential_delete(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
+				      DEVICE_CERT_TYPE);
+		r = tls_credential_add(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
+				       DEVICE_CERT_TYPE,
 				       client, r);
 		if (r < 0) {
 			LOG_ERR("Failed to register device certificate: %d", r);
@@ -93,16 +105,17 @@ int lcz_certs_load(void)
 			break;
 		}
 
-		tls_credential_delete(CONFIG_APP_DEVICE_CERT_TAG,
-				      TLS_CREDENTIAL_PRIVATE_KEY);
-		r = tls_credential_add(CONFIG_APP_DEVICE_CERT_TAG,
-				       TLS_CREDENTIAL_PRIVATE_KEY, key, r);
+		tls_credential_delete(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
+				      DEVICE_KEY_TYPE);
+		r = tls_credential_add(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
+				       DEVICE_KEY_TYPE, key, r);
 		if (r < 0) {
 			LOG_ERR("Failed to register device key: %d", r);
 			attr_set_signed32(ATTR_ID_cloud_error,
 					  CLOUD_ERROR_INIT_CLIENT_KEY);
 			return r;
 		}
+#endif /* CONFIG_LCZ_CERTS_DEVICE_CERT_TAG != 0 */
 	} while (0);
 
 	if (r == 0) {
@@ -119,12 +132,12 @@ int lcz_certs_unload(void)
 {
 	loaded = false;
 
-	tls_credential_delete(CONFIG_APP_CA_CERT_TAG,
+	tls_credential_delete(CONFIG_LCZ_CERTS_CA_CERT_TAG,
 			      TLS_CREDENTIAL_CA_CERTIFICATE);
-	tls_credential_delete(CONFIG_APP_DEVICE_CERT_TAG,
-			      TLS_CREDENTIAL_SERVER_CERTIFICATE);
-	tls_credential_delete(CONFIG_APP_DEVICE_CERT_TAG,
-			      TLS_CREDENTIAL_PRIVATE_KEY);
+	tls_credential_delete(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
+			      DEVICE_CERT_TYPE);
+	tls_credential_delete(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
+			      DEVICE_KEY_TYPE);
 
 	return 0;
 }

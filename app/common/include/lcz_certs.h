@@ -27,7 +27,7 @@ extern "C" {
  * @brief If commissioned, load certificates from the file system using
  * names in the parameter system.
  *
- * Uses slots APP_CA_CERT_TAG and APP_DEVICE_CERT_TAG.
+ * Uses slots LCZ_CERTS_CA_CERT_TAG and LCZ_CERTS_DEVICE_CERT_TAG.
  *
  * @retval negative error code, 0 on success
  */

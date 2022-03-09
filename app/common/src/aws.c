@@ -75,8 +75,10 @@ static int nfds;
 static struct addrinfo *saddr;
 
 static sec_tag_t m_sec_tags[] = {
-	CONFIG_APP_CA_CERT_TAG,
-	CONFIG_APP_DEVICE_CERT_TAG,
+	CONFIG_LCZ_CERTS_CA_CERT_TAG,
+#if CONFIG_LCZ_CERTS_DEVICE_CERT_TAG != 0
+	CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
+#endif
 };
 
 static struct topics topics;

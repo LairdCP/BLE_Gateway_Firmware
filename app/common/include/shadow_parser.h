@@ -1,6 +1,6 @@
 /**
  * @file shadow_parser.h
- * @brief
+ * @brief Parse JSON shadow using jsmn
  *
  * Copyright (c) 2022 Laird Connectivity
  *

@@ -26,7 +26,6 @@ LOG_MODULE_REGISTER(sensor_shadow_parser, CONFIG_SHADOW_PARSER_LOG_LEVEL);
 #include "FrameworkIncludes.h"
 #include "sensor_cmd.h"
 #include "sensor_table.h"
-
 #include "shadow_parser.h"
 
 /******************************************************************************/
@@ -51,7 +50,7 @@ static struct shadow_parser_agent sensor_agent;
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static void shadow_parser(const char *topic, struct topic_flags flags);
+static void sensor_shadow_parser(const char *topic, struct topic_flags flags);
 
 static void gateway_parser(const char *topic, struct topic_flags flags);
 static void sensor_parser(const char *topic, struct topic_flags flags);
@@ -68,7 +67,7 @@ static int sensor_shadow_parser_init(const struct device *device)
 {
 	ARG_UNUSED(device);
 
-	sensor_agent.parser = shadow_parser;
+	sensor_agent.parser = sensor_shadow_parser;
 	shadow_parser_register_agent(&sensor_agent);
 
 	return 0;
@@ -79,7 +78,7 @@ SYS_INIT(sensor_shadow_parser_init, APPLICATION, 99);
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static void shadow_parser(const char *topic, struct topic_flags flags)
+static void sensor_shadow_parser(const char *topic, struct topic_flags flags)
 {
 	if (flags.gateway) {
 		gateway_parser(topic, tf);

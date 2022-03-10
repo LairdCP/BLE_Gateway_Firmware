@@ -12,12 +12,12 @@ LOG_MODULE_REGISTER(shadow_parser, CONFIG_SHADOW_PARSER_LOG_LEVEL);
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
-#include "shadow_parser.h"
-
 #define JSMN_PARENT_LINKS
 #define JSMN_HEADER
 #include "jsmn.h"
 #include "jsmn_json.h"
+
+#include "shadow_parser.h"
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */

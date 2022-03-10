@@ -10,7 +10,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(sensor_shadow_parser, CONFIG_SHADOW_PARSER_LOG_LEVEL);
+LOG_MODULE_REGISTER(mg100_shadow_parser, CONFIG_SHADOW_PARSER_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -27,6 +27,7 @@ LOG_MODULE_REGISTER(sensor_shadow_parser, CONFIG_SHADOW_PARSER_LOG_LEVEL);
 #include "lairdconnect_battery.h"
 #include "lcz_motion.h"
 #include "sdcard_log.h"
+#include "shadow_parser.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -65,7 +66,7 @@ BUILD_ASSERT((JSON_DEFAULT_BUF_SIZE * 2) + 256 < CONFIG_BUFFER_POOL_SIZE,
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
-static struct shadow_parser_agent agent;
+static struct shadow_parser_agent mg100_agent;
 
 static uint16_t local_updates = 0;
 
@@ -130,7 +131,7 @@ static int (*LocalConfigGet[MAX_WRITEABLE_LOCAL_OBJECTS])() = {
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static void shadow_parser(const char *topic, struct topic_flags flags);
+static void mg100_parser(const char *topic, struct topic_flags flags);
 
 static void MiniGatewayParser(const char *topic, struct topic_flags flags);
 static bool ValuesUpdated(uint16_t Value);
@@ -144,8 +145,8 @@ static int mg100_shadow_parser_init(const struct device *device)
 {
 	ARG_UNUSED(device);
 
-	agent.parser = shadow_parser;
-	shadow_parser_register_agent(&agent);
+	mg100_agent.parser = mg100_parser;
+	shadow_parser_register_agent(&mg100_agent);
 
 	return 0;
 }
@@ -155,7 +156,7 @@ SYS_INIT(mg100_shadow_parser_init, APPLICATION, 99);
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static void shadow_parser(const char *topic, struct topic_flags flags)
+static void mg100_parser(const char *topic, struct topic_flags flags)
 {
 	if (flags.gateway) {
 		MiniGatewayParser(topic, tf);

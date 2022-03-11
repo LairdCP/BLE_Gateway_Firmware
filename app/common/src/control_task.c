@@ -94,7 +94,6 @@ static FwkMsgHandler_t cloud_state_msg_handler;
 static FwkMsgHandler_t fota_msg_handler;
 static FwkMsgHandler_t dispatch_to_sub_task;
 
-static void commission_handler(void);
 static void random_join_handler(attr_index_t idx);
 
 #ifdef CONFIG_MODEM_HL7800
@@ -136,6 +135,21 @@ __weak FwkMsgHandler_t *cloud_sub_task_msg_dispatcher(FwkMsgCode_t MsgCode)
 __weak void cloud_init_shadow_request(void)
 {
 	return;
+}
+
+__weak int cloud_commission(void)
+{
+	return 0;
+}
+
+__weak int cloud_decommission(void)
+{
+	return 0;
+}
+
+__weak int commission_handler(void)
+{
+	return 0;
 }
 
 /******************************************************************************/
@@ -409,24 +423,6 @@ static DispatchResult_t dispatch_to_sub_task(FwkMsgReceiver_t *pMsgRxer,
 	} else {
 		return DISPATCH_OK;
 	}
-}
-
-static void commission_handler(void)
-{
-	attr_set_signed32(ATTR_ID_cert_status, CERT_STATUS_BUSY);
-	attr_set_uint32(ATTR_ID_commissioning_busy, true);
-
-#ifdef CONFIG_SENSOR_TASK
-	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_SENSOR_TASK,
-				      FMC_DECOMMISSION);
-#endif
-
-	/* If the value is written, then always decommission so that the connection
-	 * is closed and the certs are unloaded.  The files aren't deleted.
-	 * If commission is true, then the state machine will load the certs
-	 * from the file system after the join cloud delay has expired.
-	 */
-	gateway_fsm_request_decommission();
 }
 
 static void random_join_handler(attr_index_t idx)

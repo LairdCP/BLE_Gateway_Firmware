@@ -55,11 +55,6 @@ int lcz_certs_load(void)
 {
 	int r = -EPERM;
 
-	if (attr_get_uint32(ATTR_ID_commissioned, 0) == 0) {
-		attr_set_signed32(ATTR_ID_cert_status, r);
-		return r;
-	}
-
 	if (loaded) {
 		return 0;
 	}

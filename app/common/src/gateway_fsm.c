@@ -33,7 +33,6 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 
 #include "cloud.h"
 #include "laird_utility_macros.h"
-#include "lcz_certs.h"
 #include "attr.h"
 #include "gateway_fsm.h"
 
@@ -72,8 +71,8 @@ static struct {
 	gsm_func *cloud_connect;
 	gsm_func *cloud_disconnect;
 	gsm_status_func *cloud_is_connected;
-	gsm_func *cert_load;
-	gsm_func *cert_unload;
+	gsm_func *commission;
+	gsm_func *decommission;
 } gsm;
 
 /******************************************************************************/
@@ -129,8 +128,8 @@ void gateway_fsm_init(void)
 	gsm.cloud_connect = lwm2m_connect;
 	gsm.cloud_disconnect = lwm2m_disconnect;
 	gsm.cloud_is_connected = lwm2m_connected;
-	gsm.cert_load = unused_function;
-	gsm.cert_unload = unused_function;
+	gsm.commission = unused_function;
+	gsm.decommission = unused_function;
 #else
 
 #if defined(CONFIG_MODEM_HL7800)
@@ -152,8 +151,8 @@ void gateway_fsm_init(void)
 	gsm.cloud_connect = lcz_mqtt_connect;
 	gsm.cloud_disconnect = lcz_mqtt_disconnect;
 	gsm.cloud_is_connected = lcz_mqtt_connected;
-	gsm.cert_load = lcz_certs_load;
-	gsm.cert_unload = lcz_certs_unload;
+	gsm.commission = cloud_commission;
+	gsm.decommission = cloud_decommission;
 #endif
 }
 
@@ -353,7 +352,7 @@ static void wait_for_commission_handler(void)
 {
 	if (gsm.cloud_disconnect_request) {
 		set_state(GATEWAY_STATE_CLOUD_REQUEST_DISCONNECT);
-	} else if (gsm.cert_load() == 0) {
+	} else if (gsm.commission() == 0) {
 		set_state(GATEWAY_STATE_RESOLVE_SERVER);
 	} else {
 		attr_set_uint32(ATTR_ID_commissioning_busy, false);
@@ -453,7 +452,7 @@ static void decommission_handler(void)
 {
 	gsm.decommission_request = false;
 	gsm.server_resolved = false;
-	gsm.cert_unload();
+	gsm.decommission();
 	/* The decomissioning process on the mobile app deletes the shadow */
 	cloud_init_shadow_request();
 	set_state(GATEWAY_STATE_WAIT_FOR_NETWORK);

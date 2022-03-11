@@ -24,7 +24,9 @@ LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 #include "sensor_gateway_parser.h"
 #include "app_version.h"
 #include "cloud.h"
+#include "gateway_fsm.h"
 #include "shadow_parser.h"
+#include "lcz_certs.h"
 
 #ifdef CONFIG_SENSOR_TASK
 #include "sensor_task.h"
@@ -144,6 +146,44 @@ bool bluegrass_ready_for_publish(void)
 {
 	return (aws_connected() && bg.get_shadow_processed &&
 		bg.gateway_subscribed);
+}
+
+/* Don't load certs unless commissioned flag is set */
+int cloud_commission(void)
+{
+	int r = -EPERM;
+
+	if (attr_get_uint32(ATTR_ID_commissioned, 0) == 0) {
+		attr_set_signed32(ATTR_ID_cert_status, r);
+		return r;
+	} else {
+		return lcz_certs_load();
+	}
+}
+
+int cloud_decommission(void)
+{
+	return lcz_certs_unload();
+}
+
+int commission_handler(void)
+{
+	attr_set_signed32(ATTR_ID_cert_status, CERT_STATUS_BUSY);
+	attr_set_uint32(ATTR_ID_commissioning_busy, true);
+
+#ifdef CONFIG_SENSOR_TASK
+	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_SENSOR_TASK,
+				      FMC_DECOMMISSION);
+#endif
+
+	/* If the value is written, then always decommission so that the connection
+	 * is closed and the certs are unloaded.  The files aren't deleted.
+	 * If commission is true, then the state machine will load the certs
+	 * from the file system after the join cloud delay has expired.
+	 */
+	gateway_fsm_request_decommission();
+
+	return 0;
 }
 
 /******************************************************************************/

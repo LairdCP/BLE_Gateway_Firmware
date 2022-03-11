@@ -43,6 +43,33 @@ FwkMsgHandler_t *cloud_sub_task_msg_dispatcher(FwkMsgCode_t MsgCode);
  */
 void cloud_init_shadow_request(void);
 
+/**
+ * @brief Perform steps to commission with cloud provider
+ * For example, loading certificates.
+ *
+ * @return int 0 on success, negative errno;
+ * EBUSY means function should be called again
+ */
+int cloud_commission(void);
+
+/**
+ * @brief Perform steps to de-commission with cloud provider
+ * For example, unloading certificates.
+ *
+ * @return int 0 on success, negative errno;
+ * EBUSY means function should be called again
+ */
+int cloud_decommission(void);
+
+/**
+ * @brief Application layer handler called when commissioned,
+ * endpoint, or port attributes are modified.
+ *
+ * @return int 0 on success, negative errno
+ */
+int commission_handler(void);
+
+
 #ifdef __cplusplus
 }
 #endif

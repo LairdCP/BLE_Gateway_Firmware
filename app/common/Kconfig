@@ -1,6 +1,7 @@
 rsource "./Kconfig.aws"
 rsource "./Kconfig.shadow_parser"
 rsource "./Kconfig.ble"
+rsource "./Kconfig.gateway_common"
 rsource "./Kconfig.single_peripheral"
 rsource "./Kconfig.lairdconnect_battery"
 rsource "./Kconfig.lcz_certs"

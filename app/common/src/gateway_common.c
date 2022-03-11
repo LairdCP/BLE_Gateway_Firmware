@@ -2,13 +2,13 @@
  * @file gateway_common.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
+LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_COMMON_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */
@@ -135,7 +135,7 @@ static void advertise_on_startup(void);
 static int adv_on_button_isr(void);
 #endif
 
-#ifdef CONFIG_MODEM_HL7800
+#ifdef CONFIG_GATEWAY_COMMON_NV_DEPRECATION_HANDLER
 static void fs_to_attr_string_handler(attr_index_t idx, const char *file_name);
 static void nv_deprecation_handler(void);
 #endif
@@ -157,7 +157,7 @@ int configure_app(void)
 
 	LCZ_MEMFAULT_HTTP_INIT();
 
-#ifdef CONFIG_MODEM_HL7800
+#ifdef CONFIG_GATEWAY_COMMON_NV_DEPRECATION_HANDLER
 	nv_deprecation_handler();
 #endif
 
@@ -533,7 +533,7 @@ static void configure_sd_card(void)
 
 #endif
 
-#ifdef CONFIG_MODEM_HL7800
+#ifdef CONFIG_GATEWAY_COMMON_NV_DEPRECATION_HANDLER
 static void fs_to_attr_string_handler(attr_index_t idx, const char *file_name)
 {
 	int r = -EPERM;
@@ -584,4 +584,4 @@ static void nv_deprecation_handler(void)
 	/* Remove file used by previous version to limit writes on reboot. */
 	fsu_delete_abs(CONFIG_FSU_MOUNT_POINT "/nv_startup.bin");
 }
-#endif
+#endif /* CONFIG_GATEWAY_COMMON_NV_DEPRECATION_HANDLER */

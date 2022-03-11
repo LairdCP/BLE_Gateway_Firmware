@@ -1,0 +1,20 @@
+# Copyright (c) 2022 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig GATEWAY_COMMON
+    bool "Enable Gateway Common Module"
+    default y
+
+if GATEWAY_COMMON
+
+config GATEWAY_COMMON_NV_DEPRECATION_HANDLER
+    bool "Read values stored in NV system into LFS"
+    help
+      Used when upgrading from version of firmware that used NV
+
+module=GATEWAY_COMMON
+module-dep=LOG
+module-str=GATEWAY_COMMMON
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif # BLE

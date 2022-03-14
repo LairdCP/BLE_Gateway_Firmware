@@ -201,7 +201,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	hl_cmds, SHELL_CMD(apn, NULL, "HL7800 APN", shell_hl_apn_cmd),
 	SHELL_CMD(
 		cmd, NULL,
-		"Send AT command (only for advanced debug)"
+		"Send AT command (only for advanced debug)\n"
 		"hl cmd <return to normal log level delay seconds> <at command>",
 		shell_send_at_cmd),
 #ifdef CONFIG_MODEM_HL7800_FW_UPDATE

@@ -517,9 +517,6 @@ static int get_index(const bt_addr_t *addr, bool allow_gen)
 	if (allow_gen && i < CONFIG_LCZ_LWM2M_SENSOR_MAX) {
 		return generate_new_base(addr, i);
 	} else {
-		if (allow_gen) {
-			LOG_ERR("LwM2M sensor instance table full");
-		}
 		return -1;
 	}
 }

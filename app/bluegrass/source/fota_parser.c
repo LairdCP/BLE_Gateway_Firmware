@@ -25,6 +25,7 @@ LOG_MODULE_REGISTER(fota_parser, CONFIG_SHADOW_PARSER_LOG_LEVEL);
 #include "jsmn_json.h"
 
 #include "shadow_parser.h"
+#include "shadow_parser_flags_aws.h"
 
 #ifdef CONFIG_COAP_FOTA
 #include "coap_fota_shadow.h"
@@ -42,14 +43,14 @@ static struct shadow_parser_agent agent;
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static void fota_shadow_parser(const char *topic, struct topic_flags flags);
+static void fota_shadow_parser(const char *topic, struct topic_flags *flags);
 
-static void fota_parser(const char *topic, struct topic_flags flags,
-		       enum fota_image_type Type);
+static void fota_parser(const char *topic, struct topic_flags *flags,
+		       enum fota_image_type type);
 
 #ifdef CONFIG_COAP_FOTA
-static void fota_host_parser(const char *topic, struct topic_flags flags);
-static void fota_block_size_parser(const char *topic, struct topic_flags flags);
+static void fota_host_parser(const char *topic, struct topic_flags *flags);
+static void fota_block_size_parser(const char *topic, struct topic_flags *flags);
 #endif
 
 /******************************************************************************/
@@ -70,9 +71,9 @@ SYS_INIT(fota_shadow_parser_init, APPLICATION, 99);
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static void fota_shadow_parser(const char *topic, struct topic_flags flags)
+static void fota_shadow_parser(const char *topic, struct topic_flags *flags)
 {
-	if (flags.gateway) {
+	if (SP_FLAG(gateway)) {
 		fota_parser(topic, flags, APP_IMAGE_TYPE);
 		if (IS_ENABLED(CONFIG_MODEM_HL7800)) {
 			fota_parser(topic, flags, MODEM_IMAGE_TYPE);
@@ -88,8 +89,8 @@ static void fota_shadow_parser(const char *topic, struct topic_flags flags)
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static void fota_parser(const char *topic, struct topic_flags flags,
-		       enum fota_image_type Type)
+static void fota_parser(const char *topic, struct topic_flags *flags,
+		       enum fota_image_type type)
 {
 	ARG_UNUSED(topic);
 	const char *img_name;
@@ -99,14 +100,14 @@ static void fota_parser(const char *topic, struct topic_flags flags,
 
 	/* Try to find "state":{"app":{"desired":"2.1.0","switchover":10}} */
 	jsmn_find_type("state", JSMN_OBJECT, NEXT_PARENT);
-	if (flags.get_accepted) {
+	if (SP_FLAG(get_accepted)) {
 		jsmn_find_type("reported", JSMN_OBJECT, NEXT_PARENT);
 	}
 
 #ifdef CONFIG_COAP_FOTA
-	img_name = coap_fota_get_image_name(Type);
+	img_name = coap_fota_get_image_name(type);
 #else
-	img_name = http_fota_get_image_name(Type);
+	img_name = http_fota_get_image_name(type);
 #endif
 
 	jsmn_find_type(img_name, JSMN_OBJECT, NEXT_PARENT);
@@ -118,11 +119,11 @@ static void fota_parser(const char *topic, struct topic_flags flags,
 					  NEXT_PARENT);
 		if (location > 0) {
 #ifdef CONFIG_COAP_FOTA
-			coap_fota_set_desired_version(Type,
+			coap_fota_set_desired_version(type,
 						      jsmn_string(location),
 						      jsmn_strlen(location));
 #else
-			http_fota_set_desired_version(Type,
+			http_fota_set_desired_version(type,
 						      jsmn_string(location),
 						      jsmn_strlen(location));
 #endif
@@ -133,7 +134,7 @@ static void fota_parser(const char *topic, struct topic_flags flags,
 		location = jsmn_find_type(SHADOW_FOTA_DESIRED_FILENAME_STR,
 					  JSMN_STRING, NEXT_PARENT);
 		if (location > 0) {
-			coap_fota_set_desired_filename(Type,
+			coap_fota_set_desired_filename(type,
 						       jsmn_string(location),
 						       jsmn_strlen(location));
 		}
@@ -141,7 +142,7 @@ static void fota_parser(const char *topic, struct topic_flags flags,
 		location = jsmn_find_type(SHADOW_FOTA_DOWNLOAD_HOST_STR,
 					  JSMN_STRING, NEXT_PARENT);
 		if (location > 0) {
-			http_fota_set_download_host(Type, jsmn_string(location),
+			http_fota_set_download_host(type, jsmn_string(location),
 						    jsmn_strlen(location));
 		}
 
@@ -149,7 +150,7 @@ static void fota_parser(const char *topic, struct topic_flags flags,
 		location = jsmn_find_type(SHADOW_FOTA_DOWNLOAD_FILE_STR,
 					  JSMN_STRING, NEXT_PARENT);
 		if (location > 0) {
-			http_fota_set_download_file(Type, jsmn_string(location),
+			http_fota_set_download_file(type, jsmn_string(location),
 						    jsmn_strlen(location));
 		}
 
@@ -157,7 +158,7 @@ static void fota_parser(const char *topic, struct topic_flags flags,
 		location = jsmn_find_type(SHADOW_FOTA_HASH_STR, JSMN_STRING,
 					  NEXT_PARENT);
 		if (location > 0) {
-			http_fota_set_hash(Type, jsmn_string(location),
+			http_fota_set_hash(type, jsmn_string(location),
 					   jsmn_strlen(location));
 		}
 #endif
@@ -167,10 +168,10 @@ static void fota_parser(const char *topic, struct topic_flags flags,
 					  JSMN_PRIMITIVE, NEXT_PARENT);
 		if (location > 0) {
 #ifdef CONFIG_COAP_FOTA
-			coap_fota_set_switchover(Type,
+			coap_fota_set_switchover(type,
 						 jsmn_convert_uint(location));
 #else
-			http_fota_set_switchover(Type,
+			http_fota_set_switchover(type,
 						 jsmn_convert_uint(location));
 #endif
 		}
@@ -180,24 +181,24 @@ static void fota_parser(const char *topic, struct topic_flags flags,
 					  NEXT_PARENT);
 		if (location > 0) {
 #ifdef CONFIG_COAP_FOTA
-			coap_fota_set_start(Type, jsmn_convert_uint(location));
+			coap_fota_set_start(type, jsmn_convert_uint(location));
 #else
-			http_fota_set_start(Type, jsmn_convert_uint(location));
+			http_fota_set_start(type, jsmn_convert_uint(location));
 #endif
 		}
 
 		/* Don't overwrite error count when reading shadow. */
-		if (!flags.get_accepted) {
+		if (!SP_FLAG(get_accepted)) {
 			jsmn_restore_index();
 			location = jsmn_find_type(SHADOW_FOTA_ERROR_STR,
 						  JSMN_PRIMITIVE, NEXT_PARENT);
 			if (location > 0) {
 #ifdef CONFIG_COAP_FOTA
 				coap_fota_set_error_count(
-					Type, jsmn_convert_uint(location));
+					type, jsmn_convert_uint(location));
 #else
 				http_fota_set_error_count(
-					Type, jsmn_convert_uint(location));
+					type, jsmn_convert_uint(location));
 #endif
 			}
 		}
@@ -205,7 +206,7 @@ static void fota_parser(const char *topic, struct topic_flags flags,
 }
 
 #ifdef CONFIG_COAP_FOTA
-static void fota_host_parser(const char *topic, struct topic_flags flags)
+static void fota_host_parser(const char *topic, struct topic_flags *flags)
 {
 	ARG_UNUSED(topic);
 
@@ -213,7 +214,7 @@ static void fota_host_parser(const char *topic, struct topic_flags flags)
 
 	/* Try to find "state":{"fwBridge":"something.com"}} */
 	jsmn_find_type("state", JSMN_OBJECT, NEXT_PARENT);
-	if (flags.get_accepted) {
+	if (SP_FLAG(get_accepted)) {
 		jsmn_find_type("reported", JSMN_OBJECT, NEXT_PARENT);
 	}
 	int location = jsmn_find_type(SHADOW_FOTA_BRIDGE_STR, JSMN_STRING,
@@ -224,7 +225,7 @@ static void fota_host_parser(const char *topic, struct topic_flags flags)
 	}
 }
 
-static void fota_block_size_parser(const char *topic, struct topic_flags flags)
+static void fota_block_size_parser(const char *topic, struct topic_flags *flags)
 {
 	ARG_UNUSED(topic);
 	int location;
@@ -232,7 +233,7 @@ static void fota_block_size_parser(const char *topic, struct topic_flags flags)
 	jsmn_reset_index();
 
 	jsmn_find_type("state", JSMN_OBJECT, NEXT_PARENT);
-	if (flags.get_accepted) {
+	if (SP_FLAG(get_accepted)) {
 		jsmn_find_type("reported", JSMN_OBJECT, NEXT_PARENT);
 	}
 

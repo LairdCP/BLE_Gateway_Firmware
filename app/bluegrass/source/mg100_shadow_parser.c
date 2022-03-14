@@ -28,6 +28,7 @@ LOG_MODULE_REGISTER(mg100_shadow_parser, CONFIG_SHADOW_PARSER_LOG_LEVEL);
 #include "lcz_motion.h"
 #include "sdcard_log.h"
 #include "shadow_parser.h"
+#include "shadow_parser_flags_aws.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -131,9 +132,9 @@ static int (*LocalConfigGet[MAX_WRITEABLE_LOCAL_OBJECTS])() = {
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static void mg100_parser(const char *topic, struct topic_flags flags);
+static void mg100_parser(const char *topic, struct topic_flags *flags);
 
-static void MiniGatewayParser(const char *topic, struct topic_flags flags);
+static void MiniGatewayParser(const char *topic, struct topic_flags *flags);
 static bool ValuesUpdated(uint16_t Value);
 static void BuildAndSendLocalConfigResponse(void);
 static void BuildAndSendLocalConfigNullResponse(void);
@@ -156,9 +157,9 @@ SYS_INIT(mg100_shadow_parser_init, APPLICATION, 99);
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static void mg100_parser(const char *topic, struct topic_flags flags)
+static void mg100_parser(const char *topic, struct topic_flags *flags)
 {
-	if (flags.gateway) {
+	if (SP_FLAGS(gateway)) {
 		MiniGatewayParser(topic, tf);
 	}
 }
@@ -245,7 +246,7 @@ static bool ValuesUpdated(uint16_t Value)
 	return ((Value & local_updates) == Value);
 }
 
-static void MiniGatewayParser(const char *topic, struct topic_flags flags)
+static void MiniGatewayParser(const char *topic, struct topic_flags *flags)
 {
 	ARG_UNUSED(topic);
 	int objectData = 0;
@@ -255,7 +256,7 @@ static void MiniGatewayParser(const char *topic, struct topic_flags flags)
 	uint32_t version = 0;
 
 	/* Now try to find the desired local state for the gateway */
-	if (flags.get_accepted || (shadow_parser_find_state() <= 0) ||
+	if (SP_FLAGS(get_accepted) || (shadow_parser_find_state() <= 0) ||
 	    !shadow_parser_find_uint(&version, "version")) {
 		return;
 	}

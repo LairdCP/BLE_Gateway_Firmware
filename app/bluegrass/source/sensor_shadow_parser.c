@@ -27,6 +27,7 @@ LOG_MODULE_REGISTER(sensor_shadow_parser, CONFIG_SHADOW_PARSER_LOG_LEVEL);
 #include "sensor_cmd.h"
 #include "sensor_table.h"
 #include "shadow_parser.h"
+#include "shadow_parser_flags_aws.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -50,14 +51,14 @@ static struct shadow_parser_agent sensor_agent;
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static void sensor_shadow_parser(const char *topic, struct topic_flags flags);
+static void sensor_shadow_parser(const char *topic, struct topic_flags *flags);
 
-static void gateway_parser(const char *topic, struct topic_flags flags);
-static void sensor_parser(const char *topic, struct topic_flags flags);
-static void sensor_delta_parser(const char *topic, struct topic_flags flags);
+static void gateway_parser(const char *topic, struct topic_flags *flags);
+static void sensor_parser(const char *topic, struct topic_flags *flags);
+static void sensor_delta_parser(const char *topic, struct topic_flags *flags);
 static void sensor_event_log_parser(const char *topic,
-				    struct topic_flags flags);
-static void parse_event_array(const char *topic, struct topic_flags flags);
+				    struct topic_flags *flags);
+static void parse_event_array(const char *topic, struct topic_flags *flags);
 static void parse_array(int expected_sensors);
 
 /******************************************************************************/
@@ -78,22 +79,22 @@ SYS_INIT(sensor_shadow_parser_init, APPLICATION, 99);
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static void sensor_shadow_parser(const char *topic, struct topic_flags flags)
+static void sensor_shadow_parser(const char *topic, struct topic_flags *flags)
 {
-	if (flags.gateway) {
+	if (SP_FLAGS(gateway)) {
 		gateway_parser(topic, tf);
 	} else {
 		sensor_parser(topic, tf);
 	}
 }
 
-static void gateway_parser(const char *topic, struct topic_flags flags)
+static void gateway_parser(const char *topic, struct topic_flags *flags)
 {
 	jsmn_reset_index();
 
 	/* Now try to find {"state": {"bt510": {"sensors": */
 	jsmn_find_type("state", JSMN_OBJECT, NEXT_PARENT);
-	if (flags.get_accepted) {
+	if (SP_FLAGS(get_accepted)) {
 		/* Add to heirarchy {"state":{"reported": ... */
 		jsmn_find_type("reported", JSMN_OBJECT, NEXT_PARENT);
 	}
@@ -113,16 +114,16 @@ static void gateway_parser(const char *topic, struct topic_flags flags)
 	}
 }
 
-static void sensor_parser(const char *topic, struct topic_flags flags)
+static void sensor_parser(const char *topic, struct topic_flags *flags)
 {
-	if (flags.get_accepted) {
+	if (SP_FLAGS(get_accepted)) {
 		sensor_event_log_parser(topic);
 	} else {
 		sensor_delta_parser(topic);
 	}
 }
 
-static void sensor_delta_parser(const char *topic, struct topic_flags flags)
+static void sensor_delta_parser(const char *topic, struct topic_flags *flags)
 {
 	uint32_t version = 0;
 	int state_index = shadow_parser_find_state();
@@ -164,7 +165,7 @@ static void sensor_delta_parser(const char *topic, struct topic_flags flags)
 }
 
 static void sensor_event_log_parser(const char *topic,
-				    struct topic_flags flags)
+				    struct topic_flags *flags)
 {
 	jsmn_reset_index();
 
@@ -237,7 +238,7 @@ static void parse_array(int expected_sensors)
 		sensors_found, expected_sensors);
 }
 
-static void parse_event_array(const char *topic, struct topic_flags flags)
+static void parse_event_array(const char *topic, struct topic_flags *flags)
 {
 	SensorShadowInitMsg_t *pMsg =
 		BP_TRY_TO_TAKE(sizeof(SensorShadowInitMsg_t));

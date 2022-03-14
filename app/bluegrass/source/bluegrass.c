@@ -21,11 +21,11 @@ LOG_MODULE_REGISTER(bluegrass, CONFIG_BLUEGRASS_LOG_LEVEL);
 #include "lte.h"
 #include "lcz_memfault.h"
 #include "attr.h"
-#include "sensor_gateway_parser.h"
 #include "app_version.h"
 #include "cloud.h"
 #include "gateway_fsm.h"
 #include "shadow_parser.h"
+#include "shadow_parser_flags_aws.h"
 #include "lcz_certs.h"
 
 #ifdef CONFIG_SENSOR_TASK
@@ -111,7 +111,7 @@ static char *net_sprint_ll_addr_lower(const uint8_t *ll);
 
 static void set_default_client_id(void);
 
-static void get_accepted_parser(const char *topic, struct topic_flags flags);
+static void get_accepted_parser(const char *topic, struct topic_flags *flags);
 
 static FwkMsgHandler_t sensor_publish_msg_handler;
 static FwkMsgHandler_t gateway_publish_msg_handler;
@@ -700,9 +700,9 @@ static void set_default_client_id(void)
 	}
 }
 
-static void get_accepted_parser(const char *topic, struct topic_flags flags)
+static void get_accepted_parser(const char *topic, struct topic_flags *flags)
 {
-	if (flags.get_accepted && flags.gateway) {
+	if (SP_FLAGS(get_accepted) && SP_FLAGS(gateway)) {
 		FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_CLOUD,
 					      FMC_GET_ACCEPTED_RECEIVED);
 	}

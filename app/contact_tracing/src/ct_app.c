@@ -32,6 +32,7 @@ LOG_MODULE_REGISTER(ct_app, CONFIG_CT_APP_LOG_LEVEL);
 #include "sdcard_log.h"
 #include "rpc_params.h"
 #include "shadow_parser.h"
+#include "shadow_parser_flags_aws.h"
 #include "ct_ble.h"
 #include "ct_app.h"
 
@@ -77,7 +78,7 @@ static void aws_handle_command(char *cmd);
 static void process_log_get_cmd(void);
 static void process_log_dir_command(void);
 
-static void rpc_parser(const char *topic, struct topic_flags flags);
+static void rpc_parser(const char *topic, struct topic_flags *flags);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -276,7 +277,7 @@ static void process_log_dir_command(void)
 #endif
 }
 
-static void rpc_parser(const char *topic, struct topic_flags flags)
+static void rpc_parser(const char *topic, struct topic_flags *flags)
 {
-	rpc_params_gateway_parser(flags.get_accepted);
+	rpc_params_gateway_parser(SP_FLAGS(get_accepted));
 }

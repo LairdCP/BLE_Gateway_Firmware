@@ -19,21 +19,19 @@ extern "C" {
 #include <zephyr.h>
 #include <sys/slist.h>
 
-#include "shadow_parser.h"
-
 /******************************************************************************/
 /* Global Constants, Macros and Type Definitions                              */
 /******************************************************************************/
-/* strstr results of topic string */
-struct topic_flags {
-	bool get_accepted : 1;
-	bool gateway : 1;
-};
+/* Forward Declaration - Flags are defined per project */
+struct topic_flags;
 
 struct shadow_parser_agent {
 	sys_snode_t node;
-	void (*parser)(const char *topic, struct topic_flags flags);
+	void (*parser)(const char *topic, struct topic_flags *flags);
 };
+
+/* Check that flag pointer is valid */
+#define SP_FLAG(x) ((flags == NULL) ? false : (flags->x))
 
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
@@ -46,6 +44,16 @@ struct shadow_parser_agent {
  * @param json string
  */
 void shadow_parser(const char *topic, const char *json);
+
+/**
+ * @brief Find substrings in topic to generate flags.
+ * Must be defined by application.
+ * Called by shadow parser after jsmn mutex is obtained.
+ *
+ * @param topic pointer to topic
+ * @retval flags pointer to flags
+ */
+struct topic_flags *shadow_parser_find_flags(const char *topic);
 
 /**
  * @brief Register a shadow processor that will be called from the AWS

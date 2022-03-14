@@ -31,7 +31,7 @@ void shadow_parser(const char *topic, const char *json)
 {
 	sys_snode_t *node;
 	struct shadow_parser_agent *agent;
-	struct topic_flags flags;
+	struct topic_flags *flags;
 
 	/* All modules with jsmn header files have access to the tokenization. */
 	jsmn_start(json);
@@ -40,10 +40,7 @@ void shadow_parser(const char *topic, const char *json)
 		return;
 	}
 
-	flags.get_accepted =
-		(strstr(topic, CONFIG_SHADOW_PARSER_GET_ACCEPTED_STR) != NULL);
-	flags.gateway =
-		(strstr(topic, CONFIG_SHADOW_PARSER_GATEWAY_TOPIC_STR) != NULL);
+	flags = shadow_parser_find_flags(topic);
 
 	SYS_SLIST_FOR_EACH_NODE(&shadow_parser_list, node) {
     	agent = CONTAINER_OF(node, struct shadow_parser_agent, node);
@@ -81,4 +78,12 @@ bool shadow_parser_find_uint(uint32_t *value, const char *key)
 		LOG_DBG("%s not found", log_strdup(key));
 		return false;
 	}
+}
+
+/******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
+__weak struct topic_flags *shadow_parser_find_flags(const char *topic)
+{
+	return NULL;
 }

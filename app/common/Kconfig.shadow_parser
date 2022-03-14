@@ -8,17 +8,12 @@ menuconfig SHADOW_PARSER
 
 if SHADOW_PARSER
 
-config SHADOW_PARSER_GATEWAY_TOPIC_STR
-    string "String to search for to determine if topic is for gateway"
-    default "deviceId-"
-
-config SHADOW_PARSER_GET_ACCEPTED_STR
-    string "String to search for when determine if topic is get accepted"
-    default "/get/accepted"
-
 module=SHADOW_PARSER
 module-dep=LOG
 module-str=SHADOW_PARSER
 source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+config SHADOW_PARSER_FLAGS_AWS
+    bool "Match topic strings used for AWS"
 
 endif # SHADOW_PARSER

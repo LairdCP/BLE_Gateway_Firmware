@@ -33,6 +33,10 @@ target_sources_ifdef(CONFIG_SHADOW_PARSER app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/shadow_parser.c
     )
 
+target_include_directories_ifdef(SHADOW_PARSER_FLAGS_AWS app PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/shadow_parser_flags_aws.c
+    )
+
 target_sources_ifdef(CONFIG_SINGLE_PERIPHERAL app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/single_peripheral.c
     )

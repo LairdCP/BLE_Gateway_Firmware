@@ -2,7 +2,7 @@
  * @file gateway_fsm.h
  * @brief Network and cloud abstraction layer for gateway.
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -46,7 +46,8 @@ void gateway_fsm_request_decommission(void);
 void gateway_fsm_request_cloud_disconnect(void);
 
 /**
- * @brief Weak implementations that can be overriden by application
+ * @brief Keep cloud disconnected while FOTA is in progress.
+ * Weak implementation that can be overriden by application
  */
 bool gateway_fsm_fota_request(void);
 

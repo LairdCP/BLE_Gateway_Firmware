@@ -69,6 +69,13 @@ int cloud_decommission(void);
  */
 int commission_handler(void);
 
+/**
+ * @brief Determines if gateway FSM can connect to cloud
+ *
+ * @return true when gateway FSM can connect to cloud
+ * @return false otherwise
+ */
+bool cloud_is_enabled(void);
 
 #ifdef __cplusplus
 }

@@ -152,6 +152,11 @@ __weak int commission_handler(void)
 	return 0;
 }
 
+__weak bool cloud_is_enabled(void)
+{
+	return true;
+}
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/

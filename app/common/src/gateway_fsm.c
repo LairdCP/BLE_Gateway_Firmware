@@ -2,7 +2,7 @@
  * @file gateway_fsm.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -81,14 +81,16 @@ static struct {
 static void modem_init_handler(void);
 static void network_init_handler(void);
 static void wait_for_network_handler(void);
+static void network_connected_handler(void);
 static void wait_for_commission_handler(void);
 static void resolve_server_handler(void);
 static void wait_before_cloud_connect_handler(void);
 static void cloud_connecting_handler(void);
 static void cloud_connected_handler(void);
 static void disconnected_handler(void);
-static void fota_handler(void);
 static void decommission_handler(void);
+
+static bool cloud_disconnect_request(void);
 
 static bool timer_expired(void);
 
@@ -177,15 +179,7 @@ void gateway_fsm(void)
 		break;
 
 	case GATEWAY_STATE_NETWORK_CONNECTED:
-#if defined(CONFIG_LWM2M)
-		if (!gsm.network_is_connected()) {
-			set_state(GATEWAY_STATE_NETWORK_DISCONNECTED);
-		} else {
-			set_state(GATEWAY_STATE_RESOLVE_SERVER);
-		}
-#else
-		set_state(GATEWAY_STATE_WAIT_FOR_COMMISSION);
-#endif
+		network_connected_handler();
 		break;
 
 	case GATEWAY_STATE_NETWORK_DISCONNECTED:
@@ -250,10 +244,6 @@ void gateway_fsm(void)
 
 	case GATEWAY_STATE_CLOUD_ERROR:
 		set_state(GATEWAY_STATE_CLOUD_DISCONNECTED);
-		break;
-
-	case GATEWAY_STATE_FOTA_BUSY:
-		fota_handler();
 		break;
 
 	case GATEWAY_STATE_DECOMMISSION:
@@ -350,7 +340,7 @@ static void wait_for_network_handler(void)
 
 static void wait_for_commission_handler(void)
 {
-	if (gsm.cloud_disconnect_request) {
+	if (cloud_disconnect_request()) {
 		set_state(GATEWAY_STATE_CLOUD_REQUEST_DISCONNECT);
 	} else if (gsm.commission() == 0) {
 		set_state(GATEWAY_STATE_RESOLVE_SERVER);
@@ -382,7 +372,7 @@ static void wait_before_cloud_connect_handler(void)
 {
 	if (!gsm.network_is_connected()) {
 		set_state(GATEWAY_STATE_NETWORK_DISCONNECTED);
-	} else if (gateway_fsm_fota_request() || gsm.cloud_disconnect_request) {
+	} else if (cloud_disconnect_request()) {
 		set_state(GATEWAY_STATE_CLOUD_REQUEST_DISCONNECT);
 	} else if (timer_expired()) {
 		set_state(GATEWAY_STATE_CLOUD_CONNECTING);
@@ -413,7 +403,7 @@ static void cloud_connected_handler(void)
 		set_state(GATEWAY_STATE_NETWORK_DISCONNECTED);
 	} else if (!gsm.cloud_is_connected()) {
 		set_state(GATEWAY_STATE_CLOUD_DISCONNECTED);
-	} else if (gateway_fsm_fota_request() || gsm.cloud_disconnect_request) {
+	} else if (cloud_disconnect_request()) {
 		set_state(GATEWAY_STATE_CLOUD_REQUEST_DISCONNECT);
 	}
 }
@@ -422,18 +412,20 @@ static void disconnected_handler(void)
 {
 	gsm.timer = get_reconnect_cloud_delay();
 
-	if (gateway_fsm_fota_request()) {
-		set_state(GATEWAY_STATE_FOTA_BUSY);
-	} else if (gsm.decommission_request) {
+	if (gsm.decommission_request) {
 		set_state(GATEWAY_STATE_DECOMMISSION);
-	} else if (!gsm.network_is_connected()) {
-		set_state(GATEWAY_STATE_WAIT_FOR_NETWORK);
 	} else {
-		set_state(GATEWAY_STATE_WAIT_FOR_COMMISSION);
+		set_state(GATEWAY_STATE_WAIT_FOR_NETWORK);
 	}
 }
 
-static void fota_handler(void)
+static bool cloud_disconnect_request(void)
+{
+	return (gateway_fsm_fota_request() || !cloud_is_enabled() ||
+		gsm.cloud_disconnect_request);
+}
+
+static void network_connected_handler(void)
 {
 	/* While the modem is updating (network down),
 	 * this state will be repeatedly cycled through.
@@ -443,8 +435,8 @@ static void fota_handler(void)
 	 */
 	if (!gsm.network_is_connected()) {
 		set_state(GATEWAY_STATE_NETWORK_DISCONNECTED);
-	} else if (!gateway_fsm_fota_request()) {
-		set_state(GATEWAY_STATE_WAIT_FOR_NETWORK);
+	} else if (!cloud_disconnect_request()) {
+		set_state(GATEWAY_STATE_WAIT_FOR_COMMISSION);
 	}
 }
 

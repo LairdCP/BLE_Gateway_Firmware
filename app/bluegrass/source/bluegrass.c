@@ -166,7 +166,7 @@ int cloud_decommission(void)
 	return lcz_certs_unload();
 }
 
-int commission_handler(void)
+int cloud_commission_handler(void)
 {
 	attr_set_signed32(ATTR_ID_cert_status, CERT_STATUS_BUSY);
 	attr_set_uint32(ATTR_ID_commissioning_busy, true);

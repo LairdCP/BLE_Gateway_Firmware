@@ -67,7 +67,7 @@ int cloud_decommission(void);
  *
  * @return int 0 on success, negative errno
  */
-int commission_handler(void);
+int cloud_commission_handler(void);
 
 /**
  * @brief Determines if gateway FSM can connect to cloud

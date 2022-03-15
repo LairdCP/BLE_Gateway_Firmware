@@ -147,7 +147,7 @@ __weak int cloud_decommission(void)
 	return 0;
 }
 
-__weak int commission_handler(void)
+__weak int cloud_commission_handler(void)
 {
 	return 0;
 }
@@ -325,7 +325,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	}
 
 	if (update_commission) {
-		commission_handler();
+		cloud_commission_handler();
 	}
 
 #ifdef CONFIG_MODEM_HL7800

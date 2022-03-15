@@ -34,6 +34,9 @@ LOG_MODULE_REGISTER(http_fota, CONFIG_HTTP_FOTA_TASK_LOG_LEVEL);
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
 /******************************************************************************/
+#ifndef CONFIG_LOG_PROCESS_THREAD_SLEEP_MS
+#define CONFIG_LOG_PROCESS_THREAD_SLEEP_MS 0
+#endif
 
 #define HTTP_FOTA_TASK_PRIORITY K_PRIO_PREEMPT(CONFIG_HTTP_FOTA_TASK_PRIO)
 

@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.13.1)
 
+set(lcz_module_path ${CMAKE_SOURCE_DIR}/../../modules/lib/laird_connect)
+
 # Add configuration for building with mcuboot
 # because it cannot be done with relative paths in VS code on Windows
 if((BOARD STREQUAL mg100) OR (BOARD STREQUAL pinnacle_100_dvk))
@@ -8,20 +10,20 @@ set(mcuboot_DTC_OVERLAY_FILE
 )
 
 set(mcuboot_CONF_FILE
-    ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/pinnacle_100.conf
+    ${lcz_module_path}/zephyr_lib/mcuboot_config/pinnacle_100.conf
 )
 elseif((BOARD STREQUAL bl5340_dvk_cpuapp) OR (BOARD STREQUAL bl5340pa_dvk_cpuapp))
 set(mcuboot_CONF_FILE
-    ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/bl5340.conf
+    ${lcz_module_path}/zephyr_lib/mcuboot_config/bl5340.conf
 )
 
 list(APPEND OVERLAY_CONFIG
-    ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf
+    ${lcz_module_path}/zephyr_lib/mcumgr_wrapper/config/overlay-mcuboot.conf
 )
 
 # Use static partition layout for board
 set(PM_STATIC_YML_FILE
-    ${CMAKE_SOURCE_DIR}/../../modules/zephyr_lib/mcuboot_config/pm_static.${BOARD}.yml
+    ${lcz_module_path}/zephyr_lib/mcuboot_config/pm_static.${BOARD}.yml
 )
 endif()
 
@@ -104,7 +106,7 @@ target_sources_ifdef(CONFIG_WDT app PRIVATE
 
 include_directories(${CMAKE_SOURCE_DIR}/common/include)
 include_directories(${CMAKE_SOURCE_DIR}/framework_config)
-include_directories(${CMAKE_SOURCE_DIR}/../../modules/jsmn)
+include_directories(${CMAKE_SOURCE_DIR}/../../modules/lib/jsmn)
 
 if(CONFIG_BOARD_MG100)
 target_sources(app PRIVATE

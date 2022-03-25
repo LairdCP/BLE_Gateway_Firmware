@@ -109,6 +109,7 @@ static void update_modem_log_level_handler(void);
 static void update_rat_handler(void);
 static void update_gps_rate_handler(void);
 static void polte_cmd_handler(void);
+static void set_bands_cmd_handler(void);
 #endif
 
 /******************************************************************************/
@@ -261,6 +262,9 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 			polte_cmd_handler();
 			break;
 
+		case ATTR_ID_bands:
+			set_bands_cmd_handler();
+			break;
 #endif
 
 		case ATTR_ID_fota_control_point:
@@ -519,6 +523,16 @@ static void polte_cmd_handler(void)
 static void update_rat_handler(void)
 {
 	mdm_hl7800_update_rat(attr_get_uint32(ATTR_ID_lte_rat, MDM_RAT_CAT_M1));
+}
+
+static void set_bands_cmd_handler(void)
+{
+	int ret;
+
+	ret = mdm_hl7800_set_bands(attr_get_quasi_static(ATTR_ID_bands));
+	if (ret != 0) {
+		LOG_ERR("Could not set LTE bands [%d]", ret);
+	}
 }
 #endif
 

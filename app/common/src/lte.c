@@ -493,7 +493,8 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_BANDS:
-		attr_set_string(ATTR_ID_bands, s, strlen(s));
+		attr_set_without_broadcast(ATTR_ID_bands, ATTR_TYPE_STRING, s,
+					   strlen(s));
 		break;
 
 	case HL7800_EVENT_ACTIVE_BANDS:

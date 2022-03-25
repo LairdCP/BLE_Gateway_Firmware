@@ -218,7 +218,7 @@ bool fota_smp_ble_prepared(void)
 static void fota_modem_start(void)
 {
 	int status = FOTA_STATUS_SUCCESS;
-	char *abs_path = attr_get_quasi_static(ATTR_ID_fota_file_name);
+	const char *abs_path = attr_get_quasi_static(ATTR_ID_fota_file_name);
 	ssize_t size = fsu_get_file_size_abs(abs_path);
 
 	fota_smp_set_count(0);

@@ -104,6 +104,7 @@ static int create_ess_sensor_objects(void);
 static size_t lwm2m_str_size(const char *s);
 static int ess_sensor_set_error_handler(int status, char *obj_inst_str);
 static bool enable_bootstrap(void);
+static void set_connected(bool connected);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -369,7 +370,7 @@ int lwm2m_disconnect(void)
 {
 	lwm2m_rd_client_stop(&lw.client, rd_client_event, false);
 	lw.connection_started = false;
-	lw.connected = false;
+	set_connected(false);
 
 	return 0;
 }
@@ -378,7 +379,7 @@ int lwm2m_disconnect_and_deregister(void)
 {
 	lwm2m_rd_client_stop(&lw.client, rd_client_event, true);
 	lw.connection_started = false;
-	lw.connected = false;
+	set_connected(false);
 
 	return 0;
 }
@@ -459,6 +460,16 @@ int lwm2m_delete_resource_inst(uint16_t type, uint16_t instance,
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
+static void set_connected(bool connected)
+{
+	lw.connected = connected;
+	if (lw.connected) {
+		lcz_led_turn_on(CLOUD_LED);
+	} else {
+		lcz_led_turn_off(CLOUD_LED);
+	}
+}
+
 static int device_reboot_cb(uint16_t obj_inst_id, uint8_t *args,
 			    uint16_t args_len)
 {
@@ -584,39 +595,39 @@ static void rd_client_event(struct lwm2m_ctx *client,
 
 	case LWM2M_RD_CLIENT_EVENT_BOOTSTRAP_REG_FAILURE:
 		LOG_DBG("Bootstrap registration failure!");
-		lw.connected = false;
+		set_connected(false);
 		lwm2m_disconnect();
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_BOOTSTRAP_REG_COMPLETE:
 		LOG_DBG("Bootstrap registration complete");
-		lw.connected = true;
+		set_connected(true);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_BOOTSTRAP_TRANSFER_COMPLETE:
 		LOG_DBG("Bootstrap transfer complete");
-		lw.connected = true;
+		set_connected(true);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REGISTRATION_FAILURE:
 		LOG_DBG("Registration failure!");
-		lw.connected = false;
+		set_connected(false);
 		lwm2m_disconnect();
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REGISTRATION_COMPLETE:
 		LOG_DBG("Registration complete");
-		lw.connected = true;
+		set_connected(true);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REG_UPDATE_FAILURE:
 		LOG_DBG("Registration update failure!");
-		lw.connected = false;
+		set_connected(false);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REG_UPDATE_COMPLETE:
 		LOG_DBG("Registration update complete");
-		lw.connected = true;
+		set_connected(true);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_DEREGISTER_FAILURE:
@@ -626,7 +637,7 @@ static void rd_client_event(struct lwm2m_ctx *client,
 
 	case LWM2M_RD_CLIENT_EVENT_DISCONNECT:
 		LOG_DBG("Disconnected");
-		lw.connected = false;
+		set_connected(false);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_QUEUE_MODE_RX_OFF:
@@ -635,7 +646,7 @@ static void rd_client_event(struct lwm2m_ctx *client,
 
 	case LWM2M_RD_CLIENT_EVENT_NETWORK_ERROR:
 		LOG_DBG("Network Error");
-		lw.connected = false;
+		set_connected(false);
 		break;
 	}
 }

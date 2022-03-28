@@ -227,8 +227,8 @@ int awsGetServerAddr(void)
 		.ai_family = AF_INET,
 		.ai_socktype = SOCK_STREAM,
 	};
-	return dns_resolve_server_addr(attr_get_quasi_static(ATTR_ID_endpoint),
-				       attr_get_quasi_static(ATTR_ID_port),
+	return dns_resolve_server_addr((char *)attr_get_quasi_static(ATTR_ID_endpoint),
+				       (char *)attr_get_quasi_static(ATTR_ID_port),
 				       &hints, &saddr);
 }
 

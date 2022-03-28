@@ -535,7 +535,7 @@ static void configure_sd_card(void)
 #ifdef CONFIG_BLUEGRASS
 static void aws_set_default_client_id(void)
 {
-	char *s;
+	const char *s;
 
 	s = attr_get_quasi_static(ATTR_ID_client_id);
 

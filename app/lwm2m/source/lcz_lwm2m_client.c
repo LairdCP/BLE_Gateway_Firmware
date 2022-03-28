@@ -525,7 +525,7 @@ static int lwm2m_setup(const char *id)
 	lwm2m_engine_set_string(
 		"0/0/3", (char *)attr_get_quasi_static(ATTR_ID_lwm2m_client_id));
 	lwm2m_engine_set_opaque("0/0/5",
-				attr_get_quasi_static(ATTR_ID_lwm2m_psk),
+				(char *)attr_get_quasi_static(ATTR_ID_lwm2m_psk),
 				attr_get_size(ATTR_ID_lwm2m_psk));
 #endif /* CONFIG_LWM2M_DTLS_SUPPORT */
 

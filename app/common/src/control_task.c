@@ -500,8 +500,8 @@ static void polte_cmd_handler(void)
 
 		case POLTE_CONTROL_POINT_ENABLE:
 			status = mdm_hl7800_polte_enable(
-				attr_get_quasi_static(ATTR_ID_polte_user),
-				attr_get_quasi_static(ATTR_ID_polte_password));
+				(char *)attr_get_quasi_static(ATTR_ID_polte_user),
+				(char *)attr_get_quasi_static(ATTR_ID_polte_password));
 			break;
 
 		case POLTE_CONTROL_POINT_LOCATE:

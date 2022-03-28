@@ -158,7 +158,7 @@ static char build_id[BUILD_ID_SIZE];
 int lte_init(void)
 {
 #ifdef CONFIG_LCZ_MEMFAULT
-	char *device_id;
+	const char *device_id;
 #endif
 	char *str;
 	int rc = LTE_INIT_ERROR_NONE;

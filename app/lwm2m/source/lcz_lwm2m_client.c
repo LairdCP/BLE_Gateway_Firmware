@@ -77,7 +77,6 @@ enum create_state { CREATE_ALLOW = 0, CREATE_OK = 1, CREATE_FAIL = 2 };
 /* Local Data Definitions                                                     */
 /******************************************************************************/
 static struct {
-	uint8_t led_state;
 	uint32_t time;
 	struct lwm2m_ctx client;
 	bool dns_resolved;
@@ -101,9 +100,6 @@ static int device_factory_default_cb(uint16_t obj_inst_id, uint8_t *args,
 static int lwm2m_setup(const char *id);
 static void rd_client_event(struct lwm2m_ctx *client,
 			    enum lwm2m_rd_client_event client_event);
-static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
-			 uint16_t res_inst_id, uint8_t *data, uint16_t data_len,
-			 bool last_block, size_t total_size);
 static int create_ess_sensor_objects(void);
 static size_t lwm2m_str_size(const char *s);
 static int ess_sensor_set_error_handler(int status, char *obj_inst_str);
@@ -562,18 +558,6 @@ static int lwm2m_setup(const char *id)
 	lwm2m_engine_register_exec_callback("3/0/5", device_factory_default_cb);
 	lwm2m_engine_register_read_callback("3/0/13", current_time_read_cb);
 
-	/* IPSO: Light Control object */
-	lwm2m_engine_create_obj_inst("3311/0");
-	/* State of LED is not saved/restored */
-	lwm2m_engine_register_post_write_callback("3311/0/5850", led_on_off_cb);
-	/* Delete unused optional resources */
-	lwm2m_engine_delete_res_inst("3311/0/5851/0");
-	lwm2m_engine_delete_res_inst("3311/0/5805/0");
-	lwm2m_engine_delete_res_inst("3311/0/5820/0");
-	lwm2m_engine_delete_res_inst("3311/0/5706/0");
-	lwm2m_engine_delete_res_inst("3311/0/5701/0");
-	lwm2m_engine_delete_res_inst("3311/0/5750/0");
-
 #ifdef CONFIG_LCZ_LWM2M_SENSOR
 	lcz_lwm2m_sensor_init();
 #endif
@@ -654,25 +638,6 @@ static void rd_client_event(struct lwm2m_ctx *client,
 		lw.connected = false;
 		break;
 	}
-}
-
-static int led_on_off_cb(uint16_t obj_inst_id, uint16_t res_id,
-			 uint16_t res_inst_id, uint8_t *data, uint16_t data_len,
-			 bool last_block, size_t total_size)
-{
-	uint8_t led_val = *(uint8_t *)data;
-	if (led_val != lw.led_state) {
-		if (led_val) {
-			lcz_led_turn_on(CLOUD_LED);
-		} else {
-			lcz_led_turn_off(CLOUD_LED);
-		}
-		lw.led_state = led_val;
-		/* reset time on counter */
-		lwm2m_engine_set_s32("3311/0/5852", 0);
-	}
-
-	return 0;
 }
 
 static int create_ess_sensor_objects(void)

@@ -44,7 +44,11 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 /** Workaround for sporadic DNS error */
 #define NETWORK_CONNECT_CALLBACK_DELAY 4
 
+#if defined(CONFIG_LWM2M)
+#define CLOUD_CONNECT_TIMEOUT 60
+#else
 #define CLOUD_CONNECT_TIMEOUT 10
+#endif
 
 typedef int gsm_func(void);
 typedef bool gsm_status_func(void);

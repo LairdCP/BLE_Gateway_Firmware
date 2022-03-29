@@ -603,12 +603,10 @@ static void rd_client_event(struct lwm2m_ctx *client,
 
 	case LWM2M_RD_CLIENT_EVENT_BOOTSTRAP_REG_COMPLETE:
 		LOG_DBG("Bootstrap registration complete");
-		set_connected(true);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_BOOTSTRAP_TRANSFER_COMPLETE:
 		LOG_DBG("Bootstrap transfer complete");
-		set_connected(true);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REGISTRATION_FAILURE:
@@ -629,7 +627,6 @@ static void rd_client_event(struct lwm2m_ctx *client,
 
 	case LWM2M_RD_CLIENT_EVENT_REG_UPDATE_COMPLETE:
 		LOG_DBG("Registration update complete");
-		set_connected(true);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_DEREGISTER_FAILURE:

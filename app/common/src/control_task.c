@@ -71,6 +71,8 @@ BUILD_ASSERT(ATTR_ID_join_delay + 1 == ATTR_ID_join_min, MSG);
 BUILD_ASSERT(ATTR_ID_join_min + 1 == ATTR_ID_join_max, MSG);
 BUILD_ASSERT(ATTR_ID_join_max + 1 == ATTR_ID_join_interval, MSG);
 
+#define LWM2M_REBOOT_DELAY_MS 5000
+
 #if defined(CONFIG_COAP_FOTA) && defined(CONFIG_HTTP_FOTA)
 #error "Dual network FOTA not supported"
 #endif
@@ -551,7 +553,10 @@ static DispatchResult_t lwm2m_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 			LOG_ERR("Error setting ESS Sensor Data in LWM2M server");
 		}
 	} break;
-
+	case FMC_CLOUD_REBOOT:
+		lwm2m_disconnect_and_deregister();
+		lcz_software_reset(LWM2M_REBOOT_DELAY_MS);
+		break;
 	default:
 		break;
 	}

@@ -40,6 +40,7 @@ LOG_MODULE_REGISTER(lwm2m_client, CONFIG_LCZ_LWM2M_LOG_LEVEL);
 #ifdef CONFIG_LWM2M_UCIFI_BATTERY
 #include "lcz_lwm2m_battery.h"
 #endif
+#include "FrameworkIncludes.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -79,7 +80,6 @@ enum create_state { CREATE_ALLOW = 0, CREATE_OK = 1, CREATE_FAIL = 2 };
 static struct {
 	uint32_t time;
 	struct lwm2m_ctx client;
-	bool dns_resolved;
 	bool connection_started;
 	bool connected;
 	bool setup_complete;
@@ -477,7 +477,9 @@ static int device_reboot_cb(uint16_t obj_inst_id, uint8_t *args,
 	ARG_UNUSED(args);
 	ARG_UNUSED(args_len);
 
-	lcz_software_reset(0);
+	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED,
+					   FMC_CLOUD_REBOOT);
+
 	return 0;
 }
 

@@ -1,5 +1,4 @@
-
-/* remove QSPI partitions from device tree because nRF Connect SDK 
+/* remove QSPI partitions from device tree because nRF Connect SDK
  * partition manager will handle them.
  */
 /delete-node/ &slot1_partition;

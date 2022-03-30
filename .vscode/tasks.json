@@ -12,6 +12,45 @@
   },
   "tasks": [
     {
+      "label": "build aws",
+      "type": "shell",
+      "dependsOn": ["increment build version"],
+      "command": "west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
+      "windows": {
+        "command": "west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
+      "label": "build lwm2m",
+      "type": "shell",
+      "dependsOn": ["increment build version"],
+      "command": "west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix}\"  '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"LwM2M\"'",
+      "windows": {
+        "command": "west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows}\" -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"LwM2M\\\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
+      "label": "build contact tracing",
+      "type": "shell",
+      "dependsOn": ["increment build version"],
+      "command": "west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"Contact_Tracing\"'",
+      "windows": {
+        "command": "west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows}\" -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"Contact_Tracing\\\""
+      },
+      "problemMatcher": {
+        "base": "$gcc",
+        "fileLocation": "absolute"
+      }
+    },
+    {
       // This command requires that the project was already built.
       // It will re-compile changes, but won't work if there are CMake or Kconfig changes.
       "label": "build",
@@ -27,25 +66,12 @@
       }
     },
     {
-      "label": "build aws",
-      "type": "shell",
-      "dependsOn": ["increment build version"],
-      "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
-      "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
-      },
-      "problemMatcher": {
-        "base": "$gcc",
-        "fileLocation": "absolute"
-      }
-    },
-    {
       "label": "re-build",
       "type": "shell",
       "dependsOn": ["increment build version"],
-      "command": "${config:clear_static_partitions_unix} && west build -p -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
+      "command": "west build -p -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
       "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -p -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
+        "command": "west build -p -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -89,31 +115,6 @@
       "problemMatcher": []
     },
     {
-      "label": "build lwm2m",
-      "type": "shell",
-      "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_lwm2m_pinnacle_100_config_unix}\"",
-      "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_lwm2m_pinnacle_100_config_windows}\""
-      },
-      "problemMatcher": {
-        "base": "$gcc",
-        "fileLocation": "absolute"
-      }
-    },
-    {
-      "label": "build contact tracing",
-      "type": "shell",
-      "dependsOn": ["apply contact tracing patches", "increment build version"],
-      "command": "${config:clear_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix}\" '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"Contact_Tracing\"'",
-      "windows": {
-        "command": "${config:clear_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows}\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"Contact_Tracing\\\""
-      },
-      "problemMatcher": {
-        "base": "$gcc",
-        "fileLocation": "absolute"
-      }
-    },
-    {
       "label": "app ram_report",
       "type": "shell",
       "command": "west build -d ${workspaceRoot}/build/${input:board}/${input:app} ${workspaceRoot}/app --target ram_report > ${workspaceRoot}/build/${input:board}/${input:app}/ram_report",
@@ -132,56 +133,17 @@
       "problemMatcher": []
     },
     {
-      "label": "build aws with mcuboot",
-      "type": "shell",
-      "dependsOn": ["increment build version"],
-      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
-      "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_mcuboot_config_windows}\" -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
-      },
-      "problemMatcher": {
-        "base": "$gcc",
-        "fileLocation": "absolute"
-      }
-    },
-    {
-      "label": "build lwm2m with mcuboot",
-      "type": "shell",
-      "dependsOn": ["increment build version"],
-      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_unix} ${config:app_lwm2m_pinnacle_100_config_unix} ${config:app_mcuboot_config_unix}\"  '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"LwM2M\"'",
-      "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_lwm2m_config_windows} ${config:app_lwm2m_pinnacle_100_config_windows} ${config:app_mcuboot_config_windows}\" -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"LwM2M\\\""
-      },
-      "problemMatcher": {
-        "base": "$gcc",
-        "fileLocation": "absolute"
-      }
-    },
-    {
-      "label": "build contact tracing with mcuboot",
-      "type": "shell",
-      "dependsOn": ["increment build version"],
-      "command": "${config:setup_static_partitions_unix} && west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix} ${config:app_mcuboot_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"Contact_Tracing\"'",
-      "windows": {
-        "command": "${config:setup_static_partitions_windows} && west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows} ${config:app_mcuboot_config_windows}\" -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"Contact_Tracing\\\""
-      },
-      "problemMatcher": {
-        "base": "$gcc",
-        "fileLocation": "absolute"
-      }
-    },
-    {
       "label": "aws - build flash",
       "type": "shell",
       "dependsOrder": "sequence",
-      "dependsOn": ["build aws with mcuboot", "flash app"],
+      "dependsOn": ["build aws", "flash app"],
       "problemMatcher": []
     },
     {
       "label": "lwm2m - build flash",
       "type": "shell",
       "dependsOrder": "sequence",
-      "dependsOn": ["build lwm2m with mcuboot", "flash app"],
+      "dependsOn": ["build lwm2m", "flash app"],
       "problemMatcher": []
     },
     {
@@ -243,21 +205,6 @@
         "command": "py ${workspaceRoot}\\scripts\\increment_build_version.py ${workspaceRoot}\\app\\common\\include\\app_version.h"
       },
       "problemMatcher": []
-    },
-    {
-      "label": "build bl5340 dvk with mcuboot",
-      "type": "shell",
-      "dependsOn": [
-        "increment build version"
-      ],
-      "command": "west build -b bl5340_dvk_cpuapp -d ${workspaceRoot}/build/bl5340_dvk_cpuapp/aws ${workspaceRoot}/app",
-      "windows": {
-        "command": "west build -b bl5340_dvk_cpuapp -d ${workspaceRoot}\\build\\bl5340_dvk_cpuapp\\aws ${workspaceRoot}\\app"
-      },
-      "problemMatcher": {
-        "base": "$gcc",
-        "fileLocation": "absolute"
-      }
     }
   ],
   "inputs": [
@@ -273,7 +220,11 @@
       "description": "Select a board",
       "default": "pinnacle_100_dvk",
       "type": "pickString",
-      "options": ["mg100", "pinnacle_100_dvk"]
+      "options": [
+        "mg100",
+        "pinnacle_100_dvk",
+        "bl5340_dvk_cpuapp"
+      ]
     },
     {
       "id": "mcumgr_cnx",

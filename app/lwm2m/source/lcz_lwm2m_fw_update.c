@@ -24,6 +24,8 @@ LOG_MODULE_REGISTER(lwm2m_fw_update, CONFIG_LCZ_LWM2M_FW_UPDATE_LOG_LEVEL);
 #include <dfu/mcuboot.h>
 #include <sys/reboot.h>
 
+#include "lcz_lwm2m_client.h"
+
 #include "lcz_lwm2m_fw_update.h"
 
 /******************************************************************************/
@@ -271,6 +273,8 @@ static int lwm2m_fw_update_callback(uint16_t obj_inst_id, uint8_t *args,
 	} else {
 		lwm2m_set_fw_update_state(STATE_UPDATING);
 	}
+
+	(void)lwm2m_disconnect_and_deregister();
 
 	LOG_INF("Rebooting device in %d seconds", REBOOT_DELAY_SECONDS);
 	k_work_schedule(&work_reboot, REBOOT_DELAY);

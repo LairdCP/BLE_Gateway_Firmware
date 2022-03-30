@@ -25,6 +25,7 @@ LOG_MODULE_REGISTER(lwm2m_fw_update, CONFIG_LCZ_LWM2M_FW_UPDATE_LOG_LEVEL);
 #include <sys/reboot.h>
 
 #include "lcz_lwm2m_client.h"
+#include "app_version.h"
 
 #include "lcz_lwm2m_fw_update.h"
 
@@ -34,6 +35,7 @@ LOG_MODULE_REGISTER(lwm2m_fw_update, CONFIG_LCZ_LWM2M_FW_UPDATE_LOG_LEVEL);
 #define BYTE_PROGRESS_STEP (1024 * 10)
 #define REBOOT_DELAY_SECONDS 10
 #define REBOOT_DELAY K_SECONDS(REBOOT_DELAY_SECONDS)
+#define APP_TYPE_SHORT_MAX_SIZE 16
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -43,6 +45,8 @@ static uint8_t
 		4);
 static uint8_t firmware_data_buf[CONFIG_LWM2M_COAP_BLOCK_SIZE];
 static struct k_work_delayable work_reboot;
+static char fw_pkg_name[sizeof(CONFIG_BOARD) + sizeof('_') +
+			APP_TYPE_SHORT_MAX_SIZE];
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -64,6 +68,7 @@ static int lwm2m_fw_update_callback(uint16_t obj_inst_id, uint8_t *args,
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
+extern const char *get_app_type_short(void);
 
 int lcz_lwm2m_fw_update_init(void)
 {
@@ -79,6 +84,14 @@ int lcz_lwm2m_fw_update_init(void)
 #if defined(CONFIG_LWM2M_FIRMWARE_UPDATE_PULL_SUPPORT)
 	lwm2m_firmware_set_update_cb(lwm2m_fw_update_callback);
 #endif
+
+	snprintk(fw_pkg_name, sizeof(fw_pkg_name), "%s_%s", CONFIG_BOARD,
+		 get_app_type_short());
+	lwm2m_engine_set_res_data("5/0/6/0", fw_pkg_name, sizeof(fw_pkg_name),
+				  LWM2M_RES_DATA_FLAG_RO);
+	lwm2m_engine_set_res_data("5/0/7/0", APP_VERSION_STRING,
+				  sizeof(APP_VERSION_STRING),
+				  LWM2M_RES_DATA_FLAG_RO);
 
 	/* Set the required buffer for MCUboot targets */
 	ret = dfu_target_mcuboot_set_buf(mcuboot_buf, sizeof(mcuboot_buf));

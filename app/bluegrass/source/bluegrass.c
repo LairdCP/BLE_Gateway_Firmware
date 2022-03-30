@@ -91,7 +91,7 @@ void bluegrass_connected_callback(void)
 	aws_init_shadow();
 
 	LCZ_MEMFAULT_BUILD_TOPIC(CONFIG_LCZ_MEMFAULT_MQTT_TOPIC, CONFIG_BOARD,
-				 attr_get_quasi_static(ATTR_ID_gatewayId),
+				 attr_get_quasi_static(ATTR_ID_gateway_id),
 				 CONFIG_MEMFAULT_NCS_PROJECT_KEY);
 
 #ifdef CONFIG_CONTACT_TRACING
@@ -202,7 +202,7 @@ static void aws_init_shadow(void)
 	/* The shadow init is only sent once after the very first connect. */
 	if (bg.init_shadow) {
 		awsGenerateGatewayTopics(
-			attr_get_quasi_static(ATTR_ID_gatewayId));
+			attr_get_quasi_static(ATTR_ID_gateway_id));
 
 		r = awsPublishShadowPersistentData();
 

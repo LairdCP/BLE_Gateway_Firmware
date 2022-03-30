@@ -192,10 +192,10 @@ int awsInit(void)
 	reported->os_version = KERNEL_VERSION_STRING;
 	reported->firmware_version = APP_VERSION_STRING;
 #ifdef CONFIG_MODEM_HL7800
-	reported->IMEI = attr_get_quasi_static(ATTR_ID_gatewayId);
+	reported->IMEI = attr_get_quasi_static(ATTR_ID_gateway_id);
 	reported->ICCID = attr_get_quasi_static(ATTR_ID_iccid);
-	reported->radio_version = attr_get_quasi_static(ATTR_ID_lteVersion);
-	reported->radio_sn = attr_get_quasi_static(ATTR_ID_lteSerialNumber);
+	reported->radio_version = attr_get_quasi_static(ATTR_ID_lte_version);
+	reported->radio_sn = attr_get_quasi_static(ATTR_ID_lte_serial_number);
 #endif
 #ifdef CONFIG_SCAN_FOR_BT510_CODED
 	reported->codedPhySupported = true;
@@ -240,7 +240,7 @@ int awsConnect()
 	if (!aws_connected) {
 		aws_disconnect = false;
 		/* Add randomness to client id to make each connection unique.*/
-		strncpy(mqtt_random_id, attr_get_quasi_static(ATTR_ID_clientId),
+		strncpy(mqtt_random_id, attr_get_quasi_static(ATTR_ID_client_id),
 			AWS_MQTT_ID_MAX_SIZE);
 		id_len = strlen(mqtt_random_id);
 		snprintf(mqtt_random_id + id_len, AWS_MQTT_ID_MAX_SIZE - id_len,
@@ -349,31 +349,31 @@ int awsPublishShadowPersistentData()
 		&shadow_persistent_data.state.reported;
 
 	reported->ethernet.MAC = net_sprint_ll_addr_lower(
-		attr_get_quasi_static(ATTR_ID_ethernetMAC));
+		attr_get_quasi_static(ATTR_ID_ethernet_mac));
 	reported->ethernet.type = (uint32_t)ETHERNET_TYPE_IPV4;
 	reported->ethernet.mode = attr_get_uint32(
-		ATTR_ID_ethernetMode, (uint32_t)ETHERNET_MODE_STATIC);
+		ATTR_ID_ethernet_mode, (uint32_t)ETHERNET_MODE_STATIC);
 	reported->ethernet.speed = attr_get_uint32(
-		ATTR_ID_ethernetSpeed, (uint32_t)ETHERNET_SPEED_UNKNOWN);
+		ATTR_ID_ethernet_speed, (uint32_t)ETHERNET_SPEED_UNKNOWN);
 	reported->ethernet.duplex = attr_get_uint32(
-		ATTR_ID_ethernetDuplex, (uint32_t)ETHERNET_DUPLEX_UNKNOWN);
+		ATTR_ID_ethernet_duplex, (uint32_t)ETHERNET_DUPLEX_UNKNOWN);
 	reported->ethernet.IPAddress =
-		attr_get_quasi_static(ATTR_ID_ethernetIPAddress);
+		attr_get_quasi_static(ATTR_ID_ethernet_ip_address);
 	reported->ethernet.netmaskLength =
-		attr_get_uint32(ATTR_ID_ethernetNetmaskLength, 0);
+		attr_get_uint32(ATTR_ID_ethernet_netmask_length, 0);
 	reported->ethernet.gateway =
-		attr_get_quasi_static(ATTR_ID_ethernetGateway);
-	reported->ethernet.DNS = attr_get_quasi_static(ATTR_ID_ethernetDNS);
+		attr_get_quasi_static(ATTR_ID_ethernet_gateway);
+	reported->ethernet.DNS = attr_get_quasi_static(ATTR_ID_ethernet_dns);
 
 #if defined(CONFIG_NET_DHCPV4)
 	reported->ethernet.DHCPLeaseTime =
-		attr_get_uint32(ATTR_ID_ethernetDHCPLeaseTime, 0);
+		attr_get_uint32(ATTR_ID_ethernet_dhcp_lease_time, 0);
 	reported->ethernet.DHCPRenewTime =
-		attr_get_uint32(ATTR_ID_ethernetDHCPRenewTime, 0);
+		attr_get_uint32(ATTR_ID_ethernet_dhcp_renew_time, 0);
 	reported->ethernet.DHCPState =
-		attr_get_uint32(ATTR_ID_ethernetDHCPState, 0);
+		attr_get_uint32(ATTR_ID_ethernet_dhcp_state, 0);
 	reported->ethernet.DHCPAttempts =
-		attr_get_uint32(ATTR_ID_ethernetDHCPAttempts, 0);
+		attr_get_uint32(ATTR_ID_ethernet_dhcp_attempts, 0);
 #endif
 #endif
 
@@ -497,8 +497,8 @@ int awsPublishHeartbeat(void)
 		SHADOW_MG100_MAX_LOG_SIZE, max_log_size,
 		SHADOW_MG100_CURR_LOG_SIZE, log_size, SHADOW_MG100_SDCARD_FREE,
 		free_space, SHADOW_RADIO_RSSI,
-		attr_get_signed32(ATTR_ID_lteRsrp, 0), SHADOW_RADIO_SINR,
-		attr_get_signed32(ATTR_ID_lteSinr, 0), SHADOW_REPORTED_END);
+		attr_get_signed32(ATTR_ID_lte_rsrp, 0), SHADOW_RADIO_SINR,
+		attr_get_signed32(ATTR_ID_lte_sinr, 0), SHADOW_REPORTED_END);
 
 	return awsSendData(msg, GATEWAY_TOPIC);
 }
@@ -510,8 +510,8 @@ int awsPublishHeartbeat(void)
 		 CONVERSION_MAX_STR_LEN + strlen(SHADOW_REPORTED_END)];
 
 	snprintf(msg, sizeof(msg), "%s%s%d,%s%d%s", SHADOW_REPORTED_START,
-		 SHADOW_RADIO_RSSI, attr_get_signed32(ATTR_ID_lteRsrp, 0),
-		 SHADOW_RADIO_SINR, attr_get_signed32(ATTR_ID_lteSinr, 0),
+		 SHADOW_RADIO_RSSI, attr_get_signed32(ATTR_ID_lte_rsrp, 0),
+		 SHADOW_RADIO_SINR, attr_get_signed32(ATTR_ID_lte_sinr, 0),
 		 SHADOW_REPORTED_END);
 
 	return awsSendData(msg, GATEWAY_TOPIC);
@@ -788,7 +788,7 @@ static void client_init(struct mqtt_client *client)
 	client->transport.type = MQTT_TRANSPORT_SECURE;
 	struct mqtt_sec_config *tls_config = &client->transport.tls.config;
 	tls_config->peer_verify =
-		attr_get_signed32(ATTR_ID_peerVerify, MBEDTLS_SSL_VERIFY_NONE);
+		attr_get_signed32(ATTR_ID_peer_verify, MBEDTLS_SSL_VERIFY_NONE);
 	tls_config->cipher_list = NULL;
 	tls_config->sec_tag_list = m_sec_tags;
 	tls_config->sec_tag_count = ARRAY_SIZE(m_sec_tags);
@@ -874,7 +874,7 @@ static void publish_watchdog_work_handler(struct k_work *work)
 
 	if (!fota_smp_ble_prepared()) {
 #ifdef CONFIG_MODEM_HL7800
-		if (attr_get_signed32(ATTR_ID_modemFunctionality, 0) !=
+		if (attr_get_signed32(ATTR_ID_modem_functionality, 0) !=
 		    MODEM_FUNCTIONALITY_AIRPLANE) {
 			lcz_software_reset_after_assert(0);
 		}

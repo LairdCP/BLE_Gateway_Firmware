@@ -86,7 +86,7 @@ static void lmt_read_sensor(void)
 
 	if (status == 0) {
 		/* Apply board/chip specific offset to result of LIS3DH */
-		t = (double)attr_get_signed32(ATTR_ID_temperatureOffset, 0) +
+		t = (double)attr_get_signed32(ATTR_ID_temperature_offset, 0) +
 		    sensor_value_to_double(&val);
 
 		/* The temperature is used to condition the
@@ -94,7 +94,7 @@ static void lmt_read_sensor(void)
 		 * It is the die temperature of the accelerometer,
 		 * but can be considered the board temperature.
 		 */
-		attr_set_signed32(ATTR_ID_batteryTemperature, (int32_t)t);
+		attr_set_signed32(ATTR_ID_battery_temperature, (int32_t)t);
 
 #ifdef CONFIG_LWM2M
 		lwm2m_set_board_temperature(&t);

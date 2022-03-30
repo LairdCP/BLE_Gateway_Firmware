@@ -135,12 +135,12 @@ int UpdateBatteryThreshold4(int Value)
 
 int UpdateBatteryLowThreshold(int Value)
 {
-	return attr_set_uint32(ATTR_ID_batteryLowThreshold, Value);
+	return attr_set_uint32(ATTR_ID_battery_low_threshold, Value);
 }
 
 int UpdateBatteryBadThreshold(int Value)
 {
-	return attr_set_uint32(ATTR_ID_batteryAlarmThreshold, Value);
+	return attr_set_uint32(ATTR_ID_battery_alarm_threshold, Value);
 }
 
 int GetBatteryThreshold0(void)
@@ -170,12 +170,12 @@ int GetBatteryThreshold4(void)
 
 int GetBatteryLowThreshold(void)
 {
-	return attr_get_uint32(ATTR_ID_batteryLowThreshold, BATTERY_THRESH_LOW);
+	return attr_get_uint32(ATTR_ID_battery_low_threshold, BATTERY_THRESH_LOW);
 }
 
 int GetBatteryBadThreshold(void)
 {
-	return attr_get_uint32(ATTR_ID_batteryAlarmThreshold,
+	return attr_get_uint32(ATTR_ID_battery_alarm_threshold,
 			       BATTERY_THRESH_ALARM);
 }
 
@@ -218,7 +218,7 @@ uint8_t BatteryGetChgState(void)
 		pwrState |= BATTERY_NOT_CHARGING_STATE;
 	}
 
-	attr_set_uint32(ATTR_ID_batteryChargingState, pwrState);
+	attr_set_uint32(ATTR_ID_battery_charging_state, pwrState);
 
 	return (pwrState);
 }
@@ -277,7 +277,7 @@ enum battery_status BatteryCalculateRemainingCapacity(uint16_t Volts)
 	/* If the temperature can't be read, then just use the
 	 * BASE_TEMP value as a safe default.
 	 */
-	temperature = attr_get_signed32(ATTR_ID_batteryTemperature, BASE_TEMP);
+	temperature = attr_get_signed32(ATTR_ID_battery_temperature, BASE_TEMP);
 
 #ifdef CONFIG_LAIRD_CONNECT_BATTERY_LOGGING
 	BatteryLogData(Volts, temperature);
@@ -330,9 +330,9 @@ enum battery_status BatteryCalculateRemainingCapacity(uint16_t Volts)
 #endif
 
 	/* reported to BLE/shell */
-	attr_set_uint32(ATTR_ID_batteryAlarm, batteryAlarmState);
-	attr_set_uint32(ATTR_ID_batteryVoltageMv, voltage);
-	attr_set_uint32(ATTR_ID_batteryCapacity, batteryCapacity);
+	attr_set_uint32(ATTR_ID_battery_alarm, batteryAlarmState);
+	attr_set_uint32(ATTR_ID_battery_voltage_mv, voltage);
+	attr_set_uint32(ATTR_ID_battery_capacity, batteryCapacity);
 
 	return (batteryCapacity);
 }

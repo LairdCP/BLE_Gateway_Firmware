@@ -120,7 +120,7 @@ void client_acknowledge(void)
 int lwm2m_client_init(void)
 {
 	if (!lw.setup_complete) {
-		return lwm2m_setup(attr_get_quasi_static(ATTR_ID_gatewayId));
+		return lwm2m_setup(attr_get_quasi_static(ATTR_ID_gateway_id));
 	} else {
 		return 0;
 	}
@@ -311,13 +311,13 @@ int lwm2m_generate_psk(void)
 {
 	int r = -EPERM;
 	uint8_t psk[ATTR_LWM2M_PSK_SIZE];
-	uint8_t cmd = attr_get_uint32(ATTR_ID_generatePsk,
+	uint8_t cmd = attr_get_uint32(ATTR_ID_generate_psk,
 				      GENERATE_PSK_LWM2M_DEFAULT);
 
 	switch (cmd) {
 	case GENERATE_PSK_LWM2M_DEFAULT:
 		LOG_DBG("Setting PSK to default");
-		r = attr_default(ATTR_ID_lwm2mPsk);
+		r = attr_default(ATTR_ID_lwm2m_psk);
 
 		break;
 
@@ -325,7 +325,7 @@ int lwm2m_generate_psk(void)
 		LOG_DBG("Generating a new LwM2M PSK");
 		r = sys_csrand_get(psk, ATTR_LWM2M_PSK_SIZE);
 		if (r == 0) {
-			r = attr_set_byte_array(ATTR_ID_lwm2mPsk, psk,
+			r = attr_set_byte_array(ATTR_ID_lwm2m_psk, psk,
 						sizeof(psk));
 		}
 		break;
@@ -361,7 +361,7 @@ int lwm2m_connect(void)
 
 		lwm2m_rd_client_start(
 			&lw.client,
-			attr_get_quasi_static(ATTR_ID_lwm2mClientId), flags,
+			attr_get_quasi_static(ATTR_ID_lwm2m_client_id), flags,
 			rd_client_event);
 		lw.connection_started = true;
 	}
@@ -515,7 +515,7 @@ static int lwm2m_setup(const char *id)
 
 	snprintk(server_url, server_url_len, "coap%s//%s",
 		 IS_ENABLED(CONFIG_LWM2M_DTLS_SUPPORT) ? "s:" : ":",
-		 (char *)attr_get_quasi_static(ATTR_ID_lwm2mPeerUrl));
+		 (char *)attr_get_quasi_static(ATTR_ID_lwm2m_peer_url));
 	LOG_INF("Server URL: %s", log_strdup(server_url));
 
 	/* Security Mode */
@@ -523,10 +523,10 @@ static int lwm2m_setup(const char *id)
 			    IS_ENABLED(CONFIG_LWM2M_DTLS_SUPPORT) ? 0 : 3);
 #if defined(CONFIG_LWM2M_DTLS_SUPPORT)
 	lwm2m_engine_set_string(
-		"0/0/3", (char *)attr_get_quasi_static(ATTR_ID_lwm2mClientId));
+		"0/0/3", (char *)attr_get_quasi_static(ATTR_ID_lwm2m_client_id));
 	lwm2m_engine_set_opaque("0/0/5",
-				attr_get_quasi_static(ATTR_ID_lwm2mPsk),
-				attr_get_size(ATTR_ID_lwm2mPsk));
+				attr_get_quasi_static(ATTR_ID_lwm2m_psk),
+				attr_get_size(ATTR_ID_lwm2m_psk));
 #endif /* CONFIG_LWM2M_DTLS_SUPPORT */
 
 	if (enable_bootstrap()) {
@@ -761,7 +761,7 @@ static int ess_sensor_set_error_handler(int status, char *obj_inst_str)
 static bool enable_bootstrap(void)
 {
 	if (IS_ENABLED(CONFIG_LWM2M_RD_CLIENT_SUPPORT_BOOTSTRAP) &&
-	    attr_get_uint32(ATTR_ID_lwm2mEnableBootstrap, false)) {
+	    attr_get_uint32(ATTR_ID_lwm2m_enable_bootstrap, false)) {
 		return true;
 	} else {
 		return false;

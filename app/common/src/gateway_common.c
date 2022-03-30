@@ -253,7 +253,7 @@ int configure_app(void)
 void gateway_fsm_network_init_complete_callback(void)
 {
 #ifdef CONFIG_MODEM_HL7800
-	ble_update_name(attr_get_quasi_static(ATTR_ID_gatewayId));
+	ble_update_name(attr_get_quasi_static(ATTR_ID_gateway_id));
 #endif
 
 #ifdef CONFIG_CONTACT_TRACING
@@ -264,7 +264,7 @@ void gateway_fsm_network_init_complete_callback(void)
 void gateway_fsm_network_connected_callback(void)
 {
 #ifdef CONFIG_MODEM_HL7800
-	if (*(uint8_t *)attr_get_quasi_static(ATTR_ID_lteRat) == LTE_RAT_CAT_M1)
+	if (*(uint8_t *)attr_get_quasi_static(ATTR_ID_lte_rat) == LTE_RAT_CAT_M1)
 #endif
 	{
 		LCZ_MEMFAULT_POST_DATA();
@@ -303,7 +303,7 @@ void gateway_fsm_cloud_disconnected_callback(void)
 
 int attr_prepare_upTime(void)
 {
-	return attr_set_signed64(ATTR_ID_upTime, k_uptime_get());
+	return attr_set_signed64(ATTR_ID_up_time, k_uptime_get());
 }
 
 int attr_prepare_qrtc(void)
@@ -319,7 +319,7 @@ int attr_prepare_modemBoot(void)
 #elif defined(CONFIG_MODEM_HL7800_BOOT_IN_AIRPLANE_MODE)
 	return attr_set_uint32(ATTR_ID_modemBoot, MODEM_BOOT_AIRPLANE);
 #else
-	return attr_set_uint32(ATTR_ID_modemBoot, MODEM_BOOT_NORMAL);
+	return attr_set_uint32(ATTR_ID_modem_boot, MODEM_BOOT_NORMAL);
 #endif
 }
 #endif
@@ -349,7 +349,7 @@ void power_measurement_callback(uint8_t integer, uint8_t decimal)
 #ifdef CONFIG_BOARD_MG100
 		BatteryCalculateRemainingCapacity(voltage_mv);
 #else
-		attr_set_float(ATTR_ID_powerSupplyVoltage,
+		attr_set_float(ATTR_ID_power_supply_voltage,
 			       ((float)voltage_mv) / 1000.0);
 #endif
 	}
@@ -359,7 +359,7 @@ void power_measurement_callback(uint8_t integer, uint8_t decimal)
 #ifdef CONFIG_LCZ_MOTION
 void lcz_motion_set_alarm_state(uint8_t state)
 {
-	attr_set_uint32(ATTR_ID_motionAlarm, state);
+	attr_set_uint32(ATTR_ID_motion_alarm, state);
 }
 #endif
 
@@ -402,7 +402,7 @@ static void reset_count_handler(void)
 		count += 1;
 		fsu_write_abs(RESET_COUNT_FNAME, &count, sizeof(count));
 	}
-	attr_set_uint32(ATTR_ID_resetCount, count);
+	attr_set_uint32(ATTR_ID_reset_count, count);
 }
 
 static void app_type_handler(void)
@@ -410,7 +410,7 @@ static void app_type_handler(void)
 	extern const char *get_app_type(void);
 	const char *app_type = get_app_type();
 
-	attr_set_string(ATTR_ID_appType, app_type, strlen(app_type));
+	attr_set_string(ATTR_ID_app_type, app_type, strlen(app_type));
 }
 
 static void reboot_handler(void)
@@ -418,7 +418,7 @@ static void reboot_handler(void)
 	reset_reason_handler();
 	reset_count_handler();
 	app_type_handler();
-	attr_set_string(ATTR_ID_firmwareVersion, APP_VERSION_STRING,
+	attr_set_string(ATTR_ID_firmware_version, APP_VERSION_STRING,
 			strlen(APP_VERSION_STRING));
 	attr_set_string(ATTR_ID_board, CONFIG_BOARD, strlen(CONFIG_BOARD));
 }
@@ -471,7 +471,7 @@ static void reset_reason_cleared_by_memfault_handler(void)
 {
 	const char *s = "use memfault";
 
-	attr_set_string(ATTR_ID_resetReason, s, strlen(s));
+	attr_set_string(ATTR_ID_reset_reason, s, strlen(s));
 }
 
 static void reset_reason_not_cleared_by_memfault_handler(void)
@@ -480,7 +480,7 @@ static void reset_reason_not_cleared_by_memfault_handler(void)
 	const char *reset_str =
 		lbt_get_nrf52_reset_reason_string_from_register(reset_reason);
 
-	attr_set_string(ATTR_ID_resetReason, reset_str, strlen(reset_str));
+	attr_set_string(ATTR_ID_reset_reason, reset_str, strlen(reset_str));
 
 #ifndef CONFIG_LCZ_MEMFAULT
 	LOG_WRN("reset reason: %s (%08X)", reset_str, reset_reason);
@@ -537,7 +537,7 @@ static void aws_set_default_client_id(void)
 {
 	char *s;
 
-	s = attr_get_quasi_static(ATTR_ID_clientId);
+	s = attr_get_quasi_static(ATTR_ID_client_id);
 
 	/* Doesn't handle the board changing. */
 	if (strlen(s) == 0) {
@@ -550,7 +550,7 @@ static void aws_set_default_client_id(void)
 #else
 		s = "pinnacle100_oob";
 #endif
-		attr_set_string(ATTR_ID_clientId, s, strlen(s));
+		attr_set_string(ATTR_ID_client_id, s, strlen(s));
 	}
 }
 #endif
@@ -580,7 +580,7 @@ static void nv_deprecation_handler(void)
 	uint32_t commissioned = 0;
 	int r = -EPERM;
 
-	if (attr_get_uint32(ATTR_ID_nvImported, 0) != 0) {
+	if (attr_get_uint32(ATTR_ID_nv_imported, 0) != 0) {
 		return;
 	}
 
@@ -593,15 +593,15 @@ static void nv_deprecation_handler(void)
 	}
 	LOG_DBG("Commissioned flag import %d", r);
 
-	fs_to_attr_string_handler(ATTR_ID_clientId,
+	fs_to_attr_string_handler(ATTR_ID_client_id,
 				  CONFIG_APP_CLIENT_ID_FILE_NAME);
 	fs_to_attr_string_handler(ATTR_ID_endpoint,
 				  CONFIG_APP_ENDPOINT_FILE_NAME);
-	fs_to_attr_string_handler(ATTR_ID_topicPrefix,
+	fs_to_attr_string_handler(ATTR_ID_topic_prefix,
 				  CONFIG_APP_TOPIC_PREFIX_FILE_NAME);
 
 	/* Import only needs to occur once. */
-	attr_set_uint32(ATTR_ID_nvImported, 1);
+	attr_set_uint32(ATTR_ID_nv_imported, 1);
 
 	/* Remove file used by previous version to limit writes on reboot. */
 	fsu_delete_abs(CONFIG_FSU_MOUNT_POINT "/nv_startup.bin");

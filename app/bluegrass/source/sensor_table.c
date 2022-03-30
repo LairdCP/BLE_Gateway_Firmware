@@ -1181,7 +1181,7 @@ static void ShadowLogHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 static void ShadowSpecialHandler(JsonMsg_t *pMsg, SensorEntry_t *pEntry)
 {
 	ShadowBuilder_AddPair(pMsg, "gatewayId",
-			      (char *)attr_get_quasi_static(ATTR_ID_gatewayId),
+			      (char *)attr_get_quasi_static(ATTR_ID_gateway_id),
 			      false);
 
 	ShadowBuilder_AddUint32(pMsg, "eventLogSize",

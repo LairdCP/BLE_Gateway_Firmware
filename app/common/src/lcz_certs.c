@@ -45,7 +45,7 @@ int lcz_certs_load(void)
 	int r = -EPERM;
 
 	if (attr_get_uint32(ATTR_ID_commissioned, 0) == 0) {
-		attr_set_signed32(ATTR_ID_certStatus, r);
+		attr_set_signed32(ATTR_ID_cert_status, r);
 		return r;
 	}
 
@@ -54,7 +54,7 @@ int lcz_certs_load(void)
 	}
 
 	do {
-		r = load_cert_file(ATTR_ID_rootCaName, &root_ca, "Root CA");
+		r = load_cert_file(ATTR_ID_root_ca_name, &root_ca, "Root CA");
 		if (r < 0) {
 			break;
 		}
@@ -66,12 +66,12 @@ int lcz_certs_load(void)
 				       r);
 		if (r < 0) {
 			LOG_ERR("Failed to register public certificate: %d", r);
-			attr_set_signed32(ATTR_ID_cloudError,
+			attr_set_signed32(ATTR_ID_cloud_error,
 					  CLOUD_ERROR_INIT_ROOT_CA);
 			break;
 		}
 
-		r = load_cert_file(ATTR_ID_clientCertName, &client,
+		r = load_cert_file(ATTR_ID_client_cert_name, &client,
 				   "Client Cert");
 		if (r < 0) {
 			break;
@@ -84,11 +84,11 @@ int lcz_certs_load(void)
 				       client, r);
 		if (r < 0) {
 			LOG_ERR("Failed to register device certificate: %d", r);
-			attr_set_signed32(ATTR_ID_cloudError,
+			attr_set_signed32(ATTR_ID_cloud_error,
 					  CLOUD_ERROR_INIT_CLIENT_CERT);
 		}
 
-		r = load_cert_file(ATTR_ID_clientKeyName, &key, "Key");
+		r = load_cert_file(ATTR_ID_client_key_name, &key, "Key");
 		if (r < 0) {
 			break;
 		}
@@ -99,7 +99,7 @@ int lcz_certs_load(void)
 				       TLS_CREDENTIAL_PRIVATE_KEY, key, r);
 		if (r < 0) {
 			LOG_ERR("Failed to register device key: %d", r);
-			attr_set_signed32(ATTR_ID_cloudError,
+			attr_set_signed32(ATTR_ID_cloud_error,
 					  CLOUD_ERROR_INIT_CLIENT_KEY);
 			return r;
 		}
@@ -107,10 +107,10 @@ int lcz_certs_load(void)
 
 	if (r == 0) {
 		loaded = true;
-		attr_set_signed32(ATTR_ID_cloudError, CLOUD_ERROR_NONE);
+		attr_set_signed32(ATTR_ID_cloud_error, CLOUD_ERROR_NONE);
 	}
 
-	attr_set_signed32(ATTR_ID_certStatus, r);
+	attr_set_signed32(ATTR_ID_cert_status, r);
 
 	return r;
 }
@@ -157,7 +157,7 @@ static int load_cert_file(attr_index_t idx, char **cert, char *type)
 		if (size <= 0) {
 			r = -ENOENT;
 			LOG_ERR("%s file not found", type);
-			attr_set_signed32(ATTR_ID_cloudError,
+			attr_set_signed32(ATTR_ID_cloud_error,
 					  CLOUD_ERROR_READ_CRED_FS);
 			break;
 		}
@@ -167,7 +167,7 @@ static int load_cert_file(attr_index_t idx, char **cert, char *type)
 		if (*cert == NULL) {
 			r = -ENOMEM;
 			LOG_ERR("Unable to allocate memory for %s", type);
-			attr_set_signed32(ATTR_ID_cloudError,
+			attr_set_signed32(ATTR_ID_cloud_error,
 					  CLOUD_ERROR_CRED_SIZE);
 			break;
 		}
@@ -176,7 +176,7 @@ static int load_cert_file(attr_index_t idx, char **cert, char *type)
 		if (r != size) {
 			r = -EIO;
 			LOG_ERR("Unexpected file size");
-			attr_set_signed32(ATTR_ID_cloudError,
+			attr_set_signed32(ATTR_ID_cloud_error,
 					  CLOUD_ERROR_READ_CRED_FS);
 			break;
 		} else {

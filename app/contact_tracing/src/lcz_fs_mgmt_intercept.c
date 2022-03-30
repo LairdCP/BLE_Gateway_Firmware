@@ -207,7 +207,7 @@ static int smp_nv_mapper_aws_topic_prefix(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 		/* null-terminate and remove whitespace */
 		terminate_and_trim(fs_mgmt_ctxt->file_data,
 				   fs_mgmt_ctxt->data_len);
-		rc = attr_set_string(ATTR_ID_topicPrefix,
+		rc = attr_set_string(ATTR_ID_topic_prefix,
 				     fs_mgmt_ctxt->file_data,
 				     fs_mgmt_ctxt->data_len);
 	}
@@ -237,7 +237,7 @@ static int smp_nv_mapper_ble_network_id(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 		terminate_and_trim(fs_mgmt_ctxt->file_data,
 				   fs_mgmt_ctxt->data_len);
 		nwkId = strtoul(fs_mgmt_ctxt->file_data, NULL, 16) & 0xFFFF;
-		rc = attr_set_uint32(ATTR_ID_networkId, nwkId);
+		rc = attr_set_uint32(ATTR_ID_network_id, nwkId);
 	}
 
 	if (rc) {
@@ -261,7 +261,7 @@ static int smp_nv_mapper_mqtt_client_id(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 		/* null-terminate and remove whitespace */
 		terminate_and_trim(fs_mgmt_ctxt->file_data,
 				   fs_mgmt_ctxt->data_len);
-		rc = attr_set_string(ATTR_ID_clientId, fs_mgmt_ctxt->file_data,
+		rc = attr_set_string(ATTR_ID_client_id, fs_mgmt_ctxt->file_data,
 				     fs_mgmt_ctxt->data_len);
 	}
 
@@ -303,12 +303,12 @@ static int smp_nv_mapper_mqtt_root_ca(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 	    (fs_mgmt_ctxt->data_len + 1) < FS_MGMT_DL_CHUNK_SIZE) {
 		if (fs_mgmt_ctxt->off == 0) {
 			rc = fsu_write_abs(
-				attr_get_quasi_static(ATTR_ID_rootCaName),
+				attr_get_quasi_static(ATTR_ID_root_ca_name),
 				fs_mgmt_ctxt->file_data,
 				fs_mgmt_ctxt->data_len);
 		} else {
 			rc = fsu_append_abs(
-				attr_get_quasi_static(ATTR_ID_rootCaName),
+				attr_get_quasi_static(ATTR_ID_root_ca_name),
 				fs_mgmt_ctxt->file_data,
 				fs_mgmt_ctxt->data_len);
 		}
@@ -338,12 +338,12 @@ static int smp_nv_mapper_mqtt_client_cert(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 	    (fs_mgmt_ctxt->data_len + 1) < FS_MGMT_DL_CHUNK_SIZE) {
 		if (fs_mgmt_ctxt->off == 0) {
 			rc = fsu_write_abs(
-				attr_get_quasi_static(ATTR_ID_clientCertName),
+				attr_get_quasi_static(ATTR_ID_client_cert_name),
 				fs_mgmt_ctxt->file_data,
 				fs_mgmt_ctxt->data_len);
 		} else {
 			rc = fsu_append_abs(
-				attr_get_quasi_static(ATTR_ID_clientCertName),
+				attr_get_quasi_static(ATTR_ID_client_cert_name),
 				fs_mgmt_ctxt->file_data,
 				fs_mgmt_ctxt->data_len);
 		}
@@ -373,12 +373,12 @@ static int smp_nv_mapper_mqtt_client_key(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 	    (fs_mgmt_ctxt->data_len + 1) < FS_MGMT_DL_CHUNK_SIZE) {
 		if (fs_mgmt_ctxt->off == 0) {
 			rc = fsu_write_abs(
-				attr_get_quasi_static(ATTR_ID_clientKeyName),
+				attr_get_quasi_static(ATTR_ID_client_key_name),
 				fs_mgmt_ctxt->file_data,
 				fs_mgmt_ctxt->data_len);
 		} else {
 			rc = fsu_append_abs(
-				attr_get_quasi_static(ATTR_ID_clientKeyName),
+				attr_get_quasi_static(ATTR_ID_client_key_name),
 				fs_mgmt_ctxt->file_data,
 				fs_mgmt_ctxt->data_len);
 		}
@@ -437,7 +437,7 @@ static int smp_nv_mapper_aes_key(fs_mgmt_ctxt_t *fs_mgmt_ctxt)
 
 	if (fs_mgmt_ctxt->data_len > 0 &&
 	    (fs_mgmt_ctxt->data_len + 1) < FS_MGMT_DL_CHUNK_SIZE) {
-		rc = attr_set_byte_array(ATTR_ID_ctAesKey,
+		rc = attr_set_byte_array(ATTR_ID_ct_aes_key,
 					 fs_mgmt_ctxt->file_data,
 					 fs_mgmt_ctxt->data_len);
 	}

@@ -75,6 +75,9 @@ static struct {
 	gsm_func *decommission;
 } gsm;
 
+static sys_slist_t gateway_fsm_user_list;
+static struct gateway_fsm_user generic_user;
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -104,6 +107,8 @@ static uint32_t get_reconnect_cloud_delay(void);
 #if defined(CONFIG_LWM2M) || defined(CONFIG_NET_L2_ETHERNET)
 static int unused_function(void);
 #endif
+
+static bool generic_user_disconnect_request(void);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -156,6 +161,9 @@ void gateway_fsm_init(void)
 	gsm.commission = cloud_commission;
 	gsm.decommission = cloud_decommission;
 #endif
+
+	generic_user.cloud_disable = generic_user_disconnect_request;
+	gatway_fsm_register_user(&generic_user);
 }
 
 void gateway_fsm(void)
@@ -264,6 +272,11 @@ void gateway_fsm_request_decommission(void)
 void gateway_fsm_request_cloud_disconnect(void)
 {
 	gsm.cloud_disconnect_request = true;
+}
+
+void gatway_fsm_register_user(struct gateway_fsm_user *user)
+{
+	sys_slist_append(&gateway_fsm_user_list, &user->node);
 }
 
 /******************************************************************************/
@@ -421,8 +434,17 @@ static void disconnected_handler(void)
 
 static bool cloud_disconnect_request(void)
 {
-	return (gateway_fsm_fota_request() || !cloud_is_enabled() ||
-		gsm.cloud_disconnect_request);
+	struct gateway_fsm_user *user;
+
+	SYS_SLIST_FOR_EACH_CONTAINER(&gateway_fsm_user_list, user, node) {
+		if (user->cloud_disable != NULL) {
+			if (user->cloud_disable()) {
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 static void network_connected_handler(void)
@@ -495,14 +517,14 @@ static int unused_function(void)
 }
 #endif
 
+static bool generic_user_disconnect_request(void)
+{
+	return gsm.cloud_disconnect_request;
+}
+
 /******************************************************************************/
 /* Weak Defaults                                                              */
 /******************************************************************************/
-__weak bool gateway_fsm_fota_request(void)
-{
-	return false;
-}
-
 __weak int gateway_fsm_network_error_callback(void)
 {
 	return 0;

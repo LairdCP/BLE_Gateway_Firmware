@@ -81,6 +81,8 @@ static control_task_obj_t cto;
 K_MSGQ_DEFINE(control_task_queue, FWK_QUEUE_ENTRY_SIZE,
 	      CONTROL_TASK_QUEUE_DEPTH, FWK_QUEUE_ALIGNMENT);
 
+static struct gateway_fsm_user gw_fsm_user;
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -103,6 +105,8 @@ static void update_rat_handler(void);
 static void update_gps_rate_handler(void);
 static void polte_cmd_handler(void);
 #endif
+
+static bool gateway_fsm_fota_request(void);
 
 /******************************************************************************/
 /* Framework Message Dispatcher                                               */
@@ -152,11 +156,6 @@ __weak int cloud_commission_handler(void)
 	return 0;
 }
 
-__weak bool cloud_is_enabled(void)
-{
-	return true;
-}
-
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -199,6 +198,9 @@ static void control_task_thread_internal(void *pArg1, void *pArg2, void *pArg3)
 
 	configure_app();
 	gateway_fsm_init();
+
+	gw_fsm_user.cloud_disable = gateway_fsm_fota_request;
+	gatway_fsm_register_user(&gw_fsm_user);
 
 	Framework_StartTimer(&pObj->msgTask);
 
@@ -547,11 +549,7 @@ FwkMsgHandler_t *cloud_sub_task_msg_dispatcher(FwkMsgCode_t MsgCode)
 }
 #endif
 
-/******************************************************************************/
-/* Weak overrides                                                             */
-/******************************************************************************/
-
-bool gateway_fsm_fota_request(void)
+static bool gateway_fsm_fota_request(void)
 {
 	return cto.fota_request;
 }

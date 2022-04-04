@@ -14,10 +14,19 @@
 /******************************************************************************/
 #include <zephyr/types.h>
 #include <stddef.h>
+#include <sys/slist.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
+struct gateway_fsm_user {
+	sys_snode_t node;
+    bool (*cloud_disable)(void);
+};
 
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
@@ -46,10 +55,11 @@ void gateway_fsm_request_decommission(void);
 void gateway_fsm_request_cloud_disconnect(void);
 
 /**
- * @brief Keep cloud disconnected while FOTA is in progress.
- * Weak implementation that can be overriden by application
+ * @brief Register a user of the gateway fsm
+ *
+ * @param user structure
  */
-bool gateway_fsm_fota_request(void);
+void gatway_fsm_register_user(struct gateway_fsm_user *user);
 
 /**
  * @brief Weak implementations that can be used by application

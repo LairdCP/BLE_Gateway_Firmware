@@ -98,6 +98,8 @@ static struct mqtt_utf8 user_name;
 static struct mqtt_utf8 password;
 #endif
 
+static sys_slist_t callback_list;
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -110,7 +112,8 @@ static int subscription_handler(struct mqtt_client *const client,
 				const struct mqtt_evt *evt);
 static void subscription_flush(struct mqtt_client *const client, size_t length);
 static int publish(struct mqtt_client *client, enum mqtt_qos qos, char *data,
-		   uint32_t len, uint8_t *topic, bool binary);
+		   uint32_t len, uint8_t *topic, bool binary,
+		   struct lcz_mqtt_user *user);
 static void client_init(struct mqtt_client *client);
 static int try_to_connect(struct mqtt_client *client);
 static void lcz_mqtt_rx_thread(void *arg1, void *arg2, void *arg3);
@@ -120,6 +123,10 @@ static void keep_alive_work_handler(struct k_work *work);
 static void connection_failure_handler(int status);
 static void log_json(const char *prefix, size_t size, const char *buffer);
 static void restart_publish_watchdog(void);
+
+static void update_ack_id(const struct lcz_mqtt_user *user, uint16_t id);
+static void issue_disconnect_callbacks(void);
+static void issue_ack_callback(int result, uint16_t id);
 
 /******************************************************************************/
 /* Task Init                                                                  */
@@ -187,17 +194,19 @@ int lcz_mqtt_disconnect(void)
 	return 0;
 }
 
-int lcz_mqtt_send_string(char *data, uint8_t *topic)
+int lcz_mqtt_send_string(char *data, uint8_t *topic, struct lcz_mqtt_user *user)
 {
-    return lcz_mqtt_send_data(false, data, 0, topic);
+	return lcz_mqtt_send_data(false, data, 0, topic, user);
 }
 
-int lcz_mqtt_send_binary(char *data, uint32_t len, uint8_t *topic)
+int lcz_mqtt_send_binary(char *data, uint32_t len, uint8_t *topic,
+			 struct lcz_mqtt_user *user)
 {
-    return lcz_mqtt_send_data(true, data, len, topic);
+	return lcz_mqtt_send_data(true, data, len, topic, user);
 }
 
-int lcz_mqtt_send_data(bool binary, char *data, uint32_t len, uint8_t *topic)
+int lcz_mqtt_send_data(bool binary, char *data, uint32_t len, uint8_t *topic,
+		       struct lcz_mqtt_user *user)
 {
 	int rc = -ENOTCONN;
 	uint32_t length;
@@ -215,8 +224,8 @@ int lcz_mqtt_send_data(bool binary, char *data, uint32_t len, uint8_t *topic)
 	lcz_mqtt.stats.sends += 1;
 	lcz_mqtt.stats.tx_payload_bytes += length;
 
-	rc = publish(&mqtt_client_ctx, MQTT_QOS_1_AT_LEAST_ONCE, data, length, topic,
-		     binary);
+	rc = publish(&mqtt_client_ctx, MQTT_QOS_1_AT_LEAST_ONCE, data, length,
+		     topic, binary, user);
 
 	if (rc == 0) {
 		lcz_mqtt.stats.success += 1;
@@ -262,13 +271,12 @@ int lcz_mqtt_subscribe(uint8_t *topic, uint8_t subscribe)
 			       mqtt_unsubscribe(&mqtt_client_ctx, &list);
 	if (rc != 0) {
 		LOG_ERR("%s status %d to %s", str, rc,
-			    log_strdup(mt.topic.utf8));
+			log_strdup(mt.topic.utf8));
 	} else {
 		LOG_DBG("%s to %s", str, log_strdup(mt.topic.utf8));
 	}
 	return rc;
 }
-
 
 /**
  * @note This is used to abstract MEMFAULT data forwarding and shouldn't be
@@ -277,6 +285,77 @@ int lcz_mqtt_subscribe(uint8_t *topic, uint8_t subscribe)
 struct mqtt_client *lcz_mqtt_get_mqtt_client(void)
 {
 	return &mqtt_client_ctx;
+}
+
+void lcz_mqtt_register_user(struct lcz_mqtt_user *user)
+{
+	sys_slist_append(&callback_list, &user->node);
+}
+
+int lcz_mqtt_shadow_format_and_send(struct lcz_mqtt_user *user, char *topic,
+				    const char *fmt, ...)
+{
+	va_list ap;
+	char *msg = NULL;
+	int actual_size;
+	int req_size;
+	int r;
+
+	va_start(ap, fmt);
+	do {
+		/* determine size of message */
+		req_size = vsnprintk(msg, 0, fmt, ap);
+		if (req_size < 0) {
+			r = -EINVAL;
+			break;
+		}
+		/* add one for null character */
+		req_size += 1;
+
+		msg = k_calloc(req_size, sizeof(char));
+		if (msg == NULL) {
+			LOG_ERR("Unable to allocate message");
+			r = -ENOMEM;
+			break;
+		}
+
+		/* build actual message and try to send it */
+		actual_size = vsnprintk(msg, req_size, fmt, ap);
+
+		if (actual_size > 0 && actual_size < req_size) {
+			r = lcz_mqtt_send_string(msg, topic, user);
+		} else {
+			LOG_ERR("Unable to format and send MQTT message");
+			r = -EINVAL;
+		}
+
+	} while (0);
+
+	va_end(ap);
+	k_free(msg);
+	return r;
+}
+
+int lcz_mqtt_topic_format(char *topic, size_t max_size, const char *fmt, ...)
+{
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+
+	r = vsnprintk(topic, max_size, fmt, ap);
+	if (r < 0) {
+		LOG_ERR("Error encoding topic string");
+	} else if (r >= max_size) {
+		LOG_ERR("Topic string too small %d (desired) >= %d (max)", r,
+			max_size);
+		r = -EINVAL;
+	} else {
+		r = 0;
+	}
+
+	va_end(ap);
+	return r;
 }
 
 /******************************************************************************/
@@ -308,6 +387,9 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 			     const struct mqtt_evt *evt)
 {
 	int rc;
+	const char *topic;
+	uint32_t topic_size;
+
 	switch (evt->type) {
 	case MQTT_EVT_CONNACK:
 		if (evt->result != 0) {
@@ -330,6 +412,8 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 		break;
 
 	case MQTT_EVT_PUBACK:
+		issue_ack_callback(evt->result, evt->param.puback.message_id);
+
 		if (evt->result != 0) {
 			LOG_ERR("MQTT PUBACK error %d", evt->result);
 			break;
@@ -338,11 +422,12 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 		/* Unless a single caller/semaphore is used the delta isn't foolproof. */
 		lcz_mqtt.stats.acks += 1;
 		lcz_mqtt.stats.delta = k_uptime_delta(&lcz_mqtt.stats.time);
-		lcz_mqtt.stats.delta_max = MAX(lcz_mqtt.stats.delta_max, lcz_mqtt.stats.delta);
+		lcz_mqtt.stats.delta_max =
+			MAX(lcz_mqtt.stats.delta_max, lcz_mqtt.stats.delta);
 
 		LOG_DBG("PUBACK packet id: %u delta: %d",
-			    evt->param.puback.message_id,
-			    (int32_t)lcz_mqtt.stats.delta);
+			evt->param.puback.message_id,
+			(int32_t)lcz_mqtt.stats.delta);
 
 		break;
 
@@ -352,11 +437,17 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 			break;
 		}
 
-		LOG_INF(
-			"MQTT RXd ID: %d\r\n \tTopic: %s len: %d",
-			evt->param.publish.message_id,
-			log_strdup(evt->param.publish.message.topic.topic.utf8),
-			evt->param.publish.message.payload.len);
+		topic = evt->param.publish.message.topic.topic.utf8;
+		topic_size = evt->param.publish.message.topic.topic.size;
+
+		if (topic[topic_size] == 0) {
+			LOG_INF("MQTT RXd ID: %d\r\n \tTopic: %s len: %d",
+				evt->param.publish.message_id,
+				log_strdup(topic),
+				evt->param.publish.message.payload.len);
+		} else {
+			LOG_ERR("Topic string isn't NULL terminated");
+		}
 
 		rc = subscription_handler(client, evt);
 		if ((rc >= 0) &&
@@ -436,7 +527,8 @@ static void subscription_flush(struct mqtt_client *const client, size_t length)
 }
 
 static int publish(struct mqtt_client *client, enum mqtt_qos qos, char *data,
-		   uint32_t len, uint8_t *topic, bool binary)
+		   uint32_t len, uint8_t *topic, bool binary,
+		   struct lcz_mqtt_user *user)
 {
 	struct mqtt_publish_param param;
 
@@ -459,12 +551,13 @@ static int publish(struct mqtt_client *client, enum mqtt_qos qos, char *data,
 		log_json("Publish string", len, data);
 	}
 
-	/* Does the tx buf size matter? */
 	if (mqtt_client_ctx.tx_buf_size < len) {
 		LOG_WRN("len: %u", len);
 	}
 
 	lcz_mqtt.stats.time = k_uptime_get();
+
+	update_ack_id(user, param.message_id);
 
 	return mqtt_publish(client, &param);
 }
@@ -579,6 +672,7 @@ static void lcz_mqtt_rx_thread(void *arg1, void *arg2, void *arg3)
 				lcz_mqtt.connected = false;
 				k_sem_give(&disconnected_sem);
 				lcz_mqtt_disconnect_callback();
+				issue_disconnect_callbacks();
 			}
 		} else {
 			LOG_DBG("Waiting for MQTT connection...");
@@ -605,9 +699,9 @@ static void publish_watchdog_work_handler(struct k_work *work)
 
 	LOG_WRN("Unable to publish MQTT in the last hour");
 
-    if (lcz_mqtt_ignore_publish_watchdog()) {
-        restart_publish_watchdog();
-    } else {
+	if (lcz_mqtt_ignore_publish_watchdog()) {
+		restart_publish_watchdog();
+	} else {
 #ifdef CONFIG_MODEM_HL7800
 		if (attr_get_signed32(ATTR_ID_modem_functionality, 0) !=
 		    MODEM_FUNCTIONALITY_AIRPLANE) {
@@ -643,7 +737,8 @@ static void connection_failure_handler(int status)
 		lcz_mqtt.stats.consecutive_connection_failures += 1;
 		if ((lcz_mqtt.stats.consecutive_connection_failures >
 		     CONFIG_LCZ_MQTT_MAX_CONSECUTIVE_CONNECTION_FAILURES) &&
-		    (CONFIG_LCZ_MQTT_MAX_CONSECUTIVE_CONNECTION_FAILURES != 0)) {
+		    (CONFIG_LCZ_MQTT_MAX_CONSECUTIVE_CONNECTION_FAILURES !=
+		     0)) {
 			LOG_WRN("Maximum consecutive connection failures exceeded");
 			lcz_software_reset_after_assert(0);
 		}
@@ -661,6 +756,62 @@ static void restart_publish_watchdog(void)
 	}
 }
 
+static void update_ack_id(const struct lcz_mqtt_user *user, uint16_t id)
+{
+	struct lcz_mqtt_user *iterator;
+
+	if (user == NULL) {
+		return;
+	}
+
+	SYS_SLIST_FOR_EACH_CONTAINER (&callback_list, iterator, node) {
+		if (user == iterator) {
+			iterator->ack_id = id;
+			if (user->ack_callback == NULL) {
+				LOG_WRN("Ack Callback is null");
+			}
+			return;
+		}
+	}
+
+	LOG_ERR("User not found");
+}
+
+/* When disconnected, set ID to zero and notify users of failure to send. */
+static void issue_disconnect_callbacks(void)
+{
+	struct lcz_mqtt_user *iterator;
+
+	SYS_SLIST_FOR_EACH_CONTAINER (&callback_list, iterator, node) {
+		iterator->ack_id = 0;
+		if (iterator->ack_callback != NULL) {
+			iterator->ack_callback(-ENOTCONN);
+		}
+	}
+}
+
+static void issue_ack_callback(int result, uint16_t id)
+{
+	struct lcz_mqtt_user *iterator;
+
+	SYS_SLIST_FOR_EACH_CONTAINER (&callback_list, iterator, node) {
+		if (iterator->ack_id == id) {
+			if (id == 0) {
+				LOG_ERR("Invalid ID in user callback");
+			}
+			if (iterator->ack_callback != NULL) {
+				if (result == 0) {
+					iterator->ack_callback(id);
+				} else {
+					iterator->ack_callback(result);
+				}
+			}
+			iterator->ack_id = 0;
+			return;
+		}
+	}
+}
+
 /******************************************************************************/
 /* Override in application                                                    */
 /******************************************************************************/
@@ -671,10 +822,10 @@ __weak void lcz_mqtt_disconnect_callback(void)
 
 __weak bool lcz_mqtt_ignore_publish_watchdog(void)
 {
-    return false;
+	return false;
 }
 
 __weak const uint8_t *lcz_mqtt_get_mqtt_client_id(void)
 {
-    return attr_get_quasi_static(ATTR_ID_client_id);
+	return attr_get_quasi_static(ATTR_ID_client_id);
 }

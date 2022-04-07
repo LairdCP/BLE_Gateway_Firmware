@@ -13,10 +13,21 @@
 /* Includes                                                                   */
 /******************************************************************************/
 #include <net/mqtt.h>
+#include <stdarg.h>
+#include <sys/slist.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/******************************************************************************/
+/* Global Constants, Macros and Type Definitions                              */
+/******************************************************************************/
+struct lcz_mqtt_user {
+	sys_snode_t node;
+	uint16_t ack_id;
+	void (*ack_callback)(int status);
+};
 
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
@@ -53,15 +64,18 @@ int lcz_mqtt_disconnect(void);
  * @param data to send
  * @param len length of data, 0 allowed in non-binary mode
  * @param topic to send data to
+ * @param cb registered callback node, NULL if callback isn't desired.
  * @return int 0 on success, negative errno otherwise
  */
-int lcz_mqtt_send_data(bool binary, char *data, uint32_t len, uint8_t *topic);
+int lcz_mqtt_send_data(bool binary, char *data, uint32_t len, uint8_t *topic,
+		       struct lcz_mqtt_user *user);
 
 /**
  * @brief Helper versions of lcz_mqtt_send_data
  */
-int lcz_mqtt_send_string(char *data, uint8_t *topic);
-int lcz_mqtt_send_binary(char *data, uint32_t len, uint8_t *topic);
+int lcz_mqtt_send_string(char *data, uint8_t *topic, struct lcz_mqtt_user *user);
+int lcz_mqtt_send_binary(char *data, uint32_t len, uint8_t *topic,
+			 struct lcz_mqtt_user *user);
 
 /**
  * @brief Subscribe or Unsubscribe to a topic
@@ -106,6 +120,42 @@ bool lcz_mqtt_ignore_publish_watchdog(void);
  * @return const uint8_t* pointer to client ID
  */
 const uint8_t *lcz_mqtt_get_mqtt_client_id(void);
+
+/**
+ * Register callback that occurs when broker has received message
+ * with matching id (Qos1 ACK) or a disconnect occurs.
+ *
+ * An negative status indicates failure.
+ *
+ * A user/node is required for each simultaneously outstanding message.
+ *
+ * @param cb Pointer to static callback structure (linked list node)
+ */
+void lcz_mqtt_register_user(struct lcz_mqtt_user *user);
+
+/**
+ * @brief Publish a MQTT message if it is successfully formatted using
+ * vsnprintk. Message generation uses calloc.
+ *
+ * @param cb Callback node, NULL if callback not required
+ * @param topic for message
+ * @param fmt format string
+ * @param ... format string parameters
+ * @return int 0 on success, otherwise negative error code
+ */
+int lcz_mqtt_shadow_format_and_send(struct lcz_mqtt_user *user, char *topic,
+				    const char *fmt, ...);
+
+/**
+ * @brief Formats a topic string using vsnprintk.
+ *
+ * @param topic string
+ * @param max_size size of topic string
+ * @param fmt format string
+ * @param ... format string parameters
+ * @return int 0 on success, otherwise negative error code
+ */
+int lcz_mqtt_topic_format(char *topic, size_t max_size, const char *fmt, ...);
 
 #ifdef __cplusplus
 }

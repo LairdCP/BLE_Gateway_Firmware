@@ -203,7 +203,7 @@ FwkMsgHandler_t *cloud_sub_task_msg_dispatcher(FwkMsgCode_t MsgCode)
 	case FMC_CLOUD_HEARTBEAT:           return heartbeat_msg_handler;
 	case FMC_CLOUD_CONNECTED:           return connected_msg_handler;
 	case FMC_CLOUD_DISCONNECTED:        return disconnected_msg_handler;
-	default:                            return DISPATCH_OK;
+	default:                            return NULL;
 	}
 	/* clang-format on */
 }

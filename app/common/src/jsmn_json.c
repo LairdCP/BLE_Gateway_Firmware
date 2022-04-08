@@ -41,7 +41,7 @@ K_MUTEX_DEFINE(jsmn_mutex);
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
-struct jsmn {
+static struct {
 	jsmn_parser parser;
 	jsmntok_t tokens[CONFIG_JSMN_NUMBER_OF_TOKENS];
 	int tokens_found;
@@ -50,9 +50,7 @@ struct jsmn {
 	int saved_index;
 	int saved_parent;
 	const char *json;
-};
-
-static struct jsmn jsmn;
+} jsmn;
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -98,6 +96,11 @@ bool jsmn_valid(void)
 {
 	return ((jsmn.tokens_found > 0) &&
 		(jsmn.tokens[0].type == JSMN_OBJECT));
+}
+
+const char *jsmn_json(void)
+{
+	return jsmn.json;
 }
 
 int jsmn_tokens_found(void)

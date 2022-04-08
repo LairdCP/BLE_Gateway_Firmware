@@ -160,6 +160,13 @@ int jsmn_strlen(int index);
  */
 const char *jsmn_string(int index);
 
+/**
+ * @brief Accessor function
+ *
+ * @retval A pointer to the json buffer processed by jsmn.
+ */
+const char *jsmn_json(void);
+
 #ifdef __cplusplus
 }
 #endif

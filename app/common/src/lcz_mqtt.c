@@ -70,6 +70,7 @@ static struct k_work_delayable publish_watchdog;
 static struct k_work_delayable keep_alive;
 
 static uint8_t subscription_buffer[CONFIG_LCZ_MQTT_SHADOW_IN_MAX_SIZE];
+static uint8_t subscription_topic[CONFIG_LCZ_MQTT_SHADOW_TOPIC_MAX_SIZE];
 
 static struct {
 	bool connected;
@@ -484,11 +485,22 @@ static int subscription_handler(struct mqtt_client *const client,
 	uint32_t length = evt->param.publish.message.payload.len;
 	uint8_t qos = evt->param.publish.message.topic.qos;
 	const uint8_t *topic = evt->param.publish.message.topic.topic.utf8;
+	uint32_t topic_length = evt->param.publish.message.topic.topic.size;
 
 	/* Leave room for null to allow easy printing */
 	size_t size = length + 1;
 	if (size > CONFIG_LCZ_MQTT_SHADOW_IN_MAX_SIZE) {
+		LOG_ERR("Shadow buffer too small");
 		return 0;
+	}
+
+	/* Ensure topic is NUL terminated */
+	if (topic_length + 1 > CONFIG_LCZ_MQTT_SHADOW_IN_MAX_SIZE) {
+		LOG_ERR("Shadow topic too small");
+		return 0;
+	} else {
+		memcpy(subscription_topic, topic, topic_length);
+		subscription_topic[topic_length] = 0;
 	}
 
 	lcz_mqtt.stats.rx_payload_bytes += length;
@@ -501,7 +513,7 @@ static int subscription_handler(struct mqtt_client *const client,
 			log_json("MQTT Read data", rc, subscription_buffer);
 		}
 
-		shadow_parser(topic, subscription_buffer);
+		shadow_parser(subscription_topic, subscription_buffer);
 
 		if (qos == MQTT_QOS_1_AT_LEAST_ONCE) {
 			struct mqtt_puback_param param = { .message_id = id };

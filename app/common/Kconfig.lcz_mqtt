@@ -41,6 +41,10 @@ config LCZ_MQTT_SHADOW_IN_MAX_SIZE
     help
         The timestamps can make the shadow larger than 7K bytes.
 
+config LCZ_MQTT_SHADOW_TOPIC_MAX_SIZE
+    int "Maximum size of topic"
+    default 128
+
 config LCZ_MQTT_LOG_MQTT_PUBLISH
     bool "Print data published to LCZ_MQTT"
 

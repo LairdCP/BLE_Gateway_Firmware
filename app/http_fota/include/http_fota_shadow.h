@@ -204,7 +204,7 @@ const char *http_fota_get_hash(enum fota_image_type type);
  * @param buf is the pointer to the buffer to store the conversion result
  * @param buf_len is the length of the buffer
  *
- * @retval non-zero when the string was succesfully converted.
+ * @retval non-zero when the string was successfully converted.
  */
 size_t http_fota_convert_hash(enum fota_image_type type, uint8_t *buf,
 			      size_t buf_len);

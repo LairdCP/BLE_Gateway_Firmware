@@ -94,3 +94,9 @@ target_sources(app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lcz_modem_shell.c
     )
 endif()
+
+if (CONFIG_HTTP_FILE_DOWNLOAD)
+target_sources(app PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/http_file_download.c
+    )
+endif()

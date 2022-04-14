@@ -1,0 +1,24 @@
+# Copyright (c) 2022 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+config HTTP_FILE_DOWNLOAD
+    bool "Enable file download over HTTP"
+    select FILE_SYSTEM_UTILITIES
+    select DOWNLOAD_CLIENT
+
+module=HTTP_FILE_DOWNLOAD
+module-dep=LOG
+module-str=HTTP_FILE_DOWNLOAD
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+if HTTP_FILE_DOWNLOAD
+
+config HFD_SOCKET_RETRIES
+	int "Number of retries for socket-related download issues"
+	default 2
+
+config HFD_DEVICE_LIST_MAX_STR_SIZE
+    int "Maximum size (with terminator) of device list string"
+    default 192
+
+endif # HTTP_FILE_DOWNLOAD

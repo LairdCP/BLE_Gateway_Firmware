@@ -388,8 +388,6 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 			     const struct mqtt_evt *evt)
 {
 	int rc;
-	const char *topic;
-	uint32_t topic_size;
 
 	switch (evt->type) {
 	case MQTT_EVT_CONNACK:
@@ -437,19 +435,6 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 			LOG_ERR("MQTT PUBLISH error %d", evt->result);
 			break;
 		}
-
-		topic = evt->param.publish.message.topic.topic.utf8;
-		topic_size = evt->param.publish.message.topic.topic.size;
-
-		if (topic[topic_size] == 0) {
-			LOG_INF("MQTT RXd ID: %d\r\n \tTopic: %s len: %d",
-				evt->param.publish.message_id,
-				log_strdup(topic),
-				evt->param.publish.message.payload.len);
-		} else {
-			LOG_ERR("Topic string isn't NULL terminated");
-		}
-
 		rc = subscription_handler(client, evt);
 		if ((rc >= 0) &&
 		    (rc < evt->param.publish.message.payload.len)) {
@@ -487,14 +472,16 @@ static int subscription_handler(struct mqtt_client *const client,
 	const uint8_t *topic = evt->param.publish.message.topic.topic.utf8;
 	uint32_t topic_length = evt->param.publish.message.topic.topic.size;
 
-	/* Leave room for null to allow easy printing */
+	/* Terminate topic and shadow so that they can be printed and used
+	 * as strings by other modules.
+	 */
+
 	size_t size = length + 1;
 	if (size > CONFIG_LCZ_MQTT_SHADOW_IN_MAX_SIZE) {
 		LOG_ERR("Shadow buffer too small");
 		return 0;
 	}
 
-	/* Ensure topic is NUL terminated */
 	if (topic_length + 1 > CONFIG_LCZ_MQTT_SHADOW_IN_MAX_SIZE) {
 		LOG_ERR("Shadow topic too small");
 		return 0;
@@ -502,6 +489,9 @@ static int subscription_handler(struct mqtt_client *const client,
 		memcpy(subscription_topic, topic, topic_length);
 		subscription_topic[topic_length] = 0;
 	}
+
+	LOG_INF("MQTT RXd ID: %d\r\n \tTopic: %s payload len: %d", id, topic,
+		length);
 
 	lcz_mqtt.stats.rx_payload_bytes += length;
 

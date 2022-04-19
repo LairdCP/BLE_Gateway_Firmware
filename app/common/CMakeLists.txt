@@ -100,3 +100,9 @@ target_sources(app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/http_file_download.c
     )
 endif()
+
+if (CONFIG_APP_UPDATE)
+target_sources(app PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app_update.c
+    )
+endif()

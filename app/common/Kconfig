@@ -1,4 +1,5 @@
 rsource "./Kconfig.aws"
+rsource "./Kconfig.app_update"
 rsource "./Kconfig.ble"
 rsource "./Kconfig.button"
 rsource "./Kconfig.gateway_common"

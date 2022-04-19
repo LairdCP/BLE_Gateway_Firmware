@@ -1,0 +1,17 @@
+# Copyright (c) 2022 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+config APP_UPDATE
+    bool "Enable application update from file system"
+    depends on FILE_SYSTEM_UTILITIES
+    depends on BOOTLOADER_MCUBOOT
+    depends on IMG_MANAGER
+
+module=APP_UPDATE
+module-dep=LOG
+module-str=APP_UPDATE
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+if APP_UPDATE
+
+endif # APP_UPDATE

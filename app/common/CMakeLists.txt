@@ -6,6 +6,7 @@ target_include_directories(app PRIVATE
 target_sources(app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/button.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/button_sw1.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gateway_common.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/control_task.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gateway_fsm.c

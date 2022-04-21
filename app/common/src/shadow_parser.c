@@ -46,7 +46,7 @@ void shadow_parser(const char *topic, const char *json)
     	agent = CONTAINER_OF(node, struct shadow_parser_agent, node);
 		if (agent->parser != NULL) {
 			jsmn_reset_index();
-			agent->parser(topic, flags);
+			agent->parser(topic, flags, json, agent->context);
 		}
 	}
 

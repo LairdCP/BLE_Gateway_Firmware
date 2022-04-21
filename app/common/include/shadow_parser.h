@@ -27,7 +27,9 @@ struct topic_flags;
 
 struct shadow_parser_agent {
 	sys_snode_t node;
-	void (*parser)(const char *topic, struct topic_flags *flags);
+	void *context;
+	void (*parser)(const char *topic, struct topic_flags *flags,
+		       const char *json, void *context);
 };
 
 /* Check that flag pointer is valid */

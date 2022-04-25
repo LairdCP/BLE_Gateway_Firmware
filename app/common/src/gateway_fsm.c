@@ -43,6 +43,7 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 #define ERROR_RETRY_SECONDS 120
 
 #define RESOLVE_SERVER_RETRY_SECONDS 60
+#define RESOLVE_SERVER_MAX_ATTEMPTS 10
 
 /** Workaround for sporadic DNS error */
 #define NETWORK_CONNECT_CALLBACK_DELAY 4
@@ -58,6 +59,7 @@ typedef bool gsm_status_func(void);
 static struct {
 	enum gateway_state state;
 	uint32_t timer;
+	uint32_t resolve_attempts_remaining;
 
 	bool modem_and_network_init_complete;
 	bool server_resolved;
@@ -356,6 +358,7 @@ static void wait_for_commission_handler(void)
 	if (cloud_disconnect_request()) {
 		set_state(GATEWAY_STATE_CLOUD_REQUEST_DISCONNECT);
 	} else if (gsm.commission() == 0) {
+		gsm.resolve_attempts_remaining = RESOLVE_SERVER_MAX_ATTEMPTS;
 		set_state(GATEWAY_STATE_RESOLVE_SERVER);
 	} else {
 		attr_set_uint32(ATTR_ID_commissioning_busy, false);
@@ -374,7 +377,11 @@ static void resolve_server_handler(void)
 			set_state(GATEWAY_STATE_WAIT_BEFORE_CLOUD_CONNECT);
 			gsm.timer = get_join_cloud_delay();
 			gsm.server_resolved = true;
+		} else if (gsm.resolve_attempts_remaining == 0) {
+			LOG_ERR("Too many resolve server attempts.  Check host name.");
+			set_state(GATEWAY_STATE_MODEM_INIT);
 		} else {
+			gsm.resolve_attempts_remaining -= 1;
 			set_state(GATEWAY_STATE_RESOLVE_SERVER);
 			gsm.timer = RESOLVE_SERVER_RETRY_SECONDS;
 		}

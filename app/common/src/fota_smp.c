@@ -8,7 +8,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(fota_smp, CONFIG_LOG_LEVEL_FOTA_SMP);
+LOG_MODULE_REGISTER(fota_smp, CONFIG_FOTA_SMP_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */

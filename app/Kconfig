@@ -199,11 +199,6 @@ config CONTROL_TASK_LOG_LEVEL
     range 0 4
     default 4
 
-config LOG_LEVEL_FOTA_SMP
-    int "Log level for FOTA using SMP File transfer and a control point"
-    range 0 4
-    default 4
-
 config LOG_LEVEL_PSK_GENERATOR
     int "Log level for PSK generator"
     range 0 4

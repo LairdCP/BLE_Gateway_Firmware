@@ -123,7 +123,11 @@ int aws_subscribe(uint8_t *topic, uint8_t subscribe)
 /******************************************************************************/
 bool lcz_mqtt_ignore_publish_watchdog(void)
 {
-	return fota_smp_ble_prepared();
+	if (IS_ENABLED(CONFIG_FOTA_SMP)) {
+		return fota_smp_ble_prepared();
+	} else {
+		return false;
+	}
 }
 
 /* Add randomness to client id to make each connection unique.*/

@@ -498,13 +498,17 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_FOTA_STATE:
-		if (IS_ENABLED(CONFIG_MODEM_HL7800_FW_UPDATE)) {
+		if (IS_ENABLED(CONFIG_MODEM_HL7800_FW_UPDATE) &&
+		    IS_ENABLED(CONFIG_FOTA_SMP)) {
 			fota_smp_state_handler(*((uint8_t *)event_data));
 		}
 		break;
 
 	case HL7800_EVENT_FOTA_COUNT:
-		fota_smp_set_count(*((uint32_t *)event_data));
+		if (IS_ENABLED(CONFIG_MODEM_HL7800_FW_UPDATE) &&
+		    IS_ENABLED(CONFIG_FOTA_SMP)) {
+			fota_smp_set_count(*((uint32_t *)event_data));
+		}
 		break;
 
 	case HL7800_EVENT_REVISION:

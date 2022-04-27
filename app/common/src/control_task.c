@@ -216,11 +216,12 @@ static DispatchResult_t gateway_fsm_tick_handler(FwkMsgReceiver_t *pMsgRxer,
 
 	gateway_fsm();
 
-#ifdef CONFIG_MODEM_HL7800_FW_UPDATE
-	if (!pObj->cloud_connected) {
-		fota_smp_start_handler();
+	if (IS_ENABLED(CONFIG_MODEM_HL7800_FW_UPDATE) &&
+	    IS_ENABLED(CONFIG_FOTA_SMP)) {
+		if (!pObj->cloud_connected) {
+			fota_smp_start_handler();
+		}
 	}
-#endif
 
 	Framework_StartTimer(&pObj->msgTask);
 	return dispatch_to_sub_task(pMsgRxer, pMsg);
@@ -285,9 +286,13 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 
 #endif
 
+#ifdef ATTR_ID_fota_control_point
 		case ATTR_ID_fota_control_point:
-			fota_smp_cmd_handler();
+			if (IS_ENABLED(CONFIG_FOTA_SMP)) {
+				fota_smp_cmd_handler();
+			}
 			break;
+#endif
 
 #ifdef CONFIG_LCZ_MOTION
 		case ATTR_ID_motion_odr:

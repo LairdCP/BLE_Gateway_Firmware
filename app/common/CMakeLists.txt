@@ -10,6 +10,9 @@ target_sources(app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gateway_common.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/control_task.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gateway_fsm.c
+    )
+
+target_sources_ifdef(CONFIG_FOTA_SMP app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/fota_smp.c
     )
 

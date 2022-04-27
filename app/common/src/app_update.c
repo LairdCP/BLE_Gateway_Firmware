@@ -8,7 +8,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(app_update, 4);
+LOG_MODULE_REGISTER(app_update, CONFIG_APP_UPDATE_LOG_LEVEL);
 
 /******************************************************************************/
 /* Includes                                                                   */

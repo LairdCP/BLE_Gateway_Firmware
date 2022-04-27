@@ -403,10 +403,12 @@ static void reset_count_handler(void)
 
 static void app_type_handler(void)
 {
+#ifdef ATTR_ID_app_type
 	extern const char *get_app_type(void);
 	const char *app_type = get_app_type();
 
 	attr_set_string(ATTR_ID_app_type, app_type, strlen(app_type));
+#endif
 }
 
 static void reboot_handler(void)

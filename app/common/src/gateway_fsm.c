@@ -94,6 +94,7 @@ static void cloud_connecting_handler(void);
 static void cloud_connected_handler(void);
 static void disconnected_handler(void);
 static void decommission_handler(void);
+static void clear_commissioning_busy(void);
 
 static bool cloud_disconnect_request(void);
 
@@ -361,7 +362,7 @@ static void wait_for_commission_handler(void)
 		gsm.resolve_attempts_remaining = RESOLVE_SERVER_MAX_ATTEMPTS;
 		set_state(GATEWAY_STATE_RESOLVE_SERVER);
 	} else {
-		attr_set_uint32(ATTR_ID_commissioning_busy, false);
+		clear_commissioning_busy();
 	}
 }
 
@@ -400,7 +401,7 @@ static void wait_before_cloud_connect_handler(void)
 			gsm.timer = CLOUD_CONNECT_TIMEOUT;
 		} else {
 			set_state(GATEWAY_STATE_CLOUD_ERROR);
-			attr_set_uint32(ATTR_ID_commissioning_busy, false);
+			clear_commissioning_busy();
 		}
 	}
 }
@@ -409,11 +410,11 @@ static void cloud_connecting_handler(void)
 {
 	if (gsm.cloud_is_connected()) {
 		set_state(GATEWAY_STATE_CLOUD_CONNECTED);
-		attr_set_uint32(ATTR_ID_commissioning_busy, false);
+		clear_commissioning_busy();
 		gateway_fsm_cloud_connected_callback();
 	} else if (timer_expired()) {
 		set_state(GATEWAY_STATE_CLOUD_ERROR);
-		attr_set_uint32(ATTR_ID_commissioning_busy, false);
+		clear_commissioning_busy();
 	}
 }
 
@@ -529,6 +530,12 @@ static bool generic_user_disconnect_request(void)
 	return gsm.cloud_disconnect_request;
 }
 
+static void clear_commissioning_busy(void)
+{
+#ifdef ATTR_ID_commissioning_busy
+	attr_set_uint32(ATTR_ID_commissioning_busy, false);
+#endif
+}
 /******************************************************************************/
 /* Weak Defaults                                                              */
 /******************************************************************************/

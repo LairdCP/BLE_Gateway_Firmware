@@ -169,7 +169,10 @@ int cloud_decommission(void)
 int cloud_commission_handler(void)
 {
 	attr_set_signed32(ATTR_ID_cert_status, CERT_STATUS_BUSY);
+
+#ifdef ATTR_ID_commissioning_busy
 	attr_set_uint32(ATTR_ID_commissioning_busy, true);
+#endif
 
 #ifdef CONFIG_SENSOR_TASK
 	FRAMEWORK_MSG_CREATE_AND_SEND(FWK_ID_CLOUD, FWK_ID_SENSOR_TASK,

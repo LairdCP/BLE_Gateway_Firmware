@@ -103,7 +103,9 @@ static void update_apn_handler(void);
 static void update_modem_log_level_handler(void);
 static void update_rat_handler(void);
 static void update_gps_rate_handler(void);
+#ifdef ATTR_ID_polte_control_point
 static void polte_cmd_handler(void);
+#endif
 #endif
 
 static bool gateway_fsm_fota_request(void);
@@ -252,11 +254,11 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 			update_commission = true;
 			break;
 
-		case ATTR_ID_topic_prefix:
 #ifdef CONFIG_CONTACT_TRACING
+		case ATTR_ID_topic_prefix:
 			ct_ble_topic_builder();
-#endif
 			break;
+#endif
 
 		case ATTR_ID_join_delay:
 			random_join_handler(pb->list[i]);
@@ -280,9 +282,11 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 			update_gps_rate_handler();
 			break;
 
+#ifdef ATTR_ID_polte_control_point
 		case ATTR_ID_polte_control_point:
 			polte_cmd_handler();
 			break;
+#endif
 
 #endif
 
@@ -486,6 +490,7 @@ static void update_gps_rate_handler(void)
 	}
 }
 
+#ifdef ATTR_ID_polte_control_point
 static void polte_cmd_handler(void)
 {
 	uint8_t cmd = attr_get_uint32(ATTR_ID_polte_control_point, 0);
@@ -520,6 +525,7 @@ static void polte_cmd_handler(void)
 
 	LOG_DBG("PoLTE command status %d", status);
 }
+#endif
 
 static void update_rat_handler(void)
 {

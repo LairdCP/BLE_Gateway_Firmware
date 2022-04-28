@@ -48,11 +48,14 @@ config LCZ_MQTT_SHADOW_TOPIC_MAX_SIZE
 config LCZ_MQTT_LOG_MQTT_PUBLISH
     bool "Print data published to LCZ_MQTT"
 
-config LCZ_MQTT_LOG_MQTT_TOPIC
-    bool "Print the topic that docs are published to or received from"
+config LCZ_MQTT_LOG_MQTT_PUBLISH_TOPIC
+    bool "Print the topic that docs are published"
 
-config LCZ_MQTT_LOG_MQTT_RX_DATA
-    bool "Enable/Disable printing of received MQTT data."
+config LCZ_MQTT_LOG_MQTT_SUBSCRIPTION
+    bool "Enable/Disable printing of received MQTT data"
+
+config LCZ_MQTT_LOG_MQTT_SUBSCRIPTION_TOPIC
+    bool "Enable/Disable printing of received MQTT topic"
 
 module=LCZ_MQTT
 module-dep=LOG

@@ -175,9 +175,6 @@ int lcz_mqtt_connect()
 	if (!lcz_mqtt.connected) {
 		lcz_mqtt.disconnect = false;
 		rc = try_to_connect(&mqtt_client_ctx);
-		if (rc != 0) {
-			LOG_ERR("LCZ_MQTT connect err (%d)", rc);
-		}
 		connection_failure_handler(rc);
 	}
 	return rc;
@@ -490,8 +487,10 @@ static int subscription_handler(struct mqtt_client *const client,
 		subscription_topic[topic_length] = 0;
 	}
 
-	LOG_INF("MQTT RXd ID: %d\r\n \tTopic: %s payload len: %d", id, topic,
-		length);
+	LOG_INF("MQTT RXd ID: %d payload len: %d", id, length);
+	if (IS_ENABLED(CONFIG_LCZ_MQTT_LOG_MQTT_SUBSCRIPTION_TOPIC)) {
+		log_json("Subscription topic", topic_length, subscription_topic);
+	}
 
 	lcz_mqtt.stats.rx_payload_bytes += length;
 
@@ -499,8 +498,8 @@ static int subscription_handler(struct mqtt_client *const client,
 	if (rc == length) {
 		subscription_buffer[length] = 0; /* null terminate */
 
-		if (IS_ENABLED(CONFIG_LCZ_MQTT_LOG_MQTT_RX_DATA)) {
-			log_json("MQTT Read data", rc, subscription_buffer);
+		if (IS_ENABLED(CONFIG_LCZ_MQTT_LOG_MQTT_SUBSCRIPTION)) {
+			log_json("Subscription data", rc, subscription_buffer);
 		}
 
 		shadow_parser(subscription_topic, subscription_buffer);
@@ -544,7 +543,7 @@ static int publish(struct mqtt_client *client, enum mqtt_qos qos, char *data,
 	param.dup_flag = 0U;
 	param.retain_flag = 0U;
 
-	if (IS_ENABLED(CONFIG_LCZ_MQTT_LOG_MQTT_TOPIC)) {
+	if (IS_ENABLED(CONFIG_LCZ_MQTT_LOG_MQTT_PUBLISH_TOPIC)) {
 		log_json("Publish Topic", param.message.topic.topic.size,
 			 param.message.topic.topic.utf8);
 	}

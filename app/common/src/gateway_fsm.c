@@ -65,6 +65,7 @@ static struct {
 	bool server_resolved;
 	bool cloud_disconnect_request;
 	bool decommission_request;
+	bool network_connected;
 
 	gsm_func *modem_init;
 	gsm_func *network_init;
@@ -92,7 +93,7 @@ static void resolve_server_handler(void);
 static void wait_before_cloud_connect_handler(void);
 static void cloud_connecting_handler(void);
 static void cloud_connected_handler(void);
-static void disconnected_handler(void);
+static void cloud_disconnected_handler(void);
 static void decommission_handler(void);
 static void clear_commissioning_busy(void);
 
@@ -194,6 +195,7 @@ void gateway_fsm(void)
 		break;
 
 	case GATEWAY_STATE_NETWORK_DISCONNECTED:
+		gsm.network_connected = false;
 #if defined(CONFIG_LWM2M)
 		/* LwM2M is a connectionless protocol,
 		 * we need to explicitly disconnect here
@@ -249,7 +251,7 @@ void gateway_fsm(void)
 		break;
 
 	case GATEWAY_STATE_CLOUD_DISCONNECTED:
-		disconnected_handler();
+		cloud_disconnected_handler();
 		gateway_fsm_cloud_disconnected_callback();
 		break;
 
@@ -311,6 +313,7 @@ static bool timer_expired(void)
  */
 static void modem_init_handler(void)
 {
+	gsm.network_connected = false;
 	if (timer_expired()) {
 		if (gsm.modem_init() < 0) {
 			set_state(GATEWAY_STATE_MODEM_ERROR);
@@ -327,6 +330,7 @@ static void modem_init_handler(void)
  */
 static void network_init_handler(void)
 {
+	gsm.network_connected = false;
 	if (timer_expired()) {
 		if (gsm.network_init() < 0) {
 			gsm.modem_and_network_init_complete = false;
@@ -346,7 +350,10 @@ static void wait_for_network_handler(void)
 		set_state(GATEWAY_STATE_MODEM_INIT);
 	} else if (gsm.network_is_connected()) {
 		if (timer_expired()) {
-			gateway_fsm_network_connected_callback();
+			if (!gsm.network_connected) {
+				gateway_fsm_network_connected_callback();
+				gsm.network_connected = true;
+			}
 			set_state(GATEWAY_STATE_NETWORK_CONNECTED);
 		}
 	} else {
@@ -429,7 +436,7 @@ static void cloud_connected_handler(void)
 	}
 }
 
-static void disconnected_handler(void)
+static void cloud_disconnected_handler(void)
 {
 	gsm.timer = get_reconnect_cloud_delay();
 

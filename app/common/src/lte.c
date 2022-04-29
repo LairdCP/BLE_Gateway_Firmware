@@ -559,8 +559,17 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		site_survey_handler(event_data);
 		break;
 
+	case HL7800_EVENT_EDRX_PARAMETERS:
+#ifdef ATTR_ID_edrx_access_technology
+		attr_set_uint32(
+			ATTR_ID_edrx_access_technology,
+			((struct mdm_hl7800_edrx_parameters *)event_data)
+				->access_technology_type);
+#endif
+		break;
+
 	default:
-		LOG_ERR("Unknown modem event");
+		LOG_ERR("Unknown/Unhandled modem event %d", event);
 		break;
 	}
 #if defined(CONFIG_LCZ_LWM2M_CONN_MON)

@@ -725,10 +725,10 @@ static void keep_alive_work_handler(struct k_work *work)
 			LOG_ERR("mqtt_live (%d)", rc);
 		}
 
-		k_work_schedule(&keep_alive,
-				K_SECONDS((CONFIG_MQTT_KEEPALIVE > 1) ?
-							(CONFIG_MQTT_KEEPALIVE / 2) :
-							1));
+		if (CONFIG_MQTT_KEEPALIVE != 0) {
+			k_work_schedule(&keep_alive,
+					K_SECONDS(CONFIG_MQTT_KEEPALIVE));
+		}
 	}
 }
 

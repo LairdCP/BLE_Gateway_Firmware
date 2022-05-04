@@ -71,6 +71,8 @@ BUILD_ASSERT(ATTR_ID_join_max + 1 == ATTR_ID_join_interval, MSG);
 
 #if defined(CONFIG_COAP_FOTA) && defined(CONFIG_HTTP_FOTA)
 #error "Dual network FOTA not supported"
+#elif defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA)
+#define FOTA_ENABLED 1
 #endif
 
 /******************************************************************************/
@@ -93,8 +95,11 @@ static FwkMsgHandler_t gateway_fsm_tick_handler;
 static FwkMsgHandler_t attr_broadcast_msg_handler;
 static FwkMsgHandler_t factory_reset_msg_handler;
 static FwkMsgHandler_t cloud_state_msg_handler;
-static FwkMsgHandler_t fota_msg_handler;
 static FwkMsgHandler_t dispatch_to_sub_task;
+
+#ifdef FOTA_ENABLED
+static FwkMsgHandler_t fota_msg_handler;
+#endif
 
 static void random_join_handler(attr_index_t idx);
 
@@ -124,8 +129,10 @@ static FwkMsgHandler_t *control_task_msg_dispatcher(FwkMsgCode_t MsgCode)
 	case FMC_FACTORY_RESET:              return factory_reset_msg_handler;
 	case FMC_CLOUD_CONNECTED:            return cloud_state_msg_handler;
 	case FMC_CLOUD_DISCONNECTED:         return cloud_state_msg_handler;
+#ifdef FOTA_ENABLED
 	case FMC_FOTA_START_REQ:             return fota_msg_handler;
 	case FMC_FOTA_DONE:                  return fota_msg_handler;
+#endif
 	default:                             return cloud_sub_task_msg_dispatcher(MsgCode);
 	}
 	/* clang-format on */
@@ -394,6 +401,7 @@ static DispatchResult_t software_reset_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	return DISPATCH_OK;
 }
 
+#ifdef FOTA_ENABLED
 static DispatchResult_t fota_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 					 FwkMsg_t *pMsg)
 {
@@ -410,6 +418,7 @@ static DispatchResult_t fota_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 
 	return DISPATCH_OK;
 }
+#endif
 
 static DispatchResult_t cloud_state_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 						FwkMsg_t *pMsg)

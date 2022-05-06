@@ -62,4 +62,8 @@ module-dep=LOG
 module-str=LCZ_MQTT
 source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
 
+config LCZ_MQTT_KEEPALIVE_VERBOSE
+    bool "Log status for keep alive"
+    depends on LCZ_MQTT_LOG_LEVEL >= LCZ_MQTT_LOG_LEVEL_INF
+
 endif # LCZ_MQTT

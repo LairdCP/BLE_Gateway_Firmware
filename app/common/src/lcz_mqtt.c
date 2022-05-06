@@ -26,6 +26,7 @@ LOG_MODULE_REGISTER(lcz_mqtt, CONFIG_LCZ_MQTT_LOG_LEVEL);
 #include "lcz_software_reset.h"
 #include "attr.h"
 #include "shadow_parser.h"
+#include "errno_str.h"
 
 #include "lcz_mqtt.h"
 
@@ -489,7 +490,8 @@ static int subscription_handler(struct mqtt_client *const client,
 
 	LOG_INF("MQTT RXd ID: %d payload len: %d", id, length);
 	if (IS_ENABLED(CONFIG_LCZ_MQTT_LOG_MQTT_SUBSCRIPTION_TOPIC)) {
-		log_json("Subscription topic", topic_length, subscription_topic);
+		log_json("Subscription topic", topic_length,
+			 subscription_topic);
 	}
 
 	lcz_mqtt.stats.rx_payload_bytes += length;
@@ -717,18 +719,40 @@ static void publish_watchdog_work_handler(struct k_work *work)
 static void keep_alive_work_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
+	int time_left;
+	k_timeout_t delay;
 	int rc;
 
+	/* The accuracy of mqtt_live may not be good enough to support
+	 * the broker's maximum keep alive timeout.
+	 *
+	 * For example, the absolute maximum of Losant is 20 minutes +/- 10 seconds.
+	 * If the keep alive is set to 1200, then disconnections will occur.
+	 * If the keep alive is set to 1170 (19.5 minutes), then the Losant timeout
+	 * will be 20 minutes and disconnects will not occur.
+	 * If the keep alive is set to 120 (2 minutes), then the actual timeout is
+	 * 3 minutes.
+	 */
 	if (lcz_mqtt.connected) {
 		rc = mqtt_live(&mqtt_client_ctx);
 		if (rc != 0 && rc != -EAGAIN) {
-			LOG_ERR("mqtt_live (%d)", rc);
+			LOG_ERR("mqtt_live error: %s", ERRNO_STR(rc));
+		} else if (IS_ENABLED(CONFIG_LCZ_MQTT_KEEPALIVE_VERBOSE)) {
+			LOG_INF("mqtt_live status: %s",
+				(rc == -EAGAIN) ? "try again" : ERRNO_STR(rc));
 		}
 
 		if (CONFIG_MQTT_KEEPALIVE != 0) {
-			k_work_schedule(&keep_alive,
-					K_SECONDS(CONFIG_MQTT_KEEPALIVE));
+			time_left = mqtt_keepalive_time_left(&mqtt_client_ctx);
+			delay = K_MSEC(time_left);
+			k_work_schedule(&keep_alive, delay);
+			if (IS_ENABLED(CONFIG_LCZ_MQTT_KEEPALIVE_VERBOSE)) {
+				LOG_INF("Scheduled next keep alive: %d ms",
+					time_left);
+			}
 		}
+	} else if (IS_ENABLED(CONFIG_LCZ_MQTT_KEEPALIVE_VERBOSE)) {
+		LOG_INF("MQTT Not Connected - Keep alive not sent");
 	}
 }
 

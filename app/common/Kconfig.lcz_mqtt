@@ -45,6 +45,13 @@ config LCZ_MQTT_SHADOW_TOPIC_MAX_SIZE
     int "Maximum size of topic"
     default 128
 
+module=LCZ_MQTT
+module-dep=LOG
+module-str=LCZ_MQTT
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+if LCZ_MQTT_LOG_LEVEL >= 3
+
 config LCZ_MQTT_LOG_MQTT_PUBLISH
     bool "Print data published to LCZ_MQTT"
 
@@ -57,10 +64,7 @@ config LCZ_MQTT_LOG_MQTT_SUBSCRIPTION
 config LCZ_MQTT_LOG_MQTT_SUBSCRIPTION_TOPIC
     bool "Enable/Disable printing of received MQTT topic"
 
-module=LCZ_MQTT
-module-dep=LOG
-module-str=LCZ_MQTT
-source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+endif # LOG_LEVEL
 
 config LCZ_MQTT_KEEPALIVE_VERBOSE
     bool "Log status for keep alive"

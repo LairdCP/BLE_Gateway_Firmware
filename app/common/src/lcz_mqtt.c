@@ -20,7 +20,6 @@ LOG_MODULE_REGISTER(lcz_mqtt, CONFIG_LCZ_MQTT_LOG_LEVEL);
 #include <kernel.h>
 #include <random/rand32.h>
 #include <init.h>
-#include <sys/printk.h>
 
 #include "lcz_dns.h"
 #include "lcz_software_reset.h"
@@ -272,7 +271,7 @@ int lcz_mqtt_subscribe(uint8_t *topic, uint8_t subscribe)
 		LOG_ERR("%s status %d to %s", str, rc,
 			log_strdup(mt.topic.utf8));
 	} else {
-		LOG_DBG("%s to %s", str, log_strdup(mt.topic.utf8));
+		LOG_INF("%s to %s", str, log_strdup(mt.topic.utf8));
 	}
 	return rc;
 }
@@ -450,7 +449,7 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 void log_json(const char *prefix, size_t size, const char *buffer)
 {
 	if (buffer[size] == 0) {
-		printk("%s size: %u data: %s\r\n", prefix, size, buffer);
+		LOG_INF("%s size: %u data: %s", prefix, size, buffer);
 	} else {
 		LOG_ERR("Logging JSON as a string requires NULL terminator");
 	}

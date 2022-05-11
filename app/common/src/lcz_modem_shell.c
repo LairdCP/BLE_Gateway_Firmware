@@ -194,24 +194,41 @@ static int shell_hl_site_survey_cmd(const struct shell *shell, size_t argc,
 	return rc;
 }
 
+static int shell_hl_reset_cmd(const struct shell *shell, size_t argc,
+			      char **argv)
+{
+	int rc = 0;
+
+	shell_warn(shell, "Issuing modem reset (please wait)...");
+	rc = mdm_hl7800_reset();
+	shell_print(shell, "reset status: %d", rc);
+
+	return rc;
+}
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
 SHELL_STATIC_SUBCMD_SET_CREATE(
-	hl_cmds, SHELL_CMD(apn, NULL, "HL7800 APN", shell_hl_apn_cmd),
+	hl_cmds,
+	SHELL_CMD(apn, NULL,
+		  "Set/Get Access Point Name <string/blank for read>",
+		  shell_hl_apn_cmd),
 	SHELL_CMD(
 		cmd, NULL,
 		"Send AT command (only for advanced debug)\n"
-		"hl cmd <return to normal log level delay seconds> <at command>",
+		"hl cmd <return to normal log level delay seconds> <AT command>",
 		shell_send_at_cmd),
 #ifdef CONFIG_MODEM_HL7800_FW_UPDATE
-	SHELL_CMD(fup, NULL, "Update HL7800 firmware", shell_hl_fup_cmd),
+	SHELL_CMD(fup, NULL, "Update firmware", shell_hl_fup_cmd),
 #endif
-	SHELL_CMD(iccid, NULL, "HL7800 SIM card ICCID", shell_hl_iccid_cmd),
-	SHELL_CMD(imei, NULL, "HL7800 IMEI", shell_hl_imei_cmd),
-	SHELL_CMD(sn, NULL, "HL7800 serial number", shell_hl_sn_cmd),
-	SHELL_CMD(ver, NULL, "HL7800 firmware version", shell_hl_ver_cmd),
-	SHELL_CMD(survey, NULL, "HL7800 site survey", shell_hl_site_survey_cmd),
+	SHELL_CMD(iccid, NULL, "Get SIM card ICCID", shell_hl_iccid_cmd),
+	SHELL_CMD(imei, NULL, "Get IMEI", shell_hl_imei_cmd),
+	SHELL_CMD(sn, NULL, "Get serial number", shell_hl_sn_cmd),
+	SHELL_CMD(ver, NULL, "Get firmware version", shell_hl_ver_cmd),
+	SHELL_CMD(survey, NULL, "Perform site survey",
+		  shell_hl_site_survey_cmd),
+	SHELL_CMD(reset, NULL, "Reset modem", shell_hl_reset_cmd),
 	SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 

@@ -20,6 +20,7 @@ LOG_MODULE_REGISTER(lcz_mqtt, CONFIG_LCZ_MQTT_LOG_LEVEL);
 #include <kernel.h>
 #include <random/rand32.h>
 #include <init.h>
+#include <sys/printk.h>
 
 #include "lcz_dns.h"
 #include "lcz_software_reset.h"
@@ -304,6 +305,7 @@ int lcz_mqtt_shadow_format_and_send(struct lcz_mqtt_user *user, char *topic,
 		/* determine size of message */
 		req_size = vsnprintk(msg, 0, fmt, ap);
 		if (req_size < 0) {
+			LOG_ERR("Invalid format or arguments");
 			r = -EINVAL;
 			break;
 		}
@@ -315,6 +317,8 @@ int lcz_mqtt_shadow_format_and_send(struct lcz_mqtt_user *user, char *topic,
 			LOG_ERR("Unable to allocate message");
 			r = -ENOMEM;
 			break;
+		} else {
+			LOG_DBG("MQTT shadow size %d", req_size);
 		}
 
 		/* build actual message and try to send it */
@@ -323,7 +327,7 @@ int lcz_mqtt_shadow_format_and_send(struct lcz_mqtt_user *user, char *topic,
 		if (actual_size > 0 && actual_size < req_size) {
 			r = lcz_mqtt_send_string(msg, topic, user);
 		} else {
-			LOG_ERR("Unable to format and send MQTT message");
+			LOG_ERR("Unable to format (and send) MQTT message");
 			r = -EINVAL;
 		}
 
@@ -445,11 +449,11 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 	}
 }
 
-/* Log system v2 cannot be used because buffer may be too large. */
-void log_json(const char *prefix, size_t size, const char *buffer)
+/* Large strings (474 bytes+) are not printed when using LOG_X */
+static void log_json(const char *prefix, size_t size, const char *buffer)
 {
 	if (buffer[size] == 0) {
-		LOG_INF("%s size: %u data: %s", prefix, size, buffer);
+		printk("%s size: %u data: %s\r\n", prefix, size, buffer);
 	} else {
 		LOG_ERR("Logging JSON as a string requires NULL terminator");
 	}
@@ -736,7 +740,7 @@ static void keep_alive_work_handler(struct k_work *work)
 		rc = mqtt_live(&mqtt_client_ctx);
 		if (rc != 0 && rc != -EAGAIN) {
 			LOG_ERR("mqtt_live error: %s", ERRNO_STR(rc));
-		} else if (IS_ENABLED(CONFIG_LCZ_MQTT_KEEPALIVE_VERBOSE)) {
+		} else if (IS_ENABLED(CONFIG_LCZ_MQTT_KEEP_ALIVE_VERBOSE)) {
 			LOG_INF("mqtt_live status: %s",
 				(rc == -EAGAIN) ? "try again" : ERRNO_STR(rc));
 		}
@@ -745,12 +749,12 @@ static void keep_alive_work_handler(struct k_work *work)
 			time_left = mqtt_keepalive_time_left(&mqtt_client_ctx);
 			delay = K_MSEC(time_left);
 			k_work_schedule(&keep_alive, delay);
-			if (IS_ENABLED(CONFIG_LCZ_MQTT_KEEPALIVE_VERBOSE)) {
+			if (IS_ENABLED(CONFIG_LCZ_MQTT_KEEP_ALIVE_VERBOSE)) {
 				LOG_INF("Scheduled next keep alive: %d ms",
 					time_left);
 			}
 		}
-	} else if (IS_ENABLED(CONFIG_LCZ_MQTT_KEEPALIVE_VERBOSE)) {
+	} else if (IS_ENABLED(CONFIG_LCZ_MQTT_KEEP_ALIVE_VERBOSE)) {
 		LOG_INF("MQTT Not Connected - Keep alive not sent");
 	}
 }

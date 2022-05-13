@@ -21,4 +21,8 @@ config HFD_DEVICE_LIST_MAX_STR_SIZE
     int "Maximum size (with terminator) of device list string"
     default 192
 
+config HFD_DEVICE_TYPE_MAX_STR_SIZE
+    int "Maximum size of device type string"
+    default 16
+
 endif # HTTP_FILE_DOWNLOAD

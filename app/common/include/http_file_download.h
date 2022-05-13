@@ -25,7 +25,7 @@ extern "C" {
 /* Constant, Macro and Type Definitions                                       */
 /******************************************************************************/
 struct hfd_context {
-	int device_type;
+	char device_type[CONFIG_HFD_DEVICE_TYPE_MAX_STR_SIZE];
 	char device_list[CONFIG_HFD_DEVICE_LIST_MAX_STR_SIZE];
 	char host[CONFIG_DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE];
 	char host_file_name[CONFIG_DOWNLOAD_CLIENT_MAX_FILENAME_SIZE];

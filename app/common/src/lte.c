@@ -105,7 +105,9 @@ static void get_local_time_from_modem(struct k_work *item);
 static void lte_sync_qrtc(void);
 
 #ifdef CONFIG_LCZ_MEMFAULT
+#ifdef CONFIG_LCZ_MEMFAULT_METRICS
 static uint32_t lte_version_to_int(char *ver);
+#endif
 extern int memfault_ncs_device_id_set(const char *device_id, size_t len);
 #endif
 
@@ -708,7 +710,7 @@ static void lte_sync_qrtc(void)
 	k_work_submit(&local_time_work);
 }
 
-#ifdef CONFIG_LCZ_MEMFAULT
+#if defined(CONFIG_LCZ_MEMFAULT) && defined(CONFIG_LCZ_MEMFAULT_METRICS)
 /**
  * @brief Convert HL7800 version string from format 'HL7800.4.4.14.0' to
  * 04041400

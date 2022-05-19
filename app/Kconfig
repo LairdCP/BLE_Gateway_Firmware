@@ -34,18 +34,6 @@ config SCAN_FOR_BT510_CODED
     depends on BT_EXT_ADV
     depends on BT_OBSERVER
 
-config CLOUD_QUEUE_SIZE
-    int "The size of queue for sending messages to AWS or LWM2M client"
-    default 32
-
-config CLOUD_PURGE_THRESHOLD
-    int "The threshold at which the cloud queue is purged."
-    default 24
-
-config CLOUD_FIFO_CHECK_RATE_SECONDS
-    int "The rate at which the cloud fifo is checked"
-    default 1
-
 menuconfig BLUEGRASS
     bool "Laird Connectivity Bluegrass cloud"
     depends on MQTT_LIB

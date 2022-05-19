@@ -137,26 +137,6 @@ config JSMN_LOG_LEVEL
     range 0 4
     default 3
 
-#
-# The following 4 values are used to save NV information into
-# the filesystem to allow deprecation of the NV system.
-#
-config APP_COMMISSIONED_FILE_NAME
-    string
-    default "commissioned.bin"
-
-config APP_CLIENT_ID_FILE_NAME
-    string
-    default "client_id.txt"
-
-config APP_ENDPOINT_FILE_NAME
-    string
-    default "endpoint.txt"
-
-config APP_TOPIC_PREFIX_FILE_NAME
-    string
-    default "topic_prefix.txt"
-
 config SENSOR_TASK_LOG_LEVEL
     int "Sensor Task Log level"
     range 0 4

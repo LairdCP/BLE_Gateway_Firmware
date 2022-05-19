@@ -74,6 +74,7 @@ static uint8_t subscription_buffer[CONFIG_LCZ_MQTT_SHADOW_IN_MAX_SIZE];
 static uint8_t subscription_topic[CONFIG_LCZ_MQTT_SHADOW_TOPIC_MAX_SIZE];
 
 static struct {
+	bool initialized;
 	bool connected;
 	bool disconnect;
 	struct {
@@ -91,6 +92,9 @@ static struct {
 		uint32_t rx_payload_bytes;
 	} stats;
 } lcz_mqtt;
+
+static uint32_t watchdog_timeout =
+	CONFIG_LCZ_MQTT_DEFAULT_PUBLISH_WATCHDOG_SECONDS;
 
 #ifdef ATTR_ID_mqtt_client_user_name
 static struct mqtt_utf8 user_name;
@@ -124,7 +128,6 @@ static void publish_watchdog_work_handler(struct k_work *work);
 static void keep_alive_work_handler(struct k_work *work);
 static void connection_failure_handler(int status);
 static void log_json(const char *prefix, size_t size, const char *buffer);
-static void restart_publish_watchdog(void);
 
 static void update_ack_id(const struct lcz_mqtt_user *user, uint16_t id);
 static void issue_disconnect_callbacks(void);
@@ -150,10 +153,11 @@ static int lcz_mqtt_init(const struct device *device)
 	k_work_init_delayable(&publish_watchdog, publish_watchdog_work_handler);
 	k_work_init_delayable(&keep_alive, keep_alive_work_handler);
 
+	lcz_mqtt.initialized = true;
 	return 0;
 }
 
-SYS_INIT(lcz_mqtt_init, APPLICATION, 99);
+SYS_INIT(lcz_mqtt_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -229,7 +233,7 @@ int lcz_mqtt_send_data(bool binary, char *data, uint32_t len, uint8_t *topic,
 	if (rc == 0) {
 		lcz_mqtt.stats.success += 1;
 		lcz_mqtt.stats.consecutive_fails = 0;
-		restart_publish_watchdog();
+		lcz_mqtt_restart_publish_watchdog();
 	} else {
 		lcz_mqtt.stats.failure += 1;
 		lcz_mqtt.stats.consecutive_fails += 1;
@@ -358,6 +362,33 @@ int lcz_mqtt_topic_format(char *topic, size_t max_size, const char *fmt, ...)
 
 	va_end(ap);
 	return r;
+}
+
+uint32_t lcz_mqtt_get_publish_watchdog_timeout(void)
+{
+	return watchdog_timeout;
+}
+
+void lcz_mqtt_set_publish_watchdog_timeout(uint32_t value)
+{
+	watchdog_timeout = value;
+	LOG_INF("Set MQTT publish watchdog to %u", watchdog_timeout);
+}
+
+int lcz_mqtt_restart_publish_watchdog(void)
+{
+	if (!lcz_mqtt.initialized) {
+		return -EBUSY;
+	}
+
+	if (watchdog_timeout == 0) {
+		k_work_cancel_delayable(&publish_watchdog);
+	} else {
+		k_work_reschedule(&publish_watchdog,
+				  K_SECONDS(watchdog_timeout));
+	}
+
+	return 0;
 }
 
 /******************************************************************************/
@@ -702,20 +733,30 @@ static uint16_t rand16_nonzero_get(void)
 static void publish_watchdog_work_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
+	bool reset = true;
 
-	LOG_WRN("Unable to publish MQTT in the last hour");
+	if (watchdog_timeout == 0) {
+		return;
+	}
+
+	LOG_WRN("Unable to publish MQTT in the last %u seconds",
+		watchdog_timeout);
 
 	if (lcz_mqtt_ignore_publish_watchdog()) {
-		restart_publish_watchdog();
-	} else {
+		reset = false;
+	}
+
 #ifdef CONFIG_MODEM_HL7800
-		if (attr_get_signed32(ATTR_ID_modem_functionality, 0) !=
-		    MODEM_FUNCTIONALITY_AIRPLANE) {
-			lcz_software_reset_after_assert(0);
-		}
-#else
-		lcz_software_reset_after_assert(0);
+	if (attr_get_signed32(ATTR_ID_modem_functionality, 0) ==
+	    MODEM_FUNCTIONALITY_AIRPLANE) {
+		reset = false;
+	}
 #endif
+
+	if (reset) {
+		lcz_software_reset_after_assert(rand16_nonzero_get());
+	} else {
+		lcz_mqtt_restart_publish_watchdog();
 	}
 }
 
@@ -772,15 +813,6 @@ static void connection_failure_handler(int status)
 		}
 	} else {
 		lcz_mqtt.stats.consecutive_connection_failures = 0;
-	}
-}
-
-static void restart_publish_watchdog(void)
-{
-	if (CONFIG_LCZ_MQTT_PUBLISH_WATCHDOG_SECONDS != 0) {
-		k_work_reschedule(
-			&publish_watchdog,
-			K_SECONDS(CONFIG_LCZ_MQTT_PUBLISH_WATCHDOG_SECONDS));
 	}
 }
 

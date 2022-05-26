@@ -59,7 +59,7 @@ void gateway_fsm_request_cloud_disconnect(void);
  *
  * @param user structure
  */
-void gatway_fsm_register_user(struct gateway_fsm_user *user);
+void gateway_fsm_register_user(struct gateway_fsm_user *user);
 
 /**
  * @brief Weak implementations that can be used by application

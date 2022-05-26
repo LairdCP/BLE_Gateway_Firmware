@@ -167,7 +167,7 @@ void gateway_fsm_init(void)
 #endif
 
 	generic_user.cloud_disable = generic_user_disconnect_request;
-	gatway_fsm_register_user(&generic_user);
+	gateway_fsm_register_user(&generic_user);
 }
 
 void gateway_fsm(void)
@@ -279,7 +279,7 @@ void gateway_fsm_request_cloud_disconnect(void)
 	gsm.cloud_disconnect_request = true;
 }
 
-void gatway_fsm_register_user(struct gateway_fsm_user *user)
+void gateway_fsm_register_user(struct gateway_fsm_user *user)
 {
 	sys_slist_append(&gateway_fsm_user_list, &user->node);
 }
@@ -482,7 +482,7 @@ static void decommission_handler(void)
 	gsm.decommission_request = false;
 	gsm.server_resolved = false;
 	gsm.decommission();
-	/* The decomissioning process on the mobile app deletes the shadow */
+	/* The decommissioning process on the mobile app deletes the shadow */
 	cloud_init_shadow_request();
 	set_state(GATEWAY_STATE_WAIT_FOR_NETWORK);
 }

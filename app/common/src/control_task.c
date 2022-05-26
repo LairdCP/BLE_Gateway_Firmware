@@ -209,7 +209,7 @@ static void control_task_thread_internal(void *pArg1, void *pArg2, void *pArg3)
 	gateway_fsm_init();
 
 	gw_fsm_user.cloud_disable = gateway_fsm_fota_request;
-	gatway_fsm_register_user(&gw_fsm_user);
+	gateway_fsm_register_user(&gw_fsm_user);
 
 	Framework_StartTimer(&pObj->msgTask);
 

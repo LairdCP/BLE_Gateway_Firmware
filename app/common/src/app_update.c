@@ -21,7 +21,7 @@ LOG_MODULE_REGISTER(app_update, CONFIG_APP_UPDATE_LOG_LEVEL);
 #include <sys/reboot.h>
 
 #include "lcz_memfault.h"
-
+#include "errno_str.h"
 #include "laird_utility_macros.h"
 #include "file_system_utilities.h"
 
@@ -53,15 +53,15 @@ int app_update_initiate(const char *abs_path)
 {
 	int r = 0;
 	struct flash_img_context *flash_ctx = NULL;
-    ssize_t size;
+	ssize_t size;
 
 	do {
-        size = fsu_get_file_size_abs(abs_path);
-        if (size <= 0) {
-            LOG_ERR("Invalid file size");
-            r = -ENOENT;
-            break;
-        }
+		size = fsu_get_file_size_abs(abs_path);
+		if (size <= 0) {
+			LOG_ERR("Invalid file size");
+			r = -ENOENT;
+			break;
+		}
 
 		flash_ctx = k_calloc(sizeof(struct flash_img_context),
 				     sizeof(uint8_t));
@@ -87,7 +87,8 @@ int app_update_initiate(const char *abs_path)
 
 		r = app_copy(flash_ctx, abs_path, size);
 		if (r < 0) {
-			LOG_ERR("Unable to copy app to secondary slot");
+			LOG_ERR("Unable to copy app %s to secondary slot: %s",
+				abs_path, ERRNO_STR(r));
 			break;
 		} else {
 			LOG_DBG("Image copied");
@@ -118,13 +119,14 @@ static int app_copy(struct flash_img_context *flash_ctx, const char *abs_path,
 		    size_t size)
 {
 	int r;
-    ssize_t bytes_read;
+	ssize_t bytes_read;
 	size_t length;
 	struct fs_file_t f;
 	uint8_t *buffer;
-    size_t rem = size;
+	size_t rem = size;
 
-    r= fs_open(&f, abs_path, FS_O_READ);
+	fs_file_t_init(&f);
+	r = fs_open(&f, abs_path, FS_O_READ);
 	if (r < 0) {
 		return r;
 	}

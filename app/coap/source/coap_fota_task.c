@@ -611,6 +611,7 @@ static int copy_app(struct flash_img_context *flash_ctx, const char *path,
 	(void)fsu_build_full_name(abs_path, sizeof(abs_path), path, name);
 
 	struct fs_file_t f;
+	fs_file_t_init(&f);
 	int r = fs_open(&f, abs_path, FS_O_READ);
 	if (r < 0) {
 		return r;

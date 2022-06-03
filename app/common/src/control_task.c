@@ -60,6 +60,10 @@ typedef struct control_task_obj {
 	uint32_t broadcast_count;
 	bool fota_request;
 	bool cloud_connected;
+	bool gps_rate_nonzero;
+#ifdef CONFIG_MODEM_HL7800
+	bool gps_rate_change_request;
+#endif
 } control_task_obj_t;
 
 #define CONTROL_TASK_QUEUE_DEPTH 32
@@ -74,6 +78,8 @@ BUILD_ASSERT(ATTR_ID_join_max + 1 == ATTR_ID_join_interval, MSG);
 #elif defined(CONFIG_COAP_FOTA) || defined(CONFIG_HTTP_FOTA)
 #define FOTA_ENABLED 1
 #endif
+
+#define WAIT_FOR_CLOUD_DISCONNECT_SECONDS 5
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -113,7 +119,7 @@ static void polte_cmd_handler(void);
 #endif
 #endif
 
-static bool gateway_fsm_fota_request(void);
+static bool disable_cloud_requests(void);
 
 /******************************************************************************/
 /* Framework Message Dispatcher                                               */
@@ -202,13 +208,15 @@ static void control_task_thread_internal(void *pArg1, void *pArg2, void *pArg3)
 #ifdef CONFIG_MODEM_HL7800
 	attr_prepare_modem_boot();
 	update_modem_log_level_handler();
+	/* Modem saves state of airplane mode */
+	cto.gps_rate_change_request = true;
 	update_gps_rate_handler();
 #endif
 
 	configure_app();
 	gateway_fsm_init();
 
-	gw_fsm_user.cloud_disable = gateway_fsm_fota_request;
+	gw_fsm_user.cloud_disable = disable_cloud_requests;
 	gateway_fsm_register_user(&gw_fsm_user);
 
 	Framework_StartTimer(&pObj->msgTask);
@@ -231,6 +239,10 @@ static DispatchResult_t gateway_fsm_tick_handler(FwkMsgReceiver_t *pMsgRxer,
 			fota_smp_start_handler();
 		}
 	}
+
+#ifdef CONFIG_MODEM_HL7800
+	update_gps_rate_handler();
+#endif
 
 	Framework_StartTimer(&pObj->msgTask);
 	return dispatch_to_sub_task(pMsgRxer, pMsg);
@@ -286,7 +298,7 @@ static DispatchResult_t attr_broadcast_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 			break;
 
 		case ATTR_ID_gps_rate:
-			update_gps_rate_handler();
+			pObj->gps_rate_change_request = true;
 			break;
 
 #ifdef ATTR_ID_polte_control_point
@@ -489,11 +501,32 @@ static void update_modem_log_level_handler(void)
 
 static void update_gps_rate_handler(void)
 {
+	uint32_t rate;
+
+	if (!cto.gps_rate_change_request) {
+		return;
+	}
+
 	if (IS_ENABLED(CONFIG_MODEM_HL7800_GPS)) {
+		rate = attr_get_uint32(ATTR_ID_gps_rate, 0);
+		if (rate != 0) {
+			cto.gps_rate_nonzero = true;
+		} else {
+			cto.gps_rate_nonzero = false;
+		}
+
+		/* Wait until disconnected from cloud so that socket can close */
+		if (cto.gps_rate_nonzero && cto.cloud_connected) {
+			return;
+		}
+
+		/* Only try to set new value once */
+		cto.gps_rate_change_request = false;
 		attr_set_signed32(ATTR_ID_gps_status,
-				  mdm_hl7800_set_gps_rate(
-					  attr_get_uint32(ATTR_ID_gps_rate, 0)));
+				  mdm_hl7800_set_gps_rate(rate));
 	} else {
+		cto.gps_rate_change_request = false;
+		cto.gps_rate_nonzero = false;
 		attr_set_signed32(ATTR_ID_gps_status, -EPERM);
 		LOG_INF("GPS not enabled");
 	}
@@ -569,7 +602,7 @@ FwkMsgHandler_t *cloud_sub_task_msg_dispatcher(FwkMsgCode_t MsgCode)
 }
 #endif
 
-static bool gateway_fsm_fota_request(void)
+static bool disable_cloud_requests(void)
 {
-	return cto.fota_request;
+	return cto.fota_request || cto.gps_rate_nonzero;
 }

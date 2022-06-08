@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.13.1)
 
 set(lcz_module_path ${CMAKE_SOURCE_DIR}/../../modules/lib/laird_connect)
 
+if (CONFIG_LWM2M)
+list(APPEND OVERLAY_CONFIG
+    ${CMAKE_SOURCE_DIR}/overlay_lwm2m_dtls.conf
+)
+endif()
+
 # Add configuration for building with mcuboot
 # because it cannot be done with relative paths in VS code on Windows
 if((BOARD STREQUAL mg100) OR (BOARD STREQUAL pinnacle_100_dvk))

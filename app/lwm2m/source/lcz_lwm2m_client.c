@@ -74,6 +74,9 @@ enum create_state { CREATE_ALLOW = 0, CREATE_OK = 1, CREATE_FAIL = 2 };
 	"/" STRINGIFY(LWM2M_INSTANCE_ESS_SENSOR) "/" STRINGIFY(                \
 		SENSOR_VALUE_RID)
 
+#define CONNECTION_WATCHDOG_REBOOT_DELAY_MS 1000
+#define CONNECTION_WATCHDOG_TIMEOUT_MULTIPLIER 2
+
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
@@ -90,6 +93,8 @@ static struct {
 	} cs;
 } lw;
 
+struct k_timer connection_watchdog_timer;
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -105,6 +110,8 @@ static size_t lwm2m_str_size(const char *s);
 static int ess_sensor_set_error_handler(int status, char *obj_inst_str);
 static bool enable_bootstrap(void);
 static void set_connected(bool connected);
+static void connection_watchdog_timer_callback(struct k_timer *timer_id);
+static void pet_connection_watchdog(bool in_connection);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -583,6 +590,9 @@ static int lwm2m_setup(const char *id)
 	lcz_lwm2m_conn_mon_update_values();
 #endif
 
+	k_timer_init(&connection_watchdog_timer,
+		     connection_watchdog_timer_callback, NULL);
+
 	lw.setup_complete = true;
 	return 0;
 }
@@ -618,6 +628,7 @@ static void rd_client_event(struct lwm2m_ctx *client,
 	case LWM2M_RD_CLIENT_EVENT_REGISTRATION_COMPLETE:
 		LOG_DBG("Registration complete");
 		set_connected(true);
+		pet_connection_watchdog(true);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_REG_UPDATE_FAILURE:
@@ -627,6 +638,7 @@ static void rd_client_event(struct lwm2m_ctx *client,
 
 	case LWM2M_RD_CLIENT_EVENT_REG_UPDATE_COMPLETE:
 		LOG_DBG("Registration update complete");
+		pet_connection_watchdog(true);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_DEREGISTER_FAILURE:
@@ -637,6 +649,7 @@ static void rd_client_event(struct lwm2m_ctx *client,
 	case LWM2M_RD_CLIENT_EVENT_DISCONNECT:
 		LOG_DBG("Disconnected");
 		set_connected(false);
+		pet_connection_watchdog(false);
 		break;
 
 	case LWM2M_RD_CLIENT_EVENT_QUEUE_MODE_RX_OFF:
@@ -741,4 +754,32 @@ static bool enable_bootstrap(void)
 	} else {
 		return false;
 	}
+}
+
+static void connection_watchdog_timer_callback(struct k_timer *timer_id)
+{
+	lcz_software_reset_after_assert(CONNECTION_WATCHDOG_REBOOT_DELAY_MS);
+}
+
+static void pet_connection_watchdog(bool in_connection)
+{
+	int ret;
+	uint32_t timeout;
+
+	if (in_connection) {
+		ret = lwm2m_engine_get_u32("1/0/1", &timeout);
+		if (ret < 0) {
+			LOG_ERR("Could not read lifetime");
+			return;
+		}
+		/* Wait for multiple registration updates */
+		timeout *= CONNECTION_WATCHDOG_TIMEOUT_MULTIPLIER;
+	} else {
+		timeout = attr_get_uint32(ATTR_ID_join_delay, false);
+		timeout *= attr_get_uint32(ATTR_ID_join_interval, false);
+		timeout *= CONNECTION_WATCHDOG_TIMEOUT_MULTIPLIER;
+	}
+	LOG_DBG("Connection watchdog set to %d seconds", timeout);
+	k_timer_start(&connection_watchdog_timer, K_SECONDS(timeout),
+		      K_NO_WAIT);
 }

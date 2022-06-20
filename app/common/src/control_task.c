@@ -57,6 +57,7 @@ LOG_MODULE_REGISTER(control, CONFIG_CONTROL_TASK_LOG_LEVEL);
 
 typedef struct control_task_obj {
 	FwkMsgTask_t msgTask;
+	uint32_t tick_count;
 	uint32_t broadcast_count;
 	bool fota_request;
 	bool cloud_connected;
@@ -231,6 +232,8 @@ static DispatchResult_t gateway_fsm_tick_handler(FwkMsgReceiver_t *pMsgRxer,
 {
 	control_task_obj_t *pObj = FWK_TASK_CONTAINER(control_task_obj_t);
 
+	pObj->tick_count += 1;
+
 	gateway_fsm();
 
 	if (IS_ENABLED(CONFIG_MODEM_HL7800_FW_UPDATE) &&
@@ -245,6 +248,7 @@ static DispatchResult_t gateway_fsm_tick_handler(FwkMsgReceiver_t *pMsgRxer,
 #endif
 
 	Framework_StartTimer(&pObj->msgTask);
+
 	return dispatch_to_sub_task(pMsgRxer, pMsg);
 }
 

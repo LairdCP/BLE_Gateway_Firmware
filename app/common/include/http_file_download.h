@@ -42,7 +42,7 @@ struct hfd_context {
 /******************************************************************************/
 /**
  * @brief Downloads a file and blocks until finished.
- * Caller is resonsible for loading Root CA.
+ * Caller is responsible for loading Root CA.
  * Caller is responsible for limiting number of active connections.
  *
  * @param context pointer to file context
@@ -54,9 +54,11 @@ int http_file_download(struct hfd_context *context);
  * @brief Check if expected hash matches computed file hash.
  *
  * @param context pointer to file context (file hash modified by this function)
+ * @param log if true print log messages (Can be used to disable logging errors
+ * when function is used to check if previously downloaded file is valid).
  * @return int negative error code on failure, size of file on success
  */
-int http_file_download_valid_hash(struct hfd_context *context);
+int http_file_download_valid_hash(struct hfd_context *context, bool log);
 
 #ifdef __cplusplus
 }

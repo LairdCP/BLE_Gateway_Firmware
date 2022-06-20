@@ -88,10 +88,11 @@ int http_file_download(struct hfd_context *context)
 	hfd.status = 0;
 
 	do {
-		hfd.status = download_client_connect(&hfd.dlc, hfd.context->host,
-					    &config);
+		hfd.status = download_client_connect(
+			&hfd.dlc, hfd.context->host, &config);
 		if (hfd.status != 0) {
-			LOG_ERR("Download client unable to connect: %d", hfd.status);
+			LOG_ERR("Download client unable to connect: %d",
+				hfd.status);
 			break;
 		}
 
@@ -100,8 +101,9 @@ int http_file_download(struct hfd_context *context)
 			hfd.context->host_file_size = 0;
 		}
 
-		hfd.status = download_client_start(&hfd.dlc, hfd.context->host_file_name,
-					  hfd.context->offset);
+		hfd.status = download_client_start(&hfd.dlc,
+						   hfd.context->host_file_name,
+						   hfd.context->offset);
 		if (hfd.status != 0) {
 			download_client_disconnect(&hfd.dlc);
 			break;
@@ -116,7 +118,7 @@ int http_file_download(struct hfd_context *context)
 	return hfd.status;
 }
 
-int http_file_download_valid_hash(struct hfd_context *context)
+int http_file_download_valid_hash(struct hfd_context *context, bool log)
 {
 	int r = -EINVAL;
 	int sha_r = 0;
@@ -125,7 +127,9 @@ int http_file_download_valid_hash(struct hfd_context *context)
 	do {
 		file_size = fsu_get_file_size_abs(context->abs_file_name);
 		if (file_size <= 0) {
-			LOG_WRN("Unable to get file size");
+			if (log) {
+				LOG_WRN("Unable to get file size");
+			}
 			break;
 		}
 
@@ -135,13 +139,17 @@ int http_file_download_valid_hash(struct hfd_context *context)
 		sha_r = fsu_sha256_abs(context->file_hash,
 				       context->abs_file_name, file_size);
 		if (sha_r != 0) {
-			LOG_ERR("Unable to compute hash");
+			if (log) {
+				LOG_ERR("Unable to compute hash");
+			}
 			break;
 		}
 
 		if (memcmp(context->expected_hash, context->file_hash,
 			   FSU_HASH_SIZE) != 0) {
-			LOG_ERR("Expected has doesn't match file hash");
+			if (log) {
+				LOG_ERR("Expected hash doesn't match file hash");
+			}
 			break;
 		}
 

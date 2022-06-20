@@ -260,10 +260,15 @@ void gateway_fsm_network_init_complete_callback(void)
 void gateway_fsm_network_connected_callback(void)
 {
 #ifdef CONFIG_MODEM_HL7800
-	if (*(uint8_t *)attr_get_quasi_static(ATTR_ID_lte_rat) == LTE_RAT_CAT_M1)
+	int r;
+
+	if (attr_get_uint32(ATTR_ID_lte_rat, 0) == LTE_RAT_CAT_M1)
 #endif
 	{
-		LCZ_MEMFAULT_POST_DATA();
+		r = LCZ_MEMFAULT_POST_DATA();
+		if (r < 0) {
+			LOG_ERR("Memfault post error: %d", r);
+		}
 	}
 
 #ifdef CONFIG_LWM2M

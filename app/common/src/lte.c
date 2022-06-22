@@ -19,6 +19,7 @@ LOG_MODULE_REGISTER(lte, CONFIG_LTE_LOG_LEVEL);
 /* Includes                                                                   */
 /******************************************************************************/
 #include <zephyr.h>
+#include <init.h>
 #include <net/net_if.h>
 #include <net/net_core.h>
 #include <net/net_context.h>
@@ -96,8 +97,6 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 				   uint32_t mgmt_event, struct net_if *iface);
 
-static void setup_iface_events(void);
-
 static void modem_event_callback(enum mdm_hl7800_event event, void *event_data);
 
 static void get_local_time_from_modem(struct k_work *item);
@@ -133,7 +132,8 @@ struct k_work local_time_work;
 static struct tm local_time;
 static int32_t local_offset;
 static bool initialized;
-static bool log_lte_dropped = false;
+static bool log_lte_dropped;
+static bool net_ready;
 
 static struct mgmt_events iface_events[] = {
 	{
@@ -152,6 +152,31 @@ static char build_id[BUILD_ID_SIZE];
 #endif
 
 /******************************************************************************/
+/* Sys Init                                                                   */
+/******************************************************************************/
+static int lte_sys_init(const struct device *device)
+{
+	ARG_UNUSED(device);
+	int i;
+
+	for (i = 0; iface_events[i].event; i++) {
+		net_mgmt_init_event_callback(&iface_events[i].cb,
+					     iface_events[i].handler,
+					     iface_events[i].event);
+
+		net_mgmt_add_event_callback(&iface_events[i].cb);
+	}
+
+	return 0;
+}
+
+/* Register for net management callbacks before modem driver [and network]
+ * init.  The remainder of the init can happen after the modem has
+ * initialized.
+ */
+SYS_INIT(lte_sys_init, POST_KERNEL, CONFIG_LTE_INIT_PRIORITY);
+
+/******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
 int lte_init(void)
@@ -167,7 +192,6 @@ int lte_init(void)
 		initialized = true;
 		k_work_init(&local_time_work, get_local_time_from_modem);
 		mdm_hl7800_register_event_callback(modem_event_callback);
-		setup_iface_events();
 	}
 
 #ifdef CONFIG_MODEM_HL7800_BOOT_DELAY
@@ -258,48 +282,16 @@ exit:
 
 bool lte_ready(void)
 {
-	bool ready = false;
-#ifdef CONFIG_DNS_RESOLVER
-#if defined(CONFIG_NET_IPV4)
-	struct sockaddr_in *dnsAddr;
-#elif defined(CONFIG_NET_IPV6)
-	struct sockaddr_in6 *dnsAddr;
-#endif
-
-	if (iface != NULL && cfg != NULL && &dns->servers[0] != NULL) {
-#if defined(CONFIG_NET_IPV4)
-		dnsAddr = net_sin(&dns->servers[0].dns_server);
-		ready = net_if_is_up(iface) && cfg->ip.ipv4 &&
-			!net_ipv4_is_addr_unspecified(&dnsAddr->sin_addr);
-#elif defined(CONFIG_NET_IPV6)
-		dnsAddr = net_sin6(&dns->servers[0].dns_server);
-		ready = net_if_is_up(iface) && cfg->ip.ipv6 &&
-			!net_ipv6_is_addr_unspecified(&dnsAddr->sin6_addr);
-#endif
-	}
-#else
-	if (iface != NULL && cfg != NULL) {
-#if defined(CONFIG_NET_IPV4)
-		ready = net_if_is_up(iface) && cfg->ip.ipv4 &&
-			!net_ipv4_is_addr_unspecified(
-				&cfg->ip.ipv4.unicast.address.in_addr);
-#elif defined(CONFIG_NET_IPV6)
-		ready = net_if_is_up(iface) && cfg->ip.ipv6 &&
-			!net_ipv6_is_addr_unspecified(
-				&cfg->ip.ipv6.unicast.address.in6_addr);
-#endif
-	}
-#endif /* CONFIG_DNS_RESOLVER */
-
+	/* Ensure valid state; the LEDs are initalized after the modem driver */
 #ifdef CONFIG_BOARD_PINNACLE_100_DVK
-	if (ready) {
+	if (net_ready) {
 		lcz_led_turn_on(NET_MGMT_LED);
 	} else {
 		lcz_led_turn_off(NET_MGMT_LED);
 	}
 #endif
 
-	return ready;
+	return net_ready;
 }
 
 void lcz_qrtc_sync_handler(void)
@@ -357,8 +349,12 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 		return;
 	}
 
-	LTE_LOG_DBG("LTE is ready!");
-	lcz_led_turn_on(NETWORK_LED);
+	LTE_LOG_INF("LTE is ready");
+	net_ready = true;
+
+#ifdef CONFIG_BOARD_PINNACLE_100_DVK
+	lcz_led_turn_on(NET_MGMT_LED);
+#endif
 
 #if defined(CONFIG_LCZ_LWM2M_CONN_MON)
 	lcz_lwm2m_conn_mon_update_values();
@@ -372,24 +368,12 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 		return;
 	}
 
-	LTE_LOG_DBG("LTE is down");
-	lcz_led_turn_off(NETWORK_LED);
-}
+	LTE_LOG_INF("LTE is down");
+	net_ready = false;
 
-/**
- * @note Events from different layers need their own cb
- */
-static void setup_iface_events(void)
-{
-	int i;
-
-	for (i = 0; iface_events[i].event; i++) {
-		net_mgmt_init_event_callback(&iface_events[i].cb,
-					     iface_events[i].handler,
-					     iface_events[i].event);
-
-		net_mgmt_add_event_callback(&iface_events[i].cb);
-	}
+#ifdef CONFIG_BOARD_PINNACLE_100_DVK
+	lcz_led_turn_off(NET_MGMT_LED);
+#endif
 }
 
 static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)

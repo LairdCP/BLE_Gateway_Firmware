@@ -45,7 +45,7 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 #define RESOLVE_SERVER_RETRY_SECONDS 60
 #define RESOLVE_SERVER_MAX_ATTEMPTS 10
 
-/** Workaround for sporadic DNS error */
+/* Delay for DNS add or network down event */
 #define NETWORK_CONNECT_CALLBACK_DELAY 4
 
 #define CLOUD_CONNECT_TIMEOUT 10

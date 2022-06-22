@@ -9,15 +9,22 @@ menuconfig LTE
 
 if LTE
 
+module=LTE
+module-dep=LOG
+module-str=LTE
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
 config LTE_UPDATE_QRTC_LAST_SET
     bool "Update qrtc last set attribute when time received from modem"
     help
       If qrtc last set is savable,
       then the file system will be written.
 
-module=LTE
-module-dep=LOG
-module-str=LTE
-source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+config LTE_INIT_PRIORITY
+	int "LTE Init Priority"
+	default 70
+	help
+    Note that the priority needs to be lower than the HL7800 and
+    net stack so that it can start before the networking sub-system.
 
 endif # LTE

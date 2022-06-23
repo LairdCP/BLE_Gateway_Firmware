@@ -21,9 +21,10 @@ extern "C" {
  * Copy file into slot 2.  Set Memfault tracking flags. Issue reset.
  *
  * @param abs_path Absolute path/name of file
+ * @param delete_after_copy boolean
  * @return int 0 on success, otherwise negative error code
  */
-int app_update_initiate(const char *abs_path);
+int app_update_initiate(const char *abs_path, bool delete_after_copy);
 
 #ifdef __cplusplus
 }

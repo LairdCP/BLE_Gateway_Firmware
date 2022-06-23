@@ -49,7 +49,7 @@ static int app_copy(struct flash_img_context *flash_ctx, const char *abs_path,
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-int app_update_initiate(const char *abs_path)
+int app_update_initiate(const char *abs_path, bool delete_after_copy)
 {
 	int r = 0;
 	struct flash_img_context *flash_ctx = NULL;
@@ -92,6 +92,9 @@ int app_update_initiate(const char *abs_path)
 			break;
 		} else {
 			LOG_DBG("Image copied");
+			if (delete_after_copy) {
+				fsu_delete_abs(abs_path);
+			}
 		}
 
 		r = boot_request_upgrade(BOOT_UPGRADE_PERMANENT);

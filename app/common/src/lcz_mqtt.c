@@ -133,8 +133,12 @@ static void update_ack_id(const struct lcz_mqtt_user *user, uint16_t id);
 static void issue_disconnect_callbacks(void);
 static void issue_ack_callback(int result, uint16_t id);
 
+static void connect_callback(int status);
+static void disconnect_callback(int status);
+static bool ignore_publish_watchdog(void);
+
 /******************************************************************************/
-/* Task Init                                                                  */
+/* Sys Init                                                                   */
 /******************************************************************************/
 static int lcz_mqtt_init(const struct device *device)
 {
@@ -423,6 +427,7 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 
 	switch (evt->type) {
 	case MQTT_EVT_CONNACK:
+		connect_callback(evt->result);
 		if (evt->result != 0) {
 			LOG_ERR("MQTT connect failed %d", evt->result);
 			break;
@@ -440,6 +445,7 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 		lcz_mqtt.disconnect = true;
 		k_work_cancel_delayable(&keep_alive);
 		lcz_mqtt.stats.disconnects += 1;
+		disconnect_callback(evt->result);
 		break;
 
 	case MQTT_EVT_PUBACK:
@@ -708,7 +714,6 @@ static void lcz_mqtt_rx_thread(void *arg1, void *arg2, void *arg3)
 				lcz_mqtt.disconnect = false;
 				lcz_mqtt.connected = false;
 				k_sem_give(&disconnected_sem);
-				lcz_mqtt_disconnect_callback();
 				issue_disconnect_callbacks();
 			}
 		} else {
@@ -742,7 +747,7 @@ static void publish_watchdog_work_handler(struct k_work *work)
 	LOG_WRN("Unable to publish MQTT in the last %u seconds",
 		watchdog_timeout);
 
-	if (lcz_mqtt_ignore_publish_watchdog()) {
+	if (ignore_publish_watchdog()) {
 		reset = false;
 	}
 
@@ -872,19 +877,46 @@ static void issue_ack_callback(int result, uint16_t id)
 	}
 }
 
-/******************************************************************************/
-/* Override in application                                                    */
-/******************************************************************************/
-__weak void lcz_mqtt_disconnect_callback(void)
+static void connect_callback(int status)
 {
-	return;
+	struct lcz_mqtt_user *iterator;
+
+	SYS_SLIST_FOR_EACH_CONTAINER (&callback_list, iterator, node) {
+		if (iterator->connect_callback != NULL) {
+			iterator->connect_callback(status);
+		}
+	}
 }
 
-__weak bool lcz_mqtt_ignore_publish_watchdog(void)
+static void disconnect_callback(int status)
 {
+	struct lcz_mqtt_user *iterator;
+
+	SYS_SLIST_FOR_EACH_CONTAINER (&callback_list, iterator, node) {
+		if (iterator->disconnect_callback != NULL) {
+			iterator->disconnect_callback(status);
+		}
+	}
+}
+
+static bool ignore_publish_watchdog(void)
+{
+	struct lcz_mqtt_user *iterator;
+
+	SYS_SLIST_FOR_EACH_CONTAINER (&callback_list, iterator, node) {
+		if (iterator->ignore_publish_watchdog != NULL) {
+			if (iterator->ignore_publish_watchdog()) {
+				return true;
+			}
+		}
+	}
+
 	return false;
 }
 
+/******************************************************************************/
+/* Override in application                                                    */
+/******************************************************************************/
 __weak const uint8_t *lcz_mqtt_get_mqtt_client_id(void)
 {
 	return attr_get_quasi_static(ATTR_ID_client_id);

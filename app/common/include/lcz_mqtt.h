@@ -25,8 +25,24 @@ extern "C" {
 /******************************************************************************/
 struct lcz_mqtt_user {
 	sys_snode_t node;
+	/* Callback that occurs when broker has received message
+ 	 * with matching id (Qos1 ACK). When the connection is lost then
+	 * a callback occurs in RX thread context.
+	 *
+ 	 * An negative status indicates failure.
+ 	 *
+	 * A user/node is required for each simultaneous outstanding message.
+	 */
 	uint16_t ack_id;
 	void (*ack_callback)(int status);
+	/* Connected callbacks occur in the context of the MQTT event handler */
+	void (*connect_callback)(int status);
+	void (*disconnect_callback)(int status);
+	/* Return true if watchdog should not result if reset.
+	 * During FOTA this may be required for systems that only
+	 * support one connection.
+	 */
+	bool (*ignore_publish_watchdog)(void);
 };
 
 /******************************************************************************/
@@ -64,7 +80,7 @@ int lcz_mqtt_disconnect(void);
  * @param data to send
  * @param len length of data, 0 allowed in non-binary mode
  * @param topic to send data to
- * @param cb registered callback node, NULL if callback isn't desired.
+ * @param user registered user, NULL if callback isn't desired.
  * @return int 0 on success, negative errno otherwise
  */
 int lcz_mqtt_send_data(bool binary, char *data, uint32_t len, uint8_t *topic,
@@ -99,20 +115,6 @@ bool lcz_mqtt_connected(void);
 bool lcz_mqtt_published(void);
 
 /**
- * @brief Weak callback that can be overridden by application
- */
-void lcz_mqtt_disconnect_callback(void);
-
-/**
- * @brief Weak callback that can be overridden by application
- * to prevent reset when MQTT publish watchdog has expired.
- *
- * @return true to prevent reset
- * @return false to allow reset
- */
-bool lcz_mqtt_ignore_publish_watchdog(void);
-
-/**
  * @brief ID that is used
  * Weak callback that can be overriden by application.
  * Default is ATTR_ID_client_id value.
@@ -121,15 +123,10 @@ bool lcz_mqtt_ignore_publish_watchdog(void);
  */
 const uint8_t *lcz_mqtt_get_mqtt_client_id(void);
 
-/**
- * Register callback that occurs when broker has received message
- * with matching id (Qos1 ACK) or a disconnect occurs.
+/*
+ * Register callback structure
  *
- * An negative status indicates failure.
- *
- * A user/node is required for each simultaneously outstanding message.
- *
- * @param cb Pointer to static callback structure (linked list node)
+ * @param user Pointer to static callback structure (linked list node)
  */
 void lcz_mqtt_register_user(struct lcz_mqtt_user *user);
 

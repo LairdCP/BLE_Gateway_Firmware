@@ -53,6 +53,8 @@ static int scan_user_id = -1;
 static struct k_work_delayable prepare_timeout;
 static bool ble_prepared;
 
+struct gateway_fsm_user fota_smp_cloud_user;
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -90,6 +92,10 @@ void fota_smp_cmd_handler(void)
 
 		k_work_init_delayable(&prepare_timeout,
 				      prepare_timeout_handler);
+
+		fota_smp_cloud_user.cloud_disable = fota_smp_ble_prepared;
+		gateway_fsm_register_user(&fota_smp_cloud_user);
+
 		fota_smp_initialized = true;
 	}
 

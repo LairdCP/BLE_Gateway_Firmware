@@ -18,7 +18,6 @@ LOG_MODULE_REGISTER(aws, CONFIG_AWS_LOG_LEVEL);
 #include <random/rand32.h>
 
 #include "attr.h"
-#include "fota_smp.h"
 #include "lcz_mqtt.h"
 
 #include "aws.h"
@@ -119,17 +118,8 @@ int aws_subscribe(uint8_t *topic, uint8_t subscribe)
 }
 
 /******************************************************************************/
-/* Local Function Definitions                                                 */
+/* Weak Overrides                                                             */
 /******************************************************************************/
-bool lcz_mqtt_ignore_publish_watchdog(void)
-{
-	if (IS_ENABLED(CONFIG_FOTA_SMP)) {
-		return fota_smp_ble_prepared();
-	} else {
-		return false;
-	}
-}
-
 /* Add randomness to client id to make each connection unique.*/
 const uint8_t *lcz_mqtt_get_mqtt_client_id(void)
 {

@@ -155,21 +155,6 @@ int lcz_mqtt_shadow_format_and_send(struct lcz_mqtt_user *user, char *topic,
 int lcz_mqtt_topic_format(char *topic, size_t max_size, const char *fmt, ...);
 
 /**
- * @brief Accessor
- *
- * @return uint32_t publish watchdog in seconds
- */
-uint32_t lcz_mqtt_get_publish_watchdog_timeout(void);
-
-/**
- * @brief Setter
- *
- * @param value in seconds, 0 to disable, should be larger than the maximum
- * time between publishes.
- */
-void lcz_mqtt_set_publish_watchdog_timeout(uint32_t value);
-
-/**
  * @brief Restart the publish watchdog
  *
  * @return int 0 on success, EBUSY if module hasn't initialized yet.

@@ -16,14 +16,6 @@ config LCZ_MQTT_TX_BUFFER_SIZE
     int "Size of buffer for MQTT tx path"
     default 1536
 
-config LCZ_MQTT_DEFAULT_PUBLISH_WATCHDOG_SECONDS
-    int "Watchdog timeout for successful MQTT publish"
-    default 3600
-    help
-        Disabled when 0
-        Timeout causes a reset
-        Shouldn't be enabled if periodic data isn't sent.
-
 config LCZ_MQTT_CONNECT_TRIES
     int "Number of times to try to connect to LCZ_MQTT before reporting a failure"
     default 1

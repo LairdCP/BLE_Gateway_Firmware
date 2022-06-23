@@ -93,9 +93,6 @@ static struct {
 	} stats;
 } lcz_mqtt;
 
-static uint32_t watchdog_timeout =
-	CONFIG_LCZ_MQTT_DEFAULT_PUBLISH_WATCHDOG_SECONDS;
-
 #ifdef ATTR_ID_mqtt_client_user_name
 static struct mqtt_utf8 user_name;
 #endif
@@ -368,28 +365,17 @@ int lcz_mqtt_topic_format(char *topic, size_t max_size, const char *fmt, ...)
 	return r;
 }
 
-uint32_t lcz_mqtt_get_publish_watchdog_timeout(void)
-{
-	return watchdog_timeout;
-}
-
-void lcz_mqtt_set_publish_watchdog_timeout(uint32_t value)
-{
-	watchdog_timeout = value;
-	LOG_INF("Set MQTT publish watchdog to %u", watchdog_timeout);
-}
-
 int lcz_mqtt_restart_publish_watchdog(void)
 {
 	if (!lcz_mqtt.initialized) {
 		return -EBUSY;
 	}
 
-	if (watchdog_timeout == 0) {
+	uint32_t timeout = attr_get_uint32(ATTR_ID(mqtt_watchdog), 0);
+	if (timeout == 0) {
 		k_work_cancel_delayable(&publish_watchdog);
 	} else {
-		k_work_reschedule(&publish_watchdog,
-				  K_SECONDS(watchdog_timeout));
+		k_work_reschedule(&publish_watchdog, K_SECONDS(timeout));
 	}
 
 	return 0;
@@ -739,13 +725,13 @@ static void publish_watchdog_work_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
 	bool reset = true;
+	uint32_t timeout = attr_get_uint32(ATTR_ID(mqtt_watchdog), 0);
 
-	if (watchdog_timeout == 0) {
+	if (timeout == 0) {
 		return;
 	}
 
-	LOG_WRN("Unable to publish MQTT in the last %u seconds",
-		watchdog_timeout);
+	LOG_WRN("Unable to publish MQTT in the last %u seconds", timeout);
 
 	if (ignore_publish_watchdog()) {
 		reset = false;

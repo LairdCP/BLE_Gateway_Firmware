@@ -152,7 +152,7 @@ static int load_cert_file(attr_index_t idx, char **cert, char *type)
 {
 	int r = -EINVAL;
 	char *name;
-	size_t size;
+	ssize_t size;
 
 	k_free(*cert);
 

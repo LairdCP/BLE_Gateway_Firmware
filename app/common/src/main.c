@@ -47,7 +47,7 @@ const char *get_app_type_short(void)
 void main(void)
 {
 	printk("\n" CONFIG_BOARD " - %s v%s (%s)\n", get_app_type(),
-	       APP_VERSION_STRING,
+	       APP_VERSION_STRING_PLUS_BUILD,
 #if defined(BUILD_VERSION_LOCAL)
 	       STRINGIFY(BUILD_VERSION_LOCAL)
 #else

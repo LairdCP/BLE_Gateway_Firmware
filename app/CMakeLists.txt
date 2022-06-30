@@ -36,6 +36,27 @@ set(PM_STATIC_YML_FILE
     ${lcz_module_path}/zephyr_lib/mcuboot_config/pm_static.${BOARD}.yml
 )
 
+# Generate build ID based on UTC timestamp
+string(TIMESTAMP build_time "%s" UTC)
+set(APP_VERSION_BUILD ${build_time})
+set(ver_file ${CMAKE_SOURCE_DIR}/version/app_version.h)
+configure_file(${CMAKE_SOURCE_DIR}/version/app_version.h.in ${ver_file})
+# Get application version
+file(READ ${ver_file} ver)
+string(REGEX MATCH "APP_VERSION_MAJOR ([0-9]+)" _ ${ver})
+set(ver_major ${CMAKE_MATCH_1})
+string(REGEX MATCH "APP_VERSION_MINOR ([0-9]+)" _ ${ver})
+set(ver_minor ${CMAKE_MATCH_1})
+string(REGEX MATCH "APP_VERSION_PATCH ([0-9]+)" _ ${ver})
+set(ver_patch ${CMAKE_MATCH_1})
+set(app_version ${ver_major}.${ver_minor}.${ver_patch}+${build_time})
+message("app version: ${app_version}")
+
+# Set application version for mcuboot
+set(mcuboot_ver_conf ${CMAKE_BINARY_DIR}/generated_app_version.conf)
+set(APP_IMAGE_VERSION ${app_version})
+configure_file(${CMAKE_SOURCE_DIR}/version/app_version.conf.in ${mcuboot_ver_conf})
+
 # Prepend the additional boards directory but still allow the original Zephyr
 # boards directory to be used with lower priority
 list(PREPEND BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../)
@@ -114,6 +135,7 @@ target_sources_ifdef(CONFIG_WDT app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/wdt.c)
 
 include_directories(${CMAKE_SOURCE_DIR}/common/include)
+include_directories(${CMAKE_SOURCE_DIR}/version)
 include_directories(${CMAKE_SOURCE_DIR}/framework_config)
 include_directories(${CMAKE_SOURCE_DIR}/../../modules/lib/jsmn)
 

@@ -6,7 +6,10 @@
     "options": {
       "shell": {
         "executable": "cmd.exe",
-        "args": ["/d", "/c"]
+        "args": [
+          "/d",
+          "/c"
+        ]
       }
     }
   },
@@ -15,9 +18,9 @@
       "label": "build aws",
       "type": "shell",
       "dependsOn": ["increment build version"],
-      "command": "west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
+      "command": "west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
       "windows": {
-        "command": "west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
+        "command": "west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -28,9 +31,9 @@
       "label": "build lwm2m",
       "type": "shell",
       "dependsOn": ["increment build version"],
-      "command": "west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DCONFIG_LWM2M=y '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"LwM2M\"'",
+      "command": "west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/lwm2m ${workspaceRoot}/app -- -DCONFIG_LWM2M=y '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"LwM2M\"'",
       "windows": {
-        "command": "west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DCONFIG_LWM2M=y -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"LwM2M\\\""
+        "command": "west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\lwm2m ${workspaceRoot}\\app -- -DCONFIG_LWM2M=y -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"LwM2M\\\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -41,9 +44,9 @@
       "label": "build contact tracing",
       "type": "shell",
       "dependsOn": ["increment build version"],
-      "command": "west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix}\" '-DCONFIG_MCUBOOT_IMAGE_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"Contact_Tracing\"'",
+      "command": "west build -b ${input:board} -d ${workspaceRoot}/build/${input:board}/ct ${workspaceRoot}/app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_unix}\" '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"Contact_Tracing\"'",
       "windows": {
-        "command": "west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows}\" -DCONFIG_MCUBOOT_IMAGE_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"Contact_Tracing\\\""
+        "command": "west build -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\ct ${workspaceRoot}\\app -- -DOVERLAY_CONFIG=\"${config:app_ct_config_windows}\" -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"Contact_Tracing\\\""
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -55,7 +58,6 @@
       // It will re-compile changes, but won't work if there are CMake or Kconfig changes.
       "label": "build",
       "type": "shell",
-      "dependsOn": ["increment build version"],
       "command": "west build -d ${workspaceRoot}/build/${input:board}/${input:app}",
       "windows": {
         "command": "west build -d ${workspaceRoot}\\build\\${input:board}\\${input:app}"
@@ -68,10 +70,9 @@
     {
       "label": "re-build",
       "type": "shell",
-      "dependsOn": ["increment build version"],
-      "command": "west build -p -b ${input:board} -d ${workspaceRoot}/build/${input:board}/aws ${workspaceRoot}/app -- '-DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\"${config:laird_memfault_key}\"' '-DCONFIG_MEMFAULT_NCS_FW_VERSION=\"${input:get_fw_ver}\"' '-DCONFIG_MEMFAULT_NCS_FW_TYPE=\"OOB_demo_AWS\"'",
+      "command": "west build -p -b ${input:board} -d ${workspaceRoot}/build/${input:board}/${input:app} ${workspaceRoot}/app",
       "windows": {
-        "command": "west build -p -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\aws ${workspaceRoot}\\app -- -DCONFIG_MEMFAULT_NCS_PROJECT_KEY=\\\"${config:laird_memfault_key}\\\" -DCONFIG_MEMFAULT_NCS_FW_VERSION=\\\"${input:get_fw_ver}\\\" -DCONFIG_MEMFAULT_NCS_FW_TYPE=\\\"OOB_demo_AWS\\\""
+        "command": "west build -p -b ${input:board} -d ${workspaceRoot}\\build\\${input:board}\\${input:app} ${workspaceRoot}\\app"
       },
       "problemMatcher": {
         "base": "$gcc",
@@ -136,14 +137,20 @@
       "label": "aws - build flash",
       "type": "shell",
       "dependsOrder": "sequence",
-      "dependsOn": ["build aws", "flash app"],
+      "dependsOn": [
+        "build aws",
+        "flash app"
+      ],
       "problemMatcher": []
     },
     {
       "label": "lwm2m - build flash",
       "type": "shell",
       "dependsOrder": "sequence",
-      "dependsOn": ["build lwm2m", "flash app"],
+      "dependsOn": [
+        "build lwm2m",
+        "flash app"
+      ],
       "problemMatcher": []
     },
     {
@@ -196,15 +203,6 @@
         "command": "arm-none-eabi-readelf -n ${workspaceRoot}\\build\\${input:board}\\${input:app}\\zephyr\\zephyr.elf"
       },
       "problemMatcher": []
-    },
-    {
-      "label": "increment build version",
-      "type": "shell",
-      "command": "python3 ${workspaceRoot}/scripts/increment_build_version.py ${workspaceRoot}/app/common/include/app_version.h",
-      "windows": {
-        "command": "py ${workspaceRoot}\\scripts\\increment_build_version.py ${workspaceRoot}\\app\\common\\include\\app_version.h"
-      },
-      "problemMatcher": []
     }
   ],
   "inputs": [
@@ -213,7 +211,11 @@
       "description": "Select an app",
       "default": "aws",
       "type": "pickString",
-      "options": ["aws", "lwm2m", "ct"]
+      "options": [
+        "aws",
+        "lwm2m",
+        "ct"
+      ]
     },
     {
       "id": "board",
@@ -254,17 +256,6 @@
       "description": "name of the destination file",
       "type": "promptString",
       "default": "enter file name"
-    },
-    {
-      "id": "get_fw_ver",
-      // read key-value pair in file created by increment_build_version python script
-      "type": "command",
-      "command": "extension.commandvariable.file.content",
-      "args": {
-        // Doesn't work with workspaceRoot
-        "fileName": "${workspaceFolder}/version.txt",
-        "key": "version"
-      }
     }
   ]
 }

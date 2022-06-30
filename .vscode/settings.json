@@ -1,6 +1,4 @@
 {
-    "app_lwm2m_config_unix": "${workspaceRoot}/app/overlay_lwm2m_dtls.conf",
-    "app_lwm2m_config_windows": "${workspaceRoot}\\app\\overlay_lwm2m_dtls.conf",
     "app_ct_config_unix": "${workspaceRoot}/app/contact_tracing/overlay_ct.conf",
     "app_ct_config_windows": "${workspaceRoot}\\app\\contact_tracing\\overlay_ct.conf",
     "laird_memfault_key": "lMq1riPv0YbLsfpCiUMfxClU1oLVVjH1",

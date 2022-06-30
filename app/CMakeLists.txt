@@ -39,7 +39,8 @@ set(PM_STATIC_YML_FILE
 # Generate build ID based on UTC timestamp
 string(TIMESTAMP build_time "%s" UTC)
 set(APP_VERSION_BUILD ${build_time})
-set(ver_file ${CMAKE_SOURCE_DIR}/version/app_version.h)
+set(gen_dir ${CMAKE_BINARY_DIR}/zephyr/include/generated/app)
+set(ver_file ${gen_dir}/app_version.h)
 configure_file(${CMAKE_SOURCE_DIR}/version/app_version.h.in ${ver_file})
 # Get application version
 file(READ ${ver_file} ver)
@@ -135,7 +136,7 @@ target_sources_ifdef(CONFIG_WDT app PRIVATE
     ${CMAKE_SOURCE_DIR}/common/src/wdt.c)
 
 include_directories(${CMAKE_SOURCE_DIR}/common/include)
-include_directories(${CMAKE_SOURCE_DIR}/version)
+include_directories(${gen_dir})
 include_directories(${CMAKE_SOURCE_DIR}/framework_config)
 include_directories(${CMAKE_SOURCE_DIR}/../../modules/lib/jsmn)
 

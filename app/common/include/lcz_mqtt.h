@@ -43,6 +43,8 @@ struct lcz_mqtt_user {
 	 * support one connection.
 	 */
 	bool (*ignore_publish_watchdog)(void);
+	/* Watchdog reset is about to occur.  This function shouldn't block. */
+	void (*watchdog_timeout_callback)(void);
 };
 
 /******************************************************************************/

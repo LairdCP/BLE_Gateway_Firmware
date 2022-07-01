@@ -133,6 +133,7 @@ static void issue_ack_callback(int result, uint16_t id);
 static void connect_callback(int status);
 static void disconnect_callback(int status);
 static bool ignore_publish_watchdog(void);
+static void watchdog_timeout_callback(void);
 
 /******************************************************************************/
 /* Sys Init                                                                   */
@@ -745,7 +746,8 @@ static void publish_watchdog_work_handler(struct k_work *work)
 #endif
 
 	if (reset) {
-		lcz_software_reset_after_assert(rand16_nonzero_get());
+		watchdog_timeout_callback();
+		lcz_software_reset_after_assert(0);
 	} else {
 		lcz_mqtt_restart_publish_watchdog();
 	}
@@ -898,6 +900,17 @@ static bool ignore_publish_watchdog(void)
 	}
 
 	return false;
+}
+
+static void watchdog_timeout_callback(void)
+{
+	struct lcz_mqtt_user *iterator;
+
+	SYS_SLIST_FOR_EACH_CONTAINER (&callback_list, iterator, node) {
+		if (iterator->watchdog_timeout_callback != NULL) {
+			iterator->watchdog_timeout_callback();
+		}
+	}
 }
 
 /******************************************************************************/

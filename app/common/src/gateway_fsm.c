@@ -43,6 +43,7 @@ LOG_MODULE_REGISTER(gateway_fsm, CONFIG_GATEWAY_FSM_LOG_LEVEL);
 
 /** Workaround for sporadic DNS error */
 #define NETWORK_CONNECT_CALLBACK_DELAY 4
+#define WAIT_FOR_NETWORK_TIMEOUT 60
 
 #if defined(CONFIG_LWM2M)
 #define CLOUD_CONNECT_TIMEOUT 60
@@ -64,6 +65,7 @@ static struct {
 	bool server_resolved;
 	bool cloud_disconnect_request;
 	bool decommission_request;
+	bool start_wait_for_network_timer;
 
 	gsm_func *modem_init;
 	gsm_func *network_init;
@@ -114,7 +116,7 @@ void gateway_fsm_init(void)
 	/* MG100 or Pinnacle 100 LwM2M */
 	gsm.modem_init = lte_init;
 	gsm.network_init = lte_network_init;
-	gsm.network_is_connected = lte_ready;
+	gsm.network_is_connected = lte_dns_ready;
 #elif defined(CONFIG_NET_L2_ETHERNET)
 	/* BL5340 LwM2M */
 	gsm.modem_init = unused_function;
@@ -137,7 +139,7 @@ void gateway_fsm_init(void)
 	/* MG100 or Pinnacle 100 Bluegrass/CT */
 	gsm.modem_init = lte_init;
 	gsm.network_init = lte_network_init;
-	gsm.network_is_connected = lte_ready;
+	gsm.network_is_connected = lte_dns_ready;
 #elif defined(CONFIG_NET_L2_ETHERNET)
 	/* BL5340 Bluegrass/CT */
 	gsm.modem_init = unused_function;
@@ -284,6 +286,9 @@ static void set_state(enum gateway_state next_state)
 {
 	if (next_state != gsm.state) {
 		gsm.state = next_state;
+		if (gsm.state == GATEWAY_STATE_WAIT_FOR_NETWORK) {
+			gsm.start_wait_for_network_timer = true;
+		}
 		attr_set_uint32(ATTR_ID_gateway_state, gsm.state);
 	}
 }
@@ -345,7 +350,23 @@ static void wait_for_network_handler(void)
 			set_state(GATEWAY_STATE_NETWORK_CONNECTED);
 		}
 	} else {
-		gsm.timer = NETWORK_CONNECT_CALLBACK_DELAY;
+		if (gsm.start_wait_for_network_timer) {
+			gsm.start_wait_for_network_timer = false;
+			gsm.timer = WAIT_FOR_NETWORK_TIMEOUT;
+		}
+		if (timer_expired()) {
+#if defined(CONFIG_MODEM_HL7800)
+			if (lte_ready()) {
+				set_lte_dns_ready();
+				gateway_fsm_network_connected_callback();
+				set_state(GATEWAY_STATE_NETWORK_CONNECTED);
+			} else {
+				gsm.start_wait_for_network_timer = true;
+			}
+#else
+			set_state(GATEWAY_STATE_NETWORK_ERROR);
+#endif
+		}
 	}
 }
 

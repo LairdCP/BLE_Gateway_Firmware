@@ -135,6 +135,7 @@ static struct tm local_time;
 static int32_t local_offset;
 static bool initialized;
 static bool log_lte_dropped = false;
+static bool lte_network_ready = false;
 
 static struct mgmt_events iface_events[] = {
 	{
@@ -260,38 +261,52 @@ exit:
 bool lte_ready(void)
 {
 	bool ready = false;
-#ifdef CONFIG_DNS_RESOLVER
+#if defined(CONFIG_DNS_RESOLVER)
 #if defined(CONFIG_NET_IPV4)
 	struct sockaddr_in *dnsAddr;
-#elif defined(CONFIG_NET_IPV6)
-	struct sockaddr_in6 *dnsAddr;
+#endif
+#if defined(CONFIG_NET_IPV6)
+	struct sockaddr_in6 *dnsAddr6;
+#endif
 #endif
 
-	if (iface != NULL && cfg != NULL && &dns->servers[0] != NULL) {
-#if defined(CONFIG_NET_IPV4)
-		dnsAddr = net_sin(&dns->servers[0].dns_server);
-		ready = net_if_is_up(iface) && cfg->ip.ipv4 &&
-			!net_ipv4_is_addr_unspecified(&dnsAddr->sin_addr);
-#elif defined(CONFIG_NET_IPV6)
-		dnsAddr = net_sin6(&dns->servers[0].dns_server);
-		ready = net_if_is_up(iface) && cfg->ip.ipv6 &&
-			!net_ipv6_is_addr_unspecified(&dnsAddr->sin6_addr);
-#endif
+	if (iface == NULL || cfg == NULL) {
+		goto exit;
 	}
+
+#if defined(CONFIG_DNS_RESOLVER)
+	if (&dns->servers[0] == NULL) {
+		goto exit;
+	}
+
+#if defined(CONFIG_NET_IPV6)
+	dnsAddr6 = net_sin6(&dns->servers[0].dns_server);
+	ready = net_if_is_up(iface) && cfg->ip.ipv6 &&
+		!net_ipv6_is_addr_unspecified(
+			&cfg->ip.ipv6->unicast->address.in6_addr) &&
+		!net_ipv6_is_addr_unspecified(&dnsAddr6->sin6_addr);
+#endif
+#if defined(CONFIG_NET_IPV4)
+	dnsAddr = net_sin(&dns->servers[0].dns_server);
+	ready |= net_if_is_up(iface) && cfg->ip.ipv4 &&
+		 !net_ipv4_is_addr_unspecified(
+			 &cfg->ip.ipv4->unicast->address.in_addr) &&
+		 !net_ipv4_is_addr_unspecified(&dnsAddr->sin_addr);
+#endif
 #else
-	if (iface != NULL && cfg != NULL) {
-#if defined(CONFIG_NET_IPV4)
-		ready = net_if_is_up(iface) && cfg->ip.ipv4 &&
-			!net_ipv4_is_addr_unspecified(
-				&cfg->ip.ipv4.unicast.address.in_addr);
-#elif defined(CONFIG_NET_IPV6)
-		ready = net_if_is_up(iface) && cfg->ip.ipv6 &&
-			!net_ipv6_is_addr_unspecified(
-				&cfg->ip.ipv6.unicast.address.in6_addr);
+#if defined(CONFIG_NET_IPV6)
+	ready = net_if_is_up(iface) && cfg->ip.ipv6 &&
+		!net_ipv6_is_addr_unspecified(
+			&cfg->ip.ipv6->unicast->address.in6_addr);
 #endif
-	}
-#endif /* CONFIG_DNS_RESOLVER */
+#if defined(CONFIG_NET_IPV4)
+	ready |= net_if_is_up(iface) && cfg->ip.ipv4 &&
+		 !net_ipv4_is_addr_unspecified(
+			 &cfg->ip.ipv4->unicast->address.in_addr);
+#endif
+#endif
 
+exit:
 #ifdef CONFIG_BOARD_PINNACLE_100_DVK
 	if (ready) {
 		lcz_led_turn_on(NET_MGMT_LED);
@@ -301,6 +316,16 @@ bool lte_ready(void)
 #endif
 
 	return ready;
+}
+
+bool lte_dns_ready(void)
+{
+	return lte_network_ready && lte_ready();
+}
+
+void set_lte_dns_ready(void)
+{
+	lte_network_ready = true;
 }
 
 void lcz_qrtc_sync_handler(void)
@@ -359,6 +384,7 @@ static void iface_ready_evt_handler(struct net_mgmt_event_callback *cb,
 	}
 
 	LTE_LOG_DBG("LTE is ready!");
+	lte_network_ready = true;
 	lcz_led_turn_on(NETWORK_LED);
 
 #if defined(CONFIG_LCZ_LWM2M_CONN_MON)
@@ -374,6 +400,7 @@ static void iface_down_evt_handler(struct net_mgmt_event_callback *cb,
 	}
 
 	LTE_LOG_DBG("LTE is down");
+	lte_network_ready = false;
 	lcz_led_turn_off(NETWORK_LED);
 }
 

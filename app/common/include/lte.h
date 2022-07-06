@@ -36,6 +36,21 @@ int lte_network_init(void);
 bool lte_ready(void);
 
 /**
+ * @brief Check if the LTE network interface is up and ready for
+ * DNS and other IP traffic.
+ *
+ * @return true ready for use
+ * @return false not ready for use
+ */
+bool lte_dns_ready(void);
+
+/**
+ * @brief Force set flag indicating LTE network DNS is ready
+ *
+ */
+void set_lte_dns_ready(void);
+
+/**
  * @brief Get the IP address of the LTE network interface
  *
  * @param get_ipv6 true to get the IPv6 address if available

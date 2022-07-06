@@ -185,6 +185,10 @@ static int tls_init(void)
 	int err = -EINVAL;
 
 	/* clang-format off */
+	/* AWS Root CA taken from
+	 * https://www.amazontrust.com/repository/AmazonRootCA1.pem
+	 * on June 22 2022.
+	 */
 	static const char cert[] = {
 		#include "../include/fota_root_ca"
 	};

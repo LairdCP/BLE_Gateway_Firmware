@@ -76,6 +76,7 @@ enum create_state { CREATE_ALLOW = 0, CREATE_OK = 1, CREATE_FAIL = 2 };
 
 #define CONNECTION_WATCHDOG_REBOOT_DELAY_MS 1000
 #define CONNECTION_WATCHDOG_TIMEOUT_MULTIPLIER 2
+#define CONNECTION_WATCHDOG_MAX_FALLBACK 300
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -775,8 +776,7 @@ static void pet_connection_watchdog(bool in_connection)
 		/* Wait for multiple registration updates */
 		timeout *= CONNECTION_WATCHDOG_TIMEOUT_MULTIPLIER;
 	} else {
-		timeout = attr_get_uint32(ATTR_ID_join_delay, false);
-		timeout *= attr_get_uint32(ATTR_ID_join_interval, false);
+		timeout = attr_get_uint32(ATTR_ID_join_max, CONNECTION_WATCHDOG_MAX_FALLBACK);
 		timeout *= CONNECTION_WATCHDOG_TIMEOUT_MULTIPLIER;
 	}
 	LOG_DBG("Connection watchdog set to %d seconds", timeout);

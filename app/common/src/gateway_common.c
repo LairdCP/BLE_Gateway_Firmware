@@ -61,6 +61,7 @@ LOG_MODULE_REGISTER(gateway_common, CONFIG_GATEWAY_LOG_LEVEL);
 
 #ifdef CONFIG_LWM2M
 #include "lcz_lwm2m_client.h"
+#include "memfault_task.h"
 #endif
 
 #ifdef CONFIG_MCUMGR
@@ -158,7 +159,9 @@ int configure_app(void)
 
 	reboot_handler();
 
+#ifndef CONFIG_LWM2M
 	LCZ_MEMFAULT_HTTP_INIT();
+#endif
 
 #ifdef CONFIG_MODEM_HL7800
 	nv_deprecation_handler();
@@ -267,7 +270,11 @@ void gateway_fsm_network_connected_callback(void)
 	if (*(uint8_t *)attr_get_quasi_static(ATTR_ID_lte_rat) == LTE_RAT_CAT_M1)
 #endif
 	{
+#ifdef CONFIG_LWM2M
+		LCZ_LWM2M_MEMFAULT_POST_DATA();
+#else
 		LCZ_MEMFAULT_POST_DATA();
+#endif
 	}
 
 #ifdef CONFIG_LWM2M

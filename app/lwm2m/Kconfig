@@ -91,4 +91,36 @@ config LCZ_LWM2M_CONN_MON_LEVEL
     range 0 4
     default 3
 
+config LCZ_LWM2M_MEMFAULT_TASK
+    bool "Enable Memfault task"
+    depends on LCZ_MEMFAULT
+    default y
+    help
+      Enable Memfault task for periodically reporting Memfault data.
+
+if LCZ_LWM2M_MEMFAULT_TASK
+
+config LCZ_LWM2M_MEMFAULT_THREAD_PRIORITY
+	int "Preemptible thread priority"
+	range 0 NUM_PREEMPT_PRIORITIES
+	default 1
+
+config LCZ_LWM2M_MEMFAULT_THREAD_STACK_SIZE
+	int "Stack size"
+	default 3072
+
+config LCZ_LWM2M_MEMFAULT_REPORT_PERIOD_SECONDS
+	int "Report period"
+	default 3600
+	help
+	  How often to periodically push memfault data (in seconds)
+
+config LCZ_LWM2M_MEMFAULT_CHUNK_BUF_SIZE
+	int "Chunk buffer size"
+	default 1024
+	help
+	  Size of the buffer used to post/save memfault data
+
+endif # LCZ_LWM2M_MEMFAULT_TASK
+
 endif # LCZ_LWM2M

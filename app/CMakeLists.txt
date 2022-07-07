@@ -56,6 +56,7 @@ message("app version: ${app_version}")
 # Set application version for mcuboot
 set(mcuboot_ver_conf ${CMAKE_BINARY_DIR}/generated_app_version.conf)
 set(APP_IMAGE_VERSION ${app_version})
+set(MEMFAULT_APP_VERSION ${ver_major}.${ver_minor}.${ver_patch})
 configure_file(${CMAKE_SOURCE_DIR}/version/app_version.conf.in ${mcuboot_ver_conf})
 
 # Prepend the additional boards directory but still allow the original Zephyr
@@ -169,6 +170,11 @@ include_directories(${CMAKE_SOURCE_DIR}/lwm2m/include)
 target_sources(app PRIVATE
     ${CMAKE_SOURCE_DIR}/lwm2m/source/lcz_lwm2m_client.c
 )
+if(CONFIG_LCZ_LWM2M_MEMFAULT_TASK)
+target_sources(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/lwm2m/source/memfault_task.c
+)
+endif()
 endif()
 
 if(CONFIG_LCZ_LWM2M_SENSOR)

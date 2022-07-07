@@ -198,7 +198,7 @@ static int hfd_client_callback(const struct download_client_evt *event)
 		     (event->error == -ECONNRESET))) {
 			LOG_WRN("Download socket error. %d retries left",
 				hfd.remaining_retries);
-			hfd.remaining_retries += 1;
+			hfd.remaining_retries -= 1;
 			r = 0;
 		} else {
 			LOG_ERR("Download client error");

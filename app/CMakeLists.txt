@@ -68,6 +68,9 @@ project(oob_demo)
 
 if(CONFIG_LCZ_MEMFAULT)
 zephyr_include_directories(${CMAKE_SOURCE_DIR}/memfault)
+if((BOARD STREQUAL mg100) OR (BOARD STREQUAL pinnacle_100_dvk))
+zephyr_include_directories(${CMAKE_SOURCE_DIR}/memfault/mg100)
+endif()
 endif()
 
 target_sources(app PRIVATE

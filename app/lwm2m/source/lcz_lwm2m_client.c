@@ -41,6 +41,8 @@ LOG_MODULE_REGISTER(lwm2m_client, CONFIG_LCZ_LWM2M_LOG_LEVEL);
 #include "lcz_lwm2m_battery.h"
 #endif
 #include "FrameworkIncludes.h"
+#include "lcz_memfault.h"
+#include "memfault_task.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -77,6 +79,7 @@ enum create_state { CREATE_ALLOW = 0, CREATE_OK = 1, CREATE_FAIL = 2 };
 #define CONNECTION_WATCHDOG_REBOOT_DELAY_MS 1000
 #define CONNECTION_WATCHDOG_TIMEOUT_MULTIPLIER 2
 #define CONNECTION_WATCHDOG_MAX_FALLBACK 300
+#define CONNECTION_WATCHDOG_REBOOT_TIMER_TIMEOUT_MINUTES 60
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -95,6 +98,7 @@ static struct {
 } lw;
 
 struct k_timer connection_watchdog_timer;
+struct k_timer connection_watchdog_reboot_timer;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -593,6 +597,8 @@ static int lwm2m_setup(const char *id)
 
 	k_timer_init(&connection_watchdog_timer,
 		     connection_watchdog_timer_callback, NULL);
+	k_timer_init(&connection_watchdog_reboot_timer,
+		     connection_watchdog_timer_callback, NULL);
 
 	lw.setup_complete = true;
 	return 0;
@@ -759,7 +765,16 @@ static bool enable_bootstrap(void)
 
 static void connection_watchdog_timer_callback(struct k_timer *timer_id)
 {
-	lcz_software_reset_after_assert(CONNECTION_WATCHDOG_REBOOT_DELAY_MS);
+	if (timer_id == &connection_watchdog_timer) {
+		LOG_WRN("Connection watchdog expired!");
+		LCZ_MEMFAULT_TRACE_EVENT(lwm2m_watchdog);
+		lwm2m_disconnect();
+		LCZ_LWM2M_MEMFAULT_POST_DATA();
+	} else if (timer_id == &connection_watchdog_reboot_timer) {
+		LOG_WRN("Connection reboot watchdog expired!");
+		lcz_software_reset_after_assert(
+			CONNECTION_WATCHDOG_REBOOT_DELAY_MS);
+	}
 }
 
 static void pet_connection_watchdog(bool in_connection)
@@ -771,12 +786,19 @@ static void pet_connection_watchdog(bool in_connection)
 		ret = lwm2m_engine_get_u32("1/0/1", &timeout);
 		if (ret < 0) {
 			LOG_ERR("Could not read lifetime");
-			return;
 		}
 		/* Wait for multiple registration updates */
 		timeout *= CONNECTION_WATCHDOG_TIMEOUT_MULTIPLIER;
+
+		/* pet the reboot watchdog to prevent a system reboot */
+		k_timer_start(
+			&connection_watchdog_reboot_timer,
+			K_MINUTES(
+				CONNECTION_WATCHDOG_REBOOT_TIMER_TIMEOUT_MINUTES),
+			K_NO_WAIT);
 	} else {
-		timeout = attr_get_uint32(ATTR_ID_join_max, CONNECTION_WATCHDOG_MAX_FALLBACK);
+		timeout = attr_get_uint32(ATTR_ID_join_max,
+					  CONNECTION_WATCHDOG_MAX_FALLBACK);
 		timeout *= CONNECTION_WATCHDOG_TIMEOUT_MULTIPLIER;
 	}
 	LOG_DBG("Connection watchdog set to %d seconds", timeout);

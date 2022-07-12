@@ -20,16 +20,25 @@ LOG_MODULE_REGISTER(http_file_download, CONFIG_HTTP_FILE_DOWNLOAD_LOG_LEVEL);
 #include "http_file_download.h"
 
 /******************************************************************************/
+/* Constants, Macros and Type Definitions                                     */
+/******************************************************************************/
+#define FRAGMENT_TIMEOUT K_SECONDS(60)
+
+/******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
-static struct {
+struct hfd {
 	struct k_sem idle;
 	struct k_sem done;
+	bool busy;
 	int status;
 	int remaining_retries;
 	struct download_client dlc;
 	struct hfd_context *context;
-} hfd;
+	struct k_work_delayable fragment_wdog;
+};
+
+static struct hfd hfd;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -39,6 +48,8 @@ static void hfd_done(int status);
 static int hfd_client_callback(const struct download_client_evt *event);
 
 static int fragment_handler(const struct download_client_evt *event);
+
+static void fragment_wdog_handler(struct k_work *work);
 
 /******************************************************************************/
 /* Init                                                                       */
@@ -54,6 +65,7 @@ static int hfd_init(const struct device *device)
 
 	k_sem_init(&hfd.done, 0, 1);
 	k_sem_init(&hfd.idle, 1, 1);
+	k_work_init_delayable(&hfd.fragment_wdog, fragment_wdog_handler);
 
 	return r;
 }
@@ -86,6 +98,7 @@ int http_file_download(struct hfd_context *context)
 	hfd.context = context;
 	hfd.remaining_retries = CONFIG_HFD_SOCKET_RETRIES;
 	hfd.status = 0;
+	hfd.busy = true;
 
 	do {
 		hfd.status = download_client_connect(
@@ -113,6 +126,8 @@ int http_file_download(struct hfd_context *context)
 
 	} while (0);
 
+	hfd.busy = false;
+	k_work_cancel_delayable(&hfd.fragment_wdog);
 	k_sem_give(&hfd.idle);
 
 	return hfd.status;
@@ -200,6 +215,7 @@ static int hfd_client_callback(const struct download_client_evt *event)
 				hfd.remaining_retries);
 			hfd.remaining_retries -= 1;
 			r = 0;
+			k_work_reschedule(&hfd.fragment_wdog, FRAGMENT_TIMEOUT);
 		} else {
 			LOG_ERR("Download client error");
 			download_client_disconnect(&hfd.dlc);
@@ -251,9 +267,22 @@ static int fragment_handler(const struct download_client_evt *event)
 		} else {
 			r = 0;
 			hfd.context->offset += event->fragment.len;
+			k_work_reschedule(&hfd.fragment_wdog, FRAGMENT_TIMEOUT);
 		}
 
 	} while (0);
 
 	return r;
+}
+
+static void fragment_wdog_handler(struct k_work *work)
+{
+	struct k_work_delayable *dw = k_work_delayable_from_work(work);
+	struct hfd *p = CONTAINER_OF(dw, struct hfd, fragment_wdog);
+	int r;
+
+	if (p->busy) {
+		r = download_client_disconnect(&p->dlc);
+		LOG_ERR("Disconnecting due to rx fragment timeout: %d", r);
+	}
 }

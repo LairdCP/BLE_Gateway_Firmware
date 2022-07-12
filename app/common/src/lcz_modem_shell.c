@@ -70,7 +70,7 @@ static int shell_send_at_cmd(const struct shell *shell, size_t argc,
 		log_restore_delay = strtol(argv[1], NULL, 0);
 		log_restore_delay =
 			MAX(AT_CMD_LOG_DBG_SECONDS, log_restore_delay);
-		k_work_schedule(&log_work, K_SECONDS(log_restore_delay));
+		k_work_reschedule(&log_work, K_SECONDS(log_restore_delay));
 	} else {
 		shell_error(shell,
 			    "Invalid parameter"

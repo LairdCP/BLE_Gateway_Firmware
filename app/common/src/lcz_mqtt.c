@@ -423,7 +423,7 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 		lcz_mqtt.connected = true;
 		k_sem_give(&connected_sem);
 		LOG_INF("MQTT client connected!");
-		k_work_schedule(&keep_alive, K_NO_WAIT);
+		k_work_reschedule(&keep_alive, K_NO_WAIT);
 		break;
 
 	case MQTT_EVT_DISCONNECT:
@@ -782,7 +782,7 @@ static void keep_alive_work_handler(struct k_work *work)
 		if (CONFIG_MQTT_KEEPALIVE != 0) {
 			time_left = mqtt_keepalive_time_left(&mqtt_client_ctx);
 			delay = K_MSEC(time_left);
-			k_work_schedule(&keep_alive, delay);
+			k_work_reschedule(&keep_alive, delay);
 			if (IS_ENABLED(CONFIG_LCZ_MQTT_KEEP_ALIVE_VERBOSE)) {
 				LOG_INF("Scheduled next keep alive: %d ms",
 					time_left);

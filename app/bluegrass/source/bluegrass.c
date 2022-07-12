@@ -237,7 +237,7 @@ static DispatchResult_t connected_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	ARG_UNUSED(pMsgRxer);
 	ARG_UNUSED(pMsg);
 
-	k_work_schedule(&bg.heartbeat, K_NO_WAIT);
+	k_work_reschedule(&bg.heartbeat, K_NO_WAIT);
 
 	init_shadow();
 
@@ -419,7 +419,7 @@ static DispatchResult_t heartbeat_msg_handler(FwkMsgReceiver_t *pMsgRxer,
 	}
 
 #if CONFIG_BLUEGRASS_HEARTBEAT_SECONDS != 0
-	k_work_schedule(&bg.heartbeat,
+	k_work_reschedule(&bg.heartbeat,
 			K_SECONDS(CONFIG_BLUEGRASS_HEARTBEAT_SECONDS));
 #endif
 

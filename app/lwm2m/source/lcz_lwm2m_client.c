@@ -600,6 +600,14 @@ static int lwm2m_setup(const char *id)
 	k_timer_init(&connection_watchdog_reboot_timer,
 		     connection_watchdog_timer_callback, NULL);
 
+	/* Start the reboot watchdog to reboot the system if we never connect
+	 * to the server.
+	 */
+	k_timer_start(
+		&connection_watchdog_reboot_timer,
+		K_MINUTES(CONNECTION_WATCHDOG_REBOOT_TIMER_TIMEOUT_MINUTES),
+		K_NO_WAIT);
+
 	lw.setup_complete = true;
 	return 0;
 }

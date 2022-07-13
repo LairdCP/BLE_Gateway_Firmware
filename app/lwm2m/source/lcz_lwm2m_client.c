@@ -767,9 +767,8 @@ static void connection_watchdog_timer_callback(struct k_timer *timer_id)
 {
 	if (timer_id == &connection_watchdog_timer) {
 		LOG_WRN("Connection watchdog expired!");
-		LCZ_MEMFAULT_TRACE_EVENT(lwm2m_watchdog);
+		MFLT_METRICS_ADD(lwm2m_watchdog, 1);
 		lwm2m_disconnect();
-		LCZ_LWM2M_MEMFAULT_POST_DATA();
 	} else if (timer_id == &connection_watchdog_reboot_timer) {
 		LOG_WRN("Connection reboot watchdog expired!");
 		lcz_software_reset_after_assert(

@@ -1,1 +1,0 @@
-MEMFAULT_TRACE_REASON_DEFINE(lwm2m_watchdog)

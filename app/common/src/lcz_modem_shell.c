@@ -206,6 +206,43 @@ static int shell_hl_reset_cmd(const struct shell *shell, size_t argc,
 	return rc;
 }
 
+#ifdef CONFIG_MODEM_HL7800_GPS
+static int shell_gps_query(const struct shell *shell, size_t argc, char **argv)
+{
+	shell_print(shell, "status: %d", mdm_hl7800_gps_query());
+
+	/* wait for event and then print */
+	return 0;
+}
+
+static int shell_gps_config(const struct shell *shell, size_t argc, char **argv)
+{
+	shell_print(shell, "status: %d", mdm_hl7800_gps_configure());
+
+	return 0;
+}
+
+static int shell_gps_state(const struct shell *shell, size_t argc, char **argv)
+{
+	shell_print(shell, "status: %d", mdm_hl7800_is_gps_running());
+
+	return 0;
+}
+
+static int shell_gps_start(const struct shell *shell, size_t argc, char **argv)
+{
+	shell_print(shell, "status: %d", mdm_hl7800_gps_start());
+
+	return 0;
+}
+
+static int shell_gps_stop(const struct shell *shell, size_t argc, char **argv)
+{
+	shell_print(shell, "status: %d", mdm_hl7800_gps_stop());
+	return 0;
+}
+#endif
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -229,6 +266,13 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_CMD(survey, NULL, "Perform site survey",
 		  shell_hl_site_survey_cmd),
 	SHELL_CMD(reset, NULL, "Reset modem", shell_hl_reset_cmd),
+#ifdef CONFIG_MODEM_HL7800_GPS
+	SHELL_CMD(gps_query, NULL, "Query location", shell_gps_query),
+	SHELL_CMD(gps_cfg, NULL, "Configure GPS", shell_gps_config),
+	SHELL_CMD(gps_state, NULL, "Query if GPS is running", shell_gps_state),
+	SHELL_CMD(gps_start, NULL, "Start GPS", shell_gps_start),
+	SHELL_CMD(gps_stop, NULL, "Stop GPS", shell_gps_stop),
+#endif
 	SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 

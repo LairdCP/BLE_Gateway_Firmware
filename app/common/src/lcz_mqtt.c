@@ -382,6 +382,14 @@ int lcz_mqtt_restart_publish_watchdog(void)
 	return 0;
 }
 
+int attr_prepare_mqtt_watchdog_remaining(void)
+{
+	return attr_set_uint32(
+		ATTR_ID(mqtt_watchdog_remaining),
+		k_work_delayable_remaining_get(&publish_watchdog) /
+			CONFIG_SYS_CLOCK_TICKS_PER_SEC);
+}
+
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/

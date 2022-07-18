@@ -206,6 +206,22 @@ static int shell_hl_reset_cmd(const struct shell *shell, size_t argc,
 	return rc;
 }
 
+#ifdef CONFIG_MODEM_HL7800_TEXT
+static int shell_hl_msg(const struct shell *shell, size_t argc, char **argv)
+{
+	int rc;
+
+	mdm_hl7800_log_filter_set(LOG_LEVEL_DBG);
+
+	rc = mdm_hl7800_send_text(argv[1], argv[2]);
+	shell_print(shell, "send text msg status: %d", rc);
+
+	k_work_reschedule(&log_work, K_SECONDS(15));
+
+	return rc;
+}
+#endif
+
 #ifdef CONFIG_MODEM_HL7800_GPS
 static int shell_gps_query(const struct shell *shell, size_t argc, char **argv)
 {
@@ -266,6 +282,9 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_CMD(survey, NULL, "Perform site survey",
 		  shell_hl_site_survey_cmd),
 	SHELL_CMD(reset, NULL, "Reset modem", shell_hl_reset_cmd),
+#ifdef CONFIG_MODEM_HL7800_TEXT
+	SHELL_CMD(msg, NULL, "Sent text message <ph#> <msg>", shell_hl_msg),
+#endif
 #ifdef CONFIG_MODEM_HL7800_GPS
 	SHELL_CMD(gps_query, NULL, "Query location", shell_gps_query),
 	SHELL_CMD(gps_cfg, NULL, "Configure GPS", shell_gps_config),

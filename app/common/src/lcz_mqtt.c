@@ -733,31 +733,23 @@ static uint16_t rand16_nonzero_get(void)
 static void publish_watchdog_work_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
-	bool reset = true;
 	uint32_t timeout = attr_get_uint32(ATTR_ID(mqtt_watchdog), 0);
+	bool ignore;
 
 	if (timeout == 0) {
 		return;
 	}
 
-	LOG_WRN("Unable to publish MQTT in the last %u seconds", timeout);
+	ignore = ignore_publish_watchdog();
 
-	if (ignore_publish_watchdog()) {
-		reset = false;
-	}
+	LOG_WRN("Unable to publish MQTT in the last %u seconds %s", timeout,
+		ignore ? "(ignored)" : "");
 
-#ifdef CONFIG_MODEM_HL7800
-	if (attr_get_signed32(ATTR_ID_modem_functionality, 0) ==
-	    MODEM_FUNCTIONALITY_AIRPLANE) {
-		reset = false;
-	}
-#endif
-
-	if (reset) {
+	if (ignore) {
+		lcz_mqtt_restart_publish_watchdog();
+	} else {
 		watchdog_timeout_callback();
 		lcz_software_reset_after_assert(0);
-	} else {
-		lcz_mqtt_restart_publish_watchdog();
 	}
 }
 

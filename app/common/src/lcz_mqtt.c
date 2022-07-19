@@ -463,6 +463,12 @@ static void mqtt_evt_handler(struct mqtt_client *const client,
 
 		break;
 
+	case MQTT_EVT_SUBACK:
+		LOG_DBG("SUBACK packet id: %u result: %d",
+			evt->param.suback.message_id,
+			evt->result);
+		break;
+
 	case MQTT_EVT_PUBLISH:
 		if (evt->result != 0) {
 			LOG_ERR("MQTT PUBLISH error %d", evt->result);

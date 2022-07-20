@@ -48,6 +48,10 @@ LOG_MODULE_REGISTER(control, CONFIG_CONTROL_TASK_LOG_LEVEL);
 #include "lcd.h"
 #endif
 
+#ifdef CONFIG_LCZ_WDT
+#include "lcz_watchdog.h"
+#endif
+
 #include "cloud.h"
 #include "control_task.h"
 
@@ -64,6 +68,9 @@ typedef struct control_task_obj {
 	bool gps_rate_nonzero;
 #ifdef CONFIG_MODEM_HL7800
 	bool gps_rate_change_request;
+#endif
+#ifdef CONFIG_LCZ_WDT
+	int wdt_id;
 #endif
 } control_task_obj_t;
 
@@ -222,6 +229,13 @@ static void control_task_thread_internal(void *pArg1, void *pArg2, void *pArg3)
 
 	Framework_StartTimer(&pObj->msgTask);
 
+#ifdef CONFIG_LCZ_WDT
+	pObj->wdt_id = lcz_wdt_get_user_id();
+	if (pObj->wdt_id <= 0) {
+		LOG_ERR("Unable to get watchdog timer id");
+	}
+#endif
+
 	while (true) {
 		Framework_MsgReceiver(&pObj->msgTask.rxer);
 	}
@@ -233,6 +247,12 @@ static DispatchResult_t gateway_fsm_tick_handler(FwkMsgReceiver_t *pMsgRxer,
 	control_task_obj_t *pObj = FWK_TASK_CONTAINER(control_task_obj_t);
 
 	pObj->tick_count += 1;
+
+#ifdef CONFIG_LCZ_WDT
+	if (lcz_wdt_check_in(pObj->wdt_id) < 0) {
+		LOG_ERR("Unable to checkin with watchdog module");
+	}
+#endif
 
 	gateway_fsm();
 

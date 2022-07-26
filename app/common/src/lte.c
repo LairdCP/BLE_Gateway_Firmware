@@ -134,6 +134,7 @@ static int32_t local_offset;
 static bool initialized;
 static bool log_lte_dropped;
 static bool net_ready;
+static struct mdm_hl7800_callback_agent agent;
 
 static struct mgmt_events iface_events[] = {
 	{
@@ -191,7 +192,8 @@ int lte_init(void)
 	if (!initialized) {
 		initialized = true;
 		k_work_init(&local_time_work, get_local_time_from_modem);
-		mdm_hl7800_register_event_callback(modem_event_callback);
+		agent.event_callback = modem_event_callback;
+		mdm_hl7800_register_event_callback(&agent);
 	}
 
 #ifdef CONFIG_MODEM_HL7800_BOOT_DELAY

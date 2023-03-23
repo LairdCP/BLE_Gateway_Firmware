@@ -505,13 +505,13 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		/* Update shadow because modem version has changed. */
 		cloud_init_shadow_request();
 #ifdef CONFIG_COAP_FOTA
-		/* This is duplicated for backwards compatability. */
+		/* This is duplicated for backwards compatibility. */
 		coap_fota_set_running_version(MODEM_IMAGE_TYPE,
 					      (char *)event_data,
 					      strlen((char *)event_data));
 #endif
 #ifdef CONFIG_HTTP_FOTA
-		/* This is duplicated for backwards compatability. */
+		/* This is duplicated for backwards compatibility. */
 		http_fota_set_running_version(MODEM_IMAGE_TYPE,
 					      (char *)event_data,
 					      strlen((char *)event_data));

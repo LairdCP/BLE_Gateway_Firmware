@@ -2,7 +2,7 @@
  * @file lte.c
  * @brief LTE management
  *
- * Copyright (c) 2020-2021 Laird Connectivity
+ * Copyright (c) 2020-2023 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -570,24 +570,46 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 #ifdef CONFIG_MODEM_HL7800_GPS
 static void gps_str_handler(void *event_data)
 {
+	static uint32_t sync_count = 0;
+	const uint32_t EXPECTED_WRITES = 4;
+	int r;
 	uint8_t code = ((struct mdm_hl7800_compound_event *)event_data)->code;
 	char *str = ((struct mdm_hl7800_compound_event *)event_data)->string;
 
 	switch (code) {
+	case HL7800_GPS_STR_REQUEST_STATUS:
+		sync_count = 0;
+		LOG_INF("GPS request: %s", str);
+		break;
 	case HL7800_GPS_STR_LATITUDE:
-		attr_set_string(ATTR_ID_gps_latitude, str, strlen(str));
+		r = attr_set_string(ATTR_ID_gps_latitude, str, strlen(str));
+		if (r == 0) {
+			sync_count += 1;
+		}
 		break;
 	case HL7800_GPS_STR_LONGITUDE:
-		attr_set_string(ATTR_ID_gps_longitude, str, strlen(str));
+		r = attr_set_string(ATTR_ID_gps_longitude, str, strlen(str));
+		if (r == 0) {
+			sync_count += 1;
+		}
 		break;
 	case HL7800_GPS_STR_GPS_TIME:
-		attr_set_string(ATTR_ID_gps_time, str, strlen(str));
+		r = attr_set_string(ATTR_ID_gps_time, str, strlen(str));
+		if (r == 0) {
+			sync_count += 1;
+		}
 		break;
 	case HL7800_GPS_STR_FIX_TYPE:
-		attr_set_string(ATTR_ID_gps_fix_type, str, strlen(str));
+		r = attr_set_string(ATTR_ID_gps_fix_type, str, strlen(str));
+		if (r == 0) {
+			sync_count += 1;
+		}
 		break;
 	case HL7800_GPS_STR_HEPE:
-		attr_set_string(ATTR_ID_gps_hepe, str, strlen(str));
+		if (sync_count == EXPECTED_WRITES) {
+			attr_set_string(ATTR_ID_gps_hepe, str, strlen(str));
+		}
+		sync_count = 0;
 		break;
 	case HL7800_GPS_STR_ALTITUDE:
 		attr_set_string(ATTR_ID_gps_altitude, str, strlen(str));

@@ -235,7 +235,13 @@ int lcz_mqtt_send_data(bool binary, char *data, uint32_t len, uint8_t *topic,
 	if (rc == 0) {
 		lcz_mqtt.stats.success += 1;
 		lcz_mqtt.stats.consecutive_fails = 0;
-		lcz_mqtt_restart_publish_watchdog();
+		/* Publish returns success even if it isn't accepted by server and 
+		 * causes a disconnect. If application is using acks, then
+		 * it must restart watchdog.
+		 */
+		if (user != NULL && user->ack_callback == NULL) {
+			lcz_mqtt_restart_publish_watchdog();
+		}
 	} else {
 		lcz_mqtt.stats.failure += 1;
 		lcz_mqtt.stats.consecutive_fails += 1;
@@ -372,11 +378,14 @@ int lcz_mqtt_restart_publish_watchdog(void)
 		return -EBUSY;
 	}
 
+	int r;
 	uint32_t timeout = attr_get_uint32(ATTR_ID(mqtt_watchdog), 0);
+
 	if (timeout == 0) {
 		k_work_cancel_delayable(&publish_watchdog);
 	} else {
-		k_work_reschedule(&publish_watchdog, K_SECONDS(timeout));
+		r = k_work_reschedule(&publish_watchdog, K_SECONDS(timeout));
+		LOG_DBG("Restart watchdog (>= 0 ok): %d", r);
 	}
 
 	return 0;

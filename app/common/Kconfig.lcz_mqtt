@@ -43,15 +43,19 @@ source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
 
 config LCZ_MQTT_LOG_MQTT_PUBLISH
     bool "Print data published to LCZ_MQTT"
+    depends on LOG_PRINTK
 
 config LCZ_MQTT_LOG_MQTT_PUBLISH_TOPIC
     bool "Print the topic that docs are published"
+    depends on LOG_PRINTK
 
 config LCZ_MQTT_LOG_MQTT_SUBSCRIPTION
     bool "Enable/Disable printing of received MQTT data"
+    depends on LOG_PRINTK
 
 config LCZ_MQTT_LOG_MQTT_SUBSCRIPTION_TOPIC
     bool "Enable/Disable printing of received MQTT topic"
+    depends on LOG_PRINTK
 
 config LCZ_MQTT_KEEP_ALIVE_VERBOSE
     bool "Log status for keep alive"

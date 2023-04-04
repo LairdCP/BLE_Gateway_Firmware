@@ -382,6 +382,7 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 {
 	uint8_t code = ((struct mdm_hl7800_compound_event *)event_data)->code;
 	char *s = (char *)event_data;
+	size_t length;
 #if defined(CONFIG_LCZ_LWM2M_CONN_MON)
 	bool update_conn_mon_values = false;
 #endif
@@ -478,11 +479,17 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		break;
 
 	case HL7800_EVENT_BANDS:
-		attr_set_string(ATTR_ID_bands, s, strlen(s));
+		length = strlen(s);
+		if (length > 0) {
+			attr_set_string(ATTR_ID_bands, s, length);
+		}
 		break;
 
 	case HL7800_EVENT_ACTIVE_BANDS:
-		attr_set_string(ATTR_ID_active_bands, s, strlen(s));
+		length = strlen(s);
+		if (length > 0) {
+			attr_set_string(ATTR_ID_active_bands, s, length);
+		}
 		break;
 
 	case HL7800_EVENT_FOTA_STATE:

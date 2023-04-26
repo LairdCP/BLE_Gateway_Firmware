@@ -28,12 +28,15 @@ target_sources_ifdef(CONFIG_AWS app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/aws.c
     )
 
-target_include_directories_ifdef(CONFIG_SHADOW_PARSER app PRIVATE
+target_include_directories_ifdef(CONFIG_JSMN app PRIVATE
     ${CMAKE_SOURCE_DIR}/../modules/jsmn
     )
 
-target_sources_ifdef(CONFIG_SHADOW_PARSER app PRIVATE
+target_sources_ifdef(CONFIG_JSMN app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/jsmn_json.c
+    )
+
+target_sources_ifdef(CONFIG_SHADOW_PARSER app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/shadow_parser.c
     )
 

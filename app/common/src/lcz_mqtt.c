@@ -554,7 +554,12 @@ static int subscription_handler(struct mqtt_client *const client,
 			log_json("Subscription data", rc, subscription_buffer);
 		}
 
-		shadow_parser(subscription_topic, subscription_buffer);
+		if (IS_ENABLED(CONFIG_SHADOW_PARSER)) {
+			shadow_parser(subscription_topic, subscription_buffer);
+		}
+
+		lcz_mqtt_subscription_handler_callback(subscription_topic,
+						       subscription_buffer);
 
 		if (qos == MQTT_QOS_1_AT_LEAST_ONCE) {
 			struct mqtt_puback_param param = { .message_id = id };
@@ -934,4 +939,10 @@ static void watchdog_timeout_callback(void)
 __weak const uint8_t *lcz_mqtt_get_mqtt_client_id(void)
 {
 	return attr_get_quasi_static(ATTR_ID_client_id);
+}
+
+__weak void lcz_mqtt_subscription_handler_callback(const char *topic,
+						   const char *json)
+{
+	return;
 }

@@ -3,7 +3,8 @@
 
 menuconfig LCZ_MQTT
     bool "Config LCZ_MQTT Module"
-    select SHADOW_PARSER
+    imply JSMN
+    imply SHADOW_PARSER
     select LCZ_CERTS
 
 if LCZ_MQTT

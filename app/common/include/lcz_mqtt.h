@@ -125,6 +125,17 @@ bool lcz_mqtt_published(void);
  */
 const uint8_t *lcz_mqtt_get_mqtt_client_id(void);
 
+/**
+ * @brief Callback that occurs in AWS RX thread context
+ * when subscription data is received.
+ * Weak callback that can be overriden by application.
+ * 
+ * @param topic message was received on
+ * @param json data (NULL terminated)
+ */
+void lcz_mqtt_subscription_handler_callback(const char *topic,
+						   const char *json);
+						   
 /*
  * Register callback structure
  *

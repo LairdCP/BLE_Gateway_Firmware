@@ -62,4 +62,8 @@ config LCZ_MQTT_KEEP_ALIVE_VERBOSE
     bool "Log status for keep alive"
     depends on LCZ_MQTT_LOG_LEVEL >= LCZ_MQTT_LOG_LEVEL_INF
 
+config LCZ_MQTT_FRAGMENT_WARNING
+    bool
+    default n
+
 endif # LCZ_MQTT

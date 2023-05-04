@@ -609,9 +609,11 @@ static int publish(struct mqtt_client *client, enum mqtt_qos qos, char *data,
 		log_json("Publish string", len, data);
 	}
 
+#ifdef CONFIG_LCZ_MQTT_FRAGMENT_WARNING
 	if (mqtt_client_ctx.tx_buf_size < len) {
-		LOG_WRN("len: %u", len);
+		LOG_WRN("buf size: %u < len: %u", mqtt_client_ctx.tx_buf_size, len);
 	}
+#endif
 
 	lcz_mqtt.stats.time = k_uptime_get();
 

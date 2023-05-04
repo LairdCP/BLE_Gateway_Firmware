@@ -24,6 +24,7 @@ LOG_MODULE_REGISTER(app_update, CONFIG_APP_UPDATE_LOG_LEVEL);
 #include "errno_str.h"
 #include "laird_utility_macros.h"
 #include "file_system_utilities.h"
+#include "app_update.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -105,6 +106,7 @@ int app_update_initiate(const char *abs_path, bool delete_after_copy)
 
 		LOG_WRN("Entering mcuboot");
 		LCZ_MEMFAULT_REBOOT_TRACK_FIRMWARE_UPDATE();
+		app_update_imminent();
 		/* Allow last print to occur. */
 		k_sleep(K_SECONDS(1));
 		sys_reboot(SYS_REBOOT_COLD);
@@ -158,4 +160,12 @@ static int app_copy(struct flash_img_context *flash_ctx, const char *abs_path,
 	k_free(buffer);
 	(void)fs_close(&f);
 	return r;
+}
+
+/******************************************************************************/
+/* Override in application                                                    */
+/******************************************************************************/
+__weak void app_update_imminent(void)
+{
+	return;
 }

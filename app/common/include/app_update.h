@@ -26,6 +26,11 @@ extern "C" {
  */
 int app_update_initiate(const char *abs_path, bool delete_after_copy);
 
+/**
+ * @brief weak callback that occurs before reboot into mcuboot
+ */
+void app_update_imminent(void);
+
 #ifdef __cplusplus
 }
 #endif

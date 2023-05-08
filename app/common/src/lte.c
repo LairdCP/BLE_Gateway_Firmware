@@ -563,6 +563,10 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 #endif
 		break;
 
+	case HL7800_EVENT_SOCKET_STATS:
+		/* not used */
+		break;
+
 	default:
 		LOG_ERR("Unknown/Unhandled modem event %d", event);
 		break;

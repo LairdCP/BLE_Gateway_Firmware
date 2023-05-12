@@ -607,6 +607,8 @@ static int publish(struct mqtt_client *client, enum mqtt_qos qos, char *data,
 
 	if (!binary && IS_ENABLED(CONFIG_LCZ_MQTT_LOG_MQTT_PUBLISH)) {
 		log_json("Publish string", len, data);
+	} else {
+		LOG_INF("data size: %u", len);
 	}
 
 #ifdef CONFIG_LCZ_MQTT_FRAGMENT_WARNING

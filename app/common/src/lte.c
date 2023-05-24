@@ -554,14 +554,24 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		site_survey_handler(event_data);
 		break;
 
-	case HL7800_EVENT_EDRX_PARAMETERS:
+	case HL7800_EVENT_EDRX_PARAMETERS: {
+		struct mdm_hl7800_edrx_parameters *params =
+			(struct mdm_hl7800_edrx_parameters *)event_data;
 #ifdef ATTR_ID_edrx_access_technology
-		attr_set_uint32(
-			ATTR_ID_edrx_access_technology,
-			((struct mdm_hl7800_edrx_parameters *)event_data)
-				->access_technology_type);
+		attr_set_uint32(ATTR_ID_edrx_access_technology,
+				params->access_technology_type);
 #endif
-		break;
+#ifdef ATTR_ID_edrx_value
+		if (params->access_technology_type == HL7800_EDRX_WB_S1 &&
+		    params->nibbles_valid) {
+			attr_set_signed32(ATTR_ID_edrx_value,
+					params->nibbles.network_provided);
+		} else {
+			attr_set_signed32(ATTR_ID_edrx_value, -1);
+		}
+#endif
+	}
+	break;
 
 	case HL7800_EVENT_SOCKET_STATS:
 		/* not used */

@@ -284,5 +284,6 @@ static void fragment_wdog_handler(struct k_work *work)
 	if (p->busy) {
 		r = download_client_disconnect(&p->dlc);
 		LOG_ERR("Disconnecting due to rx fragment timeout: %d", r);
+		hfd_done(-ETIMEDOUT);
 	}
 }

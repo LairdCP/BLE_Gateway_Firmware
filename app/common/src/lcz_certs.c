@@ -65,8 +65,6 @@ int lcz_certs_load(void)
 			break;
 		}
 
-		tls_credential_delete(CONFIG_LCZ_CERTS_CA_CERT_TAG,
-				      TLS_CREDENTIAL_CA_CERTIFICATE);
 		r = tls_credential_add(CONFIG_LCZ_CERTS_CA_CERT_TAG,
 				       TLS_CREDENTIAL_CA_CERTIFICATE, root_ca,
 				       r);
@@ -84,11 +82,8 @@ int lcz_certs_load(void)
 			break;
 		}
 
-		tls_credential_delete(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
-				      DEVICE_CERT_TYPE);
 		r = tls_credential_add(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
-				       DEVICE_CERT_TYPE,
-				       client, r);
+				       DEVICE_CERT_TYPE, client, r);
 		if (r < 0) {
 			LOG_ERR("Failed to register device certificate: %d", r);
 			attr_set_signed32(ATTR_ID_cloud_error,
@@ -100,8 +95,6 @@ int lcz_certs_load(void)
 			break;
 		}
 
-		tls_credential_delete(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
-				      DEVICE_KEY_TYPE);
 		r = tls_credential_add(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
 				       DEVICE_KEY_TYPE, key, r);
 		if (r < 0) {
@@ -112,6 +105,8 @@ int lcz_certs_load(void)
 		}
 #endif /* CONFIG_LCZ_CERTS_DEVICE_CERT_TAG != 0 */
 	} while (0);
+
+	LOG_INF("Certificate Load: %d", r);
 
 	if (r == 0) {
 		loaded = true;
@@ -125,14 +120,25 @@ int lcz_certs_load(void)
 
 int lcz_certs_unload(void)
 {
+	int r;
+
 	loaded = false;
 
-	tls_credential_delete(CONFIG_LCZ_CERTS_CA_CERT_TAG,
-			      TLS_CREDENTIAL_CA_CERTIFICATE);
-	tls_credential_delete(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
-			      DEVICE_CERT_TYPE);
-	tls_credential_delete(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
-			      DEVICE_KEY_TYPE);
+	/* Return values are ignored. */
+
+	r = tls_credential_delete(CONFIG_LCZ_CERTS_CA_CERT_TAG,
+				  TLS_CREDENTIAL_CA_CERTIFICATE);
+	LOG_INF("Root CA delete: %d", r);
+
+#if CONFIG_LCZ_CERTS_DEVICE_CERT_TAG != 0
+	r = tls_credential_delete(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
+				  DEVICE_CERT_TYPE);
+	LOG_INF("Device cert delete: %d", r);
+
+	r = tls_credential_delete(CONFIG_LCZ_CERTS_DEVICE_CERT_TAG,
+				  DEVICE_KEY_TYPE);
+	LOG_INF("Device key delete: %d", r);
+#endif
 
 	return 0;
 }
@@ -140,6 +146,12 @@ int lcz_certs_unload(void)
 bool lcz_certs_loaded(void)
 {
 	return loaded;
+}
+
+int lcz_certs_reload(void)
+{
+	(void)lcz_certs_unload();
+	return lcz_certs_load();
 }
 
 /******************************************************************************/

@@ -24,8 +24,8 @@ extern "C" {
 /* Global Function Prototypes                                                 */
 /******************************************************************************/
 /**
- * @brief Load certificates from the file system using names in the
- * attribute system.
+ * @brief If they haven't been loaded, then load certificates from the file 
+ * system using names in the attribute system.
  *
  * Uses slots LCZ_CERTS_CA_CERT_TAG and [LCZ_CERTS_DEVICE_CERT_TAG].
  *
@@ -46,6 +46,11 @@ int lcz_certs_unload(void);
  * @retval true if certs have been loaded, false otherwise.
  */
 bool lcz_certs_loaded(void);
+
+/**
+ * @brief Helper function that calls unload and then load.
+ */
+int lcz_certs_reload(void);
 
 #ifdef __cplusplus
 }

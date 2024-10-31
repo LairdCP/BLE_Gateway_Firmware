@@ -130,7 +130,7 @@ static struct net_if_config *cfg;
 static struct dns_resolve_context *dns;
 struct k_work local_time_work;
 static struct tm local_time;
-static int32_t local_offset;
+static int32_t rtc_offset;
 static bool initialized;
 static bool log_lte_dropped;
 static bool net_ready;
@@ -151,6 +151,9 @@ static struct mgmt_events iface_events[] = {
 #ifdef CONFIG_LCZ_MEMFAULT
 static char build_id[BUILD_ID_SIZE];
 #endif
+
+static bool tzu_valid;
+static int tzu_offset;
 
 /******************************************************************************/
 /* Sys Init                                                                   */
@@ -296,6 +299,10 @@ bool lte_ready(void)
 	return net_ready;
 }
 
+/**
+ * @brief Request time from network
+ * @note Overrides weak implementation in lcz_qrtc.c. Called once per hour.
+ */
 void lcz_qrtc_sync_handler(void)
 {
 	if (lte_ready()) {
@@ -339,6 +346,21 @@ int lte_get_ip_address(bool get_ipv6, char *ip_addr, int ip_addr_len)
 
 done:
 	return rc;
+}
+
+bool lte_get_tzu_valid(void)
+{
+	return tzu_valid;
+}
+
+int lte_get_tzu_offset(void)
+{
+	return tzu_offset;
+}
+
+int lte_get_rtc_offset(void)
+{
+	return rtc_offset;
 }
 
 /******************************************************************************/
@@ -577,6 +599,12 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		/* not used */
 		break;
 
+	case HL7800_EVENT_TIME_ZONE_UPDATE:
+		/* The modem has received a time zone update - use this offset instead */
+		tzu_valid = true;
+		tzu_offset = *((int *)event_data);
+		break;
+
 	default:
 		LOG_ERR("Unknown/Unhandled modem event %d", event);
 		break;
@@ -721,12 +749,17 @@ static void get_local_time_from_modem(struct k_work *item)
 {
 	ARG_UNUSED(item);
 	uint32_t epoch;
-	int32_t status = mdm_hl7800_get_local_time(&local_time, &local_offset);
+	int32_t status = mdm_hl7800_get_local_time(&local_time, &rtc_offset);
 
 	if (status == 0) {
-		epoch = lcz_qrtc_set_epoch_from_tm(&local_time, local_offset);
+		/* The RTC offset in the HL7800 is only updated on network connect.
+		 * If time zone update report is supported by the network, then it should
+		 * be used instead.
+		 */
+		epoch = lcz_qrtc_set_epoch_from_tm(
+			&local_time, tzu_valid ? tzu_offset : rtc_offset);
 		LOG_INF("Epoch set to %u", epoch);
-		attr_set_signed32(ATTR_ID(qrtc_local_offset), local_offset);
+		attr_set_signed32(ATTR_ID(qrtc_local_offset), rtc_offset);
 		if (IS_ENABLED(CONFIG_LTE_UPDATE_QRTC_LAST_SET)) {
 			attr_set_uint32(ATTR_ID_qrtc_last_set, epoch);
 		}

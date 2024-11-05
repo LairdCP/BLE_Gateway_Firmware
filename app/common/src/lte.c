@@ -152,8 +152,8 @@ static struct mgmt_events iface_events[] = {
 static char build_id[BUILD_ID_SIZE];
 #endif
 
-static bool tzu_valid;
-static int tzu_offset;
+static bool tz_valid;
+static int tz_offset;
 
 /******************************************************************************/
 /* Sys Init                                                                   */
@@ -348,19 +348,25 @@ done:
 	return rc;
 }
 
-bool lte_get_tzu_valid(void)
+bool lte_get_tz_valid(void)
 {
-	return tzu_valid;
+	return tz_valid;
 }
 
-int lte_get_tzu_offset(void)
+int lte_get_tz_offset(void)
 {
-	return tzu_offset;
+	return tz_offset;
 }
 
 int lte_get_rtc_offset(void)
 {
 	return rtc_offset;
+}
+
+void lte_set_tz_offset(int value)
+{
+	tz_offset = value;
+	tz_valid = true;
 }
 
 /******************************************************************************/
@@ -599,12 +605,6 @@ static void modem_event_callback(enum mdm_hl7800_event event, void *event_data)
 		/* not used */
 		break;
 
-	case HL7800_EVENT_TIME_ZONE_UPDATE:
-		/* The modem has received a time zone update - use this offset instead */
-		tzu_valid = true;
-		tzu_offset = *((int *)event_data);
-		break;
-
 	default:
 		LOG_ERR("Unknown/Unhandled modem event %d", event);
 		break;
@@ -752,12 +752,12 @@ static void get_local_time_from_modem(struct k_work *item)
 	int32_t status = mdm_hl7800_get_local_time(&local_time, &rtc_offset);
 
 	if (status == 0) {
-		/* The RTC offset in the HL7800 is only updated on network connect.
-		 * If time zone update report is supported by the network, then it should
-		 * be used instead.
+		/* The RTC offset in the HL7800 is always updated on network connect.
+		 * On some networks, it is updated when entering/exiting DST.
+		 * If Losant has set the offset, then use it.
 		 */
 		epoch = lcz_qrtc_set_epoch_from_tm(
-			&local_time, tzu_valid ? tzu_offset : rtc_offset);
+			&local_time, tz_valid ? tz_offset : rtc_offset);
 		LOG_INF("Epoch set to %u", epoch);
 		attr_set_signed32(ATTR_ID(qrtc_local_offset), rtc_offset);
 		if (IS_ENABLED(CONFIG_LTE_UPDATE_QRTC_LAST_SET)) {

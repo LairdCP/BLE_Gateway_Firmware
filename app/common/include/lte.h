@@ -47,20 +47,25 @@ int lte_get_ip_address(bool get_ipv6, char *ip_addr, int ip_addr_len);
 
 
 /**
- * @brief Accessor for time zone update valid
+ * @brief Accessor for time zone valid
  */
-bool lte_get_tzu_valid(void);
+bool lte_get_tz_valid(void);
 
 /**
- * @brief Accessor for time zone update offset
+ * @brief Accessor for time zone offset
  */
-int lte_get_tzu_offset(void);
+int lte_get_tz_offset(void);
 
 /**
  * @brief Accessor for rtc offset (obtained when connecting to the 
  * network for the first time).
  */
 int lte_get_rtc_offset(void);
+
+/**
+ * @brief Set the time zone offset
+ */
+void lte_set_tz_offset(int value);
 
 #ifdef __cplusplus
 }
